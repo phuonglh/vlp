@@ -1,0 +1,7 @@
+target/
+*.class
+*.gz
+.bloop
+.metals
+.vscode
+.jar
