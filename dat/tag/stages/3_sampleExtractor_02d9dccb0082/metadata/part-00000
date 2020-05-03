@@ -1,0 +1,1 @@
+{"class":"vlp.tag.SampleExtractor","timestamp":1588523710812,"sparkVersion":"2.4.5","uid":"sampleExtractor_02d9dccb0082","paramMap":{"labelCol":"tag","featureCol":"f","sampleCol":"samples","tokenCol":"word"},"defaultParamMap":{}}

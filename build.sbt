@@ -1,6 +1,6 @@
 // phuonglh, May 3, 2020
 // 
-ThisBuild / scalaVersion := "2.12.11"
+ThisBuild / scalaVersion := "2.11.12"
 ThisBuild / name := "vlp"
 ThisBuild / organization := "phuonglh.com"
 ThisBuild / version := "1.0"
@@ -28,7 +28,11 @@ lazy val tok = (project in file("tok"))
 lazy val tag = (project in file("tag"))
   .dependsOn(tok)
   .settings(
-    assemblyJarName in assembly := "tag.jar"
+    mainClass in assembly := Some("vlp.tag.Tagger"),
+    assemblyJarName in assembly := "tag.jar",
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.0"
+    )
   )
 
 // transition-based dependency parser module
