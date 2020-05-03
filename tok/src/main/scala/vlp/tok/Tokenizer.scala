@@ -282,13 +282,13 @@ object Tokenizer {
   }
 
   def main(args: Array[String]): Unit = {
-    VLP.log(s"#(words) = ${lexicon.size}")
+    VLP.log(s"#(lexicon) = ${lexicon.size}")
     if (args.size >= 2) {
       process(args(0), args(1), true)
     } else if (args.size >= 1) 
         process(args(0))
     else {
-      val text = """Tiếp nhận công văn số 10209/SKHĐT-PTHT ngày 14/11/2016 của Sở Kế hoạch và Đầu tư Tôi đến Sở Tài nguyên và Môi trường để gặp anh Nguyễn Văn Nam."""
+      val text = """Tiếp nhận công văn số 10209/SKHĐT-PTHT ngày 14/11/2016 của Sở Kế hoạch và Đầu tư thành phố Hà Nội, anh Nguyễn Văn Nam vui mừng."""
       val result = tokenizeOne(text)
       result.foreach(a => VLP.log(a.mkString(" ")))
     }
