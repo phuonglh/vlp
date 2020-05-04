@@ -1,15 +1,17 @@
 // phuonglh, May 3, 2020
 // 
-ThisBuild / scalaVersion := "2.11.12"
-ThisBuild / name := "vlp"
-ThisBuild / organization := "phuonglh.com"
-ThisBuild / version := "1.0"
 val sparkVersion = "2.4.5"
 
-ThisBuild / libraryDependencies ++= Seq(
+lazy val commonSettings = Seq(
+  scalaVersion := "2.11.12",
+  name := "vlp",
+  organization := "phuonglh.com",
+  version := "1.0",
+  libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
+  )
 )
 
 // root project
@@ -20,6 +22,7 @@ lazy val root = (project in file("."))
 // tokenizer module
 lazy val tok = (project in file("tok"))
   .settings(
+    commonSettings,
     mainClass in assembly := Some("vlp.tok.Tokenizer"),
     assemblyJarName in assembly := "tok.jar"
   )
@@ -28,6 +31,7 @@ lazy val tok = (project in file("tok"))
 lazy val tag = (project in file("tag"))
   .dependsOn(tok)
   .settings(
+    commonSettings,
     mainClass in assembly := Some("vlp.tag.Tagger"),
     assemblyJarName in assembly := "tag.jar",
     libraryDependencies ++= Seq(
@@ -39,6 +43,7 @@ lazy val tag = (project in file("tag"))
 lazy val tdp = (project in file("tdp"))
   .dependsOn(tag)
   .settings(
+    commonSettings,
     assemblyJarName in assembly := "tdp.jar"
   )
 
@@ -46,5 +51,6 @@ lazy val tdp = (project in file("tdp"))
 lazy val ner = (project in file("ner"))
   .dependsOn(tag)
   .settings(
+    commonSettings,
     assemblyJarName in assembly := "ner.jar"
   )

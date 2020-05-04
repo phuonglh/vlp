@@ -74,7 +74,7 @@ By default, the master URL is set to `local[*]`, which means that all CPU cores 
   to run, or a Java Development Kit (JDK) environment to compile and package. We use Java version 8.0.
 - Since the code is developed in Scala, you need to have Scala too.
 - If you want to compile and build the software from source, you need a Scala build tool 
-  to manage all dependencies and produce a binary JAR file. We use [SBT](https://www.scala-sbt.org/download.html)
+  to manage all dependencies and produce a binary JAR file. We use [SBT](https://www.scala-sbt.org/download.html).
 
 ### Compile and Package
 - Go to the main directory `cd vlp` on your command line console.
