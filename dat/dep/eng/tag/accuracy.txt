@@ -1,0 +1,74 @@
+17/07/04 01:24:05 INFO Classifier$: #(trainingGraphs) = 10008
+17/07/04 01:24:05 INFO Classifier$: #(developmentGraphs) = 1648
+17/07/04 01:24:05 INFO Classifier$: modelPath = /tmp/eng/
+17/07/04 01:24:05 INFO Classifier$: classifierName = mlr
+17/07/04 01:24:11 INFO Classifier: #(contexts) = 289906
+17/07/04 01:24:30 INFO Classifier: #(distinctFeatures) = 371759                 
+17/07/04 01:24:30 INFO Classifier: #(features with count >= 5) = 52105
+
+
+1. Without "word2vec" word vectors
+
+17/07/04 02:12:43 INFO LBFGS: Val and Grad Norm: 0.0530477 (rel: 2.27e-06) 0.00215095
+17/07/04 02:12:43 INFO LBFGS: Converged because max iterations reached
+17/07/04 02:12:45 INFO Classifier: #(labels) = 80
+17/07/04 02:12:45 INFO Classifier: #(numFeatures) = 51527
+
+17/07/04 02:13:05 INFO Classifier: #(contexts) = 36905                          
+17/07/04 02:13:10 INFO Classifier: Accuracy = 0.9227434083949815  
+17/07/04 02:13:15 INFO Classifier: #(contexts) = 289906
+17/07/04 02:13:43 INFO Classifier: Accuracy = 0.9757024690761833   
+
+17/07/04 02:14:19 INFO Parser$: uas = 0.4150644567219153, las = 0.40832412523020256
+
+2. With "word2vec" word vectors for ws0 and wq0
+
+17/07/04 02:20:29 INFO LBFGS: Val and Grad Norm: 0.0521295 (rel: 2.29e-05) 0.000869192
+17/07/04 02:20:29 INFO LBFGS: Converged because max iterations reached
+17/07/04 02:20:32 INFO Classifier: #(labels) = 80
+17/07/04 02:20:32 INFO Classifier: #(numFeatures) = 51527 + 100
+
+17/07/04 02:21:29 INFO Classifier: #(contexts) = 36905
+17/07/04 02:21:39 INFO Classifier: Accuracy = 0.9222556431726417  
+17/07/04 02:21:48 INFO Classifier: #(contexts) = 289906
+17/07/04 02:22:52 INFO Classifier: Accuracy = 0.9761543396825177  
+
+17/07/04 07:23:00 INFO Parser$: uas = 0.4203314917127072, las = 0.41292817679558014 (without using coefficients for ws0 and wq0 features)
+
+3. With "words" word vectors for ws0 and wq0
+
+17/07/04 08:01:51 INFO Classifier: #(contexts) = 36905                          
+17/07/04 08:02:01 INFO Classifier: Accuracy = 0.9219575644256565   
+17/07/04 08:02:10 INFO Classifier: #(contexts) = 289906
+17/07/04 08:03:11 INFO Classifier: Accuracy = 0.9761370927128104    
+
+4. With super tag features sts0 and stq0 (identity)
+
+17/07/04 08:39:06 INFO Classifier$: #(trainingGraphs) = 10008
+17/07/04 08:39:06 INFO Classifier$: #(developmentGraphs) = 1648
+17/07/04 08:39:06 INFO Classifier$: modelPath = /tmp/eng/
+17/07/04 08:39:06 INFO Classifier$: classifierName = mlr
+17/07/04 08:39:09 INFO Classifier: #(contexts) = 289906
+17/07/04 08:39:21 INFO Classifier: #(distinctFeatures) = 373793                 
+17/07/04 08:39:21 INFO Classifier: #(features with count >= 5) = 53199
+
+17/07/04 08:54:41 INFO Classifier: #(contexts) = 36905
+17/07/04 08:54:47 INFO Classifier: Accuracy = 0.9251822345066797
+17/07/04 08:54:54 INFO Classifier: #(contexts) = 289906
+17/07/04 08:55:20 INFO Classifier: Accuracy = 0.9800797499879271 
+
+
+5. With super tags, both discrete continuous features sts0 and stq0 
+
+17/07/04 17:39:06 INFO Classifier$: #(trainingGraphs) = 10008
+17/07/04 17:39:06 INFO Classifier$: #(developmentGraphs) = 1648
+17/07/04 17:39:06 INFO Classifier$: modelPath = /tmp/eng/
+17/07/04 17:39:06 INFO Classifier$: classifierName = mlr
+17/07/04 17:39:13 INFO Classifier: #(contexts) = 289906
+17/07/04 17:39:27 INFO Classifier: #(distinctFeatures) = 373793                 
+17/07/04 17:39:27 INFO Classifier: #(features with count >= 5) = 53199
+
+17/07/04 17:57:31 INFO Classifier: #(contexts) = 36905
+17/07/04 17:57:39 INFO Classifier: Accuracy = 0.9248570576917866  
+17/07/04 17:57:48 INFO Classifier: #(contexts) = 289906
+17/07/04 17:58:29 INFO Classifier: Accuracy = 0.9801556366546398    

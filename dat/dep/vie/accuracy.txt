@@ -1,0 +1,37 @@
+1. MLR for Vietnamese
+
+  20/05/05 12:49:26 INFO Classifier$: #(trainingGraphs) = 1400
+  20/05/05 12:49:26 INFO Classifier$: #(developmentGraphs) = 800
+
+1.1. numFeatures = 1024
+
+  20/05/05 12:50:31 INFO Classifier: Accuracy = 0.7861776097811377
+  20/05/05 12:50:36 INFO Classifier: Accuracy = 0.8757247623838395
+
+1.2. numFeatures = 2048
+
+  20/05/05 16:27:18 INFO Classifier: Accuracy = 0.7727845443091138
+  20/05/05 16:27:23 INFO Classifier: Accuracy = 0.9091366392205661
+
+2. MLP for Vietnamese, layers = ""
+
+2.1 numFeatures = 1024
+
+  20/05/05 16:14:52 INFO Classifier: Accuracy = 0.7908908488496896
+  20/05/05 16:14:56 INFO Classifier: Accuracy = 0.898202324534696
+
+2.2 numFeatures = 2048
+
+  20/05/05 16:50:32 INFO Classifier: Accuracy = 0.7803910588454898
+  20/05/05 16:50:37 INFO Classifier: Accuracy = 0.9384977893092584
+
+3. MLP for Vietnamese, layers = "16", numFeatures = 1024
+
+  20/05/05 19:10:53 INFO Classifier: Accuracy = 0.7759578141770498
+  20/05/05 19:10:56 INFO Classifier: Accuracy = 0.9224802096846787
+
+4. MLP for Vietnamese, layers = "16", numFeatures = 2048
+
+  20/05/05 20:04:10 INFO Classifier: Accuracy = 0.7723645527089458
+  20/05/05 20:04:13 INFO Classifier: Accuracy = 0.9584072436525377
+

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<treebank>
+  <!-- tokens means "surface tokens", e.g. Spanish "vámonos" counts as one token
+       words means "syntactic words", e.g. Spanish "vámonos" is split to two words, "vamos" and "nos"
+       fused is the number of tokens that are split to two or more syntactic words
+       The words and fused elements can be omitted if no token is split to smaller syntactic words. -->
+  <size>
+    <total><sentences>2200</sentences><tokens>31799</tokens><words>31799</words><fused>0</fused></total>
+  </size>
+  <lemmas unique="4382" /><!-- ., ,, ", và, không, là, có, của, người, một, được, đã, :, ông, ... -->
+  <forms unique="4382" /><!-- ., ,, ", và, không, là, có, của, người, một, được, đã, :, ông, ... -->
+  <fusions unique="0" /><!--  -->
+  <!-- Statistics of universal POS tags. The comments with the most frequent lemmas are optional (but easy to obtain). -->
+  <tags unique="14">
+    <tag name="ADJ">1817</tag><!-- nhiều, cùng, khác, gần, nhỏ, đúng, sau, lớn, cao, mới -->
+    <tag name="ADP">1855</tag><!-- của, với, trong, ở, cho, để, đến, từ, về, vào -->
+    <tag name="AUX">280</tag><!-- là -->
+    <tag name="CCONJ">888</tag><!-- thì, nhưng, như, là, mà, nếu, rồi, nên, hay, Và -->
+    <tag name="DET">459</tag><!-- những, các, mọi, mấy, một số, mỗi, vài, toàn bộ, tất cả, phần lớn -->
+    <tag name="INTJ">13</tag><!-- à, nhỉ, I, Thôi, thay, Ô, Ơ, ơi, Ủa -->
+    <tag name="NOUN">10113</tag><!-- người, ông, anh, nhà, bà, khi, con, hải, ngày, thám tử -->
+    <tag name="NUM">888</tag><!-- một, hai, ba, 20, 2, 10, bốn, năm, mỗi, đôi -->
+    <tag name="PART">180</tag><!-- ngay, chính, cả, thế, thôi, thật, Riêng, đến, đấy, cái -->
+    <tag name="PROPN">1343</tag><!-- đó, này, tôi, mình, họ, gì, đây, chúng tôi, ai, nào -->
+    <tag name="PUNCT">4601</tag><!-- ., ,, ", :, ..., ?, -, !, LBKT, RBKT -->
+    <tag name="SCONJ">384</tag><!-- và, hoặc, &, CC -->
+    <tag name="VERB">6404</tag><!-- có, được, đi, phải, biết, làm, nói, bị, về, cho -->
+    <tag name="X">2574</tag><!-- không, đã, cũng, lại, sẽ, rất, được, chỉ, đang, ra -->
+  </tags>
+  <!-- Statistics of features and values. The comments with the most frequent word forms are optional (but easy to obtain). -->
+  <feats unique="2">
+    <feat name="NumType" value="Card" upos="NUM">888</feat><!-- một, hai, ba, 20, 2, 10, bốn, năm, mỗi, đôi -->
+    <feat name="Polarity" value="Neg" upos="ADJ,X">402</feat><!-- không, không thể, chẳng -->
+  </feats>
+  <!-- Statistics of universal dependency relations. -->
+  <deps unique="29">
+    <dep name="advcl">416</dep>
+    <dep name="advmod">2398</dep>
+    <dep name="amod">889</dep>
+    <dep name="appos">53</dep>
+    <dep name="aux">162</dep>
+    <dep name="aux:pass">270</dep>
+    <dep name="case">1731</dep>
+    <dep name="cc">1224</dep>
+    <dep name="ccomp">899</dep>
+    <dep name="compound">2489</dep>
+    <dep name="conj">1131</dep>
+    <dep name="cop">282</dep>
+    <dep name="csubj">74</dep>
+    <dep name="dep">125</dep>
+    <dep name="det">1124</dep>
+    <dep name="discourse">209</dep>
+    <dep name="iobj">34</dep>
+    <dep name="list">7</dep>
+    <dep name="mark">156</dep>
+    <dep name="nmod">872</dep>
+    <dep name="nsubj">2623</dep>
+    <dep name="nummod">819</dep>
+    <dep name="obj">3016</dep>
+    <dep name="obl">1023</dep>
+    <dep name="parataxis">338</dep>
+    <dep name="punct">4593</dep>
+    <dep name="root">2200</dep>
+    <dep name="vocative">5</dep>
+    <dep name="xcomp">2637</dep>
+  </deps>
+</treebank>

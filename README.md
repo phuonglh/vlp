@@ -58,15 +58,51 @@ If the data is at another location, specify it with option `-d`:
 
   `$spark-submit tag/target/scala-2.11/tag.jar -m train -d path/to/tagged/corpus`
 
-The resulting model will be saved to its default directory `dat/tag`. This can be changed with option `-p` as above. After training, the evaluation mode is called automatically to print out training performance scores.
+The resulting model will be saved to its default directory `dat/tag`. This can be changed with option `-p` as above. After training, the evaluation mode is called automatically to print out performance scores (accuracy and f-score) on the training set.
 
-There are some option for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 3) or `-u` (for domain dimension, default value is 16,384). See the code for detail.
+There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 3) or `-u` (for domain dimension, default value is 16,384). See the code for detail.
 
 By default, the master URL is set to `local[*]`, which means that all CPU cores of the current machine are used by Apache Spark. You can specify a custom master URL with option `-M`.
 
 ## 3. Dependency Parser
 
-The dependency parser module implements a transition-based dependency parsing algorithm.
+The dependency parser module implements a transition-based dependency parsing algorithm. The `vlp.tdp.Classifier` learns a mapping from a parsing context to a labeled transition. Training samples in the form of (parsing context, labeled transition) pairs are extracted automatically from an available treebank in the CoNLLU format, as defined by the [Universal Dependency](http://universaldependencies.org) project. This classifier implements both a multinomial logistic regression (MLR) model and a multi-layer perceptron (MLP) model for classification. 
+
+Two dependency treebanks, one for English and one for Vietnamese are available in the `dat/dep/eng` and `dat/dep/vie`. These datasets of version 2.0 are publicly available at the [Universal Dependency](http://universaldependencies.org) website. In the Vietnamese treebank, there are 1,400 training sentences and 800 development sentences. On this small dataset, the transition classifier with MLR achieves a training accuracy of about 87.57% and a development accuracy of about 78.61% when fixing the number of features at 1,024. The MLP model gives a better scores of 79.08% (development) and 89.82% (training). Using a bigger number of features gives a higher training accuracy but a lower development accuracy. Refer to the class `vlp.tdp.FeatureExtractor` for the list of (discrete) features used in this classifier implementation.
+
+### 3.1. Transition Classifier
+
+To train a transition classifier using MLR model with default settings:
+
+  `$spark-submit --class vlp.tdp.Classifier tdp/target/scala-2.11/tdp.jar -m train`
+
+The resulting model will be saved to its default directory `dat/tdp/vie/mlr`. After training, the evaluation mode is called automatically to print out development and training scores.
+
+To train the classifier using MLP with default settings:
+
+  `$spark-submit --class vlp.tdp.Classifier tdp/target/scala-2.11/tdp.jar -m train -c mlp`
+
+The option `-c` stands for classifier type. To use a MLP with two hidden layers, the first layer has 64 units and the second layer has 32 units, use the `-h` option as follows:
+
+`$spark-submit --class vlp.tdp.Classifier tdp/target/scala-2.11/tdp.jar -m train -c mlp -h "64 32"`
+
+The resulting model will be saved to its default directory `dat/tdp/vie/mlp`.
+
+There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 3) or `-u` (for domain dimension, default value is 1,024). See the code for detail.
+
+To train a transition classifier for English, use the option `-l eng` (`-l` is for language). For example:
+
+`$spark-submit --class vlp.tdp.Classifier tdp/target/scala-2.11/tdp.jar -m train -l eng -u 2048`
+
+The resulting model will be saved to its default directory `dat/tdp/eng/mlr`.
+
+As above, by default, the master URL is set to `local[*]`, which means that all CPU cores of the current machine are used by Apache Spark. You can specify a custom master URL with option `-M`. On a large dataset such as the English treebank, in order to avoid the out-of-memory error, you should consider to use the option `--driver-memory` of Apache Spark when submitting the job, as follows: 
+
+`$spark-submit --driver-memory 16g --class vlp.tdp.Classifier tdp/target/scala-2.11/tdp.jar -m train -l eng -u 16384`
+
+The executor memory is set to default value of `8g`. 
+
+### 3.2. Parser
 
 ## 4. Named Entity Recognizer
 

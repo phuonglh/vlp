@@ -44,9 +44,10 @@ lazy val tdp = (project in file("tdp"))
   .dependsOn(tag)
   .settings(
     commonSettings,
+    mainClass in assembly := Some("vlp.tdp.Parser"),
     assemblyJarName in assembly := "tdp.jar",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.0"
+      "com.github.scopt" %% "scopt" % "3.7.1"
     )
   )
 
