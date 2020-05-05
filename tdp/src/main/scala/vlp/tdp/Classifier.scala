@@ -241,7 +241,7 @@ object Classifier {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
 
-    val parser = new OptionParser[ConfigTDP]("TDP") {
+    val parser = new OptionParser[ConfigTDP]("vlp.tdp") {
       head("group.vlp.tdp", "0.1")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
