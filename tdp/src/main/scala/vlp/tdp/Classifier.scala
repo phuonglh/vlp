@@ -242,7 +242,7 @@ object Classifier {
     Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
 
     val parser = new OptionParser[ConfigTDP]("vlp.tdp") {
-      head("group.vlp.tdp", "0.1")
+      head("vlp.tdp", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
@@ -250,6 +250,7 @@ object Classifier {
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng")
       opt[String]('h', "hiddenLayers").action((x, conf) => conf.copy(layers = x)).text("hidden layers config of MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
+      opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
     }
     parser.parse(args, ConfigTDP()) match {
       case Some(config) =>
