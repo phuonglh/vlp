@@ -35,7 +35,7 @@ lazy val tag = (project in file("tag"))
     mainClass in assembly := Some("vlp.tag.Tagger"),
     assemblyJarName in assembly := "tag.jar",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.0"
+      "com.github.scopt" %% "scopt" % "3.7.1"
     )
   )
 
@@ -44,7 +44,10 @@ lazy val tdp = (project in file("tdp"))
   .dependsOn(tag)
   .settings(
     commonSettings,
-    assemblyJarName in assembly := "tdp.jar"
+    assemblyJarName in assembly := "tdp.jar",
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.0"
+    )
   )
 
 // named entity recognizer module
