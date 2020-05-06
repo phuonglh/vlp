@@ -5,7 +5,9 @@ import scala.collection.mutable.ListBuffer
 /**
   * phuonglh, 8/5/17, 04:16
   * 
-  * Easy-first rules for token attachment, mostly concerning with neighboring tokens. 
+  * Easy-first rules for some token attachment, mostly concerning with neighboring tokens. 
+  * Currently, we provide only some simple rules for Vietnamese dependency parsing.
+  * 
   */
 
 trait Rule extends Serializable {
@@ -22,7 +24,7 @@ class EasyFirstAnnotator(val language: Language.Value) {
     */
   def annotate(sentence: Sentence): List[Dependency] = {
     val tokens = sentence.tokens
-    val arcs = new ListBuffer[Dependency]
+    val arcs = ListBuffer[Dependency]()
     language match {
       case Language.Vietnamese => {
         for (j <- 0 until (sentence.length - 1)) {

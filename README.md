@@ -100,7 +100,7 @@ As above, by default, the master URL is set to `local[*]`, which means that all 
 
 `$spark-submit --driver-memory 16g --class vlp.tdp.Classifier tdp/target/scala-2.11/tdp.jar -m train -l eng -u 16384`
 
-The executor memory is set to default value of `8g`. 
+The executor memory is set to default value of `8g`.
 
 ### 3.2. Parser
 

@@ -37,12 +37,12 @@ case class Config(sentence: Sentence, stack: mutable.Stack[String], queue: mutab
   /**
     * Is this config reducible? The stack 
     * always contains at least the ROOT token, therefore, if the stack size is less than 1
-    * then this config is not reducible. If the top element on the stack has not a head, 
-    * then this config is irreducible too.
+    * then this config is not reducible. If the top element on the stack have not had a head yet, 
+    * then this config is irreducible; otherwise, it is reducible.
     * @return true or false
     */
   def isReducible: Boolean = {
-    if (stack.size <= 1) false ; else {
+    if (stack.size < 1) false ; else {
       arcs.exists(d => d.dependent == stack.top)
     }
   }

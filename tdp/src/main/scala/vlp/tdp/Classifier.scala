@@ -24,7 +24,7 @@ object ClassifierType extends Enumeration {
   */
 class Classifier(spark: SparkSession, config: ConfigTDP) {
   val logger = LoggerFactory.getLogger(getClass.getName)
-  var featureExtractor = new FeatureExtractor(true)
+  var featureExtractor = new FeatureExtractor(false, false)
   val distributedDimension = 40
 
   def setFeatureExtractor(extractor: FeatureExtractor): Unit = this.featureExtractor = extractor
@@ -241,8 +241,8 @@ object Classifier {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
 
-    val parser = new OptionParser[ConfigTDP]("vlp.tdp") {
-      head("vlp.tdp", "1.0")
+    val parser = new OptionParser[ConfigTDP]("vlp.tdp.Classifier") {
+      head("vlp.tdp.Classifier", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
@@ -251,6 +251,7 @@ object Classifier {
       opt[String]('h', "hiddenLayers").action((x, conf) => conf.copy(layers = x)).text("hidden layers config of MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
+      opt[Unit]('x', "extended").action((_, conf) => conf.copy(extended = true)).text("extended mode for English parsing")
     }
     parser.parse(args, ConfigTDP()) match {
       case Some(config) =>
@@ -281,6 +282,8 @@ object Classifier {
         // MLP does not need joint features to perform well
         if (independentFeatures || classifierType == ClassifierType.MLP) {
           classifier.setFeatureExtractor(new FeatureExtractor(false))
+        } else {
+          classifier.setFeatureExtractor(new FeatureExtractor(true, false))
         }
         val dimension = config.numFeatures
         val discrete = config.discrete
@@ -288,6 +291,7 @@ object Classifier {
         config.mode match {
           case "eval" => {
             classifier.evalManual(modelPath + config.classifier, developmentGraphs)
+            classifier.evalManual(modelPath + config.classifier, trainingGraphs)
             if (!extended) {
               classifier.eval(modelPath + config.classifier, developmentGraphs)
               classifier.eval(modelPath + config.classifier, trainingGraphs)

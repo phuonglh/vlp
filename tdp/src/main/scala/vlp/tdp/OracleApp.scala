@@ -5,8 +5,11 @@ import scala.collection.mutable.ListBuffer
 
 /**
   * Created by phuonglh on 6/22/17.
+  * 
+  * This is a small app to test the [[Oracle]].
+  * 
   */
-object App {
+object OracleApp {
   
   def createSentence: Sentence = {
     val m0 = mutable.Map[Label.Value, String](Label.Id -> "0", Label.PartOfSpeech -> "ROOT", Label.Head -> "-1")
@@ -40,7 +43,7 @@ object App {
   }
   
   private def readGraphs: Unit = {
-    val graphs = GraphReader.read("/eng/en-ud-dev.conllu")
+    val graphs = GraphReader.read("dat/dep/eng/en-ud-dev.conllu")
     println(graphs.size)
     println(graphs(0))
     println()
@@ -49,8 +52,8 @@ object App {
   }
   
   def oracle: Unit = {
-    val graphs = GraphReader.read("/eng/tests.conllu")
-    val oracle = new Oracle(new FeatureExtractor(false))
+    val graphs = GraphReader.read("dat/dep/eng/tests.conllu")
+    val oracle = new Oracle(new FeatureExtractor(false, false))
     // decode the last graph
     val contexts = oracle.decode(graphs.last)
     contexts.foreach(println)

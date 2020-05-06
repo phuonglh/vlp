@@ -11,10 +11,10 @@ case class ConfigTDP
   verbose: Boolean = false,
   language: String = "vie",
   classifier: String = "mlr",
-  minFrequency: Int = 3,
+  minFrequency: Int = 2,
   numFeatures: Int = 1024,
   iterations: Int = 400,
-  extended: Boolean = false,
+  extended: Boolean = false, // use super-tag features
   independent: Boolean = false,
   layers: String = "",
   discrete: Boolean = false // use discrete super-tag features

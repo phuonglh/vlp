@@ -5,13 +5,13 @@ import scala.collection.mutable.ListBuffer
 /**
   * Created by phuonglh on 6/22/17.
   */
-class FeatureExtractor(val useJointFeatures: Boolean = true) extends Serializable {
+class FeatureExtractor(val useJointFeatures: Boolean = false, useSuperTag: Boolean = false) extends Serializable {
   
   val featureMap = Map[FeatureType.Value, Boolean](
     FeatureType.PartOfSpeech -> true,
     FeatureType.Word -> true,
     FeatureType.Dependency -> true,
-    FeatureType.SuperTag -> true
+    FeatureType.SuperTag -> useSuperTag
   )
   
   /**
