@@ -48,11 +48,8 @@ class MLR(spark: SparkSession, pipeline: PipelineModel, featureExtractor: Featur
         (k, bias(k) + x.map(j => weights(k, j)).sum)
       }
     }
-    val (label, maxScore) = scores.maxBy(_._2)
-    val ii = scores.filter(_._2 == maxScore).map(_._1)
-    if (ii.length > 1) {
-      ii.map(i => transitions(i)).toList
-    } else List[String](transitions(label))
+    // take the two best labels
+    scores.sortBy(_._2).map(_._1).reverse.take(2).toList.map(i => transitions(i))
   }
   
 }

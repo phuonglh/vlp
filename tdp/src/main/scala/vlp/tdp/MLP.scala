@@ -96,10 +96,7 @@ class MLP(spark: SparkSession, pipeline: PipelineModel, featureExtractor: Featur
     }
 
     val pairs = x.zipWithIndex
-    val (maxScore, label) = pairs.maxBy(_._1)
-    val ii = pairs.filter(_._1 == maxScore).map(_._2)
-    if (ii.length > 1) {
-      ii.map(i => transitions(i)).toList
-    } else List[String](transitions(label))
+    // take the two best labels
+    pairs.sortBy(_._1).map(_._2).reverse.take(2).toList.map(i => transitions(i))
   }
 }

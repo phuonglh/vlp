@@ -78,8 +78,10 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
         }
         case "RE" => {
           if (!config.isReducible) {
-            logger.warn("Wrong RE label for this config: " + config.words + "; " + config.stack + "; " + config.queue + "; " + config.arcs)
-            config = config.next("SH")
+            if (verbose) logger.warn("Wrong RE label for config: " + config.words + "; " + config.stack + "; " + config.queue + "; " + config.arcs)
+            val second = best.tail.head
+            if (verbose) logger.warn("Second best transition: " + second)
+            config = config.next(second)
           } else config = config.next(transition)
         }
       }
@@ -100,10 +102,11 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
   /**
     * Evaluates the accuracy of the parser on a list of graphs.
     * @param graphs
+    * @param countPuncts
     * @return a pair of (uas, las) scores.
     */
-  def eval(graphs: List[Graph]): (Double, Double) = {
-    Evaluation.eval(this, graphs)
+  def eval(graphs: List[Graph], countPuncts: Boolean = false): (Double, Double) = {
+    Evaluation.eval(this, graphs, countPuncts)
     (Evaluation.uas, Evaluation.las)
   }
   
@@ -140,7 +143,7 @@ object Parser {
         .config("spark.driver.host", "localhost")
         .getOrCreate()
       val corpusPack = if (config.language == "eng") new CorpusPack(Language.English) ; else new CorpusPack()
-      val graphs = GraphReader.read(corpusPack.dataPaths._2).take(200)
+      val graphs = GraphReader.read(corpusPack.dataPaths._2)
       val classifierType = config.classifier match {
         case "mlr" => ClassifierType.MLR
         case "mlp" => ClassifierType.MLP
@@ -151,7 +154,9 @@ object Parser {
       config.mode match {
         case "eval" =>
           val (uas, las) = parser.eval(graphs)
-          logger.info(s"uas = $uas, las = $las")
+          logger.info(s"Without PUNCT: uas = $uas, las = $las")
+          val (uasP, lasP) = parser.eval(graphs, true)
+          logger.info(s"   With PUNCT: uas = $uasP, las = $lasP")
         case "test" =>
           val x = graphs.take(5).map(g => g.sentence)
           val y = parser.parse(x)

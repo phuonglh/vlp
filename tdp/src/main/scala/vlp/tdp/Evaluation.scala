@@ -15,7 +15,7 @@ object Evaluation {
     * @param parser
     * @param graphs
     */
-  def eval(parser: Parser, graphs: List[Graph]): Unit = {
+  def eval(parser: Parser, graphs: List[Graph], countPuncts: Boolean = false): Unit = {
     uasCounter.set(0)
     lasCounter.set(0)
     numTokens.set(0)
@@ -23,15 +23,16 @@ object Evaluation {
     val guess = parser.parse(correct)
     for (i <- 0 until correct.length) {
       val c = correct(i)
-      val g = guess(i).sentence
-      for (j <- 0 until c.tokens.length) {
-        if (c.tokens(j).head == g.tokens(j).head) {
+      val g = guess(i).sentence.tokens
+      val x = if (countPuncts) c.tokens else c.tokens.filter(token => token.universalPartOfSpeech != "PUNCT")
+      for (j <- 0 until x.length) {
+        if (x(j).head == g(j).head) {
           uasCounter.incrementAndGet()
-          if (c.tokens(j).dependencyLabel == g.tokens(j).dependencyLabel)
+          if (x(j).dependencyLabel == g(j).dependencyLabel)
             lasCounter.incrementAndGet()
         }
       }
-      numTokens.addAndGet(c.length)
+      numTokens.addAndGet(x.length)
     }
   }
 
