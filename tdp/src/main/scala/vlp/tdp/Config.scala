@@ -77,7 +77,7 @@ case class Config(sentence: Sentence, stack: mutable.Stack[String], queue: mutab
     * @return true or false
     */
   def isFinal: Boolean = {
-    queue.isEmpty
+    queue.isEmpty || stack.isEmpty
   }
 
   /**
