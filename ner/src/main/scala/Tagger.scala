@@ -231,7 +231,7 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     * @param sentences
     * @param forwardDecoder
     * @param backwardDecoder
-    * @return a list of processing results, each result is a list of entities: (content, type), for example ("UBND  TP.HCM", "ORG")
+    * @return a list of processing results, each result is a list of entities: (content, type), for example ("UBND TP.HCM", "ORG")
     */
   def run(sentences: List[Sentence], forwardDecoder: Decoder, backwardDecoder: Decoder): List[List[(String, String)]] = {
     val output = combine(sentences, forwardDecoder, backwardDecoder)
@@ -272,15 +272,15 @@ object Tagger {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
 
-    val parser = new OptionParser[ConfigNER]("NER") {
-      head("group.vlp.ner", "0.1")
+    val parser = new OptionParser[ConfigNER]("vlp.ner") {
+      head("vlp.ner", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
-      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
+      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test/tag")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Unit]('r', "reversed").action((_, conf) => conf.copy(reversed = true)).text("reversed mode")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("training data path")
-      opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
+      opt[Int]('u', "dimension").action((x, conf) => conf.copy(numFeatures = x)).text("number of features or domain dimension")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/ner/'")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
     }
@@ -292,9 +292,9 @@ object Tagger {
         val sentences = CorpusReader.readCoNLL(config.dataPath)
         config.mode match {
           case "train" => tagger.train(sentences)
-          case "eval" => tagger.test(sentences)
-          case "tag" => tagger.combine(config.input, config.input + ".out")
-          case "run" => {
+          case "test" => tagger.test(sentences)
+          case "eval" => tagger.combine(config.input, config.input + ".out")
+          case "run" => 
             val forwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-f")
             val forwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, forwardModel)
             val backwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-b")
@@ -309,8 +309,8 @@ object Tagger {
               }
             }
             import scala.collection.JavaConversions._
-            Files.write(Paths.get("dat/ner/out.txt"), lines.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
-          }
+            Files.write(Paths.get("dat/ner/out.txt"), lines.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE)          
+          case "tag" => 
         }
         sparkSession.stop()
       case None =>
