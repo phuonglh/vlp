@@ -56,5 +56,9 @@ lazy val ner = (project in file("ner"))
   .dependsOn(tag)
   .settings(
     commonSettings,
-    assemblyJarName in assembly := "ner.jar"
+    mainClass in assembly := Some("vlp.ner.Tagger"),
+    assemblyJarName in assembly := "ner.jar",
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.1"
+    )
   )
