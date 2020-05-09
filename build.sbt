@@ -47,7 +47,8 @@ lazy val tdp = (project in file("tdp"))
     mainClass in assembly := Some("vlp.tdp.Parser"),
     assemblyJarName in assembly := "tdp.jar",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1"
+      "com.github.scopt" %% "scopt" % "3.7.1",
+      "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly()
     )
   )
 
