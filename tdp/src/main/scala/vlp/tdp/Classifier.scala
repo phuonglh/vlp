@@ -24,7 +24,7 @@ object ClassifierType extends Enumeration {
   */
 class Classifier(spark: SparkSession, config: ConfigTDP) {
   val logger = LoggerFactory.getLogger(getClass.getName)
-  var featureExtractor = new FeatureExtractor(false, false)
+  var featureExtractor = new FeatureExtractor(true, false)
   val distributedDimension = 40
 
   def setFeatureExtractor(extractor: FeatureExtractor): Unit = this.featureExtractor = extractor
@@ -87,7 +87,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
     */
   def train(modelPath: String, graphs: List[Graph], classifierType: ClassifierType.Value, hiddenLayers: Array[Int]): PipelineModel = {
     val input = createDF(graphs)
-    input.persist(StorageLevel.MEMORY_AND_DISK)
+    input.cache()
     val featureList = input.select("bof").collect().map(row => row.getString(0)).flatMap(s => s.split("\\s+"))
     val featureSet = featureList.toSet
     val featureCounter = featureList.groupBy(identity).mapValues(_.size).filter(p => p._2 >= config.minFrequency)
@@ -142,7 +142,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
   def train(modelPath: String, graphs: List[Graph], classifierType: ClassifierType.Value, hiddenLayers: Array[Int],
             wordVectors: Map[String, Vector[Double]], discrete: Boolean = true): PipelineModel = {
     val input = createDF(graphs, wordVectors, discrete)
-    input.persist(StorageLevel.MEMORY_AND_DISK)
+    input.cache()
     val featureList = input.select("bof").collect().map(row => row.getString(0)).flatMap(s => s.split("\\s+"))
     val featureSet = featureList.toSet
     val featureCounter = featureList.groupBy(identity).mapValues(_.size).filter(p => p._2 >= config.minFrequency)
@@ -269,7 +269,6 @@ object Classifier {
           case "mlr" => ClassifierType.MLR
           case "mlp" => ClassifierType.MLP
         }
-        val independentFeatures = config.independent
         val wordVectors = WordVectors.read("dat/dep/eng/tag/templates.40.txt")
 
         logger.info("#(trainingGraphs) = " + trainingGraphs.size)
@@ -280,7 +279,7 @@ object Classifier {
 
         val classifier = new Classifier(spark, config)
         // MLP does not need joint features to perform well
-        if (independentFeatures || classifierType == ClassifierType.MLP) {
+        if (config.independent) {
           classifier.setFeatureExtractor(new FeatureExtractor(false))
         } else {
           classifier.setFeatureExtractor(new FeatureExtractor(true, false))

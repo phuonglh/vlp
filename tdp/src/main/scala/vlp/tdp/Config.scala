@@ -87,4 +87,18 @@ case class Config(sentence: Sentence, stack: mutable.Stack[String], queue: mutab
   def words: String = {
     "\"" + sentence.tokens.map(t => t.word + "/" + t.id).mkString(" ") + "\""
   }
+
+  def toPrettyString(): String = {
+    val sb = new StringBuilder()
+    sb.append('[')
+    sb.append(words)
+    sb.append(", ")
+    sb.append(stack.toString)
+    sb.append(", ")
+    sb.append(queue)
+    sb.append(", ")
+    sb.append(arcs)
+    sb.append(']')
+    sb.toString()
+  }
 }

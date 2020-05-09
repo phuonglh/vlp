@@ -24,7 +24,7 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
     case ClassifierType.MLP => PipelineModel.load(modelPath + "/mlp")
   }
 
-  val featureExtractor = if (classifierType == ClassifierType.MLR) new FeatureExtractor(true, useSuperTag) ; else new FeatureExtractor(false, useSuperTag) 
+  val featureExtractor = if (classifierType == ClassifierType.MLR) new FeatureExtractor(true, useSuperTag) ; else new FeatureExtractor(true, useSuperTag) 
   
   val model = classifierType match {
     case ClassifierType.MLR => new MLR(spark, pipeline, featureExtractor)
@@ -54,6 +54,8 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
     s.tokens.foreach(t => queue.enqueue(t.id))
 
     val arcs = new ListBuffer[Dependency]()
+    val easyFirstAnnotator = new EasyFirstAnnotator(corpusPack.language)
+    arcs ++= easyFirstAnnotator.annotate(sentence)
     
     var config = Config(s, stack, queue, arcs).next("SH")
 
@@ -61,30 +63,18 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
       val best = model.predict(config)
       val transition = best.head
       transition match {
-        case "SH" => config = config.next(transition)
-        case tr if tr.startsWith("RA") => {
-          config = config.next(transition)
-          val dependency = config.arcs.last
-          val token = s.token(dependency.dependent)
-          token.annotation += Label.Head -> dependency.head
-          token.annotation += Label.DependencyLabel -> dependency.label
-        }
-        case tr if (tr.startsWith("LA")) => {
-          config = config.next(transition)
-          val dependency = config.arcs.last
-          val token = s.token(dependency.dependent)
-          token.annotation += Label.Head -> dependency.head
-          token.annotation += Label.DependencyLabel -> dependency.label
-        }
-        case "RE" => {
-          if (!config.isReducible) {
-            if (verbose) logger.warn("Wrong RE label for config: " + config.words + "; " + config.stack + "; " + config.queue + "; " + config.arcs)
-            val second = best.tail.head
-            if (verbose) logger.warn("Second best transition: " + second)
-            config = config.next(second)
-          } else config = config.next(transition)
-        }
+        case "RE" => 
+          if (!config.isReducible) 
+            if (verbose) logger.warn("Wrong RE label for config: " + config.toPrettyString())
+        case _ =>
       }
+      config = config.next(transition)
+    }
+    // annotate the tokens using the dependency edges
+    for (dependency <- arcs) {
+      val token = s.token(dependency.dependent)
+      token.annotation += Label.Head -> dependency.head
+      token.annotation += Label.DependencyLabel -> dependency.label
     }
     Graph(s)
   }
@@ -131,7 +121,7 @@ object Parser {
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
-      opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng")
+      opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng, default is vie")
       opt[Unit]('x', "extended").action((_, conf) => conf.copy(extended = true)).text("extended mode for English parsing")
     }
 
@@ -158,7 +148,7 @@ object Parser {
           val (uasP, lasP) = parser.eval(graphs, true)
           logger.info(s"   With PUNCT: uas = $uasP, las = $lasP")
         case "test" =>
-          val x = graphs.take(5).map(g => g.sentence)
+          val x = graphs.take(2).map(g => g.sentence)
           val y = parser.parse(x)
           for (i <- 0 until y.length) {
             logger.info("\n" + graphs(i).toString + "\n")
