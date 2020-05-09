@@ -103,7 +103,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
 
     val model = classifierType match {
       case ClassifierType.MLR =>
-        val mlr = new LogisticRegression().setMaxIter(config.iterations).setStandardization(false)
+        val mlr = new LogisticRegression().setMaxIter(config.iterations).setStandardization(false).setTol(1E-5)
         new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer, mlr)).fit(input)
       case ClassifierType.MLP =>
         val pipeline = new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer))
@@ -111,7 +111,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
         val vocabSize = pipelineModel.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numLabels = input.select("transition").distinct().count().toInt
         val layers = Array[Int](vocabSize) ++ hiddenLayers ++ Array[Int](numLabels)
-        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations)
+        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations).setTol(1E-5)
         new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer, mlp)).fit(input)
     }
 
