@@ -31,7 +31,7 @@ The tagger module implements a simple first-order conditional Markov model (CMM)
 
 On the standard VLSP 2010 part-of-speech tagged treebank, this simple model gives a training accuracy is 0.9638 when all the corpus is used for training. A pre-trained model is provided in the directory `dat/tag`.
 
-Since the machine learning pipeline in use is that of Apache Spark, this module depends on Apache Spark. Suppose that you have alreadly a version of Apache Spark installed (say, version 2.4.5). 
+Since the machine learning pipeline in use is that of Apache Spark, this module depends on Apache Spark. Suppose that you have alreadly a version of Apache Spark installed (say at the time of this writing, we use Spark 2.4.5). 
 
 ### 2.1. Tagging Mode
 
@@ -190,5 +190,5 @@ The executor memory is set to default value of `8g`.
 
 Any bug reports, suggestions and collaborations are welcome. I am
 reachable at: 
-* LE-HONG Phuong, http://mim.hus.edu.vn/lhp/
+* LE-HONG Phuong, http://mim.hus.edu.vn/lhp/ or http://vlp.group/lhp/
 * College of Science, Vietnam National University, Hanoi

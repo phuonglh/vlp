@@ -17,13 +17,13 @@ case class Datum(x: String, y: String)
 case class ConfigPoS(
   master: String = "local[*]",
   mode: String = "eval",
-  dataPath: String = "dat/vtb-tagged.txt",
+  dataPath: String = "dat/tag/vtb-tagged.txt",
   markovOrder: Int = 2,
   minDF: Int = 3,
   dimension: Int = 16384,
-  modelPath: String = "dat/tag/",
+  modelPath: String = "dat/tag/cmm/",
   verbose: Boolean = false,
-  input: String = "dat/input.txt"
+  input: String = "dat/tag/input.txt"
 )
 
 /**

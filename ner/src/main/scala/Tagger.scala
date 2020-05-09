@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import scopt.OptionParser
 
 import scala.collection.mutable.ListBuffer
+import scala.io.Source
 
 
 /**
@@ -25,6 +26,12 @@ import scala.collection.mutable.ListBuffer
  */
 class Tagger(sparkSession: SparkSession, config: ConfigNER) {
   val logger: slf4j.Logger = LoggerFactory.getLogger(getClass.getName)
+
+  lazy val forwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-f")
+  lazy val backwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-b")
+
+  lazy val partOfSpeechTagger = new vlp.tag.Tagger(sparkSession, vlp.tag.ConfigPoS())
+  lazy val partOfSpeechModel = PipelineModel.load(vlp.tag.ConfigPoS().modelPath)
 
   private def createDF(sentences: List[Sentence]): Dataset[LabeledContext] = {
     val contexts = sentences.flatMap {
@@ -159,27 +166,25 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     * @param outputPath a file in conlleval format (two columns).
     * @return a list of [[Sentence]]
     */
-  def combine(sentences: List[Sentence], outputPath: String): List[Sentence] = {
-    val forwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-f")
+  def combine(sentences: List[Sentence], outputPath: String = ""): List[Sentence] = {
     val forwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, forwardModel)
-    val backwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-b")
     val backwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, backwardModel)
     val result = combine(sentences, forwardDecoder, backwardDecoder)
-
-    val lines = ListBuffer[String]()
-    for (i <- sentences.indices) {
-      val pair = (sentences(i).tokens) zip (result(i).tokens)
-      val line = pair.map(p => p._1.namedEntity + ' ' + p._2.namedEntity).mkString("\n")
-      lines.append(line)
-      lines.append("\n\n")
-    }
-
-    // save the lines
-    val pw = new java.io.PrintWriter(new java.io.File(outputPath))
-    try {
-      lines.foreach(line => pw.write(line))
-    } finally {
-      pw.close()
+    // save the lines to a file if the output path is not empty
+    if (outputPath.nonEmpty) {
+      val lines = ListBuffer[String]()
+      for (i <- sentences.indices) {
+        val pair = (sentences(i).tokens) zip (result(i).tokens)
+        val line = pair.map(p => p._1.namedEntity + ' ' + p._2.namedEntity).mkString("\n")
+        lines.append(line)
+        lines.append("\n\n")
+      }
+      val pw = new java.io.PrintWriter(new java.io.File(outputPath))
+      try {
+        lines.foreach(line => pw.write(line))
+      } finally {
+        pw.close()
+      }
     }
     result
   }
@@ -195,7 +200,6 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     VLP.log("#(sentences) = " + testSet.length)
     combine(testSet, outputPath)
   }
-
 
   /**
     * Finds named entities of a text using bidirectional inference.
@@ -229,12 +233,10 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     * Finds named entities of a text using bidirectional inference. Parts of entities are combined into
     * entire entities, for example, [B-ORG I-ORG I-ORG] patterns are combined into a single ORG.
     * @param sentences
-    * @param forwardDecoder
-    * @param backwardDecoder
     * @return a list of processing results, each result is a list of entities: (content, type), for example ("UBND TP.HCM", "ORG")
     */
-  def run(sentences: List[Sentence], forwardDecoder: Decoder, backwardDecoder: Decoder): List[List[(String, String)]] = {
-    val output = combine(sentences, forwardDecoder, backwardDecoder)
+  def run(sentences: List[Sentence]): List[List[(String, String)]] = {
+    val output = combine(sentences)
     output.map(extract(_))
   }
 
@@ -262,6 +264,27 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
       entities.append((entity.toString.trim, kind))
     }
     entities.toList
+  }
+
+  /**
+   * Infers NE tags for raw sentences. We first run a part-of-speech tagger and then run the name tagger.
+   * @param xs a sequence of input raw sentences.
+   * @return an annotated sentence with NE tags.
+   */
+  def inference(xs: List[String]): List[Sentence] = {
+    def convertPoS(pos: String): String = {
+      pos match {
+        case "PUNCT" => "CH"
+        case "Np" => "NNP"
+        case _ => pos
+      }
+    }
+    val ts = partOfSpeechTagger.tag(partOfSpeechModel, xs)
+    val sentences = ts.map { t => 
+      val tokens = t.map(pair => Token(pair._1, Map(Label.PartOfSpeech -> convertPoS(pair._2)))).toList
+      Sentence(tokens.to[ListBuffer])
+    }
+    combine(sentences.toList)
   }
 
 }
@@ -294,23 +317,15 @@ object Tagger {
           case "train" => tagger.train(sentences)
           case "test" => tagger.test(sentences)
           case "eval" => tagger.combine(config.input, config.input + ".out")
-          case "run" => 
-            val forwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-f")
-            val forwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, forwardModel)
-            val backwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-b")
-            val backwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, backwardModel)
-            val result = tagger.run(sentences, forwardDecoder, backwardDecoder)
-            val lines = ListBuffer[String]()
-            for (i <- sentences.indices) {
-              if (result(i).nonEmpty) {
-                val line = sentences(i).tokens.map(token => token.word + "/" + token.namedEntity).mkString(" ")
-                lines.append(line)
-                lines.append(result(i) + "\n")
-              }
-            }
-            import scala.collection.JavaConversions._
-            Files.write(Paths.get("dat/ner/out.txt"), lines.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE)          
           case "tag" => 
+            val xs = Source.fromFile(config.input, "UTF-8").getLines().toList.map(_.trim()).filter(_.nonEmpty)
+            val ss = tagger.inference(xs)
+            val lines = ss.map(s => {
+              s.tokens.map(token => token.word + "/" + token.partOfSpeech + "/" + token.namedEntity).mkString(" ")
+            })
+            import scala.collection.JavaConversions._
+            Files.write(Paths.get(config.input + ".out"), lines.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
+            logger.info("Done.")
         }
         sparkSession.stop()
       case None =>

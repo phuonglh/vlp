@@ -13,6 +13,5 @@ case class ConfigNER(
   iterations: Int = 300,
   independent: Boolean = false,
   reversed: Boolean = false,
-  input: String = "input.txt",
-  output: String = "output.txt"
+  input: String = "dat/ner/vie/input.txt"
 )
