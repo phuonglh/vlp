@@ -29,7 +29,7 @@ For really large input files in a big data setting, it is more convenient to use
 
 The tagger module implements a simple first-order conditional Markov model (CMM) for sequence tagging. The basic features include current word, previous word, next word, current word shape, next word shape, previous previous word, and next next word. Each local transition probability is specified by a multinomial logistic regression model.
 
-On the standard VLSP 2010 part-of-speech tagged treebank, this simple model gives a training accuracy is 0.9638 when all the corpus is used for training. A pre-trained model is provided in the directory `dat/tag`.
+On the standard VLSP 2010 part-of-speech tagged treebank, this simple model gives a training accuracy is 0.9638 when all the corpus is used for training. A pre-trained model is provided in the directory `dat/tag/cmm`.
 
 Since the machine learning pipeline in use is that of Apache Spark, this module depends on Apache Spark. Suppose that you have alreadly a version of Apache Spark installed (say at the time of this writing, we use Spark 2.4.5). 
 
@@ -37,17 +37,19 @@ Since the machine learning pipeline in use is that of Apache Spark, this module 
 
 To tag an input text file containing sentences, each on a line, invoke the command
 
-  `$spark-submit tag.jar -m tag -i dat/sample.txt`
+  `$spark-submit tag.jar -m tag -i dat/tag/sample.txt`
+
+The tagging result will be shown to the output, each line contains pairs of (token, part-of-spech).
 
 Option `-m` specifies the running mode. If the pre-trained model is not on the default path, you must specify it explicitly with option `-p`, as follows:
 
   `$spark-submit tag.jar -m tag -i dat/sample.txt -p path/to/model`
 
-Note that the input text file does not need to be tokenized in advanced, the tagger will call the tokenizer module to segment the text into words before tagging.
+Note that the input text file does not need to be tokenized in advance, the tagger will call the tokenizer module to segment the text into words before tagging.
 
 ### 2.2. Training Mode
 
-To train a model, you will need the VLSP 2010 part-of-speech tagged corpus (which has about 10,000 manually tagged sentences). Suppose that the corpus is provided at the default path `dat/vtb-tagged.txt`:
+To train a model, you will need the VLSP 2010 part-of-speech tagged corpus (which has about 10,000 manually tagged sentences). Suppose that the corpus is provided at the default path `dat/tag/vtb-tagged.txt`:
 
   `$spark-submit tag.jar -m train`
 
@@ -59,7 +61,7 @@ The resulting model will be saved to its default directory `dat/tag`. This can b
 
 There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 3) or `-u` (for domain dimension, default value is 16,384). See the code for detail.
 
-By default, the master URL is set to `local[*]`, which means that all CPU cores of the current machine are used by Apache Spark. You can specify a custom master URL with option `-M`.
+By default, the master URL is set to `local[*]`, which means that all CPU cores of the current machine are used by Apache Spark. You can specify a custom master URL with option `-M`. See more about this as in the `ner` module below.
 
 ## 3. Named Entity Recognizer
 
@@ -86,6 +88,8 @@ The arguments are as follows:
 To tag an input file and write the result to an output file of the same name (with generated suffix `.out`), using the default pre-trained model:
 
   `$spark-submit ner.jar -m tag -i <input-file>` 
+
+The input file is a raw text file, each sentence on a line. A part-of-speech tagging model will be called before the name tagger is called to tag the sentences.
 
 To evaluate the accuracy on a gold corpus `vie.test`:
 
