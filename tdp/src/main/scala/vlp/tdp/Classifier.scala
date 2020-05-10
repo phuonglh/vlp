@@ -111,7 +111,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
         val vocabSize = pipelineModel.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numLabels = input.select("transition").distinct().count().toInt
         val layers = Array[Int](vocabSize) ++ hiddenLayers ++ Array[Int](numLabels)
-        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations).setTol(1E-5)
+        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations).setTol(1E-5).setBlockSize(64)
         new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer, mlp)).fit(input)
     }
 
@@ -158,7 +158,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
 
     val model = classifierType match {
       case ClassifierType.MLR => {
-        val mlr = new LogisticRegression().setMaxIter(config.iterations).setStandardization(false)
+        val mlr = new LogisticRegression().setMaxIter(config.iterations).setStandardization(false).setTol(1E-5)
         new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer, vectorAssembler, mlr)).fit(input)
       }
       case ClassifierType.MLP => {
@@ -167,7 +167,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
         val vocabSize = pipelineModel.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numLabels = input.select("transition").distinct().count().toInt
         val layers = Array[Int](vocabSize + distributedDimension * 2) ++ hiddenLayers ++ Array[Int](numLabels)
-        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations)
+        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations).setTol(1E-5).setBlockSize(64)
         new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer, vectorAssembler, mlp)).fit(input)
       }
     }

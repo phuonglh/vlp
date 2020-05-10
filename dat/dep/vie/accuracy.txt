@@ -1,7 +1,7 @@
 1. MLR for Vietnamese
 
-  20/05/05 12:49:26 INFO Classifier$: #(trainingGraphs) = 1400
-  20/05/05 12:49:26 INFO Classifier$: #(developmentGraphs) = 800
+  #(trainingGraphs) = 1400
+  #(developmentGraphs) = 800
 
 1.1. numFeatures = 1024
 
@@ -38,28 +38,30 @@
    Without PUNCT: uas = 0.45835285299353506, las = 0.36821887004591025
        With PUNCT: uas = 0.5835634237453305, las = 0.5263927237290889
 
-2. MLP for Vietnamese, numFeatures = 8192
+1.7. numFeatures = 65536
 
-  layers = "", 0.7671846563068738, 0.9792962855100474
-    Without PUNCT: uas = 0.281738967488054, las = 0.24304319310409445
-       With PUNCT: uas = 0.34221211629040116, las = 0.30688647068377456
-
-3. MLP for Vietnamese, numFeatures = 16384
-
-  layers = "", 0.7708245835083298, 0.994837309046623
-   Without PUNCT: uas = 0.2732127799119273, las = 0.23976389019019956
-       With PUNCT: uas = 0.33612148773753453, las = 0.306561637160955
-
-layers = "16" 
-
-layers = "32"
-
-layers = "64"
+  0.7399785337626581, 0.999046887823992
+  Without PUNCT: uas = 0.4654736250351354, las = 0.37121708985289986
+      With PUNCT: uas = 0.5912782199122949, las = 0.5302907260029235
+  Without PUNCT: uas = 0.7007743658210948, las = 0.6194926568758344
+    With PUNCT: uas = 0.9952501729305971, las = 0.9950657136269311
 
 
-4. MLP for Vietnamese, numFeatures = 32768
+2. MLP for Vietnamese
+
+numFeatures = 32768
 
 layers = "", 0.7917308320500257,  0.9978554976039818
    Without PUNCT: uas = 0.2845497985571067, las = 0.25334957369062117
       With PUNCT: uas = 0.34740945265551404, las = 0.3224784797791132
+  
+ 0.7887442251154977, 0.9981202509862064
+    Without PUNCT: uas = 0.28914082263655955, las = 0.25653518223554767
+    With PUNCT: uas = 0.3505765795030047, las = 0.3249147312002599
+    Without PUNCT: uas = 0.3248064085447263, las = 0.2983177570093458
+    With PUNCT: uas = 0.41268157712704634, las = 0.4048881715471524
+
+numFeatures = 65536
+
+  layers = "", 0.7907975173829856, 0.9990733631622144
   

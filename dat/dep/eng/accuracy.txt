@@ -1,75 +1,43 @@
-1. MLR for English
+1. MLR for English 
 
-  20/05/05 17:22:27 INFO Classifier$: #(trainingGraphs) = 10008
-  20/05/05 17:22:27 INFO Classifier$: #(developmentGraphs) = 1648
+  #(trainingGraphs) = 10008
+  #(developmentGraphs) = 1648
 
-1.1. numFeatures = 1024
+  #(features with count >= 3) = 161160
+  #(features with count >= 2) = 257363
 
-  20/05/05 18:18:20 INFO Classifier: Accuracy = 0.8830779573657526
-  20/05/05 18:18:44 INFO Classifier: Accuracy = 0.9050849741814674
+  Need to train with at least 64GB of RAM. 
 
-1.2. numFeatures = 2048
+  numFeatures = 32768
+    0.8356816717555113,  0.9886441014583215
+    Without PUNCT: uas = 0.44678503887371296, las = 0.3835364572389157
+    With PUNCT: uas = 0.5043515277646391, las = 0.4639579982972283
+    Without PUNCT: uas = 0.46717679117007516, las = 0.40464754617269
+    With PUNCT: uas = 0.5805260671754966, las = 0.5614822365313378
 
-  20/05/05 18:27:11 INFO Classifier: Accuracy = 0.8873357797137175
-  20/05/05 18:27:34 INFO Classifier: Accuracy = 0.9225053906826306
+  numFeatures = 65536
 
-1.3. numFeatures = 4096
+   0.8359057676685622, 0.9949994325597231
+  Without PUNCT: uas = 0.5382433284303425, las = 0.45802689640680816
+  With PUNCT: uas = 0.6147005959701068, las = 0.5706650269605524
+  Without PUNCT: uas = 0.6279623462057197, las = 0.548415953318103
+  With PUNCT: uas = 0.8114698058324838, las = 0.8027683166347612
 
-  20/05/05 18:39:43 INFO Classifier: Accuracy = 0.8844505448331886
-  20/05/05 18:40:09 INFO Classifier: Accuracy = 0.9391065652840038
+  numFeatures = 80000
+  0.8354295638533292, 0.9961307666118141
+  Without PUNCT: uas = 0.5538978777054003, las = 0.4724206766127338
+  With PUNCT: uas = 0.6332891873994891, las = 0.5898685081827642
+  Without PUNCT: uas = 0.6676598497151193, las = 0.58457653243786
+   With PUNCT: uas = 0.8687442508017801, las = 0.862789946050767
 
-1.4. numFeatures = 8192
+  numFeatures = 200000
+  0.8294349981792207, 0.9983083186744595
+  Without PUNCT: uas = 0.581319604959025, las = 0.49143727673881066
+  With PUNCT: uas = 0.6709866616214171, las = 0.6265253996783653
+  Without PUNCT: uas = 0.7416806583909058, las = 0.6529203710330022
+  With PUNCT: uas = 0.9853317753524103, las = 0.9844491957337842
 
-  20/05/05 18:49:41 INFO Classifier: Accuracy = 0.8721252696153954
-  20/05/05 18:50:07 INFO Classifier: Accuracy = 0.9595982522839471
+  numFeatures = 262144
+  
 
-2. MLP for English, layers = ""
-
-2.1. numFeatures = 1024
-
-  20/05/05 18:59:46 INFO Classifier: Accuracy = 0.8913134821703689
-  20/05/05 19:00:04 INFO Classifier: Accuracy = 0.915366282698746
-
-
-2.2. numFeatures = 2048
-
-  20/05/05 19:12:05 INFO Classifier: Accuracy = 0.8913134821703689
-  20/05/05 19:12:22 INFO Classifier: Accuracy = 0.9293430460194064
-
-2.3. numFeatures = 4096
-
-  20/05/05 19:37:36 INFO Classifier: Accuracy = 0.8902210145942463
-  20/05/05 19:37:57 INFO Classifier: Accuracy = 0.945132071724451
-
-2.4. numFeatures = 8192
-
-  OOM error in Venus
-
-3. MLP for English, layers = "16"
-
-3.1. numFeatures = 1024
-
-  20/05/05 20:06:35 INFO Classifier: Accuracy = 0.8926300456595423
-  20/05/05 20:06:53 INFO Classifier: Accuracy = 0.913702973387051
-
-3.2. numFeatures = 2048
-
-  20/05/05 20:19:22 INFO Classifier: Accuracy = 0.8916776380290764
-  20/05/05 20:19:40 INFO Classifier: Accuracy = 0.9283287465244283
-
-4. MLP for English, layers = "32"
-
-4.1. numFeatures = 1024
-
-  20/05/05 21:01:14 INFO Classifier: Accuracy = 0.895263172637889
-  20/05/05 21:01:32 INFO Classifier: Accuracy = 0.9270981104238779
-
-5. MLP for English, layers = "128 128 128"
-
-5.1. numFeatures = 1024
-
-  20/05/05 22:20:22 INFO Classifier: Accuracy = 0.8991568391271464
-  20/05/05 22:20:57 INFO Classifier: Accuracy = 0.9176324973046587
-
-5.2 numFeatures = 2048
-
+2. 
