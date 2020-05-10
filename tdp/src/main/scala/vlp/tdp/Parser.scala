@@ -118,7 +118,7 @@ object Parser {
     val optionParser = new OptionParser[ConfigTDP]("vlp.tdp.Parser") {
       head("vlp.tdp.Parser", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
-      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
+      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/debug")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng, default is vie")
@@ -133,7 +133,8 @@ object Parser {
         .config("spark.driver.host", "localhost")
         .getOrCreate()
       val corpusPack = if (config.language == "eng") new CorpusPack(Language.English) ; else new CorpusPack()
-      val graphs = GraphReader.read(corpusPack.dataPaths._2)
+      val trainingGraphs = GraphReader.read(corpusPack.dataPaths._1)
+      val developmentGraphs = GraphReader.read(corpusPack.dataPaths._2)
       val classifierType = config.classifier match {
         case "mlr" => ClassifierType.MLR
         case "mlp" => ClassifierType.MLP
@@ -143,15 +144,17 @@ object Parser {
       parser.info()
       config.mode match {
         case "eval" =>
-          val (uas, las) = parser.eval(graphs)
-          logger.info(s"Without PUNCT: uas = $uas, las = $las")
-          val (uasP, lasP) = parser.eval(graphs, true)
-          logger.info(s"   With PUNCT: uas = $uasP, las = $lasP")
+          for (graphs <- List(developmentGraphs, trainingGraphs)) {
+            val (uas, las) = parser.eval(graphs)
+            logger.info(s"Without PUNCT: uas = $uas, las = $las")
+            val (uasP, lasP) = parser.eval(graphs, true)
+            logger.info(s"   With PUNCT: uas = $uasP, las = $lasP")
+          }
         case "test" =>
-          val x = graphs.take(2).map(g => g.sentence)
+          val x = developmentGraphs.take(2).map(g => g.sentence)
           val y = parser.parse(x)
           for (i <- 0 until y.length) {
-            logger.info("\n" + graphs(i).toString + "\n")
+            logger.info("\n" + developmentGraphs(i).toString + "\n")
             logger.info("\n" + y(i).toString + "\n")
           }
       }

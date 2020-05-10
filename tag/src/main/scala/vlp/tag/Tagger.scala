@@ -20,7 +20,7 @@ case class ConfigPoS(
   dataPath: String = "dat/tag/vtb-tagged.txt",
   markovOrder: Int = 2,
   minDF: Int = 3,
-  dimension: Int = 16384,
+  dimension: Int = 32768,
   modelPath: String = "dat/tag/cmm/",
   verbose: Boolean = false,
   input: String = "dat/tag/input.txt"

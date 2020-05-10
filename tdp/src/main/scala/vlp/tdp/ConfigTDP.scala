@@ -12,7 +12,7 @@ case class ConfigTDP
   language: String = "vie",
   classifier: String = "mlr",
   minFrequency: Int = 2,
-  numFeatures: Int = 1024,
+  numFeatures: Int = 32768,
   iterations: Int = 400,
   extended: Boolean = false, // use super-tag features
   independent: Boolean = false,
