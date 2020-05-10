@@ -145,10 +145,8 @@ object Parser {
       config.mode match {
         case "eval" =>
           for (graphs <- List(developmentGraphs, trainingGraphs)) {
-            val (uas, las) = parser.eval(graphs)
-            logger.info(s"Without PUNCT: uas = $uas, las = $las")
             val (uasP, lasP) = parser.eval(graphs, true)
-            logger.info(s"   With PUNCT: uas = $uasP, las = $lasP")
+            logger.info(s"uas = $uasP, las = $lasP")
           }
         case "test" =>
           val x = developmentGraphs.take(2).map(g => g.sentence)

@@ -244,6 +244,7 @@ object Classifier {
     val parser = new OptionParser[ConfigTDP]("vlp.tdp.Classifier") {
       head("vlp.tdp.Classifier", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(memory = x)).text("executor memory, default is 8g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
