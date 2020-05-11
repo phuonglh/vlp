@@ -260,6 +260,7 @@ object Classifier {
           .master(config.master)
           .config("spark.executor.memory", config.memory)
           .config("spark.driver.host", "localhost")
+          .config("spark.shuffle.blockTransferService", "nio")
           .getOrCreate()
         val corpusPack = if (config.language == "eng") new CorpusPack(Language.English); else new CorpusPack()
         val extended = config.extended
