@@ -164,8 +164,31 @@ As above, by default, the master URL is set to `local[*]`, which means that all 
 
 The executor memory is set to default value of `8g`.
 
+The following table shows the average F1-scores of the transition classifier trained on the Vietnamese dependency treebank when using a MLR. The classifier performance depends largely on the number of features in use.
+
+|#(features) | F1 dev. | F1 train.|
+| ---:       | :---:   | :---:    |
+| 1024       | 0.7861  | 0.8757   |
+| 2048       | 0.7728  | 0.9091   |
+| 4096       | 0.7483  | 0.9470   |
+| 8192       | 0.7322  | 0.980    |
+| 16384      | 0.7249  | 0.9946   |
+| 32768      | 0.7367  | 0.9978   |
+| 65536      | 0.7399  | 0.9990   |
+
 ### 4.2. Parser
 
+The parser is in `vlp.tdp.Parser` class. It implements the arc-eager transition parsing algorithm, where the next transition is predicted by using the current parsing configuration as input to the transition classifier. The transition set are contains labels such as `SH` (shift), `RE` (reduce), `LA-dep` (left arc with label `dep`) and `RA-dep` (right arc with label `dep`). The dependency labels are scanned from a training corpus. For the Vietnamese dependency treebank, the transition set contains 54 disctict labeled transitions. Each parse corresponds to a sequence of best transitions which are obtained by a greed inference method.
+
+When using 65,536 features in the classifier, the labeled attachment scores (LAS) of the parser on the development and test set of the Vietnamese dependency treebank is LAS(dev.) = 0.5303 and LAS(train.) = 0.6194.
+
+To evaluate a transition parser using the default MLR classifier:
+
+`$spark-submit tdp.jar`
+
+To use a MLP classifier:
+
+`$spark-submit tdp.jar -c mlp`
 
 ## Compile and Package
 
