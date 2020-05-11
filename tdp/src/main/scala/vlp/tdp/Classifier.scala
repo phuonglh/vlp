@@ -271,7 +271,7 @@ object Classifier {
           case "mlr" => ClassifierType.MLR
           case "mlp" => ClassifierType.MLP
         }
-        val wordVectors = WordVectors.read("dat/dep/eng/tag/templates.40.txt")
+        val wordVectors = WordVectors.read("dat/dep/eng/tag/templates.10.txt")
 
         logger.info("#(trainingGraphs) = " + trainingGraphs.size)
         logger.info("#(developmentGraphs) = " + developmentGraphs.size)
