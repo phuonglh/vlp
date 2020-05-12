@@ -17,5 +17,5 @@ case class ConfigTDP
   extended: Boolean = false, // use super-tag features
   independent: Boolean = false,
   layers: String = "",
-  discrete: Boolean = false // use discrete super-tag features
+  discrete: Boolean = true // use discrete super-tag features
 )

@@ -61,8 +61,11 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
     val contexts = oracle.decode(graphs)
     val zero = Vector.fill(distributedDimension)(0d)
     val extendedContexts = contexts.map(c => {
-      val ws0 = suffix(c.bof.split("\\s+").filter(f => f.startsWith("sts0:")).head)
-      val wq0 = suffix(c.bof.split("\\s+").filter(f => f.startsWith("stq0:")).head)
+      val fs = c.bof.split("\\s+")
+      val s = fs.filter(f => f.startsWith("sts0:"))
+      val ws0 = suffix(if (s.nonEmpty) s.head else "NA")
+      val q = fs.filter(f => f.startsWith("stq0:"))
+      val wq0 = suffix(if (q.nonEmpty) q.head else "NA")
       if (withDiscrete)
         ExtendedContext(c.id, c.bof, c.transition, wordVectors.getOrElse(ws0, zero), wordVectors.getOrElse(wq0, zero))
       else {
