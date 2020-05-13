@@ -15,7 +15,8 @@ case class ConfigTDP
   numFeatures: Int = 32768,
   iterations: Int = 400,
   extended: Boolean = false, // use super-tag features
+  tagEmbeddingSize: Int = 10, // super-tag embedding size
   independent: Boolean = false,
   layers: String = "",
-  discrete: Boolean = true // use discrete super-tag features
+  discrete: Boolean = true // use discrete super-tag features  
 )

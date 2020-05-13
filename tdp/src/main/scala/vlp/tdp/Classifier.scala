@@ -63,9 +63,9 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
     val extendedContexts = contexts.map(c => {
       val fs = c.bof.split("\\s+")
       val s = fs.filter(f => f.startsWith("sts0:"))
-      val ws0 = suffix(if (s.nonEmpty) s.head else "NA")
+      val ws0 = suffix(if (s.nonEmpty) s.head else "UNK")
       val q = fs.filter(f => f.startsWith("stq0:"))
-      val wq0 = suffix(if (q.nonEmpty) q.head else "NA")
+      val wq0 = suffix(if (q.nonEmpty) q.head else "UNK")
       if (withDiscrete)
         ExtendedContext(c.id, c.bof, c.transition, wordVectors.getOrElse(ws0, zero), wordVectors.getOrElse(wq0, zero))
       else {
@@ -256,6 +256,7 @@ object Classifier {
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
       opt[Unit]('x', "extended").action((_, conf) => conf.copy(extended = true)).text("extended mode for English parsing")
+      opt[Int]('s', "tag embedding size").action((x, conf) => conf.copy(tagEmbeddingSize = x)).text("tag embedding size 10/20/40")
     }
     parser.parse(args, ConfigTDP()) match {
       case Some(config) =>
@@ -274,13 +275,13 @@ object Classifier {
           case "mlr" => ClassifierType.MLR
           case "mlp" => ClassifierType.MLP
         }
-        val wordVectors = WordVectors.read("dat/dep/eng/tag/templates.10.txt")
+        val ltagPath = "dat/dep/eng/tag/templates." + config.tagEmbeddingSize + ".txt"
+        val wordVectors = WordVectors.read(ltagPath)
 
         logger.info("#(trainingGraphs) = " + trainingGraphs.size)
         logger.info("#(developmentGraphs) = " + developmentGraphs.size)
         logger.info("modelPath = " + modelPath)
         logger.info("classifierName = " + config.classifier)
-        logger.info("#(wordVectors) = " + wordVectors.size)
 
         val classifier = new Classifier(spark, config)
         // MLP does not need joint features to perform well
@@ -310,12 +311,16 @@ object Classifier {
             if (!extended)
               classifier.train(modelPath + config.classifier, trainingGraphs, classifierType, hiddenLayers)
             else {
-              classifier.train(modelPath + config.classifier, trainingGraphs, classifierType, hiddenLayers, wordVectors, discrete)
+              logger.info("ltagPath = " + ltagPath)
+              logger.info("#(wordVectors) = " + wordVectors.size)
+              classifier.train(modelPath + config.classifier, trainingGraphs, classifierType, hiddenLayers, wordVectors, discrete)              
             }
             if (!extended) {
               classifier.eval(modelPath + config.classifier, developmentGraphs)
               classifier.eval(modelPath + config.classifier, trainingGraphs)
             } else {
+              logger.info("ltagPath = " + ltagPath)
+              logger.info("#(wordVectors) = " + wordVectors.size)
               classifier.eval(modelPath + config.classifier, developmentGraphs, wordVectors, discrete)
               classifier.eval(modelPath + config.classifier, trainingGraphs, wordVectors, discrete)
             }
