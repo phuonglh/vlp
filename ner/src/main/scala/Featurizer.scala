@@ -2,7 +2,7 @@ package vlp.ner
 
 import scala.collection.immutable.Map
 import scala.collection.mutable.ListBuffer
-import vlp.tag.WordShape
+import vlp.tok.WordShape
 
 /**
  * @author Phuong LE-HONG

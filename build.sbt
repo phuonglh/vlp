@@ -63,3 +63,15 @@ lazy val ner = (project in file("ner"))
       "com.github.scopt" %% "scopt" % "3.7.1"
     )
   )
+
+  // topic modeling module
+  lazy val tpm = (project in file("tpm"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.tpm.LDA"),
+    assemblyJarName in assembly := "tpm.jar",
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.1"
+    )
+  )

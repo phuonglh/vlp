@@ -10,6 +10,7 @@ Each basic task is implemented in a module.
 - `tag`: tagger, which implements a conditional Markov model for sequence tagging;
 - `ner`: named entity recognizer, which implements a bidirectional conditional Markov model for sequence tagging;
 - `tdp`: dependency parser, which implements a transition-based dependency parsing approach;
+- `tpm`: topic modeling, which implements a Latent Dirichlet Allocation (LDA) model;
 
 ## 1. Tokenizer
 
@@ -189,6 +190,32 @@ To evaluate a transition parser using the default MLR classifier:
 To use a MLP classifier:
 
 `$spark-submit tdp.jar -c mlp`
+
+## 5. Topic Model
+
+The class `vlp.tpm.LDA` imlements a Latent Dirichlet Allocation (LDA) topic model. It can process a collection of documents in a simple JSON format, find topics and top words in each topic. 
+
+To train a topic model on the default data file using a dictionary of 2,048 words:
+
+`$spark-submit --driver-memory 8g --class vlp.tdp.LDA tdp.jar -m train -u 2048`
+
+The data file must be a JSON file, each elements is of the following structure:
+
+  `class News(url: String, sentences: List[String])`
+
+See the file `dat/txt/fin.json` for an example.
+
+The default number of features (words) in use is 32,768. Use the option `-k` to change the number of topics, default value is 50:
+
+`$spark-submit --class vlp.tdp.LDA tdp.jar -m train -k 100`
+
+The data path can be changed with option `-d`. 
+
+After training a model, it can be evaluated by using the (default mode) `eval`:
+
+`$spark-submit --class vlp.tdp.LDA tdp.jar`
+
+Some information of the topic and word distributions, as well as the log-likelihood of the model on the corpus will be printed out.
 
 ## Compile and Package
 

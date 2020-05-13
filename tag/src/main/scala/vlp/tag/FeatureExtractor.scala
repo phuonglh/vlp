@@ -7,6 +7,7 @@ import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, I
 import org.apache.spark.sql.{DataFrame, Dataset}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructType}
 import org.apache.spark.sql.functions._
+import vlp.tok.WordShape
 
 import scala.collection.mutable.ListBuffer
 
