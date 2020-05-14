@@ -41,7 +41,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     val tokenizer = new Tokenizer().setInputCol("text").setOutputCol("tokens")
     val stopWordsRemover = new StopWordsRemover().setInputCol("tokens").setOutputCol("unigrams").setStopWords(StopWords.punctuations)
     val unigramCounter = new CountVectorizer().setInputCol("unigrams").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.numFeatures)
-    val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("keep").setOutputCol("label")
+    val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("skip").setOutputCol("label")
     val pipeline = if (config.classifier == "mlr") {
       val bigram = new NGram().setInputCol("unigrams").setOutputCol("bigrams").setN(2)
       val bigramCounter = new CountVectorizer().setInputCol("bigrams").setOutputCol("bs").setMinDF(config.minFrequency).setVocabSize(2*config.numFeatures)
