@@ -11,6 +11,7 @@ Each basic task is implemented in a module.
 - `ner`: named entity recognizer, which implements a bidirectional conditional Markov model for sequence tagging;
 - `tdp`: dependency parser, which implements a transition-based dependency parsing approach;
 - `tpm`: topic modeling, which implements a Latent Dirichlet Allocation (LDA) model;
+- `tcl`: text classification, which implements a feed-forward neural network model
 
 ## 1. Tokenizer
 
@@ -216,6 +217,10 @@ After training a model, it can be evaluated by using the (default mode) `eval`:
 `$spark-submit --class vlp.tdp.LDA tdp.jar`
 
 Some information of the topic and word distributions, as well as the log-likelihood of the model on the corpus will be printed out.
+
+## 6. Text Classification
+
+- TODO
 
 ## Compile and Package
 

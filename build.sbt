@@ -75,3 +75,16 @@ lazy val ner = (project in file("ner"))
       "com.github.scopt" %% "scopt" % "3.7.1"
     )
   )
+
+  // text classification module
+  lazy val tcl = (project in file("tcl"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.tcl.Classifier"),
+    assemblyJarName in assembly := "tcl.jar",
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.1",
+      "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly()
+    )
+  )
