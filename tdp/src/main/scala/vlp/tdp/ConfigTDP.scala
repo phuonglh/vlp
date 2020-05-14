@@ -17,6 +17,6 @@ case class ConfigTDP
   extended: Boolean = false, // use super-tag features
   tagEmbeddingSize: Int = 10, // super-tag embedding size
   independent: Boolean = false,
-  layers: String = "",
+  hiddenUnits: String = "",
   discrete: Boolean = true // use discrete super-tag features  
 )

@@ -252,7 +252,7 @@ object Classifier {
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng")
-      opt[String]('h', "hiddenLayers").action((x, conf) => conf.copy(layers = x)).text("hidden layers config of MLP")
+      opt[String]('h', "hiddenUnits").action((x, conf) => conf.copy(hiddenUnits = x)).text("hidden units of MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
       opt[Unit]('x', "extended").action((_, conf) => conf.copy(extended = true)).text("extended mode for English parsing")
@@ -306,7 +306,7 @@ object Classifier {
             }
           }
           case "train" => {
-            val hiddenLayersConfig = config.layers
+            val hiddenLayersConfig = config.hiddenUnits
             val hiddenLayers = if (hiddenLayersConfig.isEmpty) Array[Int](); else hiddenLayersConfig.split("[,\\s]+").map(_.toInt)
             if (!extended)
               classifier.train(modelPath + config.classifier, trainingGraphs, classifierType, hiddenLayers)
