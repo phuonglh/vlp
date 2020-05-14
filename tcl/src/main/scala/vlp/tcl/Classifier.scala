@@ -27,7 +27,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   import sparkSession.implicits._
 
   def createDataset: Dataset[Document] = {
-    val data = Classifier.vnexpress(sparkSession, config.data).as[Document]
+    val data = Classifier.vnexpress(sparkSession, config.dataPath).as[Document]
     numCats = data.select("category").distinct().count().toInt
     logger.info("#(categories) = " + numCats)
     val g = data.groupBy("category").count()
@@ -191,7 +191,7 @@ object Classifier {
       opt[String]('l', "layers").action((x, conf) => conf.copy(layers = x)).text("layers config of MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
-      opt[String]('d', "data").action((x, conf) => conf.copy(data = x)).text("data path, default is 'dat/fin/*.txt'")
+      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tcl/'")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")

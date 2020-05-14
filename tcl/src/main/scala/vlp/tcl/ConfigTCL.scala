@@ -16,7 +16,7 @@ case class ConfigTCL(
   layers: String = "16",
   batchSize: Int = 32,
   iterations: Int = 300,
-  data: String = "dat/vne/5catsSample/part-*",
+  dataPath: String = "dat/vne/5catsSample/part-*",
   input: String = "input.txt",
   output: String = "output.txt"
 )
