@@ -20,14 +20,14 @@ import scopt.OptionParser
 /**
   * phuonglh, 5/28/18, 1:01 PM
   */
-class TCL(val sparkContext: SparkContext, val config: ConfigTCL) {
+class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   var numCats: Int = 0
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
   def createDataset: Dataset[Document] = {
-    val data = TCL.vnexpress(sparkSession, config.data).as[Document]
+    val data = Classifier.vnexpress(sparkSession, config.data).as[Document]
     numCats = data.select("category").distinct().count().toInt
     logger.info("#(categories) = " + numCats)
     val g = data.groupBy("category").count()
@@ -151,7 +151,7 @@ class TCL(val sparkContext: SparkContext, val config: ConfigTCL) {
   }
 }
 
-object TCL {
+object Classifier {
   final val logger = LoggerFactory.getLogger(getClass.getName)
 
 
@@ -201,7 +201,7 @@ object TCL {
         val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
-        val tcl = new TCL(sparkSession.sparkContext, config)
+        val tcl = new Classifier(sparkSession.sparkContext, config)
         val dataset = tcl.createDataset
         val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
         config.mode match {
