@@ -26,8 +26,8 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
-  def createDataset: Dataset[Document] = {
-    val data = Classifier.vnexpress(sparkSession, config.dataPath).as[Document]
+  def createDataset(path: String): Dataset[Document] = {
+    val data = Classifier.vnexpress(sparkSession, path).as[Document]
     numCats = data.select("category").distinct().count().toInt
     logger.info("#(categories) = " + numCats)
     val g = data.groupBy("category").count()
@@ -139,11 +139,8 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   def predict(inputFile: String, outputFile: String): Unit = {
     val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty)
     val xs = lines.map { line =>
-      val j = line.indexOf(' ')
-      val y = line.substring(0, j)
-      val x = line.substring(j+1)
-      val tokens = vlp.tok.Tokenizer.tokenize(x).map(_._3)
-      Document(y, tokens.mkString(" "))
+      val tokens = vlp.tok.Tokenizer.tokenize(line).map(_._3)
+      Document("NA", tokens.mkString(" "))
     }
     import sparkSession.implicits._
     val data = sparkSession.createDataset(xs).as[Document]
@@ -186,6 +183,7 @@ object Classifier {
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
+      opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('h', "hiddenUnits").action((x, conf) => conf.copy(hiddenUnits = x)).text("number of hidden units in each layer")
       opt[String]('l', "layers").action((x, conf) => conf.copy(layers = x)).text("layers config of MLP")
@@ -202,7 +200,7 @@ object Classifier {
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
         val tcl = new Classifier(sparkSession.sparkContext, config)
-        val dataset = tcl.createDataset
+        val dataset = tcl.createDataset(config.dataPath)
         val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
         config.mode match {
           case "train" => {
@@ -216,14 +214,9 @@ object Classifier {
             test.show()
             tcl.eval(test)
           }
-          case "test" => tcl.test(test, config.output)
           case "sample" => sampling(sparkSession, "dat/vne/5cats.txt", "dat/vne/5catsSample", 0.01)
-          case "predict" => {
-            val document = Document("Other", "CTCP Nước và Môi trường Bình Dương (Biwase – BWE) đã sớm chốt danh sách tham dự kỳ họp ĐHCĐ thường niên năm 2019 từ cuối năm 2018, ngày 28/12/2018 kèm với đó là việc chi tạm ứng cổ tức bằng tiền tỷ lệ 7%. Mới đây Biwase đã phát đi thông báo mời họp ĐHCĐ thường niên vào 14h ngày 15/3/2019 tại văn phòng công ty.")
-            val model = PipelineModel.load(config.modelPath)
-            val prediction = tcl.predict(document, model)
-            logger.info(prediction.toString)
-          }
+          case "test" => tcl.test(test, config.output)
+          case "predict" => tcl.predict(config.input, config.output)
         }
         sparkSession.stop()
       case None =>
