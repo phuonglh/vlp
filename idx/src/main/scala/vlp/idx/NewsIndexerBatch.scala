@@ -27,7 +27,7 @@ object NewsIndexerBatch {
     var i = 1
     for (batch <- batches) {
       println(batch.size)
-      val news = batch.par.filterNot(_.contains("bbc.com")).map(url => {
+      val news = batch.par.filterNot(u => u.contains("bbc.com") || u.contains("baohaiquan.vn")).map(url => {
         val content = NewsIndexer.extract(url)
         new News(url, content, new Date())
       }).toList
