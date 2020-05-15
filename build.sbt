@@ -15,11 +15,10 @@ lazy val commonSettings = Seq(
 )
 
 // root project
-
 lazy val root = (project in file("."))
   .aggregate(tok, tag, tdp)
 
-// tokenizer module
+// tokenization module
 lazy val tok = (project in file("tok"))
   .settings(
     commonSettings,
@@ -27,7 +26,7 @@ lazy val tok = (project in file("tok"))
     assemblyJarName in assembly := "tok.jar"
   )
 
-// part-of-speech tagger module
+// part-of-speech tagging module
 lazy val tag = (project in file("tag"))
   .dependsOn(tok)
   .settings(
@@ -39,7 +38,7 @@ lazy val tag = (project in file("tag"))
     )
   )
 
-// transition-based dependency parser module
+// transition-based dependency parsing module
 lazy val tdp = (project in file("tdp"))
   .dependsOn(tag)
   .settings(
@@ -52,7 +51,7 @@ lazy val tdp = (project in file("tdp"))
     )
   )
 
-// named entity recognizer module
+// named entity recognization module
 lazy val ner = (project in file("ner"))
   .dependsOn(tag)
   .settings(
@@ -65,7 +64,7 @@ lazy val ner = (project in file("ner"))
   )
 
   // topic modeling module
-  lazy val tpm = (project in file("tpm"))
+lazy val tpm = (project in file("tpm"))
   .dependsOn(tok)
   .settings(
     commonSettings,
@@ -77,7 +76,7 @@ lazy val ner = (project in file("ner"))
   )
 
   // text classification module
-  lazy val tcl = (project in file("tcl"))
+lazy val tcl = (project in file("tcl"))
   .dependsOn(tok)
   .settings(
     commonSettings,
@@ -86,5 +85,23 @@ lazy val ner = (project in file("ner"))
     libraryDependencies ++= Seq(
       "com.github.scopt" %% "scopt" % "3.7.1",
       "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly()
+    )
+  )
+
+// text indexing module
+lazy val idx = (project in file("idx"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.idx.NewsIndexer"),
+    assemblyJarName in assembly := "idx.jar",
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.1",
+      "mysql" % "mysql-connector-java" % "8.0.16",
+      "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.1.1",
+      "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
+      "xerces" % "xercesImpl" % "2.11.0",
+      "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22",
+      "org.glassfish" % "javax.json" % "1.1.4"
     )
   )
