@@ -10,7 +10,8 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-  "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
+  "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
+  "com.github.scopt" %% "scopt" % "3.7.1",
   )
 )
 
@@ -32,10 +33,7 @@ lazy val tag = (project in file("tag"))
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.tag.Tagger"),
-    assemblyJarName in assembly := "tag.jar",
-    libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1"
-    )
+    assemblyJarName in assembly := "tag.jar"
   )
 
 // transition-based dependency parsing module
@@ -46,7 +44,6 @@ lazy val tdp = (project in file("tdp"))
     mainClass in assembly := Some("vlp.tdp.Parser"),
     assemblyJarName in assembly := "tdp.jar",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1",
       "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly()
     )
   )
@@ -69,10 +66,7 @@ lazy val tpm = (project in file("tpm"))
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.tpm.LDA"),
-    assemblyJarName in assembly := "tpm.jar",
-    libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1"
-    )
+    assemblyJarName in assembly := "tpm.jar"
   )
 
   // text classification module
@@ -83,7 +77,6 @@ lazy val tcl = (project in file("tcl"))
     mainClass in assembly := Some("vlp.tcl.Classifier"),
     assemblyJarName in assembly := "tcl.jar",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1",
       "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly()
     )
   )
@@ -95,12 +88,21 @@ lazy val idx = (project in file("idx"))
     mainClass in assembly := Some("vlp.idx.NewsIndexer"),
     assemblyJarName in assembly := "idx.jar",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1",
       "mysql" % "mysql-connector-java" % "8.0.16",
       "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.1.1",
       "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
       "xerces" % "xercesImpl" % "2.11.0",
       "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22",
       "org.glassfish" % "javax.json" % "1.1.4"
+    )
+  )
+
+// Vietnamese diacritics restoration module
+lazy val vdr = (project in file("vdr")) 
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.vdr.Restorer"),
+    assemblyJarName in assembly := "vdr.jar",
+    libraryDependencies ++= Seq(
     )
   )
