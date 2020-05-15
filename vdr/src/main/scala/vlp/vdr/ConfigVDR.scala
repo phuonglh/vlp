@@ -12,6 +12,5 @@ case class ConfigVDR(
   numFeatures: Int = 65536,
   iterations: Int = 400,
   greedy: Boolean = false,
-  input: String = "input.txt",
-  output: String = "output.txt"
+  input: String = ""
 )

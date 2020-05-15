@@ -8,6 +8,9 @@ import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.charset.StandardCharsets
 
 /**
   * phuonglh, 10/31/17, 18:59
@@ -129,7 +132,7 @@ class Restorer(sparkSession: SparkSession, config: ConfigVDR) {
 object Restorer {
 
   def main(args: Array[String]): Unit = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
+    Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
 
     val parser = new OptionParser[ConfigVDR]("vlp.vdr") {
       head("vlp.vdr", "1.0")
@@ -140,13 +143,14 @@ object Restorer {
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("training data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/vdr/'")
-      opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
+      opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path of non-accented sentences to restore")
     }
 
     parser.parse(args, ConfigVDR()) match {
       case Some(config) =>
         val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master)
-          .config("spark.kryoserializer.buffer.max.mb", "512").getOrCreate()
+          .config("spark.kryoserializer.buffer.max.mb", "512")
+          .getOrCreate()
         val restorer = new Restorer(sparkSession, config)
         import sparkSession.implicits._
         val input = IO.readSentences(config.dataPath).toDF("sentence")
@@ -160,7 +164,12 @@ object Restorer {
             restorer.evaluate(testData)
             restorer.evaluate(trainingData)
           case "tag" =>
-            val sentences = Seq("quan ao thoi trang", "danh lam thang canh", "sinh vien khong hoc bai tot")
+            val sentences = if (config.input.isEmpty()) {
+              Seq("quan ao thoi trang", "danh lam thang canh", "sinh vien khong hoc bai tot")
+            } else {
+              import scala.collection.JavaConversions._
+              Files.readAllLines(Paths.get(config.input), StandardCharsets.UTF_8).toSeq
+            }
             val model = PipelineModel.load(config.modelPath)
             import sparkSession.implicits._
             val output = restorer.tag(model, sentences.toDF("x"), config.greedy, config.mappingResourcePath)
