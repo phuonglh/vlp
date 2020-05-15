@@ -148,9 +148,7 @@ object Restorer {
 
     parser.parse(args, ConfigVDR()) match {
       case Some(config) =>
-        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master)
-          .config("spark.kryoserializer.buffer.max.mb", "512")
-          .getOrCreate()
+        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
         val restorer = new Restorer(sparkSession, config)
         import sparkSession.implicits._
         val input = IO.readSentences(config.dataPath).toDF("sentence")
