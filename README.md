@@ -218,7 +218,7 @@ After training a model, it can be evaluated by using the (default mode) `eval`:
 
 Some information of the topic and word distributions, as well as the log-likelihood of the model on the corpus will be printed out.
 
-## 6. Text Classification
+## 6. Text Classifier
 
 The class `vlp.tcl.Classifier` implements a feed-forward neural network model for text classification. A simple form of this model is multinomial logistic regression or MLR, which can be considered as a network model without hidden layers. To train a MLR model on a data set: 
 
@@ -240,6 +240,8 @@ In the default `eval` mode, the classifier will print out evaluation score of th
 
 - `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar`
 - `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar -c mlp`
+
+There is also a common option for verbose mode (`-v`) and for using the classifier with a cluster instead of a single local machine (`-M <masterURL>`).
 
 ## Compile and Package
 
