@@ -6,12 +6,12 @@ A Vietnamese text processing library developed in the Scala programming language
 
 This is a repository of a Scala project which implements some basic tasks of Vietnamese text processing.
 Each basic task is implemented in a module. 
-- `tok`: tokenizer, which implements a rule-based word segmentation approach;
-- `tag`: tagger, which implements a conditional Markov model for sequence tagging;
-- `ner`: named entity recognizer, which implements a bidirectional conditional Markov model for sequence tagging;
-- `tdp`: dependency parser, which implements a transition-based dependency parsing approach;
-- `tpm`: topic modeling, which implements a Latent Dirichlet Allocation (LDA) model;
-- `tcl`: text classification, which implements a feed-forward neural network model
+1. `tok`: tokenizer, which implements a rule-based word segmentation approach;
+2. `tag`: tagger, which implements a conditional Markov model for sequence tagging;
+3. `ner`: named entity recognizer, which implements a bidirectional conditional Markov model for sequence tagging;
+4. `tdp`: dependency parser, which implements a transition-based dependency parsing approach;
+5. `tpm`: topic modeling, which implements a Latent Dirichlet Allocation (LDA) model;
+6. `tcl`: text classifier, which implements a feed-forward neural network model for text classification
 
 ## 1. Tokenizer
 
@@ -220,7 +220,26 @@ Some information of the topic and word distributions, as well as the log-likelih
 
 ## 6. Text Classification
 
-- TODO
+The class `vlp.tcl.Classifier` implements a feed-forward neural network model for text classification. A simple form of this model is multinomial logistic regression or MLR, which can be considered as a network model without hidden layers. To train a MLR model on a data set: 
+
+`$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar -m train`
+
+The default MLR model will be saved into the default directory `dat/tcl`. This model path can be changed by using the option `-p <modelPath>`. The data set can be specified by `-d <dataPath>` option. The data path can be one or some raw text files, each line contains a sample of the form `label <tab> content`.
+
+`$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar -m train -d dat/*.txt`
+
+A neural network, instead of a MLR can be specified by using the option `-c mlp` and appropriate parameters, notably its hidden layer configuration such as `-h "128 64"`. For example:
+
+`$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar -m train -d dat/*.txt -c mlp -h "128 64"`
+
+The command above trains a multiple layer perceptron (aka neural network) with two layers of 128 hidden units and 64 hidden units respectively. If the option `-h` is not specified, a defautl hidden layer of 16 units will be used. The default number of (maximum) features is 32,768; and this parameter can be controlled by the option `-u`. There is also `-f` option for feature minimum frequency cutoff. 
+
+After training, the model will be evaluated on the training set and test set which are randomly split with ratio [0.8, 0.2] respectively. The (accuracy, f-measure) scores will be printed out to the console.
+
+In the default `eval` mode, the classifier will print out evaluation score of the test set, using a pre-trained model.
+
+- `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar`
+- `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar -c mlp`
 
 ## Compile and Package
 
