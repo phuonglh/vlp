@@ -5,7 +5,7 @@ case class ConfigVDR(
   mode: String = "eval",
   verbose: Boolean = false,
   modelPath: String = "dat/vdr/",
-  dataPath: String = "dat/txt/vlsp.txt",
+  dataPath: String = "dat/txt/vtb.txt",
   mappingResourcePath: String = "/mappings.txt",
   markovOrder: Int = 2,
   lambda: Double = 1E-6,

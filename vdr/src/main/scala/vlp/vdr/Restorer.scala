@@ -87,13 +87,13 @@ class Restorer(sparkSession: SparkSession, config: ConfigVDR) {
     last.select("xs", "ys").show(10, false)
     val tokens = last.select("xs", "ys")
       .map(row => (row.getAs[Seq[String]](0), row.getAs[Seq[String]](1)))
-      .flatMap(yz => yz._1.zip(yz._2)).collect()
+      .flatMap(yz => yz._1.zip(yz._2))
       
-    val numTokens = tokens.size
-    val numCorrectTokens = tokens.map(p => if (p._1 == p._2) 1 else 0).sum
+    val numTokens = tokens.count()
+    val numCorrectTokens = tokens.map(p => if (p._1 == p._2) 1 else 0).filter(_ > 0).count()
     logger.info("Token accuracy = " + numCorrectTokens.toDouble / numTokens)
     if (config.verbose) {
-      tokens.filter(p => p._1 != p._2).map(p => logger.info(p.toString()))
+      tokens.filter(p => p._1 != p._2).foreach(p => logger.info(p.toString()))
     }
   }
   
@@ -148,10 +148,14 @@ object Restorer {
 
     parser.parse(args, ConfigVDR()) match {
       case Some(config) =>
-        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
+        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master)
+          .config("spark.kryoserializer.buffer.max", "512m")
+          .getOrCreate()
         val restorer = new Restorer(sparkSession, config)
         import sparkSession.implicits._
         val input = IO.readSentences(config.dataPath).toDF("sentence")
+        if (config.verbose)
+          println(s"#(trainingSamples) = ${input.count()}")
         val Array(trainingData, testData) = input.randomSplit(Array(0.8, 0.2), 150909)
         config.mode match {
           case "train" =>
