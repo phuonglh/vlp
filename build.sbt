@@ -90,7 +90,6 @@ lazy val tcl = (project in file("tcl"))
 
 // text indexing module
 lazy val idx = (project in file("idx"))
-  .dependsOn(tok)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.idx.NewsIndexer"),
