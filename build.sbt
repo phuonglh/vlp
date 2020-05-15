@@ -92,7 +92,7 @@ lazy val idx = (project in file("idx"))
       "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.1.1",
       "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
       "xerces" % "xercesImpl" % "2.11.0",
-      "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22",
+      "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22" % "provided",
       "org.glassfish" % "javax.json" % "1.1.4"
     )
   )
