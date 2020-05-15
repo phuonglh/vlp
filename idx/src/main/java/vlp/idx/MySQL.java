@@ -32,7 +32,7 @@ import java.util.Set;
  *
  */
 public class MySQL {
-  static String connectionURL = "jdbc:mysql://vlp.group/vlp?user=vlp&password=sector19@";
+  static String connectionURL = "jdbc:mysql://vlp.group/vlp?user=vlp&password=";
   /**
    * Inserts a list of URLs into the `url` table of a MySQL server.
    * @param urls
