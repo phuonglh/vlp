@@ -236,10 +236,9 @@ The command above trains a multiple layer perceptron (aka neural network) with t
 
 After training, the model will be evaluated on the training set and test set which are randomly split with ratio [0.8, 0.2] respectively. The (accuracy, f-measure) scores will be printed out to the console.
 
-In the default `eval` mode, the classifier will print out evaluation score of the test set, using a pre-trained model.
+In the default `eval` mode, the classifier will print out evaluation score of the test set, using a pre-trained model in the default model path:
 
-- `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar`
-- `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar -c mlp`
+`$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar`
 
 There is also a common option for verbose mode (`-v`) and for using the classifier with a cluster instead of a single local machine (`-M <masterURL>`).
 
