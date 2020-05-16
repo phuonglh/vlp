@@ -295,6 +295,15 @@ object NewsIndexer {
     urls.toSet
   }
 
+  def transport: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = Seq("kinh-te", "thi-truong", "tai-chinh", "bao-hiem", "bat-dong-san")
+    for (category <- categories)
+      urls ++= extractURLs("https://www.baogiaothong.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (_: String) => true)
+    logger.info("baogiaothong.vn => " + urls.size)
+    urls.toSet
+  }
+
   def run(date: String): Unit = {
     System.setProperty("http.agent", "Chrome")
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
@@ -322,6 +331,7 @@ object NewsIndexer {
     urls ++= vietnamnetAll
     urls ++= vir
     urls ++= finance
+    urls ++= transport
 
     logger.info(s"#(totalURLs) = ${urls.size}")
     val novelUrls = urls.diff(existingURLs)
@@ -347,12 +357,13 @@ object NewsIndexer {
   }
 
   def test: Unit = {
-    val urls = vietnamnetAll
+    val urls = transport
     urls.foreach(println)
     println(s"#(urls) = ${urls.size}")
   }
 
   def main(args: Array[String]): Unit = {
+    test
     if (args.size >= 1) {
       run(args(0))
     } else {
