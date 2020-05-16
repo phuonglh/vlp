@@ -1,6 +1,6 @@
 
 
-include("../ner/WordShape.jl")
+include("WordShape.jl")
 include("Mutate.jl")
 
 """

@@ -103,7 +103,7 @@ end
 inp = 3*length(alphabet)
 out = length(labels)
 model = Chain(Dense(inp, hid), GRU(hid, hid), Dense(hid, out), softmax)
-println(model)
+
 # the full model which takes as input a 2-d matrix representing an input 
 # sequence; each column corresponds to a token of the sequence.
 function f(x)
@@ -139,7 +139,7 @@ Yb = batches(Ys, Float32.(zeros(out)))
 
 # bring data to GPU if g is true
 if g 
-  println("Bring data to GPU...")
+  println("Bringing data to GPU...")
   Xb = map(t -> gpu.(t), Xb)
   Yb = map(t -> gpu.(t), Yb)
 end
@@ -209,7 +209,7 @@ end
 # Some constants
 prefix = string(homedir(), "/vlp/")
 
-hidden = [64, 100, 128, 150, 200, 256, 300, 350, 400]
+hidden = [64, 100, 150, 200, 256, 300, 350, 400, 450, 500]
 outputFile = open(string(prefix, inputPath, ".scRNN"), append=true)
 for i=1:length(hidden)
   global hid = hidden[i]
