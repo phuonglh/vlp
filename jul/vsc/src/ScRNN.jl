@@ -13,11 +13,11 @@ using Tracker
 include("Vocab.jl")
 
 hid = 16
-numEpochs = 40
+numEpochs = 20
 minFrequency = 1
 top = 10
 N = 10000
-inputPath = "dat/vsc/vtb.txt.mutated-4"
+inputPath = "dat/vsc/vlsp.txt.mutated-4"
 labels = [:n, :s, :r, :i, :d]
 g = false
 
@@ -209,7 +209,7 @@ end
 # Some constants
 prefix = string(homedir(), "/vlp/")
 
-hidden = [64, 100, 150, 200, 256, 300, 350, 400, 450, 500]
+hidden = [100, 500, 550, 600, 700, 800, 900, 1024]
 outputFile = open(string(prefix, inputPath, ".scRNN"), append=true)
 for i=1:length(hidden)
   global hid = hidden[i]
