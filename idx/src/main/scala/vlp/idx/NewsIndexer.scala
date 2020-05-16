@@ -363,7 +363,6 @@ object NewsIndexer {
   }
 
   def main(args: Array[String]): Unit = {
-    test
     if (args.size >= 1) {
       run(args(0))
     } else {
