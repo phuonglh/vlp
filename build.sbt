@@ -95,7 +95,7 @@ lazy val idx = (project in file("idx"))
       "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22" % "provided",
       "org.glassfish" % "javax.json" % "1.1.4"
     ),
-    run / fork := true
+    run / fork := true,
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
   )
 
