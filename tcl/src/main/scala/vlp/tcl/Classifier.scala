@@ -199,23 +199,29 @@ object Classifier {
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
         val tcl = new Classifier(sparkSession.sparkContext, config)
-        val dataset = tcl.createDataset(config.dataPath)
-        val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
         config.mode match {
           case "train" => {
+            val dataset = tcl.createDataset(config.dataPath)
+            val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
             training.show()
             tcl.train(training)
             tcl.eval(training)
             test.show()
             tcl.eval(test)
           }
-          case "eval" => {
-            test.show()
-            tcl.eval(test)
-          }
+          case "eval" => 
           case "sample" => sampling(sparkSession, "dat/vne/5cats.txt", "dat/vne/5catsSample", 0.01)
-          case "test" => tcl.test(test, config.output)
           case "predict" => tcl.predict(config.input, config.output)
+          case "shinra" => 
+            val trainingDataset = tcl.createDataset("/opt/data/shinra/dev.txt")
+            val devDataset = tcl.createDataset("/opt/data/shinra/dev.txt")
+            val testDataset = tcl.createDataset("/opt/data/shinra/test.txt")
+            trainingDataset.show()
+            tcl.train(trainingDataset)
+            devDataset.show()
+            tcl.eval(devDataset)
+            testDataset.show()
+            tcl.eval(testDataset)
         }
         sparkSession.stop()
       case None =>

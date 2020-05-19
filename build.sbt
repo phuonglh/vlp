@@ -77,7 +77,6 @@ lazy val tcl = (project in file("tcl"))
     mainClass in assembly := Some("vlp.tcl.Classifier"),
     assemblyJarName in assembly := "tcl.jar",
     libraryDependencies ++= Seq(
-      "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly()
     )
   )
 
