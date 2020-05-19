@@ -175,9 +175,10 @@ object Classifier {
   def readSHINRA(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
     val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
     val rows = rdd.map { line =>
-      val parts = line.split("\\t+")
-      val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
-      val category = parts(parts.size - 1).split(",").head
+      var p = line.indexOf('\t')
+      val q = line.lastIndexOf('\t')
+      val text = SentenceDetection.run(line.substring(p+1, q), numberOfSentences).mkString(" ")
+      val category = line.substring(q+1).trim.split(",").head
       RowFactory.create(category, text)
     }
     val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))

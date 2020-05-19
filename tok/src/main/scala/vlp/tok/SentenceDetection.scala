@@ -25,7 +25,7 @@ object SentenceDetection {
       ms.next()
       count = count + 1
     }
-    if (i < text.size)
+    if (count < numberOfSentences && i < text.size)
       sentences.append(s.subSequence(i, s.size).toString().trim)
     sentences.toSeq
   }
@@ -36,7 +36,7 @@ object SentenceDetection {
         Uỷ ban Kiểm tra Trung ương xác định ông Hiến đã "vi phạm rất nghiêm trọng các quy định của pháp luật trong vụ án hình sự xảy ra tại Quân chủng Hải quân".
         Liên quan xử lý sai phạm của cán bộ Bộ Quốc phòng, Uỷ ban kiểm tra Trung ương cũng kỷ luật khai trừ ra khỏi Đảng với ông Nguyễn Văn Khuây (nguyên Phó Bí thư Đảng ủy, nguyên Sư đoàn trưởng Sư đoàn 363) và ông Vũ Duy An (nguyên Chủ nhiệm Hậu cần Sư đoàn 363). Hai ông bị xác định "vi phạm rất nghiêm trọng các quy định của pháp luật về quản lý đất đai tại Sư đoàn 363, Quân chủng Phòng không - Không quân".
     """
-    val ss = run(text)
+    val ss = run(text, 2)
     ss.zipWithIndex.foreach(println)
   }
 }
