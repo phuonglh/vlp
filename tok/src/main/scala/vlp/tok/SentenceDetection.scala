@@ -11,17 +11,19 @@ import scala.collection.mutable
 object SentenceDetection {
   val pattern: Regex = "([\\.?!…;:+]+|[abcdef]\\))[\\s]+[\"“]?[A-ZĐÀÁẢÃẠẤẦẨẪẬƯỪỨỬỮỰÙÚỦŨỤÔỒỐỔỖỘƠỜỚỞỠỢÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊỲÝỶỸỴ\\d]".r
 
-  def run(text: String): Seq[String] = {
+  def run(text: String, numberOfSentences: Int = Int.MaxValue): Seq[String] = {
     // the character '\u00a0' is also used as a space character in many websites; replace it with the proper whitespace
     val s = text.replaceAll("\u00a0", " ").replaceAll("\\s+", " ");
     val sentences = mutable.ListBuffer[String]()
     val ms = pattern.findAllIn(s)
     var i = 0
-    while (ms.hasNext) {
+    var count = 0;
+    while (ms.hasNext && count < numberOfSentences) {
       val j = ms.start
       sentences.append(s.subSequence(i, j+1).toString().trim)
       i = j + 1
       ms.next()
+      count = count + 1
     }
     if (i < text.size)
       sentences.append(s.subSequence(i, s.size).toString().trim)

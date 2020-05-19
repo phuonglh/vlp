@@ -16,6 +16,7 @@ import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
+import vlp.tok.SentenceDetection
 
 /**
   * phuonglh, 5/28/18, 1:01 PM
@@ -26,8 +27,8 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
-  def createDataset(path: String): Dataset[Document] = {
-    val data = Classifier.vnexpress(sparkSession, path).as[Document]
+  def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
+    val data = Classifier.readTextData(sparkSession, path, numberOfSentences).as[Document]
     numCats = data.select("category").distinct().count().toInt
     logger.info("#(categories) = " + numCats)
     val g = data.groupBy("category").count()
@@ -151,15 +152,42 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
 object Classifier {
   final val logger = LoggerFactory.getLogger(getClass.getName)
 
-
-  def vnexpress(sparkSession: SparkSession, path: String): DataFrame = {
+  /**
+    * Loads text data into a data frame. If number of sentences are positive then only that number of sentences 
+    * for each document are loaded. Default is a negative value -1, which means all the content will be loaded.
+    *
+    * @param sparkSession
+    * @param path path to the data file(s)
+    * @param numberOfSentences
+    * @return a data frame of two columns (category, text)
+    */
+  def readTextData(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): DataFrame = {
     val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
     val rows = rdd.map { line =>
       val parts = line.split("\\t+")
-      RowFactory.create(parts(0).trim, parts(1).trim)
+      val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
+      RowFactory.create(parts(0).trim, text)
     }
     val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
     sparkSession.createDataFrame(rows, schema)
+  }
+
+  def readSHINRA(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
+    val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
+    val rows = rdd.map { line =>
+      val parts = line.split("\\t+")
+      val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
+      val category = parts(parts.size - 1).split(",").head
+      RowFactory.create(category, text)
+    }
+    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
+    import sparkSession.implicits._
+    val dataset = sparkSession.createDataFrame(rows, schema).as[Document]
+    val numCats = dataset.select("category").distinct().count().toInt
+    logger.info("#(categories) = " + numCats)
+    val g = dataset.groupBy("category").count()
+    g.show()
+    dataset
   }
 
   /**
@@ -213,14 +241,15 @@ object Classifier {
           case "sample" => sampling(sparkSession, "dat/vne/5cats.txt", "dat/vne/5catsSample", 0.01)
           case "predict" => tcl.predict(config.input, config.output)
           case "shinra" => 
-            val trainingDataset = tcl.createDataset("/opt/data/shinra/dev.txt")
-            val devDataset = tcl.createDataset("/opt/data/shinra/dev.txt")
-            val testDataset = tcl.createDataset("/opt/data/shinra/test.txt")
-            trainingDataset.show()
+            val numberOfSentences = 3
+            val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
+            val devDataset = readSHINRA(sparkSession, "/opt/data/shinra/dev.txt", numberOfSentences)
+            val testDataset = readSHINRA(sparkSession, "/opt/data/shinra/test.txt", numberOfSentences)
+            trainingDataset.show(false)
             tcl.train(trainingDataset)
-            devDataset.show()
+            devDataset.show(false)
             tcl.eval(devDataset)
-            testDataset.show()
+            testDataset.show(false)
             tcl.eval(testDataset)
         }
         sparkSession.stop()
