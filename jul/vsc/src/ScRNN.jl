@@ -12,11 +12,11 @@ using Tracker
 
 include("Vocab.jl")
 
-hid = 16
+hid = 64
 numEpochs = 20
 minFrequency = 1
 top = 10
-N = 10000
+N = 58000
 inputPath = "dat/vsc/vlsp.txt.mutated-4"
 labels = [:n, :s, :r, :i, :d]
 g = false
@@ -158,7 +158,7 @@ println("typeof(Y1) = ", typeof(Y1)) # this should be Array{Array{Float32,2},1}
 function train(numEpochs::Int, modelPath::String)
   optimizer = ADAM(.001)
   evalcb = () -> @show(loss(X1, Y1)) # or use loss(dataset[1]...)
-  @epochs numEpochs Flux.train!(loss, params(model), dataset, optimizer, cb = throttle(evalcb, 30))
+  @epochs numEpochs Flux.train!(loss, params(model), dataset, optimizer, cb = throttle(evalcb, 60))
   theta = Tracker.data.(params(model)) |> cpu    
   @save modelPath theta
 end
