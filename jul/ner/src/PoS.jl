@@ -25,7 +25,7 @@ maxSequenceLength = 40
 wd = 50
 makeLowercase = true
 numEpochs = 20
-hid = 32
+hid = 128
 
 
 # load pre-trained word vectors
