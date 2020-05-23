@@ -24,6 +24,10 @@ minFreq = 1
 maxSequenceLength = 40
 wd = 50
 makeLowercase = true
+numEpochs = 20
+hid = 32
+
+
 # load pre-trained word vectors
 @time wordVectors = load("/opt/data/emb/skip.vie.50d.txt")
 
@@ -217,7 +221,7 @@ function train(sentences_train::Array{Sentence}, sentences_test::Array{Sentence}
         (100 * correct/total, ts)
     end
 
-    @time train(20, string(prefix, "dat/tag/vie.bson"))
+    @time train(numEpochs, string(prefix, "dat/tag/vie.bson"))
 
     (train_score, train_prediction) = predict(sentences_train)
     (test_score, test_prediction) = predict(sentences_test)
@@ -248,8 +252,8 @@ end
 pairs = folds(5, collect(1:length(sentences)))
 # run 5 models
 output = string(prefix, "dat/tag/rnn.pos.txt")
-file = open(output, "w")
-hid = 32
+file = open(output, append=true)
+
 for p in pairs
     sentences_test = sentences[p[1]]
     sentences_train = sentences[p[2]]
