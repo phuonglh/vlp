@@ -50,3 +50,5 @@ accuracy:  98.59%; precision:  70.65%; recall:  78.42%; FB1:  74.33
 
 2. Attention-based NER
 
+hid = 32
+

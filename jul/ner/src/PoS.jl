@@ -19,7 +19,7 @@ include("BiRNN.jl")
 include("Split.jl")
 
 # Some constants
-prefix = string(homedir(), "/group.vlp/")
+prefix = string(homedir(), "/vlp/")
 minFreq = 1
 maxSequenceLength = 40
 wd = 50
@@ -29,7 +29,7 @@ makeLowercase = true
 
 
 # Read part-of-speech tagged sentences
-corpus = readVLSP(string(prefix, "dat/tag/vtb-tagged-corrected.txt"))
+corpus = readVLSP(string(prefix, "dat/tag/vtb-tagged.txt"))
 println("#(corpus) = ",length(corpus))
 # filter sentences of length not greater than maxSequenceLength
 sentences = filter(s -> length(s.tokens) <= maxSequenceLength, corpus)
@@ -223,13 +223,13 @@ function train(sentences_train::Array{Sentence}, sentences_test::Array{Sentence}
     (test_score, test_prediction) = predict(sentences_test)
     
     # write the prediction to output files
-    file = open(string(prefix, "dat/tag/train-prediction.txt"), "w")
+    file = open(string(prefix, "dat/tag/train.prediction.txt"), "w")
     for s in train_prediction
         write(file, join(s, " "))
         write(file, "\n")
     end
     close(file)
-    file = open(string(prefix, "dat/tag/test-prediction.txt"), "w")
+    file = open(string(prefix, "dat/tag/test.prediction.txt"), "w")
     for s in test_prediction
         write(file, join(s, " "))
         write(file, "\n")
@@ -247,7 +247,7 @@ end
 # split test/training datasets and log accuracy scores to an external file
 pairs = folds(5, collect(1:length(sentences)))
 # run 5 models
-output = string(prefix, "dat/tag/rnn-pos.txt")
+output = string(prefix, "dat/tag/rnn.pos.txt")
 file = open(output, "w")
 hid = 32
 for p in pairs

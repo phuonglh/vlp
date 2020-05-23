@@ -5,3 +5,7 @@ target/
 .metals
 .vscode
 .jar
+.out
+.tok
+.bson
+
