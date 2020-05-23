@@ -17,33 +17,116 @@ using Dates
 
 
 include("Corpus.jl")
+include("WordVectors.jl")
+include("Embedding.jl")
 
 # Some constants
-prefix = string(homedir(), "/group.vlp/")
-minFreq = 1
+prefix = string(homedir(), "/vlp/")
+minFreq = 2
 maxSequenceLength = 40
+numEpochs = 15
+# word vector dimension
+wd = 50
+makeLowercase = true
+batchSize = 32
+# hidden dimension of the RNN
+hid = 32
+# use GPU or not
+g = false
 
-# Read training sentences
-corpus = readCoNLL(string(prefix, "dat/ner/vie.train"))
+# 1. Read training sentences
+corpus = readCoNLL(string(prefix, "dat/ner/vie/vie.train"))
 # filter sentences of length not greater than maxSequenceLength
 sentences = filter(s -> length(s.tokens) <= maxSequenceLength, corpus)
 println("#(sentences of length <= $(maxSequenceLength)) = ", length(sentences))
 # Read test sentences
-corpus_test = readCoNLL(string(prefix, "dat/ner/vie.test"))
+corpus_test = readCoNLL(string(prefix, "dat/ner/vie/vie.test"))
 sentences_test = filter(s -> length(s.tokens) <= maxSequenceLength, corpus_test)
 println("#(sentences_test) = ", length(sentences_test))
 
-include("FeaturizationA.jl")
+# 2. Featurize the dataset
+
+# build vocab and embedding matrix
+wordList = vocab(sentences, minFreq, makeLowercase)
+push!(wordList, "<number>")
+push!(wordList, "UNK")
+println("#(vocab) = ", length(wordList))
+
+# build word vectors
+@time wordVectors = load("/opt/data/emb/skip.vie.50d.txt")
+
+# prepare the word embedding table
+N = length(wordList)
+W = rand(wd, N)
+for i = 1:N
+    word = wordList[i]
+    if (haskey(wordVectors, word))
+        W[:, i] = wordVectors[word]
+    end
+end
+
+embed = Embedding(W)
+
+# build a word index (word => index)
+wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(wordList))
+
+entities = labels(sentences, 'e')
+prepend!(entities, ["BOS", "EOS"])
+println("Entity types = ", entities)
+
+partsOfSpeech = labels(sentences, 'p')
+chunkTypes = labels(sentences, 'c')
+wordShapes = labels(sentences, 's')
+
+"""
+Creates a matrix representation of a sentence. Each sequence of N tokens 
+is converted to a matrix of size DxN, each column vector coressponds to a token.
+"""
+function vectorize(sentence::Sentence, training::Bool = false)
+    tokens = sentence.tokens
+    # word indices for embeddings
+    ws = Array{Int,1}()
+    for i = 1:length(tokens)
+        word = lowercase(tokens[i].text)
+        if (haskey(wordIndex, word))
+            push!(ws, wordIndex[word])
+        elseif (shape(word) == "number")
+            push!(ws, wordIndex["<number>"])
+        else
+            push!(ws, wordIndex["UNK"])
+        end
+    end
+    # one-hot parts-of-speech vector
+    pos = map(token -> token.properties['p'], tokens)
+    ps = onehotbatch(pos, partsOfSpeech)
+    # one-hot chunk type vector
+    chs = map(token -> token.properties['c'], tokens)
+    cs = onehotbatch(chs, chunkTypes)
+    # one-hot shape vector
+    shs = map(token -> token.properties['s'], tokens)
+    ss = onehotbatch(shs, wordShapes)
+    # convert xs to Float32 to speed up computation
+    xs = Float32.(vcat(embed(ws), ps, cs, ss))
+    if (training)
+        yy = map(token -> token.properties['e'], tokens)
+        # padding a start symbol
+        ys0 = onehotbatch(["BOS", yy...], entities)
+        # padding an end symbol
+        yss = onehotbatch([yy..., "EOS"], entities)
+        (xs, Float32.(ys0), Float32.(yss))
+    else
+        xs
+    end    
+end
 
 (xs, ys) = vectorize(sentences[1], true)
 println(size(xs))
 println(size(ys))
 
+# 3. Build the model
 # input dimension and output dimension
 inp = wd + length(partsOfSpeech) + length(chunkTypes) + length(wordShapes)
 out = length(entities)
-# hidden dimension of the RNN
-hid = 200
 
 # Encoder: a projection layer followed by a bi-directional RNN to encode input sequences 
 # 
@@ -94,7 +177,6 @@ end
 # The total loss of the batch is returned.
 loss(xb, yb0, yb) = sum(crossentropy.(model(xb, yb0), yb))
 
-batchSize = 36
 println("Vectorizing the dataset... Please wait.")
 # XYs is an array of samples  [(x_1, y_1), (x_2, y_2,),... ]
 @time XYs = map(s -> vectorize(s, true), sentences)
@@ -164,7 +246,8 @@ function predict(sentences::Array{Sentence}, outputPath::String)
     println("Done. Prediction result is written to ", outputPath)
 end
 
-@time train(20, string(prefix, "dat/ner"))
-@time predict(sentences_test, string(prefix, "dat/ner/vie.test.flux.a"))
-@time predict(sentences, string(prefix, "dat/ner/vie.train.flux.a"))
+@time train(numEpochs, string(prefix, "dat/ner/vie"))
+
+@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.out"))
+@time predict(sentences, string(prefix, "dat/ner/vie/vie.train.jul.nerA.out"))
 
