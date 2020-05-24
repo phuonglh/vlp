@@ -24,13 +24,13 @@ include("Embedding.jl")
 prefix = string(homedir(), "/vlp/")
 minFreq = 2
 maxSequenceLength = 40
-numEpochs = 15
+numEpochs = 20
 # word vector dimension
 wd = 50
 makeLowercase = true
 batchSize = 32
 # hidden dimension of the RNN
-hid = 32
+hid = 128
 # use GPU or not
 g = false
 
@@ -208,7 +208,7 @@ function train(numEpochs::Int, modelPath::String)
         @show(J)
         @save "$(modelPath)/vie-$(now()).bson" state loss = Tracker.data(J)
     end
-    optimizer = ADAM()
+    optimizer = ADAM(1E-4)
     @epochs numEpochs Flux.train!(loss, params(state), dataset, optimizer, cb = evalcb)
 end
 

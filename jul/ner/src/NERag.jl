@@ -200,7 +200,7 @@ println("typeof(Xb50) = ", typeof(Xb[50])) # this should be Array{Array{Float32,
 
 # train the model with some number of epochs and save the parameters to a BSON file
 function train(numEpochs::Int, modelPath::String)
-    optimizer = ADAM()
+    optimizer = ADAM(1E-4)
     evalcb = () -> @show(loss(dataset[50]...))
     @epochs numEpochs Flux.train!(loss, params(state), dataset, optimizer, cb = throttle(evalcb, 20))
     @save modelPath state
