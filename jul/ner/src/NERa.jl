@@ -14,6 +14,7 @@ using BSON: @save, @load
 using StatsBase: wsample
 using Distributed
 using Dates
+using Random
 
 
 include("Corpus.jl")
@@ -23,8 +24,8 @@ include("Embedding.jl")
 # Some constants
 prefix = string(homedir(), "/vlp/")
 minFreq = 2
-maxSequenceLength = 40
-numEpochs = 20
+maxSequenceLength = 30
+numEpochs = 30
 # word vector dimension
 wd = 50
 makeLowercase = true
@@ -57,7 +58,7 @@ println("#(vocab) = ", length(wordList))
 
 # prepare the word embedding table
 N = length(wordList)
-W = rand(wd, N)
+W = randn(wd, N) * 0.01
 for i = 1:N
     word = wordList[i]
     if (haskey(wordVectors, word))
@@ -248,6 +249,6 @@ end
 
 @time train(numEpochs, string(prefix, "dat/ner/vie"))
 
-@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.out"))
-@time predict(sentences, string(prefix, "dat/ner/vie/vie.train.jul.nerA.out"))
+@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.", hid))
+@time predict(sentences, string(prefix, "dat/ner/vie/vie.train.jul.nerA.", hid))
 
