@@ -47,15 +47,11 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
       new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, unigramCounter, bigram, bigramCounter, assembler, mlr))
     } else if (classifierType == "mlp") {
       val featureHashing = new HashingTF().setInputCol("unigrams").setOutputCol("features").setNumFeatures(config.numFeatures).setBinary(true)
-      // find the number of input features and number of labels
-      val preprocessingPipeline = new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing))
-      val preprocessingModel = preprocessingPipeline.fit(dataset)
-      val numFeatures = preprocessingModel.stages(3).asInstanceOf[HashingTF].getNumFeatures
-      logger.info(s"numFeatures = ${numFeatures}")
-      val numLabels = preprocessingModel.stages(0).asInstanceOf[StringIndexerModel].labels.size
+      val numLabels = labelIndexer.fit(dataset).labels.size
+      logger.info(s"numLabels = ${numLabels}")
       val xs = config.hiddenUnits.trim
       val hiddenLayers = if (xs.nonEmpty) xs.split("[\\s,]+").map(_.toInt); else Array[Int]()
-      val layers = Array(numFeatures) ++ hiddenLayers ++ Array[Int](numLabels)
+      val layers = Array(config.numFeatures) ++ hiddenLayers ++ Array[Int](numLabels)
       logger.info(layers.mkString(", "))
       val mlp = new MultilayerPerceptronClassifier().setMaxIter(config.iterations).setBlockSize(config.batchSize).setSeed(123).setLayers(layers)
       new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing, mlp))
