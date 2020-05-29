@@ -12,7 +12,7 @@ case class ConfigTCL(
   lambda: Double = 1E-4,
   classifier: String = "mlr",
   numFeatures: Int = 32768,
-  hiddenUnits: String = "16",
+  hiddenUnits: String = "128",
   batchSize: Int = 32,
   iterations: Int = 300,
   dataPath: String = "dat/vne/5catsSample/part-*",

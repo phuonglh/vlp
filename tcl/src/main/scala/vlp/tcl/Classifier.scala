@@ -244,8 +244,8 @@ object Classifier {
           case "shinra" => 
             val numberOfSentences = 3
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
-            val devDataset = readSHINRA(sparkSession, "/opt/data/shinra/dev.txt", numberOfSentences)
-            val testDataset = readSHINRA(sparkSession, "/opt/data/shinra/test.txt", numberOfSentences)
+            val devDataset = readSHINRA(sparkSession, "dat/tcl/dev.txt", numberOfSentences)
+            val testDataset = readSHINRA(sparkSession, "dat/tcl/test.txt", numberOfSentences)
             trainingDataset.show()
             tcl.train(trainingDataset)
             tcl.eval(trainingDataset)
