@@ -17,23 +17,18 @@ import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
 import vlp.tok.SentenceDetection
+import org.apache.spark.ml.classification.RandomForestClassifier
 
 /**
   * phuonglh, 5/28/18, 1:01 PM
   */
 class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
-  var numCats: Int = 0
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
   def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
-    val data = Classifier.readTextData(sparkSession, path, numberOfSentences).as[Document]
-    numCats = data.select("category").distinct().count().toInt
-    logger.info("#(categories) = " + numCats)
-    val g = data.groupBy("category").count()
-    g.show()
-    data
+    Classifier.readTextData(sparkSession, path, numberOfSentences).as[Document]
   }
 
   def train(dataset: Dataset[Document]): PipelineModel = {
@@ -43,30 +38,44 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     val stopWordsRemover = new StopWordsRemover().setInputCol("tokens").setOutputCol("unigrams").setStopWords(StopWords.punctuations)
     val unigramCounter = new CountVectorizer().setInputCol("unigrams").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.numFeatures)
     val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("skip").setOutputCol("label")
-    val pipeline = if (config.classifier == "mlr") {
+    val classifierType = config.classifier
+    val pipeline = if (classifierType == "mlr") {
       val bigram = new NGram().setInputCol("unigrams").setOutputCol("bigrams").setN(2)
       val bigramCounter = new CountVectorizer().setInputCol("bigrams").setOutputCol("bs").setMinDF(config.minFrequency).setVocabSize(2*config.numFeatures)
       val assembler = new VectorAssembler().setInputCols(Array("us", "bs")).setOutputCol("features")
       val mlr = new LogisticRegression().setMaxIter(config.iterations).setRegParam(config.lambda).setStandardization(false)
       new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, unigramCounter, bigram, bigramCounter, assembler, mlr))
-    } else {
+    } else if (classifierType == "mlp") {
       val featureHashing = new HashingTF().setInputCol("unigrams").setOutputCol("features").setNumFeatures(config.numFeatures).setBinary(true)
+      // find the number of input features and number of labels
+      val preprocessingPipeline = new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing))
+      val preprocessingModel = preprocessingPipeline.fit(dataset)
+      val numFeatures = preprocessingModel.stages(3).asInstanceOf[HashingTF].getNumFeatures
+      logger.info(s"numFeatures = ${numFeatures}")
+      val numLabels = preprocessingModel.stages(0).asInstanceOf[StringIndexerModel].labels.size
       val xs = config.hiddenUnits.trim
       val hiddenLayers = if (xs.nonEmpty) xs.split("[\\s,]+").map(_.toInt); else Array[Int]()
-      val layers = Array(config.numFeatures) ++ hiddenLayers ++ Array[Int](numCats)
+      val layers = Array(numFeatures) ++ hiddenLayers ++ Array[Int](numLabels)
       logger.info(layers.mkString(", "))
-      val mlp = new MultilayerPerceptronClassifier().setMaxIter(config.iterations).setBlockSize(config.batchSize).setSeed(124456).setLayers(layers)
+      val mlp = new MultilayerPerceptronClassifier().setMaxIter(config.iterations).setBlockSize(config.batchSize).setSeed(123).setLayers(layers)
       new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing, mlp))
+    } else if (classifierType == "rfc") {
+      val featureHashing = new HashingTF().setInputCol("unigrams").setOutputCol("features").setNumFeatures(config.numFeatures).setBinary(true)
+      val rfc = new RandomForestClassifier().setNumTrees(100)
+      new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing, rfc))
+    } else {
+      logger.error("Not support classifier type: " + classifierType)
+      new Pipeline()
     }
     logger.info("#(documents) = " + dataset.count())
     logger.info("Training process started. Please wait...")
     val model = pipeline.fit(dataset)
-    model.write.overwrite().save(config.modelPath)
+    model.write.overwrite().save(config.modelPath + "/" + classifierType)
     model
   }
 
   def eval(dataset: Dataset[Document]): Unit = {
-    val model = PipelineModel.load(config.modelPath)
+    val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
 
     val transformer = model.stages(3)
     if (transformer.isInstanceOf[CountVectorizerModel]) {
@@ -98,7 +107,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   }
 
   def test(dataset: Dataset[Document], outputFile: String): Unit = {
-    val model = PipelineModel.load(config.modelPath)
+    val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     val outputDF = model.transform(dataset)
     import sparkSession.implicits._
     val prediction = outputDF.select("category", "content", "prediction", "probability")
@@ -183,12 +192,7 @@ object Classifier {
     }
     val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
     import sparkSession.implicits._
-    val dataset = sparkSession.createDataFrame(rows, schema).as[Document]
-    val numCats = dataset.select("category").distinct().count().toInt
-    logger.info("#(categories) = " + numCats)
-    val g = dataset.groupBy("category").count()
-    g.show()
-    dataset
+    sparkSession.createDataFrame(rows, schema).as[Document]
   }
 
   /**
@@ -212,7 +216,7 @@ object Classifier {
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
-      opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
+      opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr/mlp/rfc")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[String]('h', "hiddenUnits").action((x, conf) => conf.copy(hiddenUnits = x)).text("hidden units in MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
@@ -246,11 +250,10 @@ object Classifier {
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
             val devDataset = readSHINRA(sparkSession, "/opt/data/shinra/dev.txt", numberOfSentences)
             val testDataset = readSHINRA(sparkSession, "/opt/data/shinra/test.txt", numberOfSentences)
-            trainingDataset.show(false)
+            trainingDataset.show()
             tcl.train(trainingDataset)
-            devDataset.show(false)
+            tcl.eval(trainingDataset)
             tcl.eval(devDataset)
-            testDataset.show(false)
             tcl.eval(testDataset)
         }
         sparkSession.stop()
