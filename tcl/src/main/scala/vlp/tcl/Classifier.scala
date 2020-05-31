@@ -70,9 +70,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     model
   }
 
-  def eval(dataset: Dataset[Document]): Unit = {
-    val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
-
+  def eval(model: PipelineModel, dataset: Dataset[Document]): Unit = {
     val transformer = model.stages(3)
     if (transformer.isInstanceOf[CountVectorizerModel]) {
       val vocabulary = transformer.asInstanceOf[CountVectorizerModel].vocabulary
@@ -100,6 +98,11 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
         logger.info(sb.toString)
       })
     }
+  }
+
+  def eval(dataset: Dataset[Document]): Unit = {
+    val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
+    eval(model, dataset)
   }
 
   def test(dataset: Dataset[Document], outputFile: String): Unit = {
@@ -241,16 +244,20 @@ object Classifier {
           case "eval" => 
           case "sample" => sampling(sparkSession, "dat/vne/5cats.txt", "dat/vne/5catsSample", 0.01)
           case "predict" => tcl.predict(config.input, config.output)
-          case "shinra" => 
+          case "shinra-train" => 
             val numberOfSentences = 3
+            val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
+            trainingDataset.show()
+            val model = tcl.train(trainingDataset)
+            tcl.eval(model, trainingDataset)
+          case "sinra-eval" =>
+            val numberOfSentences = 3
+            val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
             val devDataset = readSHINRA(sparkSession, "dat/tcl/dev.txt", numberOfSentences)
             val testDataset = readSHINRA(sparkSession, "dat/tcl/test.txt", numberOfSentences)
-            trainingDataset.show()
-            tcl.train(trainingDataset)
-            tcl.eval(trainingDataset)
-            tcl.eval(devDataset)
-            tcl.eval(testDataset)
+            tcl.eval(model, devDataset)
+            tcl.eval(model, testDataset)
         }
         sparkSession.stop()
       case None =>
