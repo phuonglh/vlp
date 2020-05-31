@@ -23,15 +23,15 @@ The main class of the tokenizer module is `vlp.tok.Tokenizer`. It segments a giv
 
 If the output file is not provided, the result will be shown to the console. If both the input and output files are not provided, a sample sentence will be processed and its result is shown to the console.  
 
-The tokenizer makes use of parallel processing in Scala, which effectively exploits **all CPU cores** of a single machine. For this reason, on large file it is still fast. On my laptop, the tokenizer can process an input file of more than 532,000 sentences (about 1,000,000 syllables) in about 100 seconds.
+The tokenizer makes use of parallel processing in Scala, which effectively exploits **all CPU cores** of a single machine. For this reason, on a large file it is still fast. On my laptop, the tokenizer can process an input file of more than 532,000 sentences (about 1,000,000 syllables) in about 100 seconds.
 
-For really large input files in a big data setting, it is more convenient to use the tokenizer together with the [Apache Spark](http://spark.apache.org) library so that it is easily to port to a cluster of multiple nodes. We provide a transformer-based implementation of the Vietnamese tokenizer, in the class `vlp.tok.TokenizerTransformer`. This can be integrated into the machine learning pipeline of the Apache Spark Machine Learning library, in the same way as the standard `org.apache.spark.ml.feature.Tokenizer`. Note that the wrapper transformer depends on Apache Spark but not the tokenizer. If you do not want to use Apache Spark, you can simply copy the self-contained tokenizer and import it to your project, delete `TokenizerTransformer` and ignore all Apache Spark dependencies.
+For really large input files in a big data setting, it is more convenient to use the tokenizer together with the [Apache Spark](http://spark.apache.org) library so that it is easy to port to a cluster of multiple nodes. We provide a transformer-based implementation of the Vietnamese tokenizer, in the class `vlp.tok.TokenizerTransformer`. This can be integrated into the machine learning pipeline of the Apache Spark Machine Learning library, in the same way as the standard `org.apache.spark.ml.feature.Tokenizer`. Note that the wrapper transformer depends on Apache Spark but not the tokenizer. If you do not want to use Apache Spark, you can simply copy the self-contained tokenizer and import it to your project, delete `TokenizerTransformer` and ignore all Apache Spark dependencies.
 
 ## 2. Part-of-Speech Tagger
 
 The tagger module implements a simple first-order conditional Markov model (CMM) for sequence tagging. The basic features include current word, previous word, next word, current word shape, next word shape, previous previous word, and next next word. Each local transition probability is specified by a multinomial logistic regression model.
 
-On the standard VLSP 2010 part-of-speech tagged treebank, this simple model gives a training accuracy is 0.9638 when all the corpus is used for training. A pre-trained model is provided in the directory `dat/tag/cmm`.
+On the standard VLSP 2010 part-of-speech tagged treebank, this simple model gives a training accuracy of 0.9638 when all the corpus is used for training. A pre-trained model is provided in the directory `dat/tag/cmm`.
 
 Since the machine learning pipeline in use is that of Apache Spark, this module depends on Apache Spark. Suppose that you have alreadly a version of Apache Spark installed (say at the time of this writing, we use Spark 2.4.5). 
 
