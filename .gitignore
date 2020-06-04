@@ -8,4 +8,4 @@ target/
 .out
 .tok
 .bson
-
+.log
