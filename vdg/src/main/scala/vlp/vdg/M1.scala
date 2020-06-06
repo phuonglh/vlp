@@ -123,8 +123,8 @@ class M1(config: ConfigVDG) extends M(config) {
       labelPaddingParam = paddingY
     )
 
-    val trainSummary = TrainSummary(appName = "VDG", logDir = "dat/vdg/summary/")
-    val validationSummary = ValidationSummary(appName = "VDG", logDir = "dat/vdg/summary/")
+    val trainSummary = TrainSummary(appName = modelSt, logDir = "dat/vdg/summary/")
+    val validationSummary = ValidationSummary(appName = modelSt, logDir = "dat/vdg/summary/")
 
     logger.info("Training a RNN transducer model...")
     optimizer.setOptimMethod(new Adagrad[Float](learningRate = config.learningRate, learningRateDecay = 1E-3))
@@ -133,6 +133,12 @@ class M1(config: ConfigVDG) extends M(config) {
       .setValidationSummary(validationSummary)
       .setTrainSummary(trainSummary)
       .optimize()
+    val trainLoss = trainSummary.readScalar("Loss")
+    val trainAccuracy = trainSummary.readScalar("TimeDistributedTop1Accuracy")
+    val validationLoss = validationSummary.readScalar("Loss")
+    val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
+    logger.info("     Train Accuracy: " + trainAccuracy.mkString(", "))
+    logger.info("Validation Accuracy: " + validationAccuracy.mkString(", "))
     logger.info("Saving the RNN transducer...")
     model.saveModule(path + "vdg.bigdl", path + "vdg.bin", true)
   }

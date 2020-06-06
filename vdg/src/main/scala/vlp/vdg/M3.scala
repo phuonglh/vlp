@@ -181,8 +181,8 @@ class M3(config: ConfigVDG) extends M2(config){
       labelPaddingParam = paddingY
     )
 
-    val trainSummary = TrainSummary(appName = "VDR", logDir = "/tmp/")
-    val validationSummary = ValidationSummary(appName = "VDR", logDir = "/tmp/")
+    val trainSummary = TrainSummary(appName = modelSt, logDir = "/tmp/")
+    val validationSummary = ValidationSummary(appName = modelSt, logDir = "/tmp/")
 
     logger.info("Training a RNN transducer model...")
     optimizer.setOptimMethod(new Adagrad[Float](learningRate = config.learningRate, learningRateDecay = 1E-3))
