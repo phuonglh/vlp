@@ -2,6 +2,8 @@
 // 
 val sparkVersion = "2.4.5"
 
+javacOptions ++= Seq("-encoding", "UTF-8")
+
 lazy val commonSettings = Seq(
   scalaVersion := "2.11.12",
   name := "vlp",
@@ -98,12 +100,24 @@ lazy val idx = (project in file("idx"))
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
   )
 
-// Vietnamese diacritics restoration module
+// Vietnamese diacritics restoration module (CMM-based approach)
 lazy val vdr = (project in file("vdr")) 
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.vdr.Restorer"),
     assemblyJarName in assembly := "vdr.jar",
+    libraryDependencies ++= Seq()
+  )
+
+// Vietnamese diacritics generation module (RNN-based approaches)
+lazy val vdg = (project in file("vdg"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.vdg.VDG"),
+    assemblyJarName in assembly := "vdg.jar",
+    resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided"
     )
   )

@@ -6,12 +6,15 @@ A Vietnamese text processing library developed in the Scala programming language
 
 This is a repository of a Scala project which implements some basic tasks of Vietnamese text processing.
 Each basic task is implemented in a module. 
+
 1. `tok`: tokenizer, which implements a rule-based word segmentation approach;
 2. `tag`: tagger, which implements a conditional Markov model for sequence tagging;
 3. `ner`: named entity recognizer, which implements a bidirectional conditional Markov model for sequence tagging;
 4. `tdp`: dependency parser, which implements a transition-based dependency parsing approach;
-5. `tpm`: topic modeling, which implements a Latent Dirichlet Allocation (LDA) model;
-6. `tcl`: text classifier, which implements a feed-forward neural network model for text classification
+5. `tpm`: topic modeling, which implements a Latent Dirichlet Allocation model;
+6. `tcl`: text classifier, which implements a feed-forward neural network model for text classification;
+7. `vdr`: diacritics restorer, which implements a conditional Markov model to recover diacritics for non-accented Vietnamese text; 
+8. `vdg`: diacritics generation, which implements 3 RNN-based models to recover diacritics for non-accented Vietnamese text;
 
 ## 1. Tokenizer
 
@@ -241,6 +244,14 @@ In the default `eval` mode, the classifier will print out evaluation score of th
 `$spark-submit --driver-memory 8g --class vlp.tcl.Classifier tcl.jar`
 
 There is also a common option for verbose mode (`-v`) and for using the classifier with a cluster instead of a single local machine (`-M <masterURL>`).
+
+## 7. Diacritics Restorer
+
+- TODO
+
+## 8. Diacritics Generation
+
+- TODO
 
 ## Compile and Package
 
