@@ -39,8 +39,8 @@ import scopt.OptionParser
   * X = 10, Y = 60, then there are 6 executors. The executor memory = 4g. The batch size should be 4x10 = 40.
   *
   */
-object VDG {
-  final val logger = LoggerFactory.getLogger(VDG.getClass.getName)
+object Generator {
+  final val logger = LoggerFactory.getLogger(Generator.getClass.getName)
 
   def eval(config: ConfigVDG, vdg: M, dataSet: DataFrame, preprocessor: PipelineModel, module: Module[Float], trainingTime: Long = 0): Unit = {
     val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(Array(0.8, 0.1, 0.1), 150909L)
@@ -66,8 +66,8 @@ object VDG {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
 
-    val parser = new OptionParser[ConfigVDG]("VDG") {
-      head("group.vlp.vdg", "0.1")
+    val parser = new OptionParser[ConfigVDG]("Generator") {
+      head("vlp.vdg", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
@@ -86,7 +86,7 @@ object VDG {
       opt[Int]('c', "lookupCharacterSize").action((x, conf) => conf.copy(lookupCharacterSize = x)).text("character embedding size")
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
       opt[Unit]('q', "peephole").action((x, conf) => conf.copy(peephole = true)).text("use 'peephole' connection with LSTM")
-      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path, default is 'dat/fin/*.txt'")
+      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path, default is 'dat/txt/vtb.txt'")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/vdg/'")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path, default is 'dat/txt/test.txt'")
       opt[Unit]('y', "jsonData").action((x, conf) => conf.copy(jsonData = true)).text("use JSON dataset, default is true for 'dat/txt/news.json'")
@@ -103,13 +103,12 @@ object VDG {
           case _ => new M1(config)
         }
         val conf = Engine.createSparkConf()
-          .setAppName("VDG")
+          .setAppName("Generator")
           .setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
           .set("spark.cores.max", config.totalCores.toString)
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.serializer", "org.apache.spark.serializer.JavaSerializer")
-          .set("spark.driver.extraClassPath", "/opt/intel/mkl/wrapper/mkl_wrapper.jar")
           .set("spark.executor.extraJavaOptions", "-Dcom.github.fommil.netlib.BLAS=com.intel.mkl.MKLBLAS -Dcom.github.fommil.netlib.LAPACK=com.intel.mkl.MKLLAPACK")
           .set("spark.executorEnv.MKL_VERBOSE", "1")
         val sparkContext = new SparkContext(conf)
