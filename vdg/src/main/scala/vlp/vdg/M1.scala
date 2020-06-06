@@ -71,7 +71,7 @@ class M1(config: ConfigVDG) extends M(config) {
     val preprocessor = buildPreprocessor(trainingSet)
     logger.info("Saving the Spark pre-processing pipeline...")
     val modelSt = "M" + config.modelType + (if (config.gru) "G"; else "L") + config.layers + "H" + config.hiddenUnits
-    val path = config.modelPath + s"${modelSt}/"
+    val path = config.modelPath + modelSt + "/"
     preprocessor.write.overwrite().save(path)
 
     val inputLabels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary

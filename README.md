@@ -14,7 +14,7 @@ Each basic task is implemented in a module.
 5. `tpm`: topic modeling, which implements a Latent Dirichlet Allocation model;
 6. `tcl`: text classifier, which implements a feed-forward neural network model for text classification;
 7. `vdr`: diacritics restorer, which implements a conditional Markov model to recover diacritics for non-accented Vietnamese text; 
-8. `vdg`: diacritics generation, which implements 3 RNN-based models to recover diacritics for non-accented Vietnamese text;
+8. `vdg`: diacritics generator, which implements 3 RNN-based models to recover diacritics for non-accented Vietnamese text;
 
 ## 1. Tokenizer
 
@@ -249,7 +249,7 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 
 - TODO
 
-## 8. Diacritics Generation
+## 8. Diacritics Generator
 
 - TODO
 
