@@ -87,7 +87,7 @@ object Generator {
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
       opt[Unit]('q', "peephole").action((x, conf) => conf.copy(peephole = true)).text("use 'peephole' connection with LSTM")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path, default is 'dat/txt/vtb.txt'")
-      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/vdg/'")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/vdg/vtb/'")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path, default is 'dat/txt/test.txt'")
       opt[Unit]('y', "jsonData").action((x, conf) => conf.copy(jsonData = true)).text("use JSON dataset, default is true for 'dat/txt/news.json'")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")

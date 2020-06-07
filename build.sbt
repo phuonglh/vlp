@@ -123,3 +123,26 @@ lazy val vdg = (project in file("vdg"))
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
     )
   )
+
+// Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
+lazy val zoo = (project in file("zoo"))
+  .settings(
+    commonSettings,
+    assemblyJarName in assembly := "zoo.jar",
+    resolvers += Resolver.mavenLocal,
+    libraryDependencies ++= Seq(
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"
+    ),
+    assemblyMergeStrategy in assembly := {
+      case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
+      case x if x.contains("com/intel/analytics/bigdl/mkl/") => MergeStrategy.first
+      case x if x.contains("org/tensorflow/") => MergeStrategy.first
+      case x if x.contains("google/protobuf") => MergeStrategy.first
+      case x if x.contains("org/apache/spark/unused") => MergeStrategy.first
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  )
