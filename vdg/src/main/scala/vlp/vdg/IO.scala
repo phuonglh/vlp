@@ -9,6 +9,7 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
+import org.apache.log4j.{Level, Logger}
 
 case class News(url: String, sentences: List[String])
 
@@ -53,11 +54,29 @@ object IO {
     * @return an array of (validation) accuracy scores at each epoch.
     */
   def extractAccuracySummary(tag: String = "validation", epochs: Int): Array[Float] = {
-    val summary = ValidationSummary(appName = "VDR", logDir = "/tmp/")
+    val summary = ValidationSummary(appName = "VDG", logDir = "/tmp/")
     val accuracy = summary.readScalar("TimeDistributedTop1Accuracy").map(_._2).takeRight(epochs)
-    val outputPath = "/tmp/VDR/" + tag + "accuracy.txt"
+    val outputPath = "/tmp/VDG/" + tag + "accuracy.txt"
     import scala.collection.JavaConverters._
     Files.write(Paths.get(outputPath), accuracy.map(_.toString).toList.asJava, StandardCharsets.UTF_8)
     accuracy
+  }
+
+  def main(args: Array[String]): Unit = {
+    val jsonPath = "dat/txt/fin.json"
+    val textPath = "dat/txt/fin.txt"
+    Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
+    val sparkSession = SparkSession.builder().appName(getClass.getName).master("local[*]")
+      .config("spark.executor.memory", "8g")
+      .config("spark.driver.host", "localhost")
+      .getOrCreate()
+    val df = readJsonFiles(sparkSession.sparkContext, jsonPath) 
+    println("df.count() = " + df.count())
+    df.show(false)
+    import sparkSession.implicits._
+    val sentences = df.select("text").map(row => row.getString(0)).collect().toList
+    import scala.collection.JavaConversions._
+    Files.write(Paths.get(textPath), sentences, StandardCharsets.UTF_8)
+    sparkSession.stop()
   }
 }
