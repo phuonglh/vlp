@@ -54,6 +54,7 @@ abstract class M(config: ConfigVDG) extends Serializable {
     */
   def eval(dataset: DataFrame, preprocessor: PipelineModel, module: Module[Float]) = {
     val result = test(dataset, preprocessor, module)
+    result.cache()
     // compute the total number of visible characters in the input sequences
     val numChars = result.map(row => row.getAs[Seq[String]](0).mkString.filterNot(_ == ' ').size).sum
     val rdd = result.map(row => {
