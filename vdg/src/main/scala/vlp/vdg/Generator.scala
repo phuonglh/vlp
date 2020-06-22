@@ -82,6 +82,7 @@ object Generator {
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length in chars or tokens, depending on model type")
       opt[Int]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type to use, either 1, 2 or 3")
+      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
       opt[Int]('w', "lookupWordSize").action((x, conf) => conf.copy(lookupWordSize = x)).text("word embedding size")
       opt[Int]('c', "lookupCharacterSize").action((x, conf) => conf.copy(lookupCharacterSize = x)).text("character embedding size")
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")

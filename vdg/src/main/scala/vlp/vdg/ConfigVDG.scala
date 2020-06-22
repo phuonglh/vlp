@@ -45,7 +45,7 @@ case class ConfigVDG(
   batchSize: Int = 32,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 100,
-  learningRate: Double = 1E-2,
+  learningRate: Double = 0.001,
   epochs: Int = 15,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU

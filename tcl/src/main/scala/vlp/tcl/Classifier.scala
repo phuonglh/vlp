@@ -194,6 +194,12 @@ object Classifier {
     sparkSession.createDataFrame(rows, schema).as[Document]
   }
 
+  def readHSD(sparkSession: SparkSession, path: String): Dataset[Document] = {
+    import sparkSession.implicits._
+    sparkSession.read.json(path).select("category", "withoutAccent")
+      .withColumnRenamed("withoutAccent", "text").as[Document]
+  }
+
   /**
     * Samples a percentage of an input data and write that sample into an output path.
     * @param sparkSession
@@ -259,6 +265,23 @@ object Classifier {
             tcl.eval(model, trainingDataset)
             tcl.eval(model, devDataset)
             tcl.eval(model, testDataset)
+          case "trainHSD" => 
+            val shd = readHSD(sparkSession, "dat/hsd/withoutAccent")
+            val Array(a, b) = shd.randomSplit(Array(0.8, 0.2), seed = 20150909)
+            a.show()
+            tcl.train(a)
+            tcl.eval(a)
+            b.show()
+            tcl.eval(b)
+          case "evalHSD" => 
+            val shd = readHSD(sparkSession, "dat/hsd/withoutAccent")
+            val stats = shd.groupBy("category").count()
+            stats.show(false)
+            val Array(a, b) = shd.randomSplit(Array(0.8, 0.2), seed = 20150909)
+            a.show()
+            tcl.eval(a)
+            b.show()
+            tcl.eval(b)
         }
         sparkSession.stop()
       case None =>
