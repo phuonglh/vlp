@@ -6,6 +6,7 @@ package vlp.vdg
   * @param master Apache Spark master URL
   * @param totalCores total number of cores of all the machines
   * @param executorCores number of cores for each executors
+  * @param driverMemory memory for the driver
   * @param executorMemory memory for each executor
   * @param mode running mode of the program (train/eval/exp)
   * @param minFrequency feature frequency cutoff
@@ -35,6 +36,7 @@ case class ConfigVDG(
   master: String = "local[*]",
   totalCores: Int = 8,
   executorCores: Int = 8,
+  driverMemory: String = "8g",
   executorMemory: String = "8g",
   mode: String = "eval",
   minFrequency: Int = 3,
