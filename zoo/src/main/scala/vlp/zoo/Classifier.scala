@@ -49,7 +49,7 @@ case class ConfigClassifier(
   maxSequenceLength: Int = 500,
   trainingSplit: Double = 0.8,
   batchSize: Int = 64,
-  epochs: Int = 20,
+  epochs: Int = 15,
   learningRate: Double = 0.001,
   partitions: Int = 4,
   minFrequency: Int = 2,
