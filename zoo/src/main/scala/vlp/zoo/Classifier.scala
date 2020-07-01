@@ -87,7 +87,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     )
     val Array(training, validation) = transformedTextSet.randomSplit(Array(config.trainingSplit, 1 - config.trainingSplit))
     classifier.fit(training, batchSize = config.batchSize, nbEpoch = config.epochs, validation)
-    classifier.saveModel(config.modelPath + config.encoder + ".bin")
+    classifier.saveModel(config.modelPath + config.encoder + ".bin", overWrite = true)
     transformedTextSet.saveWordIndex(config.modelPath + "/wordIndex.txt")
     println("Trained model and word dictionary saved.")
   }
@@ -141,15 +141,16 @@ object Classifier {
             app.train(textSet)
           case "eval" =>
             val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-            textSet.rdd.cache()
+              .loadWordIndex(config.modelPath + "/wordIndex.txt")
             val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
-            classifier.setEvaluateStatus()
+            classifier.setEvaluateStatus()           
             val validationMethods = Array(new Top1Accuracy[Float](), new Top5Accuracy[Float]())
             val prediction = app.predict(textSet, classifier)
             val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
             println(accuracy.mkString(", "))
           case "predict" =>
             val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
+              .loadWordIndex(config.modelPath + "/wordIndex.txt")
             val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
             val prediction = app.predict(textSet, classifier)
             prediction.toLocal().array.take(10).foreach(println)
