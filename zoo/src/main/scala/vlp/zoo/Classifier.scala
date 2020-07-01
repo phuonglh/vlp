@@ -5,15 +5,18 @@ import org.apache.spark.SparkContext
 import org.apache.log4j.{Level, Logger}
 import org.slf4j.LoggerFactory
 
-import com.intel.analytics.bigdl.optim.{Adagrad, Top1Accuracy}
+import com.intel.analytics.bigdl.optim.{Adam, Top1Accuracy, Top5Accuracy}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.zoo.feature.text.{TextFeature, TextSet}
 import com.intel.analytics.zoo.models.textclassification.TextClassifier
-import com.intel.analytics.zoo.pipeline.api.keras.metrics.{Accuracy, Top5Accuracy}
 import com.intel.analytics.zoo.pipeline.api.keras.objectives.SparseCategoricalCrossEntropy
 import scopt.OptionParser
-import com.intel.analytics.bigdl.optim.Adam
+import com.intel.analytics.bigdl.mkl.MKL
+import java.{util => ju}
+import com.intel.analytics.zoo.pipeline.api.keras.metrics.SparseCategoricalAccuracy
+import java.text.DateFormat
+import java.text.SimpleDateFormat
 
 /**
   * Configuration parameters of a Neural Network Classifier.
@@ -48,7 +51,7 @@ case class ConfigClassifier(
   batchSize: Int = 64,
   epochs: Int = 20,
   learningRate: Double = 0.001,
-  partitions: Int = 1,
+  partitions: Int = 4,
   minFrequency: Int = 2,
   verbose: Boolean = false
 )
@@ -79,11 +82,12 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     val numLabels = textSet.toLocal().array.map(textFeature => textFeature.getLabel).toSet.size
 
     val classifier = TextClassifier(numLabels, config.gloveEmbeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
-    classifier.setTensorBoard(logDir = "/tmp/zoo/", appName = "zoo.tcl")
+    val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new ju.Date())
+    classifier.setTensorBoard(logDir = "/tmp/zoo/tcl", appName = config.encoder + "/" + date)
     classifier.compile(
       optimizer = new Adam(learningRate = config.learningRate),
       loss = SparseCategoricalCrossEntropy[Float](),
-      metrics = List(new Accuracy())
+      metrics = List(new SparseCategoricalAccuracy[Float]())
     )
     val Array(training, validation) = transformedTextSet.randomSplit(Array(config.trainingSplit, 1 - config.trainingSplit))
     classifier.fit(training, batchSize = config.batchSize, nbEpoch = config.epochs, validation)
@@ -113,10 +117,11 @@ object Classifier {
     val sparkConfig = Engine.createSparkConf()
       .setMaster("local[*]")
       .setAppName("Neural Text Classifier")
-      // .set("spark.driver.host", "localhost")
     val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
     val sparkContext = sparkSession.sparkContext
     Engine.init
+
+    MKL.setNumThreads(4)
 
     val parser = new OptionParser[ConfigClassifier]("zoo.tcl") {
       head("vlp.zoo.Classifier", "1.0")
@@ -141,16 +146,14 @@ object Classifier {
             app.train(textSet)
           case "eval" =>
             val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-              .loadWordIndex(config.modelPath + "/wordIndex.txt")
             val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
             classifier.setEvaluateStatus()           
-            val validationMethods = Array(new Top1Accuracy[Float](), new Top5Accuracy[Float]())
+            val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
             val prediction = app.predict(textSet, classifier)
-            val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
+            val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
             println(accuracy.mkString(", "))
           case "predict" =>
             val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-              .loadWordIndex(config.modelPath + "/wordIndex.txt")
             val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
             val prediction = app.predict(textSet, classifier)
             prediction.toLocal().array.take(10).foreach(println)
