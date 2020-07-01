@@ -5,7 +5,7 @@ A Vietnamese text processing library developed in the Scala programming language
 ## 0. Introduction
 
 This is a repository of a Scala project which implements some basic tasks of Vietnamese text processing.
-Each basic task is implemented in a module. 
+Each basic task is implemented in a module. Some modules can be tested on a demo site [here](http://vlp.group/vlp/).
 
 1. `tok`: tokenizer, which implements a rule-based word segmentation approach;
 2. `tag`: tagger, which implements a conditional Markov model for sequence tagging;
@@ -15,6 +15,7 @@ Each basic task is implemented in a module.
 6. `tcl`: text classifier, which implements a feed-forward neural network model for text classification;
 7. `vdr`: diacritics restorer, which implements a conditional Markov model to recover diacritics for non-accented Vietnamese text; 
 8. `vdg`: diacritics generator, which implements 3 RNN-based models to recover diacritics for non-accented Vietnamese text;
+9. `zoo`: text classifier, which implements deep learning based models for text classification, including CNN, LSTM and GRU architectures;
 
 ## 1. Tokenizer
 
@@ -252,6 +253,10 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 ## 8. Diacritics Generator
 
 - TODO
+
+## 9. Zoo
+
+- TODO 
 
 ## Compile and Package
 
