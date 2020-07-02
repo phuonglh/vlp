@@ -124,6 +124,23 @@ lazy val vdg = (project in file("vdg"))
     )
   )
 
+// Word to vector module
+lazy val vec = (project in file("vec"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.vec.W2V"),
+    assemblyJarName in assembly := "vec.jar",
+    resolvers += Resolver.mavenLocal,
+    libraryDependencies ++= Seq(
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"
+    ),
+  )
+
+
+
 // Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
 lazy val zoo = (project in file("zoo"))
   .settings(
