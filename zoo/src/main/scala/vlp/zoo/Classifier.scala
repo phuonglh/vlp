@@ -43,7 +43,7 @@ case class ConfigClassifier(
   dataPath: String = "/opt/data/news20/20news-18828/",
   gloveEmbeddingPath: String = "/opt/data/emb/glove.6B.200d.txt",
   modelPath: String = "dat/zoo/tcl/", // need the last back slash
-  numFeatures: Int = 8192,
+  numFeatures: Int = 16384,
   encoder: String = "cnn",
   encoderOutputDimension: Int = 256,
   maxSequenceLength: Int = 500,
