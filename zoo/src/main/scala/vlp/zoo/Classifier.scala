@@ -113,16 +113,18 @@ object Classifier {
   Logger.getLogger("com.intel.analytics.bigdl.optim").setLevel(Level.INFO)
   Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
 
+
+  /**
+    * Reads the vnExpress 5-category corpus (of 344,32 news articles) and
+    * build a TextSet.
+    * @param path the tokenized vnExprses corpus directory.
+    * @return a text set
+    */
+  def readVNE(path: String): TextSet = {
+    ???
+  }
+
   def main(args: Array[String]): Unit = {
-    val sparkConfig = Engine.createSparkConf()
-      .setMaster("local[*]")
-      .setAppName("Neural Text Classifier")
-    val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
-    val sparkContext = sparkSession.sparkContext
-    Engine.init
-
-    MKL.setNumThreads(4)
-
     val parser = new OptionParser[ConfigClassifier]("zoo.tcl") {
       head("vlp.zoo.Classifier", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
@@ -139,28 +141,36 @@ object Classifier {
     }
     parser.parse(args, ConfigClassifier()) match {
       case Some(config) =>
-        val app = new Classifier(sparkSession.sparkContext, config)
-        config.mode match {
-          case "train" =>
-            val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-            app.train(textSet)
-          case "eval" =>
-            val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-            val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
-            classifier.setEvaluateStatus()           
-            val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
-            val prediction = app.predict(textSet, classifier)
-            val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
-            println(accuracy.mkString(", "))
-          case "predict" =>
-            val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-            val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
-            val prediction = app.predict(textSet, classifier)
-            prediction.toLocal().array.take(10).foreach(println)
-        }
+      val sparkConfig = Engine.createSparkConf()
+        .setMaster(config.master)
+        .setAppName("Neural Text Classifier")
+      val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
+      val sparkContext = sparkSession.sparkContext
+      Engine.init
+
+      MKL.setNumThreads(4)
+
+      val app = new Classifier(sparkSession.sparkContext, config)
+      config.mode match {
+        case "train" =>
+          val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
+          app.train(textSet)
+        case "eval" =>
+          val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
+          val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
+          classifier.setEvaluateStatus()           
+          val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
+          val prediction = app.predict(textSet, classifier)
+          val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
+          println(accuracy.mkString(", "))
+        case "predict" =>
+          val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
+          val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
+          val prediction = app.predict(textSet, classifier)
+          prediction.toLocal().array.take(10).foreach(println)
+      }
+      sparkSession.stop()
       case None =>
     }
-    sparkSession.stop()
   }
-
 }
