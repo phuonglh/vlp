@@ -13,6 +13,7 @@ import org.json4s._
 import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
+import com.intel.analytics.bigdl.mkl.MKL
 
 /**
   * Vietnamese Diacritics Generation
@@ -117,6 +118,9 @@ object Generator {
         val sparkContext = new SparkContext(conf)
         Engine.init
 
+        // use MKL to speedup the processing
+        MKL.setNumThreads(4)
+    
         val modelSt = "M" + config.modelType + (if (config.gru) "G"; else "L") + config.layers + "H" + config.hiddenUnits
         val path = config.modelPath + s"${modelSt}/"
 
