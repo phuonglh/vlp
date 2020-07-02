@@ -71,18 +71,20 @@ object W2V {
     val parser = new OptionParser[ConfigW2V]("vlp.vec") {
       head("vlp.vec", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "minLength").action((x, conf) => conf.copy(minLength = x)).text("min sentence length in characters, default is 20")
       opt[Int]('w', "windowSize").action((x, conf) => conf.copy(windowSize = x)).text("windows size, default is 5")
       opt[String]('d', "data").action((x, conf) => conf.copy(data = x)).text("data path")
-      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is '/dat/vlp/vec/'")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is '/dat/vec/'")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
     }
     parser.parse(args, ConfigW2V()) match {
       case Some(config) =>
-        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).config("spark.executor.memory", "8g").getOrCreate()
+        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master)
+          .config("spark.executor.memory", config.executorMemory).getOrCreate()
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
         val w2v = new W2V(sparkSession, config)
