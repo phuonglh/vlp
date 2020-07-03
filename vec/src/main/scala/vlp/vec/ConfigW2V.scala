@@ -15,6 +15,7 @@ case class ConfigW2V(
   dimension: Int = 50,
   modelPath: String = "dat/vec/",
   iterations: Int = 50,
-  data: String = "dat/txt/news.txt",
-  output: String = "dat/vec/vie.50d.txt"
+  input: String = "/Users/phuonglh/vlp/dat/txt/vlsp/",
+  text: Boolean = false, // input data in .json format or .txt format
+  output: String = "/Users/phuonglh/vlp/dat/vec/vie.50d.txt"
 )

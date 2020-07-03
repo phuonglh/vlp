@@ -10,6 +10,7 @@ import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
+import java.io.File
 
 /**
   * phuonglh, April, 2018; updated December 2019.
@@ -20,9 +21,19 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
 
   def train: Unit = {
     import spark.implicits._
-    val dataset = spark.sparkContext.textFile(config.data).filter(_.trim.size > config.minLength).toDF("text")
+    // data is one .txt file or one directory of .json files (result of TokenizerSparkApp)
+    val dataset = if (config.text) 
+        spark.sparkContext.textFile(config.input).filter(_.trim.size > config.minLength).toDF("text")
+      else {
+        // each .json file is read to a df and these dfs are concatenated to form a big df
+        val filenames = new File(config.input).list().filter(_.endsWith(".json"))
+        val dfs = filenames.map(f => spark.read.json(config.input + f))
+        dfs.reduce(_ union _)
+      }
     dataset.cache()
     logger.info("#(sentences) = " + dataset.count())
+    dataset.show(20, false)
+
     val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setConvertPunctuation(true)
     val tokenizer = new Tokenizer().setInputCol("tokenized").setOutputCol("tokens")
     val w2v = new Word2Vec().setInputCol("tokens").setOutputCol("vector")
@@ -66,7 +77,7 @@ object W2V {
   final val logger = LoggerFactory.getLogger(getClass.getName)
 
   def main(args: Array[String]): Unit = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+    Logger.getLogger("org.apache.spark").setLevel(Level.INFO)
 
     val parser = new OptionParser[ConfigW2V]("vlp.vec") {
       head("vlp.vec", "1.0")
@@ -77,7 +88,8 @@ object W2V {
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "minLength").action((x, conf) => conf.copy(minLength = x)).text("min sentence length in characters, default is 20")
       opt[Int]('w', "windowSize").action((x, conf) => conf.copy(windowSize = x)).text("windows size, default is 5")
-      opt[String]('d', "data").action((x, conf) => conf.copy(data = x)).text("data path")
+      opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input data path")
+      opt[Unit]('t', "textFormat").action((_, conf) => conf.copy(text = true)).text("text input data format")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is '/dat/vec/'")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
     }
