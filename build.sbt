@@ -131,12 +131,7 @@ lazy val vec = (project in file("vec"))
     commonSettings,
     mainClass in assembly := Some("vlp.vec.W2V"),
     assemblyJarName in assembly := "vec.jar",
-    resolvers += Resolver.mavenLocal,
-    libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"
-    ),
+    resolvers += Resolver.mavenLocal
   )
 
 
