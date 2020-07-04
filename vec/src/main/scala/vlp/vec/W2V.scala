@@ -31,7 +31,7 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
         dfs.reduce(_ union _)
       }
     dataset.cache()
-    logger.info("#(sentences) = " + dataset.count())
+    logger.info("#(texts) = " + dataset.count())
     dataset.show(20, false)
 
     val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setConvertPunctuation(true)
@@ -77,7 +77,7 @@ object W2V {
   final val logger = LoggerFactory.getLogger(getClass.getName)
 
   def main(args: Array[String]): Unit = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.INFO)
+    Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
 
     val parser = new OptionParser[ConfigW2V]("vlp.vec") {
       head("vlp.vec", "1.0")
@@ -89,7 +89,7 @@ object W2V {
       opt[Int]('l', "minLength").action((x, conf) => conf.copy(minLength = x)).text("min sentence length in characters, default is 20")
       opt[Int]('w', "windowSize").action((x, conf) => conf.copy(windowSize = x)).text("windows size, default is 5")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input data path")
-      opt[Unit]('t', "textFormat").action((_, conf) => conf.copy(text = true)).text("text input data format")
+      opt[Unit]('t', "textFormat").action((_, conf) => conf.copy(text = true)).text("text input data format instead of JSON")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is '/dat/vec/'")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
     }
