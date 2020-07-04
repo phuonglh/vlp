@@ -82,7 +82,7 @@ object W2V {
     val parser = new OptionParser[ConfigW2V]("vlp.vec") {
       head("vlp.vec", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
-      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(master = x)).text("executor memory, default is 8g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")

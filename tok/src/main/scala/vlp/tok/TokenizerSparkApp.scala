@@ -14,7 +14,7 @@ case class ConfigTokenizer(
   executorMemory: String = "8g",
   minPartitions: Int = 1,
   input: String = "",
-  format: String = "json",
+  format: String = "json", // json/text/vne
   output: String = ""
 )
 
@@ -38,8 +38,20 @@ object TokenizerSparkApp {
     sparkSession.read.json(config.input)
   }
 
+  def readVNE(sparkSession: SparkSession, config: ConfigTokenizer): DataFrame = {
+    val rdd = sparkSession.sparkContext.textFile(config.input, config.minPartitions)
+    val rows = rdd.map(line => {
+      val j = line.indexOf('\t')
+      val category = line.substring(0, j).trim
+      val content = line.substring(j+1).trim
+      Row(category, content)
+    })
+    val schema = new StructType().add(StructField("category", StringType, true)).add(StructField("content", StringType, true))
+    sparkSession.createDataFrame(rows, schema)
+  }
+
   def main(args: Array[String]): Unit = {
-    val parser = new OptionParser[ConfigTokenizer]("zoo.tcl") {
+    val parser = new OptionParser[ConfigTokenizer]("vlp.tok") {
       head("vlp.tok.TokenizerSparkApp", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('e', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
@@ -54,15 +66,18 @@ object TokenizerSparkApp {
           .config("spark.executor.memory", config.executorMemory)
           .getOrCreate()
 
-        val df = if (config.format == "json") 
-          readJson(sparkSession, config)
-        else readText(sparkSession, config)
+        val df = config.format match {
+          case "json" => readJson(sparkSession, config)
+          case "text" => readText(sparkSession, config)
+          case "vne" => readVNE(sparkSession, config)
+        }
         df.printSchema()
         
         val tokenizer = new TokenizerTransformer().setSplitSentences(true).setInputCol("content").setOutputCol("text")
-        val tokenized = tokenizer.transform(df).select("text")
-        println(s"Number of texts = ${tokenized.count()}")
-        tokenized.write.mode(SaveMode.Overwrite).json(config.output)
+        val tokenized = tokenizer.transform(df)
+        val result = if (config.format == "vne") tokenized.select("category", "text") else tokenized.select("text")
+        println(s"Number of texts = ${result.count()}")
+        result.write.mode(SaveMode.Overwrite).json(config.output)
         sparkSession.stop()
       case None => 
     }

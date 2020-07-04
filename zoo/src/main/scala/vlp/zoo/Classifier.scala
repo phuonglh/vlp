@@ -17,6 +17,10 @@ import java.{util => ju}
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.SparseCategoricalAccuracy
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import org.apache.spark.sql.types.{StructType, StructField, StringType}
+import org.apache.spark.sql.RowFactory
+
+import vlp.tok.SentenceDetection
 
 /**
   * Configuration parameters of a Neural Network Classifier.
@@ -116,12 +120,23 @@ object Classifier {
 
   /**
     * Reads the vnExpress 5-category corpus (of 344,32 news articles) and
-    * build a TextSet.
-    * @param path the tokenized vnExprses corpus directory.
-    * @return a text set
+    * build a TextSet. If the number of sentences are positive then only that number of sentences 
+    * for each document are loaded. Default is a negative value -1, which means all the content will be loaded.
+    *
+    * @param sparkSession
+    * @param path path to the data file(s)
+    * @param numberOfSentences
+    * @return a data frame of two columns (category, text)
     */
-  def readVNE(path: String): TextSet = {
-    ???
+  def readTextData(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): DataFrame = {
+    val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
+    val rows = rdd.map { line =>
+      val parts = line.split("\\t+")
+      val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
+      RowFactory.create(parts(0).trim, text)
+    }
+    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
+    sparkSession.createDataFrame(rows, schema)
   }
 
   def main(args: Array[String]): Unit = {

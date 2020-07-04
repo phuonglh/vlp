@@ -138,6 +138,7 @@ lazy val vec = (project in file("vec"))
 
 // Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
 lazy val zoo = (project in file("zoo"))
+  .dependsOn(tok)
   .settings(
     commonSettings,
     assemblyJarName in assembly := "zoo.jar",
