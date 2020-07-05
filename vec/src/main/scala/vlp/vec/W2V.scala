@@ -89,6 +89,7 @@ object W2V {
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "minLength").action((x, conf) => conf.copy(minLength = x)).text("min sentence length in characters, default is 20")
       opt[Int]('w', "windowSize").action((x, conf) => conf.copy(windowSize = x)).text("windows size, default is 5")
+      opt[Int]('d', "dimension").action((x, conf) => conf.copy(dimension = x)).text("vector dimension, default is 50")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input data path")
       opt[Unit]('t', "textFormat").action((_, conf) => conf.copy(text = true)).text("text input data format instead of JSON")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is '/dat/vec/'")
