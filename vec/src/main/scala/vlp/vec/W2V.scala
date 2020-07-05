@@ -34,7 +34,8 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
     logger.info("#(texts) = " + dataset.count())
     dataset.show(20, false)
 
-    val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setConvertPunctuation(true)
+    val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized")
+      .setConvertPunctuation(true).setConvertNumber(true)
     val tokenizer = new Tokenizer().setInputCol("tokenized").setOutputCol("tokens")
     val w2v = new Word2Vec().setInputCol("tokens").setOutputCol("vector")
       .setMinCount(config.minFrequency).setVectorSize(config.dimension).setWindowSize(config.windowSize)
@@ -52,7 +53,7 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
     val pw = new java.io.PrintWriter(new java.io.File(config.output))
     try {
       m.getVectors.collect().foreach { row =>
-        val line = row.getAs[String](0) + "\t" + row.getAs[DenseVector](1)
+        val line = row.getAs[String](0) + "\t" + row.getAs[DenseVector](1).values.mkString(" ")
         pw.write(line)
         pw.write("\n")
       }
