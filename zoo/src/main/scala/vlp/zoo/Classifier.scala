@@ -13,14 +13,12 @@ import com.intel.analytics.zoo.models.textclassification.TextClassifier
 import com.intel.analytics.zoo.pipeline.api.keras.objectives.SparseCategoricalCrossEntropy
 import scopt.OptionParser
 import com.intel.analytics.bigdl.mkl.MKL
-import java.{util => ju}
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.SparseCategoricalAccuracy
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
-import vlp.tok.SentenceDetection
 import java.io.File
 
 /**
@@ -28,6 +26,7 @@ import java.io.File
   *
   * @param master Spark master
   * @param mode train/eval/predict
+  * @param executorMemory executor memory
   * @param dataPath path to the corpus
   * @param embeddingPath path to a pre-trained word embeddings file
   * @param modelPath pat to save trained model into
@@ -45,6 +44,7 @@ import java.io.File
 case class ConfigClassifier(
   master: String = "local[*]",
   mode: String = "eval",
+  executorMemory: String = "8g",
   dataPath: String = "/opt/data/vne/5cats.utf8/",
   embeddingPath: String = "/opt/data/emb/vie/glove.6B.200d.txt",
   modelPath: String = "dat/zoo/tcl/", // need the last back slash
@@ -90,7 +90,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     val numLabels = trainingSet.toLocal().array.map(textFeature => textFeature.getLabel).toSet.size
 
     val classifier = TextClassifier(numLabels, config.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
-    val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new ju.Date())
+    val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new java.util.Date())
     classifier.setTensorBoard(logDir = "/tmp/zoo/tcl", appName = config.encoder + "/" + date)
     classifier.compile(
       optimizer = new Adam(learningRate = config.learningRate),
@@ -144,7 +144,7 @@ object Classifier {
     val categories = input.select("category").map(row => row.getString(0)).distinct.collect().sorted
     val labels = categories.zipWithIndex.toMap
     println(s"Found ${labels.size} classes")
-    println(labels.mkString(" "))
+    println(labels.mkString(", "))
     println("Creating text set. Please wait...")
     val textRDD = input.rdd.map(row => TextFeature(row.getString(1).toLowerCase(), labels(row.getString(0))))
     TextSet.rdd(textRDD)
@@ -155,13 +155,14 @@ object Classifier {
       head("vlp.zoo.Classifier", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
+      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
-      opt[String]('e', "encoder").action((x, conf) => conf.copy(encoder = x)).text("encoder, either cnn, lstm or gru")
+      opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
       opt[Int]('o', "encoderOutputDimension").action((x, conf) => conf.copy(encoderOutputDimension = x)).text("output dimension of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
     }
@@ -169,6 +170,7 @@ object Classifier {
       case Some(config) =>
       val sparkConfig = Engine.createSparkConf()
         .setMaster(config.master)
+        .set("spark.executor.memory", config.executorMemory)
         .setAppName("Neural Text Classifier")
       val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
       val sparkContext = sparkSession.sparkContext

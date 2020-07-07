@@ -144,9 +144,9 @@ lazy val zoo = (project in file("zoo"))
     assemblyJarName in assembly := "zoo.jar",
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0"  % "provided",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"  % "provided"
     ),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
