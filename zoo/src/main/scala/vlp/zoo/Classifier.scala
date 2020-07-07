@@ -21,14 +21,15 @@ import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
 import vlp.tok.SentenceDetection
+import java.io.File
 
 /**
   * Configuration parameters of a Neural Network Classifier.
   *
   * @param master Spark master
   * @param mode train/eval/predict
-  * @param dataPath path to the corpus (20news-18828)
-  * @param gloveEmbeddingPath path to the GloVe pre-trained word embeddings
+  * @param dataPath path to the corpus
+  * @param embeddingPath path to a pre-trained word embeddings file
   * @param modelPath pat to save trained model into
   * @param numFeatures number of most frequent tokens sorted by their frequency
   * @param encoder the encoder for the input sequence (cnn, gru, lstm)
@@ -44,8 +45,8 @@ import vlp.tok.SentenceDetection
 case class ConfigClassifier(
   master: String = "local[*]",
   mode: String = "eval",
-  dataPath: String = "/opt/data/news20/20news-18828/",
-  gloveEmbeddingPath: String = "/opt/data/emb/glove.6B.200d.txt",
+  dataPath: String = "/opt/data/vne/5cats.utf8/",
+  embeddingPath: String = "/opt/data/emb/vie/glove.6B.200d.txt",
   modelPath: String = "dat/zoo/tcl/", // need the last back slash
   numFeatures: Int = 16384,
   encoder: String = "cnn",
@@ -72,20 +73,23 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
   import sparkSession.implicits._
   
   /**
-    * Trains a neural text classifier on a text set. Trained model and word index are saved to
+    * Trains a neural text classifier on a text set and validate on a validation set. Trained model and word index are saved to
     * an external path specified in the configuration.
-    * @param textSet
+    * @param trainingSet
+    * @param validationSet
     */
-  def train(textSet: TextSet): Unit = {
+  def train(trainingSet: TextSet, validationSet: TextSet): TextClassifier[Float] = {
     println("Processing text data set...")
-    val transformedTextSet = textSet.tokenize().normalize()
+    val transformedTrainingSet = trainingSet.tokenize()
       .word2idx(10, maxWordsNum = config.numFeatures, minFreq = config.minFrequency)
-      .shapeSequence(config.maxSequenceLength).generateSample()
-    val wordIndex = transformedTextSet.getWordIndex
+      .shapeSequence(config.maxSequenceLength)
+      .generateSample()
+    val wordIndex = transformedTrainingSet.getWordIndex
+    transformedTrainingSet.saveWordIndex(config.modelPath + "/wordIndex.txt")
 
-    val numLabels = textSet.toLocal().array.map(textFeature => textFeature.getLabel).toSet.size
+    val numLabels = trainingSet.toLocal().array.map(textFeature => textFeature.getLabel).toSet.size
 
-    val classifier = TextClassifier(numLabels, config.gloveEmbeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
+    val classifier = TextClassifier(numLabels, config.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
     val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new ju.Date())
     classifier.setTensorBoard(logDir = "/tmp/zoo/tcl", appName = config.encoder + "/" + date)
     classifier.compile(
@@ -93,15 +97,20 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
       loss = SparseCategoricalCrossEntropy[Float](),
       metrics = List(new SparseCategoricalAccuracy[Float]())
     )
-    val Array(training, validation) = transformedTextSet.randomSplit(Array(config.trainingSplit, 1 - config.trainingSplit))
-    classifier.fit(training, batchSize = config.batchSize, nbEpoch = config.epochs, validation)
+
+    val transformedValidationSet = validationSet.tokenize()
+      .setWordIndex(wordIndex).word2idx()
+      .shapeSequence(config.maxSequenceLength)
+      .generateSample()
+
+    classifier.fit(transformedTrainingSet, batchSize = config.batchSize, nbEpoch = config.epochs, transformedValidationSet)
     classifier.saveModel(config.modelPath + config.encoder + ".bin", overWrite = true)
-    transformedTextSet.saveWordIndex(config.modelPath + "/wordIndex.txt")
-    println("Trained model and word dictionary saved.")
+    println("Finish training model and saving word dictionary.")
+    classifier
   }
 
   def predict(textSet: TextSet, classifier: TextClassifier[Float]): TextSet = {
-    val transformedTextSet = textSet.tokenize().normalize().loadWordIndex(config.modelPath + "/wordIndex.txt").word2idx()
+    val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/wordIndex.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
     classifier.predict(transformedTextSet, batchPerThread = config.partitions)
   }
@@ -120,23 +129,25 @@ object Classifier {
 
   /**
     * Reads the vnExpress 5-category corpus (of 344,32 news articles) and
-    * build a TextSet. If the number of sentences are positive then only that number of sentences 
-    * for each document are loaded. Default is a negative value -1, which means all the content will be loaded.
+    * build a TextSet.
     *
     * @param sparkSession
     * @param path path to the data file(s)
-    * @param numberOfSentences
     * @return a data frame of two columns (category, text)
     */
-  def readTextData(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): DataFrame = {
-    val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
-    val rows = rdd.map { line =>
-      val parts = line.split("\\t+")
-      val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
-      RowFactory.create(parts(0).trim, text)
-    }
-    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
-    sparkSession.createDataFrame(rows, schema)
+  def readJsonData(sparkSession: SparkSession, path: String): TextSet = {
+        // each .json file is read to a df and these dfs are concatenated to form a big df
+    val filenames = new File(path).list().filter(_.endsWith(".json"))
+    val dfs = filenames.map(f => sparkSession.read.json(path + f))
+    val input = dfs.reduce(_ union _)
+    import sparkSession.implicits._
+    val categories = input.select("category").map(row => row.getString(0)).distinct.collect().sorted
+    val labels = categories.zipWithIndex.toMap
+    println(s"Found ${labels.size} classes")
+    println(labels.mkString(" "))
+    println("Creating text set. Please wait...")
+    val textRDD = input.rdd.map(row => TextFeature(row.getString(1).toLowerCase(), labels(row.getString(0))))
+    TextSet.rdd(textRDD)
   }
 
   def main(args: Array[String]): Unit = {
@@ -166,20 +177,25 @@ object Classifier {
       MKL.setNumThreads(4)
 
       val app = new Classifier(sparkSession.sparkContext, config)
+      val textSet = readJsonData(sparkSession, config.dataPath).toDistributed(sparkContext, config.partitions)
+      val Array(training, validation) = textSet.randomSplit(Array(config.trainingSplit, 1 - config.trainingSplit))
+      val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
+
       config.mode match {
         case "train" =>
-          val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
-          app.train(textSet)
+          val classifier = app.train(training, validation)
+          classifier.setEvaluateStatus()           
+          val prediction = app.predict(training, classifier)
+          val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
+          println(accuracy.mkString(", "))
         case "eval" =>
-          val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
           val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
           classifier.setEvaluateStatus()           
-          val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
-          val prediction = app.predict(textSet, classifier)
+          val prediction = app.predict(validation, classifier)
           val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
           println(accuracy.mkString(", "))
         case "predict" =>
-          val textSet = TextSet.read(config.dataPath).toDistributed(sparkContext, config.partitions)
+          val textSet = readJsonData(sparkSession, config.dataPath).toDistributed(sparkContext, config.partitions)
           val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
           val prediction = app.predict(textSet, classifier)
           prediction.toLocal().array.take(10).foreach(println)

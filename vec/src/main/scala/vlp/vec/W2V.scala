@@ -53,7 +53,7 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
     val pw = new java.io.PrintWriter(new java.io.File(config.output))
     try {
       m.getVectors.collect().foreach { row =>
-        val line = row.getAs[String](0) + "\t" + row.getAs[DenseVector](1).values.mkString(" ")
+        val line = row.getAs[String](0) + " " + row.getAs[DenseVector](1).values.mkString(" ")
         pw.write(line)
         pw.write("\n")
       }
