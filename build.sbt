@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
 
 // root project
 lazy val root = (project in file("."))
-  .aggregate(tok, tag, tdp)
+  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz)
 
 // tokenization module
 lazy val tok = (project in file("tok"))
