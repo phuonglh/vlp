@@ -36,7 +36,6 @@ import vlp.tok.TokenizerTransformer
   * @param encoder the encoder for the input sequence (cnn, gru, lstm)
   * @param encoderOutputDimension
   * @param maxSequenceLength the length of a sequence
-  * @param trainingSplit the split portion of the data for training
   * @param batchSize batch size
   * @param epochs number of training epochs
   * @param learningRate learning rate
@@ -49,15 +48,14 @@ case class ConfigClassifier(
   mode: String = "eval",
   executorMemory: String = "8g",
   dataPath: String = "/opt/data/vne/5cats.utf8/",
-  embeddingPath: String = "/opt/data/emb/vie/glove.6B.200d.txt",
+  embeddingPath: String = "/opt/data/emb/vie/glove.6B.100d.txt",
   modelPath: String = "dat/zoo/tcl/", // need the last back slash
   numFeatures: Int = 65536,
   encoder: String = "cnn",
   encoderOutputDimension: Int = 256,
   maxSequenceLength: Int = 256,
-  trainingSplit: Double = 0.8,
   batchSize: Int = 64,
-  epochs: Int = 15,
+  epochs: Int = 20,
   learningRate: Double = 0.001,
   percentage: Double = 1.0,
   partitions: Int = 4,
@@ -116,7 +114,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
   def predict(textSet: TextSet, classifier: TextClassifier[Float]): TextSet = {
     val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/wordIndex.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
-    classifier.predict(transformedTextSet, batchPerThread = config.partitions)
+    classifier.predict(transformedTextSet, batchPerThread = 16*config.partitions)
   }
 
   def predict(texts: Seq[String], classifier: TextClassifier[Float]): TextSet = {
@@ -179,6 +177,7 @@ object Classifier {
       opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
       opt[Int]('o', "encoderOutputDimension").action((x, conf) => conf.copy(encoderOutputDimension = x)).text("output dimension of the encoder")
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
+      opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs, default is 20")
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the training set to use, default is 1.0")
     }
     parser.parse(args, ConfigClassifier()) match {
@@ -196,26 +195,28 @@ object Classifier {
       val app = new Classifier(sparkSession.sparkContext, config)
       val textSet = readJsonData(sparkSession, config.dataPath, config.percentage)
         .toDistributed(sparkContext, config.partitions)
-      val Array(training, validation) = textSet.randomSplit(Array(config.trainingSplit, 1 - config.trainingSplit))
+      val Array(trainingSet, validationSet, testSet) = textSet.randomSplit(Array(0.8, 0.1, 0.1))
       val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
 
       config.mode match {
         case "train" =>
-          val classifier = app.train(training, validation)
+          val classifier = app.train(trainingSet, validationSet)
           classifier.setEvaluateStatus()           
-          val prediction = app.predict(training, classifier)
-          val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
+          val prediction = app.predict(trainingSet, classifier)
+          val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
           println(accuracy.mkString(", "))
         case "eval" =>
           val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
-          classifier.setEvaluateStatus()           
-          val prediction = app.predict(validation, classifier)
-          val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods, batchSize = Some(config.batchSize))
-          println(accuracy.mkString(", "))
+          classifier.setEvaluateStatus()
+          val validationPrediction = app.predict(validationSet, classifier)
+          var accuracy = classifier.evaluate(validationPrediction.toDistributed().rdd.map(_.getSample), validationMethods)
+          println("validation accuracy = " + accuracy.mkString(", "))
+          val testPrediction = app.predict(testSet, classifier)
+          accuracy = classifier.evaluate(testPrediction.toDistributed().rdd.map(_.getSample), validationMethods)
+          println("      test accuracy = " + accuracy.mkString(", "))
         case "predict" =>
-          val textSet = readJsonData(sparkSession, config.dataPath).toDistributed(sparkContext, config.partitions)
           val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
-          val prediction = app.predict(textSet, classifier)
+          val prediction = app.predict(testSet, classifier)
           prediction.toLocal().array.take(10).foreach(println)
       }
       sparkSession.stop()
