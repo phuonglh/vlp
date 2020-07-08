@@ -52,7 +52,7 @@ object NewsIndexer {
     * @param filter a URL filter
     * @return a set of URLs.
     */
-  private def extractURLs(site: String, category: String, regexp: String, filter: String => Boolean): Set[String] = {
+  def extractURLs(site: String, category: String, regexp: String, filter: String => Boolean): Set[String] = {
     val urls = mutable.Set[String]()
     try {
       val address = site + "/" + category
