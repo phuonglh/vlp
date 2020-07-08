@@ -136,17 +136,25 @@ lazy val vec = (project in file("vec"))
 
 
 
-// Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
+// Models that depend on the Analytic Zoo framework
 lazy val zoo = (project in file("zoo"))
-  .dependsOn(tok)
+  .dependsOn(tok, biz)
+  .settings(
+    commonSettings,
+    assemblyJarName in assembly := "zoo.jar",
+    resolvers += Resolver.mavenLocal,
+  )
+
+// Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
+lazy val biz = (project in file("biz"))
   .settings(
     commonSettings,
     assemblyJarName in assembly := "zoo.jar",
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0"  % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"  % "provided"
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0"
     ),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
