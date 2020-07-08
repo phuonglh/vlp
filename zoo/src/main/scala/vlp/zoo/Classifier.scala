@@ -87,9 +87,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     val wordIndex = transformedTrainingSet.getWordIndex
     transformedTrainingSet.saveWordIndex(config.modelPath + "/wordIndex.txt")
 
-    val numLabels = trainingSet.toLocal().array.map(textFeature => textFeature.getLabel).toSet.size
-
-    val classifier = TextClassifier(numLabels, config.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
+    val classifier = TextClassifier(Classifier.numLabels, config.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
     val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new java.util.Date())
     classifier.setTensorBoard(logDir = "/tmp/zoo/tcl", appName = config.encoder + "/" + date)
     classifier.compile(
@@ -125,6 +123,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
 object Classifier {
   Logger.getLogger("com.intel.analytics.bigdl.optim").setLevel(Level.INFO)
   Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
+  var numLabels = 0
 
 
   /**
@@ -143,7 +142,8 @@ object Classifier {
     import sparkSession.implicits._
     val categories = input.select("category").map(row => row.getString(0)).distinct.collect().sorted
     val labels = categories.zipWithIndex.toMap
-    println(s"Found ${labels.size} classes")
+    numLabels = labels.size
+    println(s"Found ${numLabels} classes")
     println(labels.mkString(", "))
     println("Creating text set. Please wait...")
     val textRDD = input.rdd.map(row => TextFeature(row.getString(1).toLowerCase(), labels(row.getString(0))))
