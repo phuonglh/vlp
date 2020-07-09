@@ -7,6 +7,13 @@ import java.nio.file.Paths
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption
 
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization
+import org.json4s.NoTypeHints
+
+
+case class Document(site: String, category: String, url: String, text: String)
+
 object NewsCategorizer {
 
   def youth(date: String): List[(String, String, Set[String])] = {
@@ -61,6 +68,8 @@ object NewsCategorizer {
   }
 
   def main(args: Array[String]): Unit = {
+    val outputPath = args(0) 
+    println(s"Output path = ${outputPath}")
     val dateFormat = new SimpleDateFormat("yyyyMMdd")
     val currentDate = dateFormat.format(new java.util.Date())
     val result = mutable.ListBuffer[(String, String, Set[String])]()
@@ -77,6 +86,13 @@ object NewsCategorizer {
 
     val output = result.map{case (a, b, c) => a + " " + b + " " + c.mkString(" ")}
     import scala.collection.JavaConversions._
-    Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx/urls.txt"), output.toList, StandardOpenOption.APPEND)
+    Files.write(Paths.get(outputPath + "/vlp/dat/idx/urls.txt"), output.toList, StandardOpenOption.APPEND)
+
+    val texts = result.flatMap(t => t._3.map(x => Document(t._1, t._2, x, NewsIndexer.extract(x))))
+    implicit val formats = DefaultFormats
+    implicit val f = Serialization.formats(NoTypeHints)
+    val xs = texts.par.map(e => Serialization.write(e)).toList
+    println("Writing extraction result...")
+    Files.write(Paths.get(outputPath + "/vlp/dat/idx/texts.json"), xs, StandardCharsets.UTF_8)
   }
 }
