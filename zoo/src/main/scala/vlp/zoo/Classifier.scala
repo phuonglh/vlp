@@ -19,7 +19,6 @@ import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
 import java.io.File
-import scala.util.Random
 import vlp.tok.TokenizerTransformer
 
 /**
@@ -72,7 +71,6 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
-  Random.setSeed(220712)
   
   /**
     * Trains a neural text classifier on a text set and validate on a validation set. Trained model and word index are saved to
@@ -200,9 +198,9 @@ object Classifier {
         case "train" =>
           val classifier = app.train(trainingSet, validationSet)
           classifier.setEvaluateStatus()           
-          val prediction = app.predict(trainingSet, classifier)
+          val prediction = app.predict(testSet, classifier)
           val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
-          println(accuracy.mkString(", "))
+          println("      test accuracy = " + accuracy.mkString(", "))
         case "eval" =>
           val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
           classifier.setEvaluateStatus()
