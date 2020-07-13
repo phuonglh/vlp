@@ -20,6 +20,7 @@ import org.apache.spark.sql.RowFactory
 
 import java.io.File
 import vlp.tok.TokenizerTransformer
+import com.intel.analytics.bigdl.mkl.MKL
 
 /**
   * Configuration parameters of a Neural Network Classifier.
@@ -187,6 +188,8 @@ object Classifier {
       val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
       val sparkContext = sparkSession.sparkContext
       Engine.init
+
+      MKL.setNumThreads(8)
 
       val app = new Classifier(sparkSession.sparkContext, config)
       val textSet = readJsonData(sparkSession, config.dataPath, config.percentage)
