@@ -12,7 +12,6 @@ import com.intel.analytics.zoo.feature.text.{TextFeature, TextSet}
 import com.intel.analytics.zoo.models.textclassification.TextClassifier
 import com.intel.analytics.zoo.pipeline.api.keras.objectives.SparseCategoricalCrossEntropy
 import scopt.OptionParser
-import com.intel.analytics.bigdl.mkl.MKL
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.SparseCategoricalAccuracy
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -82,13 +81,14 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     * @param validationSet
     */
   def train(trainingSet: TextSet, validationSet: TextSet): TextClassifier[Float] = {
-    println("Processing text data set...")
+    logger.info("Processing text data set...")
     val transformedTrainingSet = trainingSet.tokenize()
       .word2idx(10, maxWordsNum = config.numFeatures, minFreq = config.minFrequency)
       .shapeSequence(config.maxSequenceLength)
       .generateSample()
     val wordIndex = transformedTrainingSet.getWordIndex
     transformedTrainingSet.saveWordIndex(config.modelPath + "/wordIndex.txt")
+    logger.info("Word index created.")
 
     val classifier = TextClassifier(Classifier.numLabels, config.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
     val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new java.util.Date())
@@ -98,7 +98,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
       loss = SparseCategoricalCrossEntropy[Float](),
       metrics = List(new SparseCategoricalAccuracy[Float]())
     )
-
+    logger.info("Preparing validation set...")
     val transformedValidationSet = validationSet.tokenize()
       .setWordIndex(wordIndex).word2idx()
       .shapeSequence(config.maxSequenceLength)
@@ -107,7 +107,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     classifier.fit(transformedTrainingSet, batchSize = config.batchSize, nbEpoch = config.epochs, transformedValidationSet)
 
     classifier.saveModel(config.modelPath + config.encoder + ".bin", overWrite = true)
-    println("Finish training model and saving word dictionary.")
+    logger.info("Finish training model and saving word dictionary.")
     classifier
   }
 
@@ -190,12 +190,10 @@ object Classifier {
       val sparkContext = sparkSession.sparkContext
       Engine.init
 
-      MKL.setNumThreads(4)
-
       val app = new Classifier(sparkSession.sparkContext, config)
       val textSet = readJsonData(sparkSession, config.dataPath, config.percentage)
         .toDistributed(sparkContext, config.partitions)
-      val Array(trainingSet, validationSet, testSet) = textSet.randomSplit(Array(0.8, 0.1, 0.1))
+      val Array(trainingSet, validationSet, testSet) = textSet.randomSplit(Array(0.7, 0.15, 0.15))
       val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
 
       config.mode match {
