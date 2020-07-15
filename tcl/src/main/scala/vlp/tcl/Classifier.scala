@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import scopt.OptionParser
 import vlp.tok.SentenceDetection
 import org.apache.spark.ml.classification.RandomForestClassifier
+import java.io.File
 
 /**
   * phuonglh, 5/28/18, 1:01 PM
@@ -201,6 +202,30 @@ object Classifier {
   }
 
   /**
+    * Reads 5cats dataset containing a collectin of vnExpress articles.
+    * This function is used in preparation for the FAIR'20 paper.
+    *
+    * @param sparkSession
+    * @param path a directory contain JSON files (see /opt/data/vne/5cats.utf8/)
+    * @param percentage
+    * @return a dataset of documents
+    */
+  def read5Cats(sparkSession: SparkSession, path: String, percentage: Double = 1.0): Dataset[Document] = {
+        // each .json file is read to a df and these dfs are concatenated to form a big df
+    val filenames = new File(path).list().filter(_.endsWith(".json"))
+    val dfs = filenames.map(f => sparkSession.read.json(path + f))
+    val input = dfs.reduce(_ union _)
+    val textSet = input.sample(percentage)
+
+    import sparkSession.implicits._
+    val categories = textSet.select("category").map(row => row.getString(0)).distinct.collect().sorted
+    val labels = categories.zipWithIndex.toMap
+    val numLabels = labels.size
+    println(s"Found ${numLabels} classes")
+    textSet.as[Document]
+  }
+
+  /**
     * Samples a percentage of an input data and write that sample into an output path.
     * @param sparkSession
     * @param inputPath
@@ -282,6 +307,14 @@ object Classifier {
             tcl.eval(a)
             b.show()
             tcl.eval(b)
+          case "5cats" => 
+            val dataset = read5Cats(sparkSession, "/opt/data/vne/5cats.utf8/", 0.1)
+            val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
+            training.show()
+            tcl.train(training)
+            tcl.eval(training)
+            test.show()
+            tcl.eval(test)
         }
         sparkSession.stop()
       case None =>

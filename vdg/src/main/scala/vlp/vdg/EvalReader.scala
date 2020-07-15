@@ -24,7 +24,7 @@ object EvalReader {
     println(result.size)
     
     val corpus = "vtb.txt"
-    val j = 1
+    val j = 2
 
     val formatter = new DecimalFormat("##.####")
     val types = List("GRU", "LSTM")
@@ -65,6 +65,7 @@ object EvalReader {
       println()
       println("std(test): ")
       deviation.map(t => (t._1, Math.sqrt(t._4))).foreach(e => print(s"(${formatter.format(e._1)},${formatter.format(e._2)}) "))
+      println()
       println()
     }
   }
