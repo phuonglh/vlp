@@ -13,6 +13,8 @@ case class ConfigTCL(
   classifier: String = "mlr",
   numFeatures: Int = 32768,
   hiddenUnits: String = "128",
+  numTrees: Int = 256, // number of trees used in the RFC
+  maxDepth: Int = 15, // max tree depth used in the RFC
   batchSize: Int = 32,
   iterations: Int = 300,
   dataPath: String = "dat/vne/5catsSample/part-*",

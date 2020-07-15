@@ -57,8 +57,8 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
       val mlp = new MultilayerPerceptronClassifier().setMaxIter(config.iterations).setBlockSize(config.batchSize).setSeed(123).setLayers(layers)
       new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing, mlp))
     } else if (classifierType == "rfc") {
-      val featureHashing = new HashingTF().setInputCol("unigrams").setOutputCol("features").setNumFeatures(config.numFeatures).setBinary(true)
-      val rfc = new RandomForestClassifier().setNumTrees(100)
+      val featureHashing = new HashingTF().setInputCol("unigrams").setOutputCol("features").setNumFeatures(config.numFeatures).setBinary(false)
+      val rfc = new RandomForestClassifier().setNumTrees(config.numTrees).setMaxDepth(config.maxDepth)
       new Pipeline().setStages(Array(labelIndexer, tokenizer, stopWordsRemover, featureHashing, rfc))
     } else {
       logger.error("Not support classifier type: " + classifierType)
@@ -251,6 +251,8 @@ object Classifier {
       opt[String]('h', "hiddenUnits").action((x, conf) => conf.copy(hiddenUnits = x)).text("hidden units in MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
+      opt[Int]('t', "numTrees").action((x, conf) => conf.copy(numTrees = x)).text("number of trees if using RFC, default is 256")
+      opt[Int]('e', "maxDepth").action((x, conf) => conf.copy(maxDepth = x)).text("max tree depth if using RFC, default is 15")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tcl/'")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
