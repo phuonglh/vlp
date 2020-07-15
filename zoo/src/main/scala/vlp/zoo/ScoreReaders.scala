@@ -9,9 +9,9 @@ object ScoreReaders {
 
   def main(args: Array[String]): Unit = {
     val formatter = new DecimalFormat("##.####")
-    val paths = Array("/Users/phuonglh/vlp/dat/zoo/tcl/run-cnn_2020-07-08.225442_validation-tag-Top1Accuracy.json",
-      "/Users/phuonglh/vlp/dat/zoo/tcl/run-gru_2020-07-09.004432_validation-tag-Top1Accuracy.json",
-      "/Users/phuonglh/vlp/dat/zoo/tcl/run-lstm_2020-07-09.084542_validation-tag-Top1Accuracy.json")
+    val paths = Array("/Users/phuonglh/vlp/dat/zoo/tcl/run-cnn_2020-07-14.085300_validation-tag-Top1Accuracy.json",
+      "/Users/phuonglh/vlp/dat/zoo/tcl/run-gru_2020-07-13.230627_validation-tag-Top1Accuracy.json",
+      "/Users/phuonglh/vlp/dat/zoo/tcl/run-lstm_2020-07-14.101133_validation-tag-Top1Accuracy.json")
     paths.foreach { path =>   
       val s = scala.io.Source.fromFile(path).getLines().toList.head
       val triples = JSON.parseFull(s).get.asInstanceOf[List[Any]]

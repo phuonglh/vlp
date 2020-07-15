@@ -88,7 +88,7 @@ object NewsCategorizer {
     import scala.collection.JavaConversions._
     Files.write(Paths.get(outputPath + "/vlp/dat/idx/urls.txt"), output.toList, StandardOpenOption.APPEND)
 
-    val texts = result.flatMap(t => t._3.map(x => Document(t._1, t._2, x, NewsIndexer.extract(x))))
+    val texts = result.flatMap(t => t._3.par.map(x => Document(t._1, t._2, x, NewsIndexer.extract(x))))
     implicit val formats = DefaultFormats
     implicit val f = Serialization.formats(NoTypeHints)
     val xs = texts.par.map(e => Serialization.write(e)).toList
