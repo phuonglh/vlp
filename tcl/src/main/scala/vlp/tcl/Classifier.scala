@@ -186,7 +186,8 @@ object Classifier {
     val rows = rdd.map { line =>
       var p = line.indexOf('\t')
       val q = line.lastIndexOf('\t')
-      val text = SentenceDetection.run(line.substring(p+1, q), numberOfSentences).mkString(" ")
+      val text = SentenceDetection.run(line.substring(p+1, q), numberOfSentences).replaceAll("\u200b", "").mkString(" ")
+      // use only first category
       val category = line.substring(q+1).trim.split(",").head
       RowFactory.create(category, text)
     }
@@ -278,7 +279,7 @@ object Classifier {
           case "sample" => sampling(sparkSession, "dat/vne/5cats.txt", "dat/vne/5catsSample", 0.01)
           case "predict" => tcl.predict(config.input, config.output)
           case "trainShinra" => 
-            val numberOfSentences = 3
+            val numberOfSentences = 5
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
             trainingDataset.show()
             val model = tcl.train(trainingDataset)
@@ -287,8 +288,8 @@ object Classifier {
             val numberOfSentences = 3
             val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
-            val devDataset = readSHINRA(sparkSession, "dat/tcl/dev.txt", numberOfSentences)
-            val testDataset = readSHINRA(sparkSession, "dat/tcl/test.txt", numberOfSentences)
+            val devDataset = readSHINRA(sparkSession, "/opt/data/shinra/dev.txt", numberOfSentences)
+            val testDataset = readSHINRA(sparkSession, "/opt/data/shinra/test.txt", numberOfSentences)
             tcl.eval(model, trainingDataset)
             tcl.eval(model, devDataset)
             tcl.eval(model, testDataset)
