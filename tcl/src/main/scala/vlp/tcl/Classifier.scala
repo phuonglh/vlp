@@ -12,6 +12,7 @@ import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql.{Dataset, DataFrame, RowFactory, SparkSession}
 import org.apache.spark.sql.types.{DataType, StringType, StructField, StructType}
+import org.apache.spark.sql.functions.lit
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
@@ -81,13 +82,14 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
         logger.info("#(numFeatures) = " + numFeatures)
     } else logger.error(s"Error in reading information from ${transformer.getClass.getName}")
 
+    dataset.show(10)
     val outputDF = model.transform(dataset)
 
     import sparkSession.implicits._
     val predictionAndLabels = outputDF.select("label", "prediction").map(row => (row.getDouble(0), row.getDouble(1))).rdd
     val metrics = new MulticlassMetrics(predictionAndLabels)
     val scores = (metrics.accuracy, metrics.weightedFMeasure)
-    logger.info(s"'prediction' scores = $scores")
+    logger.info(s"scores = $scores")
     if (config.verbose) {
       outputDF.show(10)
       val labels = metrics.labels
@@ -150,7 +152,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty)
     val xs = lines.map { line =>
       val tokens = vlp.tok.Tokenizer.tokenize(line).map(_._3)
-      Document("NA", tokens.mkString(" "))
+      Document("NA", tokens.mkString(" "), "NA")
     }
     import sparkSession.implicits._
     val data = sparkSession.createDataset(xs).as[Document]
@@ -175,23 +177,32 @@ object Classifier {
     val rows = rdd.map { line =>
       val parts = line.split("\\t+")
       val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
-      RowFactory.create(parts(0).trim, text)
+      RowFactory.create(parts(0).trim, text, "NA")
     }
-    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
+    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false), StructField("id", StringType, false)))
     sparkSession.createDataFrame(rows, schema)
   }
 
+  /**
+   * Reads SHINRA dataset (in .txt format), take only some first sentences (5) and 
+   * builds a dataset of documents.
+   * 
+   * */ 
   def readSHINRA(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
     val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
     val rows = rdd.map { line =>
       var p = line.indexOf('\t')
       val q = line.lastIndexOf('\t')
-      val text = SentenceDetection.run(line.substring(p+1, q), numberOfSentences).replaceAll("\u200b", "").mkString(" ")
+      val id = line.substring(0, p-1).trim()
+      val text = SentenceDetection.run(line.substring(p+1, q), numberOfSentences)
+        .map(sentence => sentence.replaceAll("\u200b", ""))
+        .mkString(" ")
       // use only first category
       val category = line.substring(q+1).trim.split(",").head
-      RowFactory.create(category, text)
+      RowFactory.create(category, text, id)
     }
-    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false)))
+    val schema = StructType(Array(StructField("category", StringType, false), 
+      StructField("text", StringType, false), StructField("id", StringType, false)))
     import sparkSession.implicits._
     sparkSession.createDataFrame(rows, schema).as[Document]
   }
@@ -199,7 +210,9 @@ object Classifier {
   def readHSD(sparkSession: SparkSession, path: String): Dataset[Document] = {
     import sparkSession.implicits._
     sparkSession.read.json(path).select("category", "withoutAccent")
-      .withColumnRenamed("withoutAccent", "text").as[Document]
+      .withColumnRenamed("withoutAccent", "text")
+      .withColumn("id", lit("NA"))
+      .as[Document]
   }
 
   /**
@@ -216,7 +229,7 @@ object Classifier {
     val filenames = new File(path).list().filter(_.endsWith(".json"))
     val dfs = filenames.map(f => sparkSession.read.json(path + f))
     val input = dfs.reduce(_ union _)
-    val textSet = input.sample(percentage)
+    val textSet = input.sample(percentage).withColumn("id", lit("NA"))
 
     import sparkSession.implicits._
     val categories = textSet.select("category").map(row => row.getString(0)).distinct.collect().sorted
@@ -255,6 +268,7 @@ object Classifier {
       opt[Int]('t', "numTrees").action((x, conf) => conf.copy(numTrees = x)).text("number of trees if using RFC, default is 256")
       opt[Int]('e', "maxDepth").action((x, conf) => conf.copy(maxDepth = x)).text("max tree depth if using RFC, default is 15")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
+      opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the training data to use, default is 1.0")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tcl/'")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
@@ -281,11 +295,12 @@ object Classifier {
           case "trainShinra" => 
             val numberOfSentences = 5
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
-            trainingDataset.show()
-            val model = tcl.train(trainingDataset)
-            tcl.eval(model, trainingDataset)
+            val xs = if (config.percentage != 1.0) trainingDataset.sample(config.percentage) else trainingDataset
+            xs.show()
+            val model = tcl.train(xs)
+            tcl.eval(model, xs)
           case "evalShinra" =>
-            val numberOfSentences = 3
+            val numberOfSentences = 5
             val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
             val trainingDataset = readSHINRA(sparkSession, config.dataPath, numberOfSentences)
             val devDataset = readSHINRA(sparkSession, "/opt/data/shinra/dev.txt", numberOfSentences)

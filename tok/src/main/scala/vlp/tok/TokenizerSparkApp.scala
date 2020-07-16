@@ -50,6 +50,22 @@ object TokenizerSparkApp {
     sparkSession.createDataFrame(rows, schema)
   }
 
+  def readSHINRA(sparkSession: SparkSession, path: String): DataFrame = {
+    val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
+    val rows = rdd.map { line =>
+      var p = line.indexOf('\t')
+      val q = line.lastIndexOf('\t')
+      val id = line.substring(0, p-1).trim()
+      val text = line.substring(p+1, q).replaceAll("\u200b", "")
+      // use only first category
+      val category = line.substring(q+1).trim.split(",").head
+      Row(category, text, id)
+    }
+    val schema = StructType(Array(StructField("category", StringType, false), StructField("content", StringType, false), StructField("id", StringType, false)))
+    import sparkSession.implicits._
+    sparkSession.createDataFrame(rows, schema)
+  }
+
   def main(args: Array[String]): Unit = {
     val parser = new OptionParser[ConfigTokenizer]("vlp.tok") {
       head("vlp.tok.TokenizerSparkApp", "1.0")
