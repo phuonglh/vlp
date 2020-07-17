@@ -234,6 +234,7 @@ object Classifier {
       head("vlp.tcl", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
+      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr/mlp/rfc")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
@@ -250,7 +251,8 @@ object Classifier {
     }
     parser.parse(args, ConfigTCL()) match {
       case Some(config) =>
-        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
+        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master)
+          .config("spark.executor.memory", config.executorMemory).getOrCreate()
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
         val tcl = new Classifier(sparkSession.sparkContext, config)
