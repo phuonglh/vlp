@@ -5,6 +5,7 @@ package vlp.tcl
 */
 case class ConfigTCL(
   master: String = "local[*]",
+  executorMemory: String = "8g",
   mode: String = "eval",
   verbose: Boolean = false,
   minFrequency: Int = 3,
@@ -20,6 +21,7 @@ case class ConfigTCL(
   dataPath: String = "dat/vne/5catsSample/part-*",
   percentage: Double = 1.0, // percentage of the training data to be used
   inputColumnName: String = "text",
+  maxTokenLength: Int = 50,
   input: String = "input.txt",
   output: String = "output.txt"
 )

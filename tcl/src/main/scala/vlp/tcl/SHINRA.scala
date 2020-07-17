@@ -29,9 +29,9 @@ import java.io.File
  * 
  */
 
-case class WikiPage(
+case class Page(
   id: String = "", 
-  content: String = "", 
+  text: String = "", 
   title: String = "", 
   category: String = "", 
   outgoingLink: String = "", 
@@ -39,33 +39,12 @@ case class WikiPage(
   clazz: String = ""
 ) {
   val cs = this.getClass().getConstructors()
-  def fromSeq(xs: Array[String]) = cs(0).newInstance(xs: _*).asInstanceOf[WikiPage]
+  def fromSeq(xs: Array[String]) = cs(0).newInstance(xs: _*).asInstanceOf[Page]
 }
 
-case class Page(
-  id: String = "", 
-  text: String = "", 
-  title: String = "", 
-  category: String = "", 
-  clazz: String = ""
-)
-
-class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
+class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
-  val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
-
-  def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Page] = {
-    val dataset = sparkSession.read.json(path).as[WikiPage]
-    dataset.map { wp => 
-      Page(wp.id, 
-        wp.content.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(100).mkString(" "),
-        wp.title,
-        wp.category,
-        wp.clazz
-      )
-    }
-  }
 
   def train(dataset: Dataset[Page]): PipelineModel = {
     dataset.cache()
@@ -201,11 +180,26 @@ object SHINRA {
     val lines = scala.io.Source.fromFile(inputPath).getLines().toList
     val pages = lines.par.map{ line => 
       val parts = line.split("\t")
-      WikiPage().fromSeq(parts)
+      Page().fromSeq(parts)
     }.toList
     implicit val formats = Serialization.formats(NoTypeHints)
     val content = Serialization.writePretty(pages)
     Files.write(Paths.get(outputPath), content.getBytes, StandardOpenOption.CREATE)
+  }
+
+  def createDataset(sparkSession: SparkSession, maxTokenLength: Int, path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Page] = {
+    import sparkSession.implicits._
+    val dataset = sparkSession.read.json(path).as[Page]
+    dataset.map { wp => 
+      Page(wp.id, 
+        wp.text.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(maxTokenLength).mkString(" "),
+        wp.title,
+        wp.category,
+        "",
+        "",
+        wp.clazz
+      )
+    }
   }
 
   def main(args: Array[String]): Unit = {
@@ -228,6 +222,7 @@ object SHINRA {
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the training data to use, default is 1.0")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tcl/'")
       opt[String]('j', "inputColumnName").action((x, conf) => conf.copy(inputColumnName = x)).text("input column name")
+      opt[Int]('l', "maxTokenLength").action((x, conf) => conf.copy(maxTokenLength = x)).text("max token length for a text, default is 50")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
     }
@@ -236,12 +231,12 @@ object SHINRA {
         val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
-        val app = new SHINRA(sparkSession.sparkContext, config)
+        val app = new SHINRA(sparkSession, config)
         config.mode match {
           case "json" =>            
             text2Json(config.input, config.output) // convert tab-delimited text format to pretty multiline JSON
           case "train" => {
-            val dataset = app.createDataset(config.dataPath)
+            val dataset = createDataset(sparkSession, config.maxTokenLength, config.dataPath)
             val trainingSet = if (config.percentage < 1.0) dataset.sample(config.percentage) else dataset
             trainingSet.select(config.inputColumnName).show(false)
             val model = app.train(trainingSet)
@@ -251,8 +246,8 @@ object SHINRA {
           case "eval" =>
             val numberOfSentences = 5
             val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
-            val devDataset = app.createDataset("/opt/data/shinra/dev/")
-            val testDataset = app.createDataset("/opt/data/shinra/test/")
+            val devDataset = createDataset(sparkSession, config.maxTokenLength, "/opt/data/shinra/dev/")
+            val testDataset = createDataset(sparkSession, config.maxTokenLength, "/opt/data/shinra/test/")
             app.eval(model, devDataset)
             app.eval(model, testDataset)
         }
