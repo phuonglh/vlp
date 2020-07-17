@@ -71,8 +71,8 @@ object TokenizerSparkApp {
       opt[Int]('p', "partitions").action((x, conf) => conf.copy(minPartitions = x)).text("min partitions")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path (a text file or a directory of .txt/.json files)")
       opt[String]('f', "inputFormat").action((x, conf) => conf.copy(inputFormat = x)).text("input format, default is 'json'")
-      opt[String]('u', "inputColumnName").action((x, conf) => conf.copy(inputColumnName = x)).text("input column name, default is 'content'")
-      opt[String]('v', "outputColumnName").action((x, conf) => conf.copy(outputColumnName = x)).text("output column name, default is 'text'")
+      opt[String]('u', "inputColumnName").action((x, conf) => conf.copy(inputColumnName = x)).text("input column name, default is 'text'")
+      opt[String]('v', "outputColumnName").action((x, conf) => conf.copy(outputColumnName = x)).text("output column name, default is 'content'")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path which is a directory containing output JSON files")
     }
     parser.parse(args, ConfigTokenizer()) match {
