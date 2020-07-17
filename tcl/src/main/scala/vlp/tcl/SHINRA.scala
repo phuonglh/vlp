@@ -29,38 +29,45 @@ import java.io.File
  * 
  */
 
-case class WikiPage(id: String = "", 
-  text: String = "", 
+case class WikiPage(
+  id: String = "", 
+  content: String = "", 
   title: String = "", 
   category: String = "", 
   outgoingLink: String = "", 
-  redirect: String = "", 
+  redirect: String = "",
   clazz: String = ""
 ) {
   val cs = this.getClass().getConstructors()
   def fromSeq(xs: Array[String]) = cs(0).newInstance(xs: _*).asInstanceOf[WikiPage]
 }
 
+case class Page(
+  id: String = "", 
+  text: String = "", 
+  title: String = "", 
+  category: String = "", 
+  clazz: String = ""
+)
+
 class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
-  def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[WikiPage] = {
+  def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Page] = {
     val dataset = sparkSession.read.json(path).as[WikiPage]
     dataset.map { wp => 
-      WikiPage(wp.id, 
-        wp.text.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(100).mkString(" "),
+      Page(wp.id, 
+        wp.content.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(100).mkString(" "),
         wp.title,
         wp.category,
-        wp.outgoingLink,
-        wp.redirect,
         wp.clazz
       )
     }
   }
 
-  def train(dataset: Dataset[WikiPage]): PipelineModel = {
+  def train(dataset: Dataset[Page]): PipelineModel = {
     dataset.cache()
     // create pipeline
     val tokenizer = new Tokenizer().setInputCol(config.inputColumnName).setOutputCol("tokens")
@@ -99,7 +106,7 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
     model
   }
 
-  def eval(model: PipelineModel, dataset: Dataset[WikiPage]): Unit = {
+  def eval(model: PipelineModel, dataset: Dataset[Page]): Unit = {
     val transformer = model.stages(3)
     if (transformer.isInstanceOf[CountVectorizerModel]) {
       val vocabulary = transformer.asInstanceOf[CountVectorizerModel].vocabulary
@@ -130,16 +137,16 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
     }
   }
 
-  def eval(dataset: Dataset[WikiPage]): Unit = {
+  def eval(dataset: Dataset[Page]): Unit = {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     eval(model, dataset)
   }
 
-  def test(dataset: Dataset[WikiPage], outputFile: String): Unit = {
+  def test(dataset: Dataset[Page], outputFile: String): Unit = {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     val outputDF = model.transform(dataset)
     import sparkSession.implicits._
-    val prediction = outputDF.select("category", config.inputColumnName, "prediction", "probability", "id")
+    val prediction = outputDF.select("clazz", config.inputColumnName, "prediction", "probability", "id")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
       .collect()
     val writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8), true)
@@ -163,11 +170,11 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
     * @param model the pipeline model
     * @return a probability distribution
     */
-  def predict(document: WikiPage, model: PipelineModel): Map[String, Double] = {
+  def predict(document: Page, model: PipelineModel): Map[String, Double] = {
     val xs = List(document)
     val labels = model.stages(0).asInstanceOf[StringIndexerModel].labels
     import sparkSession.implicits._
-    val dataset = sparkSession.createDataset(xs).as[WikiPage]
+    val dataset = sparkSession.createDataset(xs).as[Page]
     val outputDF = model.transform(dataset)
     outputDF.select("probability")
       .map(row => row.getAs[DenseVector](0).values).head()
@@ -182,7 +189,7 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
       Document("NA", tokens.mkString(" "), "NA")
     }
     import sparkSession.implicits._
-    val data = sparkSession.createDataset(xs).as[WikiPage]
+    val data = sparkSession.createDataset(xs).as[Page]
     test(data, outputFile)
   }
 
