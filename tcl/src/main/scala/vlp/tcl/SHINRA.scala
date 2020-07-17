@@ -30,7 +30,7 @@ import java.io.File
  */
 
 case class WikiPage(id: String = "", 
-  content: String = "", 
+  text: String = "", 
   title: String = "", 
   category: String = "", 
   outgoingLink: String = "", 
@@ -47,13 +47,23 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
   import sparkSession.implicits._
 
   def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[WikiPage] = {
-    sparkSession.read.json(path).as[WikiPage]
+    val dataset = sparkSession.read.json(path).as[WikiPage]
+    dataset.map { wp => 
+      WikiPage(wp.id, 
+        wp.text.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(100).mkString(" "),
+        wp.title,
+        wp.category,
+        wp.outgoingLink,
+        wp.redirect,
+        wp.clazz
+      )
+    }
   }
 
   def train(dataset: Dataset[WikiPage]): PipelineModel = {
     dataset.cache()
     // create pipeline
-    val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
+    val tokenizer = new Tokenizer().setInputCol("text").setOutputCol("tokens")
     val stopWordsRemover = new StopWordsRemover().setInputCol("tokens").setOutputCol("unigrams").setStopWords(StopWords.punctuations)
     val unigramCounter = new CountVectorizer().setInputCol("unigrams").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.numFeatures)
     val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("skip").setOutputCol("label")
@@ -129,7 +139,7 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     val outputDF = model.transform(dataset)
     import sparkSession.implicits._
-    val prediction = outputDF.select("category", "content", "prediction", "probability", "id")
+    val prediction = outputDF.select("category", "text", "prediction", "probability", "id")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
       .collect()
     val writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8), true)
@@ -220,10 +230,12 @@ object SHINRA {
         logger.info(Serialization.writePretty(config))
         val app = new SHINRA(sparkSession.sparkContext, config)
         config.mode match {
+          case "json" =>            
+            text2Json(config.input, config.output) // convert tab-delimited text format to pretty multiline JSON
           case "train" => {
             val dataset = app.createDataset(config.dataPath)
             val trainingSet = if (config.percentage < 1.0) dataset.sample(config.percentage) else dataset
-            trainingSet.show()
+            trainingSet.select("text").show(false)
             val model = app.train(trainingSet)
             app.eval(model, trainingSet)
           }
