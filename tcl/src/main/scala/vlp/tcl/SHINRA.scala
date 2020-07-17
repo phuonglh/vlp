@@ -63,7 +63,7 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
   def train(dataset: Dataset[WikiPage]): PipelineModel = {
     dataset.cache()
     // create pipeline
-    val tokenizer = new Tokenizer().setInputCol("text").setOutputCol("tokens")
+    val tokenizer = new Tokenizer().setInputCol(config.inputColumnName).setOutputCol("tokens")
     val stopWordsRemover = new StopWordsRemover().setInputCol("tokens").setOutputCol("unigrams").setStopWords(StopWords.punctuations)
     val unigramCounter = new CountVectorizer().setInputCol("unigrams").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.numFeatures)
     val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("skip").setOutputCol("label")
@@ -139,7 +139,7 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     val outputDF = model.transform(dataset)
     import sparkSession.implicits._
-    val prediction = outputDF.select("category", "text", "prediction", "probability", "id")
+    val prediction = outputDF.select("category", inputColumnName, "prediction", "probability", "id")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
       .collect()
     val writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8), true)
@@ -220,6 +220,7 @@ object SHINRA {
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the training data to use, default is 1.0")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tcl/'")
+      opt[String]('j', "inputColumnName").action((x, conf) => conf.copy(inputColumnName = x)).text("input column name")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
     }
@@ -235,7 +236,7 @@ object SHINRA {
           case "train" => {
             val dataset = app.createDataset(config.dataPath)
             val trainingSet = if (config.percentage < 1.0) dataset.sample(config.percentage) else dataset
-            trainingSet.select("text").show(false)
+            trainingSet.select(config.inputColumnName).show(false)
             val model = app.train(trainingSet)
             app.eval(model, trainingSet)
           }

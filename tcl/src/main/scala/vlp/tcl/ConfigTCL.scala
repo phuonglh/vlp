@@ -19,6 +19,7 @@ case class ConfigTCL(
   iterations: Int = 300,
   dataPath: String = "dat/vne/5catsSample/part-*",
   percentage: Double = 1.0, // percentage of the training data to be used
+  inputColumnName: String = "text",
   input: String = "input.txt",
   output: String = "output.txt"
 )
