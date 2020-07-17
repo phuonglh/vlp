@@ -1,8 +1,10 @@
 package vlp.tcl
 
+import org.json4s.jackson.Serialization
+import org.json4s._
+import java.nio.file.{Paths, Files, StandardOpenOption}
 import java.io.{FileOutputStream, OutputStreamWriter, PrintWriter}
 import java.nio.charset.StandardCharsets
-
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.classification.{LogisticRegression, MultilayerPerceptronClassifier}
@@ -21,22 +23,37 @@ import vlp.tok.SentenceDetection
 import org.apache.spark.ml.classification.RandomForestClassifier
 import java.io.File
 
-/**
-  * phuonglh, 5/28/18, 1:01 PM
-  */
-class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
+/*
+ * 
+ * phuonglh, July 2020.
+ * 
+ */
+
+case class WikiPage(id: String = "", 
+  content: String = "", 
+  title: String = "", 
+  category: String = "", 
+  outgoingLink: String = "", 
+  redirect: String = "", 
+  clazz: String = ""
+) {
+  val cs = this.getClass().getConstructors()
+  def fromSeq(xs: Array[String]) = cs(0).newInstance(xs: _*).asInstanceOf[WikiPage]
+}
+
+class SHINRA(val sparkContext: SparkContext, val config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
-  def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
-    Classifier.readTextData(sparkSession, path, numberOfSentences).as[Document]
+  def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[WikiPage] = {
+    sparkSession.read.json(path).as[WikiPage]
   }
 
-  def train(dataset: Dataset[Document]): PipelineModel = {
+  def train(dataset: Dataset[WikiPage]): PipelineModel = {
     dataset.cache()
     // create pipeline
-    val tokenizer = new Tokenizer().setInputCol("text").setOutputCol("tokens")
+    val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
     val stopWordsRemover = new StopWordsRemover().setInputCol("tokens").setOutputCol("unigrams").setStopWords(StopWords.punctuations)
     val unigramCounter = new CountVectorizer().setInputCol("unigrams").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.numFeatures)
     val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("skip").setOutputCol("label")
@@ -72,7 +89,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     model
   }
 
-  def eval(model: PipelineModel, dataset: Dataset[Document]): Unit = {
+  def eval(model: PipelineModel, dataset: Dataset[WikiPage]): Unit = {
     val transformer = model.stages(3)
     if (transformer.isInstanceOf[CountVectorizerModel]) {
       val vocabulary = transformer.asInstanceOf[CountVectorizerModel].vocabulary
@@ -103,16 +120,16 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     }
   }
 
-  def eval(dataset: Dataset[Document]): Unit = {
+  def eval(dataset: Dataset[WikiPage]): Unit = {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     eval(model, dataset)
   }
 
-  def test(dataset: Dataset[Document], outputFile: String): Unit = {
+  def test(dataset: Dataset[WikiPage], outputFile: String): Unit = {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
     val outputDF = model.transform(dataset)
     import sparkSession.implicits._
-    val prediction = outputDF.select("category", "content", "prediction", "probability")
+    val prediction = outputDF.select("category", "content", "prediction", "probability", "id")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
       .collect()
     val writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8), true)
@@ -136,11 +153,11 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
     * @param model the pipeline model
     * @return a probability distribution
     */
-  def predict(document: Document, model: PipelineModel): Map[String, Double] = {
+  def predict(document: WikiPage, model: PipelineModel): Map[String, Double] = {
     val xs = List(document)
     val labels = model.stages(0).asInstanceOf[StringIndexerModel].labels
     import sparkSession.implicits._
-    val dataset = sparkSession.createDataset(xs).as[Document]
+    val dataset = sparkSession.createDataset(xs).as[WikiPage]
     val outputDF = model.transform(dataset)
     outputDF.select("probability")
       .map(row => row.getAs[DenseVector](0).values).head()
@@ -155,75 +172,23 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
       Document("NA", tokens.mkString(" "), "NA")
     }
     import sparkSession.implicits._
-    val data = sparkSession.createDataset(xs).as[Document]
+    val data = sparkSession.createDataset(xs).as[WikiPage]
     test(data, outputFile)
   }
+
 }
 
-object Classifier {
-  /**
-    * Loads text data into a data frame. If number of sentences are positive then only that number of sentences 
-    * for each document are loaded. Default is a negative value -1, which means all the content will be loaded.
-    *
-    * @param sparkSession
-    * @param path path to the data file(s)
-    * @param numberOfSentences
-    * @return a data frame of two columns (category, text)
-    */
-  def readTextData(sparkSession: SparkSession, path: String, numberOfSentences: Int = Int.MaxValue): DataFrame = {
-    val rdd = sparkSession.sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty)
-    val rows = rdd.map { line =>
-      val parts = line.split("\\t+")
-      val text = SentenceDetection.run(parts(1).trim, numberOfSentences).mkString(" ")
-      RowFactory.create(parts(0).trim, text, "NA")
-    }
-    val schema = StructType(Array(StructField("category", StringType, false), StructField("text", StringType, false), StructField("id", StringType, false)))
-    sparkSession.createDataFrame(rows, schema)
-  }
+object SHINRA {
 
-  def readHSD(sparkSession: SparkSession, path: String): Dataset[Document] = {
-    import sparkSession.implicits._
-    sparkSession.read.json(path).select("category", "withoutAccent")
-      .withColumnRenamed("withoutAccent", "text")
-      .withColumn("id", lit("NA"))
-      .as[Document]
-  }
-
-  /**
-    * Reads 5cats dataset containing a collectin of vnExpress articles.
-    * This function is used in preparation for the FAIR'20 paper.
-    *
-    * @param sparkSession
-    * @param path a directory contain JSON files (see /opt/data/vne/5cats.utf8/)
-    * @param percentage
-    * @return a dataset of documents
-    */
-  def read5Cats(sparkSession: SparkSession, path: String, percentage: Double = 1.0): Dataset[Document] = {
-        // each .json file is read to a df and these dfs are concatenated to form a big df
-    val filenames = new File(path).list().filter(_.endsWith(".json"))
-    val dfs = filenames.map(f => sparkSession.read.json(path + f))
-    val input = dfs.reduce(_ union _)
-    val textSet = input.sample(percentage).withColumn("id", lit("NA"))
-
-    import sparkSession.implicits._
-    val categories = textSet.select("category").map(row => row.getString(0)).distinct.collect().sorted
-    val labels = categories.zipWithIndex.toMap
-    val numLabels = labels.size
-    println(s"Found ${numLabels} classes")
-    textSet.as[Document]
-  }
-
-  /**
-    * Samples a percentage of an input data and write that sample into an output path.
-    * @param sparkSession
-    * @param inputPath
-    * @param outputPath
-    * @param percentage
-    */
-  def sampling(sparkSession: SparkSession, inputPath: String, outputPath: String, percentage: Double = 0.1): Unit = {
-    val rdd = sparkSession.sparkContext.textFile(inputPath).map(_.trim).filter(_.nonEmpty)
-    val sample = rdd.sample(false, percentage, 220712L)
-    sample.repartition(10).saveAsTextFile(outputPath)
+  def text2Json(inputPath: String, outputPath: String): Unit = {
+    val lines = scala.io.Source.fromFile(inputPath).getLines().toList
+    val pages = lines.par.map{ line => 
+      val parts = line.split("\t")
+      WikiPage().fromSeq(parts)
+    }.toList
+    implicit val formats = Serialization.formats(NoTypeHints)
+    val content = Serialization.writePretty(pages)
+    Files.write(Paths.get(outputPath), content.getBytes, StandardOpenOption.CREATE)
   }
 
   def main(args: Array[String]): Unit = {
@@ -253,45 +218,23 @@ object Classifier {
         val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
-        val tcl = new Classifier(sparkSession.sparkContext, config)
+        val app = new SHINRA(sparkSession.sparkContext, config)
         config.mode match {
           case "train" => {
-            val dataset = tcl.createDataset(config.dataPath)
-            val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
-            training.show()
-            tcl.train(training)
-            tcl.eval(training)
-            test.show()
-            tcl.eval(test)
+            val dataset = app.createDataset(config.dataPath)
+            val trainingSet = if (config.percentage < 1.0) dataset.sample(config.percentage) else dataset
+            trainingSet.show()
+            val model = app.train(trainingSet)
+            app.eval(model, trainingSet)
           }
-          case "eval" => 
-          case "sample" => sampling(sparkSession, "dat/vne/5cats.txt", "dat/vne/5catsSample", 0.01)
-          case "predict" => tcl.predict(config.input, config.output)
-          case "trainHSD" => 
-            val shd = readHSD(sparkSession, "dat/hsd/withoutAccent")
-            val Array(a, b) = shd.randomSplit(Array(0.8, 0.2), seed = 20150909)
-            a.show()
-            tcl.train(a)
-            tcl.eval(a)
-            b.show()
-            tcl.eval(b)
-          case "evalHSD" => 
-            val shd = readHSD(sparkSession, "dat/hsd/withoutAccent")
-            val stats = shd.groupBy("category").count()
-            stats.show(false)
-            val Array(a, b) = shd.randomSplit(Array(0.8, 0.2), seed = 20150909)
-            a.show()
-            tcl.eval(a)
-            b.show()
-            tcl.eval(b)
-          case "5cats" => 
-            val dataset = read5Cats(sparkSession, "/opt/data/vne/5cats.utf8/", 0.1)
-            val Array(training, test) = dataset.randomSplit(Array(0.8, 0.2), seed = 20150909)
-            training.show()
-            tcl.train(training)
-            tcl.eval(training)
-            test.show()
-            tcl.eval(test)
+          case "predict" => app.predict(config.input, config.output)
+          case "eval" =>
+            val numberOfSentences = 5
+            val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
+            val devDataset = app.createDataset("/opt/data/shinra/dev/")
+            val testDataset = app.createDataset("/opt/data/shinra/test/")
+            app.eval(model, devDataset)
+            app.eval(model, testDataset)
         }
         sparkSession.stop()
       case None =>
