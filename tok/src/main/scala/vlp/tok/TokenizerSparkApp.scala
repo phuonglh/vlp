@@ -13,9 +13,11 @@ case class ConfigTokenizer(
   master: String = "local[*]",
   executorMemory: String = "8g",
   minPartitions: Int = 1,
-  input: String = "",
-  format: String = "json", // json/text/vne
-  output: String = ""
+  inputPath: String = "",
+  inputFormat: String = "json", // json/text/vne
+  inputColumnName: String = "content",
+  outputColumnName: String = "text",
+  outputPath: String = ""
 )
 
 /**
@@ -25,21 +27,28 @@ case class ConfigTokenizer(
 object TokenizerSparkApp {
 
   def readText(sparkSession: SparkSession, config: ConfigTokenizer): DataFrame = {
-    val rdd = if (new File(config.input).isFile()) 
-      sparkSession.sparkContext.textFile(config.input, config.minPartitions)
-    else sparkSession.sparkContext.wholeTextFiles(config.input, config.minPartitions).map(_._2)
+    val rdd = if (new File(config.inputPath).isFile()) 
+      sparkSession.sparkContext.textFile(config.inputPath, config.minPartitions)
+    else sparkSession.sparkContext.wholeTextFiles(config.inputPath, config.minPartitions).map(_._2)
 
     val rows = rdd.flatMap(content => content.split("""\n+""")).map(Row(_))
     val schema = new StructType().add(StructField("content", StringType, true))
     sparkSession.createDataFrame(rows, schema)
   }
 
+  /**
+    * Reads a line-oriented JSON file. Number of lines is the number of rows of the resulting data frame.
+    *
+    * @param sparkSession
+    * @param config
+    * @return a data frame.
+    */
   def readJson(sparkSession: SparkSession, config: ConfigTokenizer): DataFrame = {
-    sparkSession.read.json(config.input)
+    sparkSession.read.json(config.inputPath)
   }
 
   def readVNE(sparkSession: SparkSession, config: ConfigTokenizer): DataFrame = {
-    val rdd = sparkSession.sparkContext.textFile(config.input, config.minPartitions)
+    val rdd = sparkSession.sparkContext.textFile(config.inputPath, config.minPartitions)
     val rows = rdd.map(line => {
       val j = line.indexOf('\t')
       val category = line.substring(0, j).trim
@@ -50,15 +59,21 @@ object TokenizerSparkApp {
     sparkSession.createDataFrame(rows, schema)
   }
 
+  def readJsonMultiline(sparkSession: SparkSession, path: String): DataFrame = {
+    sparkSession.read.option("multiLine", "true").option("mode", "PERMISSIVE").json(path)
+  }
+
   def main(args: Array[String]): Unit = {
     val parser = new OptionParser[ConfigTokenizer]("vlp.tok") {
       head("vlp.tok.TokenizerSparkApp", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('e', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[Int]('p', "partitions").action((x, conf) => conf.copy(minPartitions = x)).text("min partitions")
-      opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path (a text file or a directory of .txt/.json files)")
-      opt[String]('f', "inputFormat").action((x, conf) => conf.copy(format = x)).text("input format, default is 'json'")
-      opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path which is a directory containing output JSON files")
+      opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path (a text file or a directory of .txt/.json files)")
+      opt[String]('f', "inputFormat").action((x, conf) => conf.copy(inputFormat = x)).text("input format, default is 'json'")
+      opt[String]('u', "inputColumnName").action((x, conf) => conf.copy(inputColumnName = x)).text("input column name, default is 'content'")
+      opt[String]('v', "outputColumnName").action((x, conf) => conf.copy(outputColumnName = x)).text("output column name, default is 'text'")
+      opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path which is a directory containing output JSON files")
     }
     parser.parse(args, ConfigTokenizer()) match {
       case Some(config) =>
@@ -66,18 +81,23 @@ object TokenizerSparkApp {
           .config("spark.executor.memory", config.executorMemory)
           .getOrCreate()
 
-        val df = config.format match {
+        val df = config.inputFormat match {
           case "json" => readJson(sparkSession, config)
           case "text" => readText(sparkSession, config)
           case "vne" => readVNE(sparkSession, config)
+          case "shinra" => readJsonMultiline(sparkSession, config.inputPath)
         }
         df.printSchema()
         
-        val tokenizer = new TokenizerTransformer().setSplitSentences(true).setInputCol("content").setOutputCol("text")
+        val tokenizer = new TokenizerTransformer().setSplitSentences(true).setInputCol(config.inputColumnName).setOutputCol(config.outputColumnName)
         val tokenized = tokenizer.transform(df)
-        val result = if (config.format == "vne") tokenized.select("category", "text") else tokenized.select("text")
+        val result = config.inputFormat match {
+          case "vne" => tokenized.select("category", "text")
+          case "shinra" => tokenized.select("id", config.outputColumnName, "title", "category", "outgoingLink", "redirect", "clazz")
+          case _ => tokenized.select("text")
+        }
         println(s"Number of texts = ${result.count()}")
-        result.write.mode(SaveMode.Overwrite).json(config.output)
+        result.repartition(config.minPartitions).write.mode(SaveMode.Overwrite).json(config.outputPath)
         sparkSession.stop()
       case None => 
     }

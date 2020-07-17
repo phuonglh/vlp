@@ -32,7 +32,7 @@ object DataPreprocessor {
       val i = first.indexOf(',')
       val label = first.substring(0, i)
       val text = first.substring(i+1) + s.tail.mkString
-      samples += Document(labelMap(label), text.filterNot(_ == '"'))
+      samples += Document(labelMap(label), text.filterNot(_ == '"'), "NA")
       k = k + 1
     }
     samples.takeRight(10).foreach(println)
