@@ -31,7 +31,7 @@ import java.io.File
 
 case class Page(
   id: String = "", 
-  text: String = "", 
+  body: String = "", 
   title: String = "", 
   category: String = "", 
   outgoingLink: String = "", 
@@ -192,7 +192,7 @@ object SHINRA {
     val dataset = sparkSession.read.json(path).as[Page]
     dataset.map { wp => 
       Page(wp.id, 
-        wp.text.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(maxTokenLength).mkString(" "),
+        wp.body.split("""[\s.,?;:!'")(\u200b^“”'~`-]+""").take(maxTokenLength).mkString(" "),
         wp.title,
         wp.category,
         "",
@@ -244,7 +244,6 @@ object SHINRA {
           }
           case "predict" => app.predict(config.input, config.output)
           case "eval" =>
-            val numberOfSentences = 5
             val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
             val devDataset = createDataset(sparkSession, config.maxTokenLength, "/opt/data/shinra/dev/")
             val testDataset = createDataset(sparkSession, config.maxTokenLength, "/opt/data/shinra/test/")
