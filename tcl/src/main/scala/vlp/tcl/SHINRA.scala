@@ -3,7 +3,6 @@ package vlp.tcl
 import org.json4s.jackson.Serialization
 import org.json4s._
 import java.nio.file.{Paths, Files, StandardOpenOption}
-import java.io.{FileOutputStream, OutputStreamWriter, PrintWriter}
 import java.nio.charset.StandardCharsets
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
@@ -19,7 +18,6 @@ import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
-import vlp.tok.SentenceDetection
 import org.apache.spark.ml.classification.RandomForestClassifier
 import java.io.File
 
@@ -41,6 +39,13 @@ case class Page(
   val cs = this.getClass().getConstructors()
   def fromSeq(xs: Array[String]) = cs(0).newInstance(xs: _*).asInstanceOf[Page]
 }
+
+case class ENE(ENE_id: String, ENE_name: String, score: Double = 1.0)
+case class Result(
+  pageid: Int,
+  title: String,
+  ENEs: List[ENE]
+)
 
 class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
@@ -121,55 +126,30 @@ class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
     eval(model, dataset)
   }
 
-  def test(dataset: Dataset[Page], outputFile: String): Unit = {
+  def predict(dataset: Dataset[Page], outputFile: String): Unit = {
     val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
+    val labels = model.stages(0).asInstanceOf[StringIndexerModel].labels
     val outputDF = model.transform(dataset)
     import sparkSession.implicits._
-    val prediction = outputDF.select("clazz", config.inputColumnName, "prediction", "probability", "id")
+    implicit val formats = Serialization.formats(NoTypeHints)
+    val result = outputDF.select("id", "title", "prediction", "probability")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
+      .map(tuple => Result(tuple._1.toInt, tuple._2, List(ENE(labels(tuple._3), "", tuple._4.toArray(tuple._3)))))
+      .map(result => Serialization.write(result))
       .collect()
-    val writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8), true)
-    val labels = model.stages(0).asInstanceOf[StringIndexerModel].labels
-    prediction.foreach(pair => {
-      writer.print(pair._1)
-      writer.print("\t")
-      writer.print(pair._2)
-      writer.print("\t")
-      writer.print(labels(pair._3))
-      writer.print("\t")
-      writer.println(pair._4.toArray(pair._3))
-    })
-    writer.close()
-  }
-
-  /**
-    * Predicts a document and outputs a probability distribution of
-    * categories.
-    * @param document a document
-    * @param model the pipeline model
-    * @return a probability distribution
-    */
-  def predict(document: Page, model: PipelineModel): Map[String, Double] = {
-    val xs = List(document)
-    val labels = model.stages(0).asInstanceOf[StringIndexerModel].labels
-    import sparkSession.implicits._
-    val dataset = sparkSession.createDataset(xs).as[Page]
-    val outputDF = model.transform(dataset)
-    outputDF.select("probability")
-      .map(row => row.getAs[DenseVector](0).values).head()
-      .zipWithIndex
-      .map(pair => (if (pair._2 < labels.size) labels(pair._2) else "NA", pair._1)).toMap
+    import scala.collection.JavaConversions._  
+    Files.write(Paths.get(outputFile), result.toList, StandardCharsets.UTF_8)
   }
 
   def predict(inputFile: String, outputFile: String): Unit = {
     val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty)
-    val xs = lines.map { line =>
-      val tokens = vlp.tok.Tokenizer.tokenize(line).map(_._3)
-      Document("NA", tokens.mkString(" "), "NA")
-    }
+    val pages = lines.par.map{ line => 
+      val parts = line.split("\t")
+      Page().fromSeq(parts)
+    }.toList
     import sparkSession.implicits._
-    val data = sparkSession.createDataset(xs).as[Page]
-    test(data, outputFile)
+    val data = sparkSession.createDataset(pages).as[Page]
+    predict(data, outputFile)
   }
 
 }
