@@ -150,7 +150,8 @@ object Classifier {
     val textRDD = textSet.select(config.classCol, config.inputCol).rdd.map(row => {
       val content = row.getString(1).toLowerCase().split("\\s+").toArray
       val text = content.map(token => TokenizerTransformer.convertNum(token))
-      TextFeature(text.mkString(" "), labels(row.getString(0)))
+      val label = row.getString(0).split(",").head
+      TextFeature(text.mkString(" "), labels(label))
       }
     )
     TextSet.rdd(textRDD)
