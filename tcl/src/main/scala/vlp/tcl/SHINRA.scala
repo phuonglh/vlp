@@ -142,7 +142,7 @@ class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
   }
 
   def predict(inputFile: String, outputFile: String): Unit = {
-    val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty).map(line => line + "\tNA")
+    val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty).map(line => line + "\t0")
     val pages = lines.par.map{ line => 
       val parts = line.split("\t")
       Page().fromSeq(parts)
