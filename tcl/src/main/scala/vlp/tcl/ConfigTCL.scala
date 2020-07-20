@@ -22,6 +22,6 @@ case class ConfigTCL(
   percentage: Double = 1.0, // percentage of the training data to be used
   inputColumnName: String = "text",
   maxTokenLength: Int = 50,
-  input: String = "input.txt",
-  output: String = "output.txt"
+  input: String = "dat/shi/vi.txt",
+  output: String = "dat/shi/vi.json"
 )
