@@ -18,9 +18,7 @@ import java.text.SimpleDateFormat
 import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
-import java.io.File
 import vlp.tok.TokenizerTransformer
-import com.intel.analytics.bigdl.mkl.MKL
 
 /**
   * Configuration parameters of a Neural Network Classifier.
@@ -48,7 +46,7 @@ case class ConfigClassifier(
   executorMemory: String = "8g",
   dataPath: String = "/opt/data/vne/5cats.utf8/",
   embeddingPath: String = "/opt/data/emb/vie/glove.6B.100d.txt",
-  modelPath: String = "dat/zoo/tcl/", // need the last back slash
+  modelPath: String = "dat/zoo/tcl", 
   numFeatures: Int = 65536,
   encoder: String = "cnn",
   encoderOutputDimension: Int = 256,
@@ -59,7 +57,9 @@ case class ConfigClassifier(
   percentage: Double = 1.0,
   partitions: Int = 4,
   minFrequency: Int = 2,
-  verbose: Boolean = false
+  verbose: Boolean = false,
+  inputCol: String = "text",
+  classCol: String = "category"
 )
 
 
@@ -105,7 +105,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
 
     classifier.fit(transformedTrainingSet, batchSize = config.batchSize, nbEpoch = config.epochs, transformedValidationSet)
 
-    classifier.saveModel(config.modelPath + config.encoder + ".bin", overWrite = true)
+    classifier.saveModel(config.modelPath + "/" + config.encoder + ".bin", overWrite = true)
     logger.info("Finish training model and saving word dictionary.")
     classifier
   }
@@ -130,29 +130,24 @@ object Classifier {
 
 
   /**
-    * Reads the vnExpress 5-category corpus (of 344,32 news articles) and
-    * build a TextSet.
+    * Reads a corpus in JSONL format, extract 'text' and 'category' fields to build a text set.
     *
     * @param sparkSession
-    * @param path path to the data file(s)
-    * @param percentage
+    * @param config
     * @return a data frame of two columns (category, text)
     */
-  def readJsonData(sparkSession: SparkSession, path: String, percentage: Double = 1.0): TextSet = {
-        // each .json file is read to a df and these dfs are concatenated to form a big df
-    val filenames = new File(path).list().filter(_.endsWith(".json"))
-    val dfs = filenames.map(f => sparkSession.read.json(path + f))
-    val input = dfs.reduce(_ union _)
-    val textSet = input.sample(percentage)
+  def readJsonData(sparkSession: SparkSession, config: ConfigClassifier): TextSet = {
+    val input = sparkSession.read.json(config.dataPath)
+    val textSet = if (config.percentage < 1.0) input.sample(config.percentage) else input
 
     import sparkSession.implicits._
-    val categories = textSet.select("category").map(row => row.getString(0)).distinct.collect().sorted
+    val categories = textSet.select(config.classCol).map(row => row.getString(0)).distinct.collect().sorted
     val labels = categories.zipWithIndex.toMap
     numLabels = labels.size
     println(s"Found ${numLabels} classes")
     println(labels.mkString(", "))
     println("Creating text set. Please wait...")
-    val textRDD = textSet.rdd.map(row => {
+    val textRDD = textSet.select(config.classCol, config.inputCol).rdd.map(row => {
       val content = row.getString(1).toLowerCase().split("\\s+").toArray
       val text = content.map(token => TokenizerTransformer.convertNum(token))
       TextFeature(text.mkString(" "), labels(row.getString(0)))
@@ -178,6 +173,9 @@ object Classifier {
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs, default is 20")
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the training set to use, default is 1.0")
+      opt[String]('x', "inputCol").action((x, conf) => conf.copy(inputCol = x)).text("input column")
+      opt[String]('y', "classCol").action((x, conf) => conf.copy(classCol = x)).text("class column")
+
     }
     parser.parse(args, ConfigClassifier()) match {
       case Some(config) =>
@@ -189,11 +187,8 @@ object Classifier {
       val sparkContext = sparkSession.sparkContext
       Engine.init
 
-      MKL.setNumThreads(8)
-
       val app = new Classifier(sparkSession.sparkContext, config)
-      val textSet = readJsonData(sparkSession, config.dataPath, config.percentage)
-        .toDistributed(sparkContext, config.partitions)
+      val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
       val Array(trainingSet, validationSet, testSet) = textSet.randomSplit(Array(0.7, 0.15, 0.15))
       val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
 
@@ -205,7 +200,7 @@ object Classifier {
           val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
           println("      test accuracy = " + accuracy.mkString(", "))
         case "eval" =>
-          val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
+          val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" + config.encoder + ".bin")
           classifier.setEvaluateStatus()
           val validationPrediction = app.predict(validationSet, classifier)
           var accuracy = classifier.evaluate(validationPrediction.toDistributed().rdd.map(_.getSample), validationMethods)
@@ -214,7 +209,7 @@ object Classifier {
           accuracy = classifier.evaluate(testPrediction.toDistributed().rdd.map(_.getSample), validationMethods)
           println("      test accuracy = " + accuracy.mkString(", "))
         case "predict" =>
-          val classifier = TextClassifier.loadModel[Float](config.modelPath + config.encoder + ".bin")
+          val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" +  config.encoder + ".bin")
           val prediction = app.predict(testSet, classifier)
           prediction.toLocal().array.take(10).foreach(println)
       }
