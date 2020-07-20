@@ -178,7 +178,7 @@ object SHINRA {
         wp.category,
         "",
         "",
-        wp.clazz
+        wp.clazz.split(",").head
       )
     }
   }
