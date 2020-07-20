@@ -57,7 +57,7 @@ class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
     val tokenizer = new Tokenizer().setInputCol(config.inputColumnName).setOutputCol("tokens")
     val stopWordsRemover = new StopWordsRemover().setInputCol("tokens").setOutputCol("unigrams").setStopWords(StopWords.punctuations)
     val unigramCounter = new CountVectorizer().setInputCol("unigrams").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.numFeatures)
-    val labelIndexer = new StringIndexer().setInputCol("category").setHandleInvalid("skip").setOutputCol("label")
+    val labelIndexer = new StringIndexer().setInputCol("clazz").setHandleInvalid("skip").setOutputCol("label")
     val classifierType = config.classifier
     val pipeline = if (classifierType == "mlr") {
       val bigram = new NGram().setInputCol("unigrams").setOutputCol("bigrams").setN(2)
@@ -135,18 +135,19 @@ class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
     val result = outputDF.select("id", "title", "prediction", "probability")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
       .map(tuple => Result(tuple._1.toInt, tuple._2, List(ENE(labels(tuple._3), "", tuple._4.toArray(tuple._3)))))
-      .map(result => Serialization.write(result))
       .collect()
+      .map(result => Serialization.write(result))
     import scala.collection.JavaConversions._  
     Files.write(Paths.get(outputFile), result.toList, StandardCharsets.UTF_8)
   }
 
   def predict(inputFile: String, outputFile: String): Unit = {
-    val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty)
+    val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty).map(line => line + "\tNA")
     val pages = lines.par.map{ line => 
       val parts = line.split("\t")
       Page().fromSeq(parts)
     }.toList
+    logger.info("Number of pages for prediction = " + pages.size)
     import sparkSession.implicits._
     val data = sparkSession.createDataset(pages).as[Page]
     predict(data, outputFile)
@@ -222,13 +223,11 @@ object SHINRA {
             val model = app.train(trainingSet)
             app.eval(model, trainingSet)
           }
-          case "predict" => app.predict(config.input, config.output)
           case "eval" =>
             val model = PipelineModel.load(config.modelPath + "/" + config.classifier.toLowerCase())
-            val devDataset = createDataset(sparkSession, config.maxTokenLength, "/opt/data/shinra/dev/")
-            val testDataset = createDataset(sparkSession, config.maxTokenLength, "/opt/data/shinra/test/")
-            app.eval(model, devDataset)
+            val testDataset = createDataset(sparkSession, config.maxTokenLength, config.dataPath)
             app.eval(model, testDataset)
+          case "predict" => app.predict(config.input, config.output)
         }
         sparkSession.stop()
       case None =>
