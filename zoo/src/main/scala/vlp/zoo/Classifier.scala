@@ -128,7 +128,6 @@ object Classifier {
   Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
   var numLabels = 0
 
-
   /**
     * Reads a corpus in JSONL format, extract 'text' and 'category' fields to build a text set.
     *
@@ -141,7 +140,7 @@ object Classifier {
     val textSet = if (config.percentage < 1.0) input.sample(config.percentage) else input
 
     import sparkSession.implicits._
-    val categories = textSet.select(config.classCol).map(row => row.getString(0)).distinct.collect().sorted
+    val categories = textSet.select(config.classCol).flatMap(row => row.getString(0).split(",")).distinct.collect().sorted
     val labels = categories.zipWithIndex.toMap
     numLabels = labels.size
     println(s"Found ${numLabels} classes")
