@@ -4,6 +4,17 @@ val sparkVersion = "2.4.5"
 
 javacOptions ++= Seq("-encoding", "UTF-8")
 
+scalacOptions ++= Seq(
+    "-Xfatal-warnings",
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-language:implicitConversions",
+    "-language:higherKinds",
+    "-language:existentials",
+    "-language:postfixOps"
+)
+
 lazy val commonSettings = Seq(
   scalaVersion := "2.11.12",
   name := "vlp",
