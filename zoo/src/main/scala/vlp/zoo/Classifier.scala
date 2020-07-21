@@ -63,7 +63,7 @@ case class ConfigClassifier(
   encoderOutputDimension: Int = 256,
   maxSequenceLength: Int = 256,
   batchSize: Int = 64,
-  epochs: Int = 20,
+  epochs: Int = 40,
   learningRate: Double = 0.001,
   percentage: Double = 1.0,
   partitions: Int = 4,
@@ -98,7 +98,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
       .shapeSequence(config.maxSequenceLength)
       .generateSample()
     val wordIndex = transformedTrainingSet.getWordIndex
-    transformedTrainingSet.saveWordIndex(config.modelPath + "/wordIndex.txt")
+    transformedTrainingSet.saveWordIndex(config.modelPath + "/" + config.encoder + ".dict.txt")
     logger.info("Word index created.")
 
     val classifier = TextClassifier(Classifier.numLabels, config.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
@@ -123,7 +123,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
   }
 
   def predict(textSet: TextSet, classifier: TextClassifier[Float]): TextSet = {
-    val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/wordIndex.txt").word2idx()
+    val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/" + config.encoder + ".dict.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
     classifier.predict(transformedTextSet, batchPerThread = config.partitions)
   }
@@ -174,7 +174,7 @@ object Classifier {
     }
     println("Creating text set. Please wait...")
     val textRDD = textSet.select(config.classCol, config.inputCol).rdd.map(row => {
-      val content = row.getString(1).toLowerCase().split("\\s+").toArray
+      val content = row.getString(1).toLowerCase().split("\\s+").toArray.filter(w => w != ")" && w != "(" && w != "-")
       val text = content.map(token => TokenizerTransformer.convertNum(token))
       val label = row.getString(0).split(",").head
       TextFeature(text.mkString(" "), labels(label))
@@ -198,7 +198,7 @@ object Classifier {
       opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
       opt[Int]('o', "encoderOutputDimension").action((x, conf) => conf.copy(encoderOutputDimension = x)).text("output dimension of the encoder")
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
-      opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs, default is 20")
+      opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the training set to use, default is 1.0")
       opt[String]('x', "inputCol").action((x, conf) => conf.copy(inputCol = x)).text("input column")
       opt[String]('y', "classCol").action((x, conf) => conf.copy(classCol = x)).text("class column")
