@@ -42,7 +42,7 @@ case class Page(
 
 case class ENE(ENE_id: String, ENE_name: String, score: Double = 1.0)
 case class Result(
-  pageid: Int,
+  pageid: String,
   title: String,
   ENEs: List[ENE]
 )
@@ -134,7 +134,7 @@ class SHINRA(sparkSession: SparkSession, config: ConfigTCL) {
     implicit val formats = Serialization.formats(NoTypeHints)
     val result = outputDF.select("id", "title", "prediction", "probability")
       .map(row => (row.getString(0), row.getString(1), row.getDouble(2).toInt, row.getAs[DenseVector](3)))
-      .map(tuple => Result(tuple._1.toInt, tuple._2, List(ENE(labels(tuple._3), "", tuple._4.toArray(tuple._3)))))
+      .map(tuple => Result(tuple._1, tuple._2, List(ENE(labels(tuple._3), "", tuple._4.toArray(tuple._3)))))
       .collect()
       .map(result => Serialization.write(result))
     import scala.collection.JavaConversions._  
