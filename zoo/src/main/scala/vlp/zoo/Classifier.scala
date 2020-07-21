@@ -19,6 +19,17 @@ import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
 import vlp.tok.TokenizerTransformer
+import com.intel.analytics.zoo.pipeline.api.keras.metrics.Accuracy
+
+import org.json4s._
+import org.json4s.jackson.Serialization._
+import org.json4s.jackson.Serialization
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 /**
   * Configuration parameters of a Neural Network Classifier.
@@ -72,6 +83,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
+  implicit val formats = Serialization.formats(NoTypeHints)
   
   /**
     * Trains a neural text classifier on a text set and validate on a validation set. Trained model and word index are saved to
@@ -113,7 +125,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
   def predict(textSet: TextSet, classifier: TextClassifier[Float]): TextSet = {
     val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/wordIndex.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
-    classifier.predict(transformedTextSet, batchPerThread = 16*config.partitions)
+    classifier.predict(transformedTextSet, batchPerThread = config.partitions)
   }
 
   def predict(texts: Seq[String], classifier: TextClassifier[Float]): TextSet = {
@@ -141,10 +153,25 @@ object Classifier {
 
     import sparkSession.implicits._
     val categories = textSet.select(config.classCol).flatMap(row => row.getString(0).split(",")).distinct.collect().sorted
-    val labels = categories.zipWithIndex.toMap
-    numLabels = labels.size
-    println(s"Found ${numLabels} classes")
-    println(labels.mkString(", "))
+    val labelPath = config.modelPath + "/" + config.encoder + ".labels.json"
+    implicit val formats = Serialization.formats(NoTypeHints)
+    val labels = if (config.mode == "train") {
+      val map = categories.zipWithIndex.toMap
+      numLabels = map.size
+      println(s"Found ${numLabels} classes")
+      println(map.mkString(", "))
+      // write label map to an external JSON file
+      val mapSt = Serialization.write(map)
+      Files.write(Paths.get(labelPath), mapSt.getBytes(), StandardOpenOption.CREATE)
+      map
+    } else {
+      // restore the label map from an external JSON file
+      import scala.collection.JavaConversions._
+      val mapSt = Files.readAllLines(Paths.get(labelPath))(0)
+      val objectMapper = new ObjectMapper() with ScalaObjectMapper
+      objectMapper.registerModule(DefaultScalaModule)
+      objectMapper.readValue(mapSt, classOf[Map[String, Int]])
+    }
     println("Creating text set. Please wait...")
     val textRDD = textSet.select(config.classCol, config.inputCol).rdd.map(row => {
       val content = row.getString(1).toLowerCase().split("\\s+").toArray
@@ -190,12 +217,12 @@ object Classifier {
       val app = new Classifier(sparkSession.sparkContext, config)
       val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
       val Array(trainingSet, validationSet, testSet) = textSet.randomSplit(Array(0.7, 0.15, 0.15))
-      val validationMethods = Array(new SparseCategoricalAccuracy[Float]())
+      val validationMethods = Array(new Accuracy[Float]())
 
       config.mode match {
         case "train" =>
           val classifier = app.train(trainingSet, validationSet)
-          classifier.setEvaluateStatus()           
+          classifier.setEvaluateStatus()
           val prediction = app.predict(testSet, classifier)
           val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
           println("      test accuracy = " + accuracy.mkString(", "))
@@ -211,7 +238,7 @@ object Classifier {
         case "predict" =>
           val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" +  config.encoder + ".bin")
           val prediction = app.predict(testSet, classifier)
-          prediction.toLocal().array.take(10).foreach(println)
+          prediction.toLocal().array.take(10).foreach(tf => println(tf.getText + " ==> " + tf.getLabel))
       }
       sparkSession.stop()
       case None =>
