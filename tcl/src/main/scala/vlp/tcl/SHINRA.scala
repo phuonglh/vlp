@@ -40,7 +40,7 @@ case class Page(
   def fromSeq(xs: Array[String]) = cs(0).newInstance(xs: _*).asInstanceOf[Page]
 }
 
-case class ENE(ENE_id: String, ENE_name: String, prob: Double = 1.0)
+case class ENE(ENE_id: String, ENE_name: String, score: Double = 1.0)
 case class Result(
   pageid: String,
   title: String,
