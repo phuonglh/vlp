@@ -253,8 +253,10 @@ object Classifier {
       config.mode match {
         case "train" =>
           val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
-          val Array(trainingSet, validationSet) = textSet.randomSplit(Array(0.8, 0.2))
-          app.train(trainingSet, validationSet)
+          if (config.percentage < 1.0) {
+            val Array(trainingSet, validationSet) = textSet.randomSplit(Array(config.percentage, 1 - config.percentage))
+            app.train(trainingSet, validationSet)
+          } else app.train(textSet, textSet)
         case "eval" =>
           val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" + config.encoder + ".bin")
           classifier.setEvaluateStatus()
