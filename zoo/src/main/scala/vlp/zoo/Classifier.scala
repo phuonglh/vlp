@@ -248,30 +248,20 @@ object Classifier {
       Engine.init
 
       val app = new Classifier(sparkSession.sparkContext, config)
-      val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
-      val Array(trainingSet, validationSet, testSet) = textSet.randomSplit(Array(0.7, 0.15, 0.15))
       val validationMethods = Array(new Accuracy[Float]())
 
       config.mode match {
         case "train" =>
-          val classifier = app.train(trainingSet, validationSet)
-          classifier.setEvaluateStatus()
-          val prediction = app.predict(testSet, classifier)
-          val accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
-          println("      test accuracy = " + accuracy.mkString(", "))
+          val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
+          val Array(trainingSet, validationSet) = textSet.randomSplit(Array(0.8, 0.2))
+          app.train(trainingSet, validationSet)
         case "eval" =>
           val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" + config.encoder + ".bin")
           classifier.setEvaluateStatus()
-          val validationPrediction = app.predict(validationSet, classifier)
-          var accuracy = classifier.evaluate(validationPrediction.toDistributed().rdd.map(_.getSample), validationMethods)
+          val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
+          val prediction = app.predict(textSet, classifier)
+          var accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
           println("validation accuracy = " + accuracy.mkString(", "))
-          val testPrediction = app.predict(testSet, classifier)
-          accuracy = classifier.evaluate(testPrediction.toDistributed().rdd.map(_.getSample), validationMethods)
-          println("      test accuracy = " + accuracy.mkString(", "))
-        case "predict" =>
-          val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" +  config.encoder + ".bin")
-          val prediction = app.predict(testSet, classifier)
-          prediction.toLocal().array.take(10).foreach(tf => println(tf.getText + " ==> " + tf.getLabel))
         case "shinra" =>
           import sparkSession.implicits._
           val df = sparkSession.read.text("dat/shi/vi.txt").rdd.filter(row => row.getString(0).trim.nonEmpty).map(row => {
