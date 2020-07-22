@@ -30,6 +30,10 @@ import java.nio.file.StandardOpenOption
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import scala.io.Source
+import java.nio.charset.StandardCharsets
+import com.intel.analytics.bigdl.dataset.DataSet
+import com.intel.analytics.bigdl.dataset.Sample
 
 /**
   * Configuration parameters of a Neural Network Classifier.
@@ -63,7 +67,7 @@ case class ConfigClassifier(
   encoderOutputDimension: Int = 256,
   maxSequenceLength: Int = 256,
   batchSize: Int = 64,
-  epochs: Int = 40,
+  epochs: Int = 30,
   learningRate: Double = 0.001,
   percentage: Double = 1.0,
   partitions: Int = 4,
@@ -73,6 +77,14 @@ case class ConfigClassifier(
   classCol: String = "category"
 )
 
+// SHINRA-related stuffs
+case class ENE(ENE_id: String, ENE_name: String, score: Double = 1.0)
+case class Result(
+  pageid: String,
+  title: String,
+  lang: String = "vi",
+  ENEs: List[ENE]
+)
 
 /**
   * Deep learning based text classifier. We can use CNN, LSTM or GRU architecture.
@@ -122,10 +134,30 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     classifier
   }
 
-  def predict(textSet: TextSet, classifier: TextClassifier[Float]): TextSet = {
+  def predict(textSet: TextSet, classifier: TextClassifier[Float], docIds: Array[String] = Array.empty[String], outputFile: String = ""): TextSet = {
     val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/" + config.encoder + ".dict.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
-    classifier.predict(transformedTextSet, batchPerThread = config.partitions)
+      DataSet
+      TextFeature
+    val result = classifier.predict(transformedTextSet, batchPerThread = config.partitions)
+    val predictedClasses = classifier.predictClasses(transformedTextSet.toDistributed().rdd.map(_.getSample))
+    if (outputFile.nonEmpty) {
+      // restore the label map from an external JSON file
+      val labelPath = config.modelPath + "/" + config.encoder + ".labels.json"
+      implicit val formats = Serialization.formats(NoTypeHints)
+      import scala.collection.JavaConversions._
+      val mapSt = Files.readAllLines(Paths.get(labelPath))(0)
+      val objectMapper = new ObjectMapper() with ScalaObjectMapper
+      objectMapper.registerModule(DefaultScalaModule)
+      val labels = objectMapper.readValue(mapSt, classOf[Map[String, Int]])
+      val clazzMap = labels.keySet.map(key => (labels(key), key)).toMap[Int, String]
+      val prediction = predictedClasses.collect().map(k => clazzMap(k))
+      val output = docIds.zip(prediction).map(pair => Result(pair._1, "", "vi", List(ENE(pair._2, "", 0.0))))
+            .map(result => Serialization.write(result))
+      import scala.collection.JavaConversions._  
+      Files.write(Paths.get(outputFile), output.toList, StandardCharsets.UTF_8)
+    }
+    result
   }
 
   def predict(texts: Seq[String], classifier: TextClassifier[Float]): TextSet = {
@@ -133,6 +165,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     val textSet = TextSet.rdd(textRDD)
     predict(textSet, classifier)
   }
+
 }
 
 object Classifier {
@@ -239,6 +272,28 @@ object Classifier {
           val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" +  config.encoder + ".bin")
           val prediction = app.predict(testSet, classifier)
           prediction.toLocal().array.take(10).foreach(tf => println(tf.getText + " ==> " + tf.getLabel))
+        case "shinra" =>
+          import sparkSession.implicits._
+          val df = sparkSession.read.text("dat/shi/vi.txt").rdd.filter(row => row.getString(0).trim.nonEmpty).map(row => {
+            val parts = (row.getString(0) + "\tNA").split("\t")
+            RowFactory.create(parts: _*)
+          })
+          val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false), 
+            StructField("title", StringType, false), StructField("category", StringType, false), StructField("outgoingLink", StringType, false),
+            StructField("redirect", StringType, false), StructField("clazz", StringType, false)))
+          val ds = sparkSession.createDataFrame(df, schema)
+          val docIds = ds.select("pageid").map(row => row.getString(0)).collect()
+          val tokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("body").setConvertNumber(true).setToLowercase(true)
+          val xs = tokenizer.transform(ds)
+          xs.show()
+          val textRDD = xs.select("body").rdd.map(row => {
+            val content = row.getString(0).split("\\s+").toArray
+            TextFeature(content.mkString(" "), -1)
+          })
+          val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" + config.encoder + ".bin")
+          classifier.setEvaluateStatus()
+          val textSet = TextSet.rdd(textRDD)
+          app.predict(textSet, classifier, docIds, "dat/shi/vi.json." + config.encoder)
       }
       sparkSession.stop()
       case None =>

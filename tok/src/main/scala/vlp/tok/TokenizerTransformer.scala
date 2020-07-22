@@ -46,7 +46,9 @@ class TokenizerTransformer(override val uid: String) extends UnaryTransformer[St
       val vs = if ($(convertNumber)) 
         us.map { token => TokenizerTransformer.convertNum(token) }
       else us
-      vs.mkString(" ")
+      if ($(toLowercase))
+        vs.mkString(" ").toLowerCase
+      else vs.mkString(" ")
     }
 
     if (!getSplitSentences) {

@@ -12,7 +12,6 @@ import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql.{Dataset, DataFrame, RowFactory, SparkSession}
-import org.apache.spark.sql.types.{DataType, StringType, StructField, StructType}
 import org.apache.spark.sql.functions.lit
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
