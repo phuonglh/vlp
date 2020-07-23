@@ -212,11 +212,11 @@ object SHINRA {
       if (parts.size == 4)
         RowFactory.create(parts(2), parts(3))
       else {
-        println(row.getString(0).subSequence(0, 100))
+        println(row.getString(0) + "\n")
         RowFactory.create(parts(2), "")
       }
     }).filter(row => row.getString(1).nonEmpty)
-    
+
     val schema = StructType(Array(StructField("clazz", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rdd, schema)
     val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
