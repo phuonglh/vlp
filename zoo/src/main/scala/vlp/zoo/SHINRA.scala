@@ -56,7 +56,7 @@ case class ConfigSHINRA(
   epochs: Int = 40,
   learningRate: Double = 0.001,
   percentage: Double = 1.0,
-  partitions: Int = 4,
+  partitions: Int = 20,
   minFrequency: Int = 2,
   verbose: Boolean = false,
   inputCol: String = "body",
@@ -198,8 +198,7 @@ object SHINRA {
       val content = row.getString(1)
       val label = row.getString(0).split(",").head
       TextFeature(content, labels(label))
-      }
-    )
+    })
     TextSet.rdd(textRDD)
   }
 
@@ -210,11 +209,17 @@ object SHINRA {
     val df = sparkSession.read.text(inputPath)
     val rdd = df.rdd.map(row => {
       val parts = row.getString(0).split("\t")
-      RowFactory.create(parts(2), parts(3))
-    })
+      if (parts.size == 4)
+        RowFactory.create(parts(2), parts(3))
+      else {
+        println(row.getString(0).subSequence(0, 100))
+        RowFactory.create(parts(2), "")
+      }
+    }).filter(row => row.getString(1).nonEmpty)
+    
     val schema = StructType(Array(StructField("clazz", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rdd, schema)
-    val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\ufeff\\]+""")
+    val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
     val lang = config.language match {
       case "en" => "english"
       case "fr" => "french"
