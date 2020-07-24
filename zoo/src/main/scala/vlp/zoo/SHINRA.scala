@@ -290,13 +290,24 @@ object SHINRA {
             val parts = (row.getString(0) + "\tNA").split("\t")
             RowFactory.create(parts: _*)
           })
-          val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false), 
-            StructField("title", StringType, false), StructField("category", StringType, false), StructField("outgoingLink", StringType, false),
-            StructField("redirect", StringType, false), StructField("clazz", StringType, false)))
-          val ds = sparkSession.createDataFrame(df, schema)
-          val docIds = ds.select("pageid").map(row => row.getString(0)).collect()
-          val tokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("body").setConvertNumber(true).setToLowercase(true)
-          val xs = tokenizer.transform(ds)
+          val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
+          val input = sparkSession.createDataFrame(df, schema)
+          val docIds = input.select("pageid").map(row => row.getString(0)).collect()
+          val xs = if (config.language == "vi") {
+            val tokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("body").setConvertNumber(true).setToLowercase(true)
+            tokenizer.transform(input)
+          } else {
+            val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
+            val lang = config.language match {
+              case "en" => "english"
+              case "fr" => "french"
+              case _ => "english"
+            }
+            val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(lang))
+            val temp = remover.transform(tokenizer.transform(input))
+            import org.apache.spark.sql.functions.concat_ws
+            temp.withColumn("body", concat_ws(" ", $"words"))
+          }
           xs.show()
           val textRDD = xs.select("body").rdd.map(row => {
             val content = row.getString(0).split("\\s+").toArray
