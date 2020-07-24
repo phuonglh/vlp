@@ -53,7 +53,7 @@ case class ConfigSHINRA(
   encoderOutputDimension: Int = 256,
   maxSequenceLength: Int = 256,
   batchSize: Int = 64,
-  epochs: Int = 40,
+  epochs: Int = 50,
   learningRate: Double = 0.001,
   percentage: Double = 1.0,
   partitions: Int = 20,
@@ -245,6 +245,7 @@ object SHINRA {
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
+      opt[Int]('w', "embeddingDimension").action((x, conf) => conf.copy(embeddingDimension = x)).text("embedding dimension 50/100/200/300")
       opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
       opt[Int]('o', "encoderOutputDimension").action((x, conf) => conf.copy(encoderOutputDimension = x)).text("output dimension of the encoder")
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
@@ -313,7 +314,7 @@ object SHINRA {
             val content = row.getString(0).split("\\s+").toArray
             TextFeature(content.mkString(" "), -1)
           })
-          val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" + config.encoder + ".bin")
+          val classifier = TextClassifier.loadModel[Float](languagePack.modelPath)
           classifier.setEvaluateStatus()
           val textSet = TextSet.rdd(textRDD)
           app.predict(textSet, classifier, docIds, "dat/shi/" + config.language + ".json." + config.encoder)
