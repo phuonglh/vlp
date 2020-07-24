@@ -38,6 +38,7 @@ import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.spark.ml.feature.StopWordsRemover
 import org.apache.spark.ml.Pipeline
+import com.intel.analytics.zoo.common.NNContext
 
 case class ConfigSHINRA(
   master: String = "local[*]",
@@ -263,7 +264,7 @@ object SHINRA {
         .setAppName("SHINRA")
       val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
       val sparkContext = sparkSession.sparkContext
-      Engine.init
+      NNContext.initNNContext(sparkConfig)
 
       val app = new SHINRA(sparkSession.sparkContext, config)
       val languagePack = new LanguagePack(config)

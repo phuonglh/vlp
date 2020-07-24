@@ -158,7 +158,13 @@ lazy val zoo = (project in file("zoo"))
       "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
-    )
+    ),
+    assemblyMergeStrategy in assembly := {
+      case x if x.contains("log4j.properties") => MergeStrategy.first
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
   )
 
 // Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
