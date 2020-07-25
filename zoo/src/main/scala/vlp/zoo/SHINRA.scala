@@ -90,6 +90,14 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigSHINRA) {
   import sparkSession.implicits._
   implicit val formats = Serialization.formats(NoTypeHints)
   final val languagePack = new LanguagePack(config)
+  final val clazzRules = Map[String, String](
+    "1.7.17.5" -> "1.7.6",
+    "1.7.17.3" -> "1.7.6",
+    "1.7.19.5" -> "1.7.19.4",
+    "1.7.19.2" -> "1.7.19.6",
+    "1.7.19.6" -> "1.7.19.3",
+    "1.7.17.0" -> "1.7.6"
+  )
   
   /**
     * Trains a neural text classifier on a text set and validate on a validation set. Trained model and word index are saved to
@@ -147,8 +155,11 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigSHINRA) {
       val labels = objectMapper.readValue(mapSt, classOf[Map[String, Int]])
       val clazzMap = labels.keySet.map(key => (labels(key), key)).toMap[Int, String]
       val prediction = predictedClasses.collect().map(k => clazzMap(k))
-      val output = docIds.zip(prediction).map(pair => Result(pair._1, "", "", List(ENE(pair._2, "", 0.0))))
-            .map(result => Serialization.write(result))
+      val output = docIds.zip(prediction).map(pair => {
+        if (!clazzRules.keySet.contains(pair._2))
+          Result(pair._1, "", "", List(ENE(pair._2, "", 0.0)))
+        else Result(pair._1, "", "", List(ENE(pair._2, "", 0.0), ENE(clazzRules(pair._2), "", 0.0)))
+      }).map(result => Serialization.write(result))
       import scala.collection.JavaConversions._  
       Files.write(Paths.get(outputFile), output.toList, StandardCharsets.UTF_8)
     }
