@@ -156,9 +156,9 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigSHINRA) {
       val clazzMap = labels.keySet.map(key => (labels(key), key)).toMap[Int, String]
       val prediction = predictedClasses.collect().map(k => clazzMap(k))
       val output = docIds.zip(prediction).map(pair => {
-        if (!clazzRules.keySet.contains(pair._2))
+        // if (!clazzRules.keySet.contains(pair._2))
           Result(pair._1, "", "", List(ENE(pair._2, "", 0.0)))
-        else Result(pair._1, "", "", List(ENE(pair._2, "", 0.0), ENE(clazzRules(pair._2), "", 0.0)))
+        // else Result(pair._1, "", "", List(ENE(pair._2, "", 0.0), ENE(clazzRules(pair._2), "", 0.0)))
       }).map(result => Serialization.write(result))
       import scala.collection.JavaConversions._  
       Files.write(Paths.get(outputFile), output.toList, StandardCharsets.UTF_8)
