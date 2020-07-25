@@ -233,6 +233,15 @@ object SHINRA {
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
   }
 
+  def statistics(sparkSession: SparkSession, config: ConfigSHINRA): Unit = {
+    val languagePack = new LanguagePack(config)
+    val textSet = sparkSession.read.json(languagePack.dataPath)
+    import sparkSession.implicits._
+    val categories = textSet.groupBy(config.classCol).count().sort($"count".desc)
+    categories.show(100)
+    println("#(records) = " + categories.count())
+  }
+
   def main(args: Array[String]): Unit = {
     val parser = new OptionParser[ConfigSHINRA]("zoo.tcl.SHINRA") {
       head("vlp.zoo.SHINRA", "1.0")
@@ -319,6 +328,7 @@ object SHINRA {
           classifier.setEvaluateStatus()
           val textSet = TextSet.rdd(textRDD)
           app.predict(textSet, classifier, docIds, "dat/shi/" + config.language + ".json." + config.encoder)
+        case "stat" => statistics(sparkSession, config)
       }
       sparkSession.stop()
       case None =>
