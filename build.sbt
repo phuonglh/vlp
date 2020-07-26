@@ -135,6 +135,20 @@ lazy val vdg = (project in file("vdg"))
     )
   )
 
+// Natural language inference module
+lazy val nli = (project in file("nli"))
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.nli.Teller"),
+    assemblyJarName in assembly := "nli.jar",
+    resolvers += Resolver.mavenLocal,
+    libraryDependencies ++= Seq(
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
+    )
+  )
+
 // Word to vector module
 lazy val vec = (project in file("vec"))
   .dependsOn(tok)
@@ -144,8 +158,6 @@ lazy val vec = (project in file("vec"))
     assemblyJarName in assembly := "vec.jar",
     resolvers += Resolver.mavenLocal
   )
-
-
 
 // Models that depend on the Analytic Zoo framework
 lazy val zoo = (project in file("zoo"))
