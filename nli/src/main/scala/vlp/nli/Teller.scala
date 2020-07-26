@@ -17,6 +17,7 @@ import com.intel.analytics.bigdl.utils.Shape
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.ml.feature.CountVectorizer
+import org.apache.spark.ml.feature.VectorAssembler
 
 
 class Teller(sparkSession: SparkSession, config: ConfigTeller) {
@@ -25,6 +26,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val premiseTokenizer = new Tokenizer().setInputCol("premise").setOutputCol("ps")
     val hypothesisTokenizer = new Tokenizer().setInputCol("hypothesis").setOutputCol("hs")
     val countVectorizer = new CountVectorizer().setInputCol("ps").setOutputCol("us").setMinTF(config.minFrequency).setBinary(true)
+    VectorAssembler
   }
 
   /**
