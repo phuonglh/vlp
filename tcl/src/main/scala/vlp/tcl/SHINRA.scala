@@ -159,7 +159,9 @@ object SHINRA {
 
   def text2Json(inputPath: String, outputPath: String): Unit = {
     val lines = scala.io.Source.fromFile(inputPath).getLines().toList
-    val pages = lines.par.map{ line => 
+    val valid = lines.filter(line => line.split("\t").size == 7)
+    println("#(validLines) = " + valid.size)
+    val pages = valid.par.map{ line => 
       val parts = line.split("\t")
       Page().fromSeq(parts)
     }.toList

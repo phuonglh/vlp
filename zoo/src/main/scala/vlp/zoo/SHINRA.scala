@@ -51,7 +51,7 @@ case class ConfigSHINRA(
   numFeatures: Int = 100000,
   encoder: String = "cnn",
   embeddingDimension: Int = 100,
-  encoderOutputDimension: Int = 256,
+  encoderOutputDimension: Int = 500,
   maxSequenceLength: Int = 256,
   batchSize: Int = 64,
   epochs: Int = 50,
@@ -269,7 +269,7 @@ object SHINRA {
       opt[Int]('w', "embeddingDimension").action((x, conf) => conf.copy(embeddingDimension = x)).text("embedding dimension 50/100/200/300")
       opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
       opt[Int]('o', "encoderOutputDimension").action((x, conf) => conf.copy(encoderOutputDimension = x)).text("output dimension of the encoder")
-      opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
+      opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('r', "percentage").action((x, conf) => conf.copy(percentage = x)).text("ratio of the training set to use, default is 1.0")
       opt[String]('x', "inputCol").action((x, conf) => conf.copy(inputCol = x)).text("input column")

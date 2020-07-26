@@ -105,36 +105,18 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigClassifier) {
     classifier
   }
 
-  def predict(textSet: TextSet, classifier: TextClassifier[Float], docIds: Array[String] = Array.empty[String], outputFile: String = ""): TextSet = {
+  def predict(textSet: TextSet, classifier: TextClassifier[Float]): (TextSet, Array[Int]) = {
     val transformedTextSet = textSet.tokenize().loadWordIndex(config.modelPath + "/" + config.encoder + ".dict.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
-      DataSet
-      TextFeature
     val result = classifier.predict(transformedTextSet, batchPerThread = config.partitions)
     val predictedClasses = classifier.predictClasses(transformedTextSet.toDistributed().rdd.map(_.getSample))
-    if (outputFile.nonEmpty) {
-      // restore the label map from an external JSON file
-      val labelPath = config.modelPath + "/" + config.encoder + ".labels.json"
-      implicit val formats = Serialization.formats(NoTypeHints)
-      import scala.collection.JavaConversions._
-      val mapSt = Files.readAllLines(Paths.get(labelPath))(0)
-      val objectMapper = new ObjectMapper() with ScalaObjectMapper
-      objectMapper.registerModule(DefaultScalaModule)
-      val labels = objectMapper.readValue(mapSt, classOf[Map[String, Int]])
-      val clazzMap = labels.keySet.map(key => (labels(key), key)).toMap[Int, String]
-      val prediction = predictedClasses.collect().map(k => clazzMap(k))
-      val output = docIds.zip(prediction).map(pair => Result(pair._1, "", "vi", List(ENE(pair._2, "", 0.0))))
-            .map(result => Serialization.write(result))
-      import scala.collection.JavaConversions._  
-      Files.write(Paths.get(outputFile), output.toList, StandardCharsets.UTF_8)
-    }
-    result
+    (result, predictedClasses.collect())
   }
 
   def predict(texts: Seq[String], classifier: TextClassifier[Float]): TextSet = {
     val textRDD = sparkContext.parallelize(texts).map(content => TextFeature(content, 0))
     val textSet = TextSet.rdd(textRDD)
-    predict(textSet, classifier)
+    predict(textSet, classifier)._1
   }
 
 }
@@ -232,7 +214,7 @@ object Classifier {
           val classifier = TextClassifier.loadModel[Float](config.modelPath + "/" + config.encoder + ".bin")
           classifier.setEvaluateStatus()
           val textSet = readJsonData(sparkSession, config).toDistributed(sparkContext, config.partitions)
-          val prediction = app.predict(textSet, classifier)
+          val prediction = app.predict(textSet, classifier)._1
           var accuracy = classifier.evaluate(prediction.toDistributed().rdd.map(_.getSample), validationMethods)
           println("validation accuracy = " + accuracy.mkString(", "))
       }
