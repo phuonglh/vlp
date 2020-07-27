@@ -254,7 +254,7 @@ object SHINRA {
   }
 
   def main(args: Array[String]): Unit = {
-    val parser = new OptionParser[ConfigSHINRA]("zoo.tcl.SHINRA") {
+    val parser = new OptionParser[ConfigSHINRA]("vlp.zoo.SHINRA") {
       head("vlp.zoo.SHINRA", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
@@ -274,7 +274,6 @@ object SHINRA {
       opt[Double]('r', "percentage").action((x, conf) => conf.copy(percentage = x)).text("ratio of the training set to use, default is 1.0")
       opt[String]('x', "inputCol").action((x, conf) => conf.copy(inputCol = x)).text("input column")
       opt[String]('y', "classCol").action((x, conf) => conf.copy(classCol = x)).text("class column")
-
     }
     parser.parse(args, ConfigSHINRA()) match {
       case Some(config) =>

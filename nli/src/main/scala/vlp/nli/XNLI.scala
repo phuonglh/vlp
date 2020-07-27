@@ -1,4 +1,4 @@
-package vlp.zoo
+package vlp.nli
 
 import scala.util.parsing.json._
 import org.apache.spark.rdd.RDD
