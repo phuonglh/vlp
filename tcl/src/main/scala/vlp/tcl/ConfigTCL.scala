@@ -12,7 +12,7 @@ case class ConfigTCL(
   modelPath: String = "dat/tcl/",
   lambda: Double = 1E-4,
   classifier: String = "mlr",
-  numFeatures: Int = 32768,
+  numFeatures: Int = 65536,
   hiddenUnits: String = "128",
   numTrees: Int = 256, // number of trees used in the RFC
   maxDepth: Int = 15, // max tree depth used in the RFC

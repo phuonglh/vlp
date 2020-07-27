@@ -27,7 +27,7 @@ class SequenceAssembler(override val uid: String) extends Transformer with HasIn
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
-  def createTransformFunc: (Seq[String], Seq[String]) => Seq[String] = {(xs: Seq[String], ys: Seq[String]) => 
+  private def createTransformFunc: (Seq[String], Seq[String]) => Seq[String] = {(xs: Seq[String], ys: Seq[String]) => 
     xs ++ ys
   }
 
