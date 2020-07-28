@@ -229,12 +229,22 @@ object SHINRA {
       }
     }).filter(row => row.getString(1).nonEmpty)
 
+  val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
+    "hungarian", "italian", "norwegian", "portuguese", "russian", "spanish", "swedish", "turkish")
+
     val schema = StructType(Array(StructField("clazz", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rdd, schema)
     val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
     val lang = config.language match {
       case "en" => "english"
       case "fr" => "french"
+      case "da" => "danish"
+      case "fi" => "finnish"
+      case "no" => "norwegian"
+      case "sv" => "swedish"
+      case "de" => "german"
+      case "hu" => "hungarian"
+      case "pt" => "portuguese"
       case _ => "english"
     }
     val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(lang))
@@ -322,6 +332,13 @@ object SHINRA {
             val lang = config.language match {
               case "en" => "english"
               case "fr" => "french"
+              case "da" => "danish"
+              case "fi" => "finnish"
+              case "no" => "norwegian"
+              case "sv" => "swedish"
+              case "de" => "german"
+              case "hu" => "hungarian"
+              case "pt" => "portuguese"
               case _ => "english"
             }
             val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(lang))

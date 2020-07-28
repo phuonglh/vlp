@@ -18,6 +18,13 @@ import scala.collection.mutable.ListBuffer
 import org.apache.log4j.{Level, Logger}
 import org.slf4j.LoggerFactory
 
+import org.json4s.jackson.Serialization
+import org.json4s._
+import java.nio.file.{Paths, Files, StandardOpenOption}
+
+
+case class Page(url: String, content: String, date: Date)
+
 /**
   * Indexer of financial news content for a given day from some websites.
   *
@@ -339,21 +346,19 @@ object NewsIndexer {
     val news = novelUrls.par.map(url => {
       logger.info(url)
       val content = extract(url)
-      new News(url, content, new Date())
+      Page(url, content, new Date())
     }).toList
     if (news.nonEmpty) {
       val accept = (s: String) => (s.size >= 500 && !s.contains("<div") && !s.contains("<table") && !s.contains("</p>"))
-      import scala.collection.JavaConverters._
-      val xs = news.filter(x => accept(x.getContent)).asJava
-      // update the ES index
-      Indexer.indexManyNews(xs)
-      logger.info(s"#(indexedNews) = ${xs.size}")
+      // write News elements to a JSON file of today
+      val xs = news.filter(x => accept(x.content))
+      implicit val formats = Serialization.formats(NoTypeHints)
+      val content = Serialization.writePretty(xs)
+      Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE)
       // update the MySQL database `url`
       MySQL.insert(novelUrls)
       logger.info(s"#(insertedURLs) = ${novelUrls.size}")
     }    
-    Thread.sleep(1000)
-    Indexer.close()
   }
 
   def test: Unit = {
