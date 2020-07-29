@@ -50,8 +50,8 @@ case class ConfigSHINRA(
   modelPath: String = "dat/zoo/tcl/shi/",
   numFeatures: Int = 100000,
   encoder: String = "cnn",
-  embeddingDimension: Int = 100,
-  encoderOutputDimension: Int = 500,
+  embeddingDimension: Int = 300,
+  encoderOutputDimension: Int = 512,
   maxSequenceLength: Int = 256,
   batchSize: Int = 64,
   epochs: Int = 50,
@@ -277,6 +277,7 @@ object SHINRA {
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
       opt[Int]('w', "embeddingDimension").action((x, conf) => conf.copy(embeddingDimension = x)).text("embedding dimension 50/100/200/300")
+      opt[String]('q', "embeddingPath").action((x, conf) => conf.copy(embeddingPath = x)).text("embedding path")
       opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
       opt[Int]('o', "encoderOutputDimension").action((x, conf) => conf.copy(encoderOutputDimension = x)).text("output dimension of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
@@ -290,7 +291,7 @@ object SHINRA {
       val sparkConfig = Engine.createSparkConf()
         .setMaster(config.master)
         .set("spark.executor.memory", config.executorMemory)
-        .setAppName("SHINRA")
+        .setAppName("zoo.SHINRA")
       val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
       val sparkContext = sparkSession.sparkContext
       NNContext.initNNContext(sparkConfig)

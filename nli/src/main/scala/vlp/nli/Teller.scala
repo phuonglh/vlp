@@ -53,7 +53,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val prePipeline = new Pipeline().setStages(Array(labelIndexer, premiseTokenizer, hypothesisTokenizer, sequenceAssembler, countVectorizer))
     logger.info("Fitting pre-processing pipeline...")
     val prepocessor = prePipeline.fit(input)
-    prepocessor.write.overwrite().save(Paths.get(config.modelPath, config.modelType).toString)
+    prepocessor.write.overwrite().save(Paths.get(config.modelPath, config.language, config.modelType).toString)
     logger.info("Pre-processing pipeline saved.")
     val df = prepocessor.transform(input)
 
@@ -73,8 +73,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     trainingDF.show()
 
     val dlModel = sequentialTransducer(vocabSize, config.maxSequenceLength)
-    val trainSummary = TrainSummary(appName = config.encoder, logDir = "/tmp/nli/summary/" + config.language)
-    val validationSummary = ValidationSummary(appName = config.encoder, logDir = "/tmp/nli/summary/" + config.language)
+    val trainSummary = TrainSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
+    val validationSummary = ValidationSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
     val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(config.maxSequenceLength))
       .setLabelCol("category")
       .setFeaturesCol("indexVector")
@@ -86,8 +86,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
       .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
   
     val model = classifier.fit(trainingDF)
-    dlModel.saveModule(Paths.get(config.modelPath, config.language, config.modelType, "nli.bigdl").toString(), 
-      Paths.get(config.modelPath, config.language, config.modelType, "nli.bin").toString(), true)
+    dlModel.saveModule(Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoder}.bigdl").toString(), 
+      Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoder}.bin").toString(), true)
   }
 
   def sequentialTransducer(vocabSize: Int, featureSize: Int): Module[Float] = {
@@ -112,10 +112,23 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val model = Sequential()
     val branches = ParallelTable()
     val sourceEmbedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(featureSize))
-    val source = Sequential().add(sourceEmbedding).add(GRU(config.encoderOutputSize))
+    val sourceLayers = Sequential().add(sourceEmbedding)
     val targetEmbedding = Embedding(featureSize, config.embeddingSize, inputShape = Shape(featureSize))
-    val target = Sequential().add(GRU(config.encoderOutputSize))
-    branches.add(source).add(target)
+    val targetLayers = Sequential().add(targetEmbedding)
+    config.encoder match {
+      case "cnn" => 
+        sourceLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
+        sourceLayers.add(GlobalMaxPooling1D())
+        targetLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
+        targetLayers.add(GlobalMaxPooling1D())
+      case "gru" => 
+        sourceLayers.add(GRU(config.encoderOutputSize))
+        targetLayers.add(GRU(config.encoderOutputSize))
+      case "lstm" => 
+        sourceLayers.add(LSTM(config.encoderOutputSize))
+        targetLayers.add(LSTM(config.encoderOutputSize))
+    }
+    branches.add(sourceLayers).add(targetLayers)
     model.add(branches).add(ConcatTable()).add(Dense(config.numLabels, activation = "softmax"))
   }
 

@@ -209,7 +209,7 @@ object SHINRA {
     }
     parser.parse(args, ConfigTCL()) match {
       case Some(config) =>
-        val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
+        val sparkSession = SparkSession.builder().appName("tcl.SHINRA").master(config.master).getOrCreate()
         implicit val formats = Serialization.formats(NoTypeHints)
         logger.info(Serialization.writePretty(config))
         val app = new SHINRA(sparkSession, config)
