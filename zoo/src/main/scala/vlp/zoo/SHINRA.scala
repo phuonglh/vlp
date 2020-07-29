@@ -43,6 +43,8 @@ import com.intel.analytics.zoo.common.NNContext
 case class ConfigSHINRA(
   master: String = "local[*]",
   mode: String = "eval",
+  totalCores: Int = 8,
+  executorCores: Int = 8,
   executorMemory: String = "8g",
   language: String = "en",
   dataPath: String = "/opt/data/shinra/",
@@ -267,8 +269,10 @@ object SHINRA {
     val parser = new OptionParser[ConfigSHINRA]("vlp.zoo.SHINRA") {
       head("vlp.zoo.SHINRA", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
+      opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
+      opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
-      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
@@ -290,6 +294,8 @@ object SHINRA {
       case Some(config) =>
       val sparkConfig = Engine.createSparkConf()
         .setMaster(config.master)
+        .set("spark.executor.cores", config.executorCores.toString)
+        .set("spark.cores.max", config.totalCores.toString)
         .set("spark.executor.memory", config.executorMemory)
         .setAppName("zoo.SHINRA")
       val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
