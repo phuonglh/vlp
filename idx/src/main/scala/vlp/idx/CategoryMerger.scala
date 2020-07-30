@@ -30,7 +30,9 @@ object CategoryMerger {
   )
 
   def main(args: Array[String]): Unit = {
-    val lines = Source.fromFile("/Users/phuonglh/vlp/dat/idx/urls.txt").getLines().toList
+    val outputPath = args(0)
+    println(s"Output path = ${outputPath}")
+    val lines = Source.fromFile(outputPath + "/vlp/dat/idx/urls.txt").getLines().toList
     val xs = lines.map(line => {
       val parts = line.trim.split("\\s+")
       if (parts.size > 2) {
@@ -42,7 +44,7 @@ object CategoryMerger {
     val sheets = xs.groupBy(_.category).mapValues(list => list.flatMap(_.urls).toSet)
     implicit val formats = Serialization.formats(NoTypeHints)
     val content = Serialization.writePretty(sheets)
-    Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx/urls.json"), content.getBytes, StandardOpenOption.CREATE)
+    Files.write(Paths.get(outputPath + "/vlp/dat/idx/urls.json"), content.getBytes, StandardOpenOption.CREATE)
     // some statistics
     val stats = sheets.map(p => (p._1, p._2.size)).toList.sortBy(_._2)
     stats.foreach(println)

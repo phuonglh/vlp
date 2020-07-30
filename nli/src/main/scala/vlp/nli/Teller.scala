@@ -36,6 +36,7 @@ import scopt.OptionParser
 import org.apache.spark.ml.feature.CountVectorizerModel
 import com.intel.analytics.bigdl.nn.keras.Dropout
 import com.intel.analytics.bigdl.nn.keras.Activation
+import com.intel.analytics.bigdl.nn.keras.Permute
 
 class Teller(sparkSession: SparkSession, config: ConfigTeller) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
@@ -56,28 +57,37 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     prepocessor.write.overwrite().save(Paths.get(config.modelPath, config.language, config.modelType).toString)
     logger.info("Pre-processing pipeline saved.")
     val df = prepocessor.transform(input)
-
-    // determine the vocab size
+    // determine the vocab size and dictionary
     val vocabulary = prepocessor.stages.last.asInstanceOf[CountVectorizerModel].vocabulary
     val vocabSize = Math.min(config.numFeatures, vocabulary.size) + 1 // plus one (see [[SequenceVectorizer]])
-
-    // create a dictionary 
     val dictionary: Map[String, Int] = vocabulary.zipWithIndex.toMap
-    val sequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("tokens").setOutputCol("indexVector")
-    // create input data frame for the BigDL model
-    val dlInputDF = sequenceVectorizer.transform(df.select("label", "tokens"))
+
+    // prepare the input data frame for BigDL model
+    val dlInputDF = if (config.modelType == "seq") {
+      val sequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("tokens").setOutputCol("features")
+      sequenceVectorizer.transform(df.select("label", "tokens"))
+    } else {
+      val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("premise").setOutputCol("premiseIndexVector")
+      val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
+      val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("features")
+      val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker))
+      val ef = df.select("label", "premise", "hypothesis")
+      pipeline.fit(ef).transform(ef)
+    }
 
     // add 1 to the 'label' column to get the 'category' column for BigDL model to train
     val increase = udf((x: Double) => (x + 1), DoubleType)
     val trainingDF = dlInputDF.withColumn("category", increase(dlInputDF("label")))
     trainingDF.show()
 
-    val dlModel = sequentialTransducer(vocabSize, config.maxSequenceLength)
+    val dlModel = if (config.modelType == "seq") sequentialTransducer(vocabSize, config.maxSequenceLength) else parallelTransducer(vocabSize, config.maxSequenceLength)
+
     val trainSummary = TrainSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
-    val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(config.maxSequenceLength))
+    val featureSize = if (config.modelType == "seq") Array(config.maxSequenceLength) else Array(2, config.maxSequenceLength) 
+    val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), featureSize)
       .setLabelCol("category")
-      .setFeaturesCol("indexVector")
+      .setFeaturesCol("features")
       .setBatchSize(config.batchSize)
       .setOptimMethod(new Adam(config.learningRate))
       .setMaxEpoch(config.epochs)
@@ -99,36 +109,30 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
         model.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
         model.add(GlobalMaxPooling1D())
       case "gru" => model.add(GRU(config.encoderOutputSize))
-      case "lstm" => model.add(LSTM(config.encoderOutputSize))
       case _ => throw new IllegalArgumentException(s"Unsupported encoder for Teller: $config.encoder")
     }
-    model.add(Dense(64))
-    model.add(Dropout(0.2))
-    model.add(Activation("relu"))
     model.add(Dense(config.numLabels, activation = "softmax"))
   }
 
   def parallelTransducer(vocabSize: Int, featureSize: Int): Module[Float] = {
-    val model = Sequential()
+    val reshape = Reshape(Array(featureSize, 2), inputShape = Shape(featureSize, 2))
+    val model = Sequential().add(reshape).add(Permute(Array(2, 1)))
     val branches = ParallelTable()
-    val sourceEmbedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(featureSize))
-    val sourceLayers = Sequential().add(sourceEmbedding)
-    val targetEmbedding = Embedding(featureSize, config.embeddingSize, inputShape = Shape(featureSize))
-    val targetLayers = Sequential().add(targetEmbedding)
+    val premiseEmbedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(featureSize))
+    val premiseLayers = Sequential().add(premiseEmbedding)
+    val hypothesisEmbedding = Embedding(featureSize, config.embeddingSize, inputShape = Shape(featureSize))
+    val hypothesisLayers = Sequential().add(hypothesisEmbedding)
     config.encoder match {
       case "cnn" => 
-        sourceLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
-        sourceLayers.add(GlobalMaxPooling1D())
-        targetLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
-        targetLayers.add(GlobalMaxPooling1D())
+        premiseLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
+        premiseLayers.add(GlobalMaxPooling1D())
+        hypothesisLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
+        hypothesisLayers.add(GlobalMaxPooling1D())
       case "gru" => 
-        sourceLayers.add(GRU(config.encoderOutputSize))
-        targetLayers.add(GRU(config.encoderOutputSize))
-      case "lstm" => 
-        sourceLayers.add(LSTM(config.encoderOutputSize))
-        targetLayers.add(LSTM(config.encoderOutputSize))
+        premiseLayers.add(GRU(config.encoderOutputSize))
+        hypothesisLayers.add(GRU(config.encoderOutputSize))
     }
-    branches.add(sourceLayers).add(targetLayers)
+    branches.add(premiseLayers).add(hypothesisLayers)
     model.add(branches).add(ConcatTable()).add(Dense(config.numLabels, activation = "softmax"))
   }
 
@@ -142,7 +146,7 @@ object Teller {
       head("vlp.nli.Teller", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
-      opt[String]('e', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
+      opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
@@ -150,7 +154,8 @@ object Teller {
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
       opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
-      opt[String]('t', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn, lstm or gru")
+      opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either seq or par")
+      opt[String]('e', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn or gru")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("output size of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
@@ -160,7 +165,7 @@ object Teller {
         val sparkConfig = Engine.createSparkConf()
           .setMaster(config.master)
           .set("spark.executor.memory", config.executorMemory)
-          .setAppName("SHINRA")
+          .setAppName("nli.Teller")
         val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
         val sparkContext = sparkSession.sparkContext
         Engine.init

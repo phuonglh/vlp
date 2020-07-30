@@ -12,26 +12,33 @@ import org.apache.spark.ml.util.DefaultParamsReadable
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.{udf, col}
 
+import org.apache.spark.ml.linalg.{Vectors, Vector}
+import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
+
 /**
  * phuonglh, July 2020
+ * 
+ * Stacks two similar length vectors u = [u_1,...,u_n] and v = [v_1,..., v_n] into a long 
+ * [u_1,..., u_n, v_1,.... v_n]
+ * 
  */
-class SequenceAssembler(override val uid: String) extends Transformer with HasInputCols with HasOutputCol
+class VectorStacker(override val uid: String) extends Transformer with HasInputCols with HasOutputCol
     with DefaultParamsWritable {
 
-  def this() = this(Identifiable.randomUID("seqAssembler"))
+  def this() = this(Identifiable.randomUID("vecStacker"))
 
   def setInputCols(value: Array[String]): this.type = set(inputCols, value)
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
-  private def createTransformFunc: (Seq[String], Seq[String]) => Seq[String] = {(xs: Seq[String], ys: Seq[String]) => 
-    xs ++ ys
+  private def createTransformFunc: (Vector, Vector) => Vector = {(u: Vector, v: Vector) => 
+    Vectors.dense(u.toArray ++ v.toArray)
   }
 
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
     val schema = dataset.schema
-    val transformUDF = udf(this.createTransformFunc, new ArrayType(StringType, false))
+    val transformUDF = udf(this.createTransformFunc, VectorType)
     dataset.withColumn($(outputCol), transformUDF(dataset($(inputCols)(0)), dataset($(inputCols)(1))))
   }
 
@@ -40,7 +47,7 @@ class SequenceAssembler(override val uid: String) extends Transformer with HasIn
     val outputColName = $(outputCol)
     val incorrectColumns = inputColNames.flatMap { name =>
       schema(name).dataType match {
-        case _: ArrayType => None
+        case VectorType => None
         case other => Some(s"Data type ${other.catalogString} of column $name is not supported.")
       }
     }
@@ -50,12 +57,12 @@ class SequenceAssembler(override val uid: String) extends Transformer with HasIn
     if (schema.fieldNames.contains(outputColName)) {
       throw new IllegalArgumentException(s"Output column $outputColName already exists.")
     }
-    StructType(schema.fields :+ new StructField(outputColName, new ArrayType(StringType, false), true))
+    StructType(schema.fields :+ new StructField(outputColName, VectorType, true))
   }
 
-  override def copy(extra: ParamMap): SequenceAssembler = defaultCopy(extra)  
+  override def copy(extra: ParamMap): VectorStacker = defaultCopy(extra)  
 }
 
-object SequenceAssembler extends DefaultParamsReadable[SequenceAssembler] {
-  override def load(path: String): SequenceAssembler = super.load(path)
+object VectorStacker extends DefaultParamsReadable[VectorStacker] {
+  override def load(path: String): VectorStacker = super.load(path)
 }
