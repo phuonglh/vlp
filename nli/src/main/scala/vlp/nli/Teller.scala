@@ -51,7 +51,7 @@ import com.intel.analytics.bigdl.tensor.Storage
 import com.intel.analytics.bigdl.nn.Recurrent
 import com.intel.analytics.bigdl.nn.Select
 import com.intel.analytics.bigdl.nn.Squeeze
-import com.intel.analytics.bigdl.nn.Sigmoid
+
 
 class Teller(sparkSession: SparkSession, config: ConfigTeller) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
@@ -150,10 +150,10 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize))
     config.encoder match {
       case "cnn" => 
-        premiseLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(Sigmoid())
+        premiseLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(ReLU())
         premiseLayers.add(TemporalMaxPooling(config.kernelWidth))
         premiseLayers.add(Select(2, -1)) // can replace -1 with (maxSeqLen - config.kernelWidth)/config.kernelWidth + 1
-        hypothesisLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(Sigmoid())
+        hypothesisLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(ReLU())
         hypothesisLayers.add(TemporalMaxPooling(config.kernelWidth))
         hypothesisLayers.add(Select(2, -1))
       case "gru" => 
