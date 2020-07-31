@@ -1,42 +1,57 @@
 package vlp.nli
 
-import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
-import com.intel.analytics.bigdl.Module
 import org.apache.spark.ml.{PipelineModel, Pipeline}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
-import org.slf4j.LoggerFactory
-import com.intel.analytics.bigdl.nn.keras.{Sequential, Embedding, Dense, Reshape}
-import com.intel.analytics.bigdl.nn.ParallelTable
 import org.apache.spark.sql.SparkSession
-import com.intel.analytics.bigdl.nn.Linear
-import com.intel.analytics.bigdl.nn.ReLU
-import com.intel.analytics.bigdl.nn.ConcatTable
-import com.intel.analytics.bigdl.nn.SoftMax
 import com.intel.analytics.bigdl.utils.Shape
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.ml.feature.CountVectorizer
-import com.intel.analytics.bigdl.dlframes.DLClassifier
-import com.intel.analytics.bigdl.nn.ClassNLLCriterion
 import org.apache.spark.sql.functions.udf
 import com.intel.analytics.bigdl.utils.Engine
 import org.apache.spark.SparkContext
-import com.intel.analytics.bigdl.nn.LogSoftMax
-import com.intel.analytics.bigdl.nn.keras.{GRU, LSTM, Convolution1D, GlobalMaxPooling1D}
 import java.nio.file.Paths
-import com.intel.analytics.bigdl.optim.Adam
 import org.apache.spark.ml.feature.StringIndexer
-import com.intel.analytics.bigdl.optim.Trigger
-import com.intel.analytics.bigdl.optim.Top1Accuracy
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.ml.feature.CountVectorizerModel
+
+import org.slf4j.LoggerFactory
+
+import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
+import com.intel.analytics.bigdl.Module
+import com.intel.analytics.bigdl.nn.keras.{GRU, Embedding, Dense, Convolution1D, GlobalMaxPooling1D}
+import com.intel.analytics.bigdl.nn.keras.{Sequential => SequentialKeras, Reshape => ReshapeKeras}
+import com.intel.analytics.bigdl.nn.{Sequential, Reshape, Transpose}
+import com.intel.analytics.bigdl.nn.Transpose
+import com.intel.analytics.bigdl.nn.Linear
+import com.intel.analytics.bigdl.nn.LookupTable
+import com.intel.analytics.bigdl.nn.TemporalConvolution
+import com.intel.analytics.bigdl.nn.TemporalMaxPooling
+import com.intel.analytics.bigdl.nn.JoinTable
+import com.intel.analytics.bigdl.nn.ReLU
+import com.intel.analytics.bigdl.nn.SoftMax
+import com.intel.analytics.bigdl.nn.ParallelTable
+import com.intel.analytics.bigdl.nn.ClassNLLCriterion
+import com.intel.analytics.bigdl.dlframes.DLClassifier
+import com.intel.analytics.bigdl.optim.Adam
+import com.intel.analytics.bigdl.optim.Trigger
+import com.intel.analytics.bigdl.optim.Top1Accuracy
 import com.intel.analytics.bigdl.visualization.TrainSummary
 import com.intel.analytics.bigdl.visualization.ValidationSummary
+
 import scopt.OptionParser
-import org.apache.spark.ml.feature.CountVectorizerModel
-import com.intel.analytics.bigdl.nn.keras.Dropout
-import com.intel.analytics.bigdl.nn.keras.Activation
-import com.intel.analytics.bigdl.nn.keras.Permute
+import com.intel.analytics.bigdl.nn.Echo
+import breeze.linalg.Tensor
+import com.intel.analytics.bigdl.nn.SplitTable
+import com.intel.analytics.bigdl.nn.Concat
+import com.intel.analytics.bigdl.nn.SelectTable
+import _root_.com.intel.analytics.bigdl.nn.Pack
+import com.intel.analytics.bigdl.tensor.Storage
+import com.intel.analytics.bigdl.nn.Recurrent
+import com.intel.analytics.bigdl.nn.Select
+import com.intel.analytics.bigdl.nn.Squeeze
+import com.intel.analytics.bigdl.nn.Sigmoid
 
 class Teller(sparkSession: SparkSession, config: ConfigTeller) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
@@ -84,7 +99,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
 
     val trainSummary = TrainSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
-    val featureSize = if (config.modelType == "seq") Array(config.maxSequenceLength) else Array(2, config.maxSequenceLength) 
+    val featureSize = if (config.modelType == "seq") Array(config.maxSequenceLength) else Array(2*config.maxSequenceLength)
     val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), featureSize)
       .setLabelCol("category")
       .setFeaturesCol("features")
@@ -100,13 +115,20 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
       Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoder}.bin").toString(), true)
   }
 
-  def sequentialTransducer(vocabSize: Int, featureSize: Int): Module[Float] = {
-    val model = Sequential()
-    val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(featureSize))
+  /**
+    * Constructs a sequential model for NLI using Keras-style layers.
+    *
+    * @param vocabSize
+    * @param maxSeqLen
+    * @return a BigDL Keras-style model
+    */
+  def sequentialTransducer(vocabSize: Int, maxSeqLen: Int): Module[Float] = {
+    val model = SequentialKeras()
+    val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(maxSeqLen))
     model.add(embedding)
     config.encoder match {
       case "cnn" => 
-        model.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
+        model.add(Convolution1D(config.encoderOutputSize, config.kernelWidth, activation = "relu"))
         model.add(GlobalMaxPooling1D())
       case "gru" => model.add(GRU(config.encoderOutputSize))
       case _ => throw new IllegalArgumentException(s"Unsupported encoder for Teller: $config.encoder")
@@ -114,31 +136,59 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     model.add(Dense(config.numLabels, activation = "softmax"))
   }
 
-  def parallelTransducer(vocabSize: Int, featureSize: Int): Module[Float] = {
-    val reshape = Reshape(Array(featureSize, 2), inputShape = Shape(featureSize, 2))
-    val model = Sequential().add(reshape).add(Permute(Array(2, 1)))
+  /**
+    * Constructs a parallel model for NLI using core BigDL layers.
+    *
+    * @param vocabSize
+    * @param maxSeqLen
+    * @return a BigDL model
+    */
+  def parallelTransducer(vocabSize: Int, maxSeqLen: Int): Module[Float] = {
+    val model = new Sequential().add(Reshape(Array(2, maxSeqLen))).add(SplitTable(2, 3))     
     val branches = ParallelTable()
-    val premiseEmbedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(featureSize))
-    val premiseLayers = Sequential().add(premiseEmbedding)
-    val hypothesisEmbedding = Embedding(featureSize, config.embeddingSize, inputShape = Shape(featureSize))
-    val hypothesisLayers = Sequential().add(hypothesisEmbedding)
+    val premiseLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize))
+    val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize))
     config.encoder match {
       case "cnn" => 
-        premiseLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
-        premiseLayers.add(GlobalMaxPooling1D())
-        hypothesisLayers.add(Convolution1D(config.encoderOutputSize, 5, activation = "relu"))
-        hypothesisLayers.add(GlobalMaxPooling1D())
+        premiseLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(Sigmoid())
+        premiseLayers.add(TemporalMaxPooling(config.kernelWidth))
+        premiseLayers.add(Select(2, -1)) // can replace -1 with (maxSeqLen - config.kernelWidth)/config.kernelWidth + 1
+        hypothesisLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(Sigmoid())
+        hypothesisLayers.add(TemporalMaxPooling(config.kernelWidth))
+        hypothesisLayers.add(Select(2, -1))
       case "gru" => 
-        premiseLayers.add(GRU(config.encoderOutputSize))
-        hypothesisLayers.add(GRU(config.encoderOutputSize))
+        val pRecur = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(config.embeddingSize, config.encoderOutputSize))
+        premiseLayers.add(pRecur).add(Select(2, maxSeqLen))
+        val hRecur = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(config.embeddingSize, config.encoderOutputSize))
+        hypothesisLayers.add(hRecur).add(Select(2, maxSeqLen))
     }
     branches.add(premiseLayers).add(hypothesisLayers)
-    model.add(branches).add(ConcatTable()).add(Dense(config.numLabels, activation = "softmax"))
-  }
 
+    model.add(branches)
+      .add(JoinTable(2, 2))
+      .add(Linear(2*config.encoderOutputSize, config.numLabels))
+      .add(SoftMax())
+  }
 }
 
 object Teller {
+
+  def test(): Unit = {
+    val model = Sequential().add(Reshape(Array(2, 4))).add(SplitTable(1))
+    val branches = ParallelTable()
+    val u = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(3, 5))
+    val v = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(3, 5))
+    val first = Sequential().add(LookupTable(8, 3)).add(Reshape(Array(1,4,3))).add(u).add(Squeeze(1)).add(Select(1,4))
+    val second = Sequential().add(LookupTable(8, 3)).add(Reshape(Array(1,4,3))).add(v).add(Squeeze(1)).add(Select(1,4))
+    branches.add(first).add(second)
+    model.add(branches)
+      //.add(Pack(1))
+      .add(JoinTable(1,1))
+    val input = com.intel.analytics.bigdl.tensor.Tensor(Storage(Array(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f)), 1, Array(8))
+    val output = model.forward(input)
+    println(output)
+  }
+
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
 

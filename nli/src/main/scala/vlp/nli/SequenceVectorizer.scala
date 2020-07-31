@@ -31,10 +31,10 @@ class SequenceVectorizer(val uid: String, val dictionary: Map[String, Int], maxS
 
   override protected def createTransformFunc: Seq[String] => Vector = {
     def f(xs: Seq[String]): Vector = {
-      val indices = xs.map(x => dictionaryBr.get.value.getOrElse(x, -1) + 1.0).toArray
-      val values = if (indices.size > maxSequenceLength) 
+      val indices = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0) + 1.0).toArray
+      val values = if (indices.size >= maxSequenceLength) 
         indices.take(maxSequenceLength) 
-      else indices ++ Array.fill(maxSequenceLength - indices.size)(0.0)
+      else indices ++ Array.fill(maxSequenceLength - indices.size)(1.0)
       Vectors.dense(values)
     }
 
