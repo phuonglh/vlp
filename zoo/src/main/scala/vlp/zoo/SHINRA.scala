@@ -147,6 +147,7 @@ object SHINRA {
   Logger.getLogger("com.intel.analytics.bigdl.optim").setLevel(Level.INFO)
   Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
   var numLabels = 0
+  final val patterns = """[_\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+"""
 
   def getLang(code: String): String = {
     code match {
@@ -230,13 +231,13 @@ object SHINRA {
     val schema = StructType(Array(StructField("clazz", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rdd, schema)
     val output = if (config.language == "vi") {
-      val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized")
+      val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setSplitSentences(true)
       import org.apache.spark.sql.functions.regexp_replace
       import org.apache.spark.sql.functions.col
       val df = vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
       df.select("clazz", "body")
     } else {
-      val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[_\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
+      val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns)
       val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
       val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
       import org.apache.spark.sql.functions.concat_ws
@@ -320,11 +321,19 @@ object SHINRA {
           val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
           val input = sparkSession.createDataFrame(df, schema)
           val docIds = input.select("pageid").map(row => row.getString(0)).collect()
-          val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[_\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
-          val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
-          val temp = remover.transform(tokenizer.transform(input))
-          import org.apache.spark.sql.functions.concat_ws
-          val xs = temp.withColumn("body", concat_ws(" ", $"words"))
+          val xs = if (config.language == "vi") {
+            val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setSplitSentences(true)
+            import org.apache.spark.sql.functions.regexp_replace
+            import org.apache.spark.sql.functions.col
+            val df = vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
+            df.select("clazz", "body")
+          } else {
+            val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns)
+            val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
+            val temp = remover.transform(tokenizer.transform(input))
+            import org.apache.spark.sql.functions.concat_ws
+            temp.withColumn("body", concat_ws(" ", $"words"))
+          }
           xs.show()
           val textRDD = xs.select("body").rdd.map(row => {
             val content = row.getString(0).split("\\s+").toArray
