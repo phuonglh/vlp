@@ -1,7 +1,7 @@
 package vlp.nli
 
 case class ConfigTeller(
-    master: String = "local[1]",
+    master: String = "local[*]",
     executorMemory: String = "8g",
     language: String = "vi",
     mode: String = "eval",
@@ -11,7 +11,7 @@ case class ConfigTeller(
     encoder: String = "cnn",
     embeddingSize: Int = 100,
     encoderOutputSize: Int = 128,
-    kernelWidth: Int = 5, // kernel with when using CNN
+    filterSize: Int = 5, // filter size when using CNN
     numLabels: Int = 3,
     modelType: String = "seq",
     modelPath: String = "dat/nli/",

@@ -51,6 +51,9 @@ import com.intel.analytics.bigdl.tensor.Storage
 import com.intel.analytics.bigdl.nn.Recurrent
 import com.intel.analytics.bigdl.nn.Select
 import com.intel.analytics.bigdl.nn.Squeeze
+import com.intel.analytics.bigdl.nn.SpatialConvolution
+import com.intel.analytics.bigdl.nn.SpatialMaxPooling
+import com.intel.analytics.bigdl.nn.abstractnn.DataFormat
 
 
 class Teller(sparkSession: SparkSession, config: ConfigTeller) {
@@ -128,7 +131,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     model.add(embedding)
     config.encoder match {
       case "cnn" => 
-        model.add(Convolution1D(config.encoderOutputSize, config.kernelWidth, activation = "relu"))
+        model.add(Convolution1D(config.encoderOutputSize, config.filterSize, activation = "relu"))
         model.add(GlobalMaxPooling1D())
       case "gru" => model.add(GRU(config.encoderOutputSize))
       case _ => throw new IllegalArgumentException(s"Unsupported encoder for Teller: $config.encoder")
@@ -150,12 +153,22 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize))
     config.encoder match {
       case "cnn" => 
-        premiseLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(ReLU())
-        premiseLayers.add(TemporalMaxPooling(config.kernelWidth))
-        premiseLayers.add(Select(2, -1)) // can replace -1 with (maxSeqLen - config.kernelWidth)/config.kernelWidth + 1
-        hypothesisLayers.add(TemporalConvolution(config.embeddingSize, config.encoderOutputSize, config.kernelWidth)).add(ReLU())
-        hypothesisLayers.add(TemporalMaxPooling(config.kernelWidth))
-        hypothesisLayers.add(Select(2, -1))
+        premiseLayers.add(Reshape(Array(maxSeqLen, 1, config.embeddingSize)))
+        premiseLayers.add(SpatialConvolution(config.embeddingSize, config.encoderOutputSize, kernelW = 1, kernelH = config.filterSize, 1, 1, -1, -1, format = DataFormat.NHWC)) 
+        premiseLayers.add(Squeeze(3))
+        premiseLayers.add(ReLU())
+        premiseLayers.add(Reshape(Array(maxSeqLen, 1, config.encoderOutputSize)))
+        premiseLayers.add(SpatialMaxPooling(1, maxSeqLen, format = DataFormat.NHWC))
+        premiseLayers.add(Squeeze(3))
+        premiseLayers.add(Squeeze(2))
+        hypothesisLayers.add(Reshape(Array(maxSeqLen, 1, config.embeddingSize)))
+        hypothesisLayers.add(SpatialConvolution(config.embeddingSize, config.encoderOutputSize, kernelW = 1, kernelH = config.filterSize, 1, 1, -1, -1, format = DataFormat.NHWC)) 
+        hypothesisLayers.add(Squeeze(3))
+        hypothesisLayers.add(ReLU())
+        hypothesisLayers.add(Reshape(Array(maxSeqLen, 1, config.encoderOutputSize)))
+        hypothesisLayers.add(SpatialMaxPooling(1, maxSeqLen, format = DataFormat.NHWC))
+        hypothesisLayers.add(Squeeze(3))
+        hypothesisLayers.add(Squeeze(2))
       case "gru" => 
         val pRecur = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(config.embeddingSize, config.encoderOutputSize))
         premiseLayers.add(pRecur).add(Select(2, maxSeqLen))
@@ -172,22 +185,6 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
 }
 
 object Teller {
-
-  def test(): Unit = {
-    val model = Sequential().add(Reshape(Array(2, 4))).add(SplitTable(1))
-    val branches = ParallelTable()
-    val u = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(3, 5))
-    val v = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(3, 5))
-    val first = Sequential().add(LookupTable(8, 3)).add(Reshape(Array(1,4,3))).add(u).add(Squeeze(1)).add(Select(1,4))
-    val second = Sequential().add(LookupTable(8, 3)).add(Reshape(Array(1,4,3))).add(v).add(Squeeze(1)).add(Select(1,4))
-    branches.add(first).add(second)
-    model.add(branches)
-      //.add(Pack(1))
-      .add(JoinTable(1,1))
-    val input = com.intel.analytics.bigdl.tensor.Tensor(Storage(Array(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f)), 1, Array(8))
-    val output = model.forward(input)
-    println(output)
-  }
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
