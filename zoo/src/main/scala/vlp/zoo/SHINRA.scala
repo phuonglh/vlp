@@ -229,11 +229,19 @@ object SHINRA {
 
     val schema = StructType(Array(StructField("clazz", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rdd, schema)
-    val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[_\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
-    val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
-    val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
-    import org.apache.spark.sql.functions.concat_ws
-    val output = temp.withColumn("body", concat_ws(" ", $"words")).select("clazz", "body")
+    val output = if (config.language == "vi") {
+      val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized")
+      import org.apache.spark.sql.functions.regexp_replace
+      import org.apache.spark.sql.functions.col
+      val df = vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
+      df.select("clazz", "body")
+    } else {
+      val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern("""[_\s+.,·:\)\(\]\[?;~"`'»«’↑\u200e\u200b\ufeff\\]+""")
+      val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
+      val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
+      import org.apache.spark.sql.functions.concat_ws
+      temp.withColumn("body", concat_ws(" ", $"words")).select("clazz", "body")
+    }
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
   }
 
