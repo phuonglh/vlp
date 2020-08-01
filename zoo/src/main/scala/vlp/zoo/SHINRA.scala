@@ -325,8 +325,7 @@ object SHINRA {
             val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setSplitSentences(true)
             import org.apache.spark.sql.functions.regexp_replace
             import org.apache.spark.sql.functions.col
-            val df = vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
-            df.select("clazz", "body")
+            vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
           } else {
             val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns)
             val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
