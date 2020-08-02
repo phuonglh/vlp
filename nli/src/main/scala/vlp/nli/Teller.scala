@@ -54,12 +54,27 @@ import com.intel.analytics.bigdl.nn.Squeeze
 import com.intel.analytics.bigdl.nn.SpatialConvolution
 import com.intel.analytics.bigdl.nn.SpatialMaxPooling
 import com.intel.analytics.bigdl.nn.abstractnn.DataFormat
+import org.apache.spark.mllib.evaluation.MulticlassMetrics
 
+import org.json4s._
+import org.json4s.jackson.Serialization
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+
+
+/**
+  * Natural Language Inference module
+  * phuonglh, July 2020.
+  * <phuonglh@gmail.com>
+  *
+  * @param sparkSession
+  * @param config
+  */
 
 class Teller(sparkSession: SparkSession, config: ConfigTeller) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
 
-  def train(input: DataFrame): Unit = {
+  def train(training: DataFrame, test: DataFrame): Scores = {
     val labelIndexer = new StringIndexer().setInputCol("gold_label").setOutputCol("label")
     val premiseTokenizer = new Tokenizer().setInputCol("sentence1_tokenized").setOutputCol("premise")
     val hypothesisTokenizer = new Tokenizer().setInputCol("sentence2_tokenized").setOutputCol("hypothesis")
@@ -71,37 +86,42 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
 
     val prePipeline = new Pipeline().setStages(Array(labelIndexer, premiseTokenizer, hypothesisTokenizer, sequenceAssembler, countVectorizer))
     logger.info("Fitting pre-processing pipeline...")
-    val prepocessor = prePipeline.fit(input)
+    val prepocessor = prePipeline.fit(training)
     prepocessor.write.overwrite().save(Paths.get(config.modelPath, config.language, config.modelType).toString)
     logger.info("Pre-processing pipeline saved.")
-    val df = prepocessor.transform(input)
     // determine the vocab size and dictionary
     val vocabulary = prepocessor.stages.last.asInstanceOf[CountVectorizerModel].vocabulary
     val vocabSize = Math.min(config.numFeatures, vocabulary.size) + 1 // plus one (see [[SequenceVectorizer]])
     val dictionary: Map[String, Int] = vocabulary.zipWithIndex.toMap
 
-    // prepare the input data frame for BigDL model
-    val dlInputDF = if (config.modelType == "seq") {
+    // prepare the training and test data frames for BigDL model
+    val df = prepocessor.transform(training)
+    val tdf = prepocessor.transform(test)
+    val (dlTrainingDF, dlTestDF) = if (config.modelType == "seq") {
       val sequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("tokens").setOutputCol("features")
-      sequenceVectorizer.transform(df.select("label", "tokens"))
+      (sequenceVectorizer.transform(df.select("label", "tokens")), sequenceVectorizer.transform(tdf.select("label", "tokens")))
     } else {
       val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("premise").setOutputCol("premiseIndexVector")
       val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
       val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("features")
       val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker))
       val ef = df.select("label", "premise", "hypothesis")
-      pipeline.fit(ef).transform(ef)
+      val tef = tdf.select("label", "premise", "hypothesis")
+      val pm = pipeline.fit(ef)
+      (pm.transform(ef), pm.transform(tef))
     }
 
     // add 1 to the 'label' column to get the 'category' column for BigDL model to train
     val increase = udf((x: Double) => (x + 1), DoubleType)
-    val trainingDF = dlInputDF.withColumn("category", increase(dlInputDF("label")))
+    val trainingDF = dlTrainingDF.withColumn("category", increase(dlTrainingDF("label")))
+    val testDF = dlTestDF.withColumn("category", increase(dlTestDF("label")))
     trainingDF.show()
+    testDF.show()
 
     val dlModel = if (config.modelType == "seq") sequentialTransducer(vocabSize, config.maxSequenceLength) else parallelTransducer(vocabSize, config.maxSequenceLength)
 
-    val trainSummary = TrainSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
-    val validationSummary = ValidationSummary(appName = config.encoder, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
+    val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
+    val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
     val featureSize = if (config.modelType == "seq") Array(config.maxSequenceLength) else Array(2*config.maxSequenceLength)
     val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), featureSize)
       .setLabelCol("category")
@@ -114,8 +134,29 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
       .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
   
     val model = classifier.fit(trainingDF)
-    dlModel.saveModule(Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoder}.bigdl").toString(), 
-      Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoder}.bin").toString(), true)
+    dlModel.saveModule(Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoderType}.bigdl").toString(), 
+      Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoderType}.bin").toString(), true)
+
+    val prediction = model.transform(testDF)
+    prediction.show()
+    import sparkSession.implicits._
+    val predictionAndLabels = prediction.select("category", "prediction").map(row => (row.getDouble(0), row.getDouble(1))).rdd
+    val metrics = new MulticlassMetrics(predictionAndLabels)
+    val scores = (metrics.accuracy, metrics.weightedFMeasure)
+    logger.info(s"scores = $scores")
+    if (config.verbose) {
+      val labels = metrics.labels
+      labels.foreach(label => {
+        val sb = new StringBuilder()
+        sb.append(s"Precision($label) = " + metrics.precision(label) + ", ")
+        sb.append(s"Recall($label) = " + metrics.recall(label) + ", ")
+        sb.append(s"F($label) = " + metrics.fMeasure(label))
+        logger.info(sb.toString)
+      })
+    }
+    val xs = validationSummary.readScalar("Top1Accuracy").map(_._2)
+    Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
+      encoderSize = config.encoderOutputSize, trainingScores = xs, testScore = scores._2)
   }
 
   /**
@@ -129,12 +170,12 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val model = SequentialKeras()
     val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(maxSeqLen))
     model.add(embedding)
-    config.encoder match {
+    config.encoderType match {
       case "cnn" => 
         model.add(Convolution1D(config.encoderOutputSize, config.filterSize, activation = "relu"))
         model.add(GlobalMaxPooling1D())
       case "gru" => model.add(GRU(config.encoderOutputSize))
-      case _ => throw new IllegalArgumentException(s"Unsupported encoder for Teller: $config.encoder")
+      case _ => throw new IllegalArgumentException(s"Unsupported encoder type for Teller: $config.encoderType")
     }
     model.add(Dense(config.numLabels, activation = "softmax"))
   }
@@ -151,7 +192,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val branches = ParallelTable()
     val premiseLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize))
     val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize))
-    config.encoder match {
+    config.encoderType match {
       case "cnn" => 
         premiseLayers.add(Reshape(Array(maxSeqLen, 1, config.embeddingSize)))
         premiseLayers.add(SpatialConvolution(config.embeddingSize, config.encoderOutputSize, kernelW = 1, kernelH = config.filterSize, 1, 1, -1, -1, format = DataFormat.NHWC)) 
@@ -171,9 +212,9 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
         hypothesisLayers.add(Squeeze(2))
       case "gru" => 
         val pRecur = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(config.embeddingSize, config.encoderOutputSize))
-        premiseLayers.add(pRecur).add(Select(2, maxSeqLen))
+        premiseLayers.add(pRecur).add(Select(2, -1))
         val hRecur = Recurrent().add(com.intel.analytics.bigdl.nn.GRU(config.embeddingSize, config.encoderOutputSize))
-        hypothesisLayers.add(hRecur).add(Select(2, maxSeqLen))
+        hypothesisLayers.add(hRecur).add(Select(2, -1))
     }
     branches.add(premiseLayers).add(hypothesisLayers)
 
@@ -185,9 +226,9 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
 }
 
 object Teller {
-
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
+    implicit val formats = Serialization.formats(NoTypeHints)
 
     val parser = new OptionParser[ConfigTeller]("vlp.nli.Teller") {
       head("vlp.nli.Teller", "1.0")
@@ -202,10 +243,11 @@ object Teller {
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
       opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either seq or par")
-      opt[String]('e', "encoder").action((x, conf) => conf.copy(encoder = x)).text("type of encoder, either cnn or gru")
+      opt[String]('e', "encoderType").action((x, conf) => conf.copy(encoderType = x)).text("type of encoder, either 'cnn' or 'gru'")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("output size of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
+      opt[Unit]('v', "verbose").action((x, conf) => conf.copy(verbose = true)).text("verbose mode")
     }
     parser.parse(args, ConfigTeller()) match {
       case Some(config) =>
@@ -218,16 +260,44 @@ object Teller {
         Engine.init
         val df = sparkSession.read.json(config.dataPath).select("gold_label", "sentence1_tokenized", "sentence2_tokenized")
         df.groupBy("gold_label").count().show(false)
+        val Array(training, test) = df.randomSplit(Array(0.8, 0.2), seed = 12345)
         val teller = new Teller(sparkSession, config)
         config.mode match {
           case "train" => 
-            teller.train(df)
+            teller.train(training, test)
           case "eval" => 
           case "predict" => 
-          case _ => 
+          case "experiments" => 
+            val types = Array("seq", "par")
+            val encoders = Array("cnn", "gru")
+            val maxSequenceLengths = Array(40, 50, 60)
+            val embeddingSizes = Array(10, 25, 50, 80, 100, 128, 150)
+            val encoderOutputSizes = Array(10, 25, 50, 80, 100, 128, 150, 200, 256, 300, 400, 500)
+            for (t <- types)
+              for (e <- encoders)
+                for (n <- maxSequenceLengths)
+                  for (d <- embeddingSizes)
+                    for (o <- encoderOutputSizes) {
+                      val config = ConfigTeller(modelType = t, encoderType = e, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
+                      val teller = new Teller(sparkSession, config)
+                      val scores = teller.train(training, test)
+                      val content = Serialization.writePretty(scores) + ",\n"
+                      Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    }
+          case _ => System.err.println("Unsupported mode!")
         }
         sparkSession.stop()
       case None => 
     }
   }
 }
+
+case class Scores(
+  arch: String,
+  encoder: String,
+  maxSequenceLength: Int,
+  embeddingSize: Int,
+  encoderSize: Int,
+  trainingScores: Array[Float],
+  testScore: Double
+)
