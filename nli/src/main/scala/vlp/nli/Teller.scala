@@ -268,22 +268,18 @@ object Teller {
           case "eval" => 
           case "predict" => 
           case "experiments" => 
-            val types = Array("seq", "par")
-            val encoders = Array("cnn", "gru")
             val maxSequenceLengths = Array(40, 50, 60)
-            val embeddingSizes = Array(10, 25, 50, 80, 100, 128, 150)
-            val encoderOutputSizes = Array(10, 25, 50, 80, 100, 128, 150, 200, 256, 300, 400, 500)
-            for (t <- types)
-              for (e <- encoders)
-                for (n <- maxSequenceLengths)
-                  for (d <- embeddingSizes)
-                    for (o <- encoderOutputSizes) {
-                      val config = ConfigTeller(modelType = t, encoderType = e, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
-                      val teller = new Teller(sparkSession, config)
-                      val scores = teller.train(training, test)
-                      val content = Serialization.writePretty(scores) + ",\n"
-                      Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
-                    }
+            val embeddingSizes = Array(25, 50, 80, 100, 128, 150)
+            val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300, 400, 500)
+            for (n <- maxSequenceLengths)
+              for (d <- embeddingSizes)
+                for (o <- encoderOutputSizes) {
+                  val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
+                  val teller = new Teller(sparkSession, conf)
+                  val scores = teller.train(training, test)
+                  val content = Serialization.writePretty(scores) + ",\n"
+                  Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                }
           case _ => System.err.println("Unsupported mode!")
         }
         sparkSession.stop()
