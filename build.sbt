@@ -25,7 +25,9 @@ lazy val commonSettings = Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
   "com.github.scopt" %% "scopt" % "3.7.1",
-  )
+  ),
+  run in Compile := Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)).evaluated,
+  runMain in Compile := Defaults.runMainTask(fullClasspath in Compile, runner in(Compile, run)).evaluated  
 )
 
 // root project
@@ -168,8 +170,8 @@ lazy val zoo = (project in file("zoo"))
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
       "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
+      "com.intel.analytics.zoo" % "zoo-core-dist-mac" % "0.8.1" pomOnly(),
+      "com.intel.analytics.zoo" % "zoo-core-dist-linux64" % "0.8.1" pomOnly()
     ),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("log4j.properties") => MergeStrategy.first
