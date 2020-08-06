@@ -9,7 +9,6 @@ import com.intel.analytics.bigdl.optim.{Adam, Top1Accuracy, Top5Accuracy}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.zoo.feature.text.{TextFeature, TextSet}
-import com.intel.analytics.zoo.models.textclassification.TextClassifier
 import com.intel.analytics.zoo.pipeline.api.keras.objectives.SparseCategoricalCrossEntropy
 import scopt.OptionParser
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.SparseCategoricalAccuracy
@@ -42,7 +41,6 @@ import com.intel.analytics.zoo.common.NNContext
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.T
 import com.intel.analytics.bigdl.utils.Shape
-import breeze.linalg.max
 
 case class ENE(ENE_id: String, ENE_name: String, score: Double = 1.0)
 case class Result(
@@ -94,7 +92,7 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigSHINRA) {
     val wordIndex = transformedTrainingSet.getWordIndex
     transformedTrainingSet.saveWordIndex(languagePack.modelPath + ".dict.txt")
     logger.info("Word index created.")
-
+    // use our modified text classifier [[vlp.zoo.TextClassifier]]
     val classifier = TextClassifier(SHINRA.numLabels, languagePack.embeddingPath, wordIndex, config.maxSequenceLength, config.encoder, config.encoderOutputDimension)
     val date = new SimpleDateFormat("yyyy-MM-dd.HHmmss").format(new java.util.Date())
     classifier.setTensorBoard(Paths.get("/tmp/zoo/tcl/shi", config.language, "/").toString, appName = config.encoder + "/" + date)
@@ -263,7 +261,7 @@ object SHINRA {
     val maxSeqLen = 5
     val bert = com.intel.analytics.zoo.pipeline.api.keras.layers.BERT(vocab = 20, hiddenSize = 16, nBlock = 3, nHead = 2, maxPositionLen = maxSeqLen, 
       intermediateSize = 64, outputAllBlock = false)
-    val shape = Shape(List(Shape(1, maxSeqLen), Shape(1, maxSeqLen), Shape(1, maxSeqLen), Shape(1, 1, maxSeqLen)))
+    val shape = Shape(List(Shape(1, maxSeqLen), Shape(1, maxSeqLen), Shape(1, maxSeqLen), Shape(1, 1, 1, maxSeqLen)))
     bert.build(shape)
     val tokens = Tensor(1, maxSeqLen)
     tokens.setValue(1, 1, 2f)
@@ -273,11 +271,11 @@ object SHINRA {
     tokens.setValue(1, 5, 10f)
     val tokenTypes = Tensor(1, maxSeqLen)
     val positions = Tensor(1, maxSeqLen)
-    val mask = Tensor(1, maxSeqLen)
+    val mask = Tensor(1, 1, 1, maxSeqLen)
     for (j <- 1 to maxSeqLen) {
       tokenTypes.setValue(1, j, 0f)
-      positions.setValue(1, j, j.toFloat)
-      mask.setValue(1, j, 0f)
+      positions.setValue(1, j, j - 1f)
+      mask.setValue(1, 1, 1, j, 0f)
     }
 
     val input = T(tokens, tokenTypes, positions, mask)

@@ -19,6 +19,7 @@ import org.apache.spark.ml.feature.CountVectorizerModel
 import org.slf4j.LoggerFactory
 
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
+import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.nn.keras.{GRU, Embedding, Dense, Convolution1D, GlobalMaxPooling1D}
 import com.intel.analytics.bigdl.nn.keras.{Sequential => SequentialKeras, Reshape => ReshapeKeras}
@@ -42,7 +43,6 @@ import com.intel.analytics.bigdl.visualization.ValidationSummary
 
 import scopt.OptionParser
 import com.intel.analytics.bigdl.nn.Echo
-import breeze.linalg.Tensor
 import com.intel.analytics.bigdl.nn.SplitTable
 import com.intel.analytics.bigdl.nn.Concat
 import com.intel.analytics.bigdl.nn.SelectTable
@@ -226,6 +226,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
 }
 
 object Teller {
+
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
     implicit val formats = Serialization.formats(NoTypeHints)
