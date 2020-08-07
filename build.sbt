@@ -189,8 +189,8 @@ lazy val biz = (project in file("biz"))
       "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-dist-mac" % "0.8.1" pomOnly() % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-dist-linux64" % "0.8.1" pomOnly() % "provided",
+      "com.intel.analytics.zoo" % "zoo-core-dist-mac" % "0.8.1" pomOnly(),
+      "com.intel.analytics.zoo" % "zoo-core-dist-linux64" % "0.8.1" pomOnly()
     ),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
@@ -204,3 +204,21 @@ lazy val biz = (project in file("biz"))
     }
   )
 
+// VioEdu project
+lazy val vio = (project in file("vio"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    assemblyJarName in assembly := "vio.jar",
+    resolvers += Resolver.mavenLocal,
+    libraryDependencies ++= Seq(
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "org.jsoup" % "jsoup" % "1.13.1"
+    ),
+    assemblyMergeStrategy in assembly := {
+      case x if x.contains("log4j.properties") => MergeStrategy.first
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  )
