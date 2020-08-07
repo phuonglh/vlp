@@ -17,7 +17,6 @@ import java.text.SimpleDateFormat
 import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
-import vlp.tok.TokenizerTransformer
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.Accuracy
 
 import org.json4s._
@@ -118,8 +117,6 @@ class SHINRA(val sparkContext: SparkContext, val config: ConfigSHINRA) {
   def predict(textSet: TextSet, classifier: TextClassifier[Float], docIds: Array[String] = Array.empty[String], outputFile: String = ""): TextSet = {
     val transformedTextSet = textSet.tokenize().loadWordIndex(languagePack.modelPath + ".dict.txt").word2idx()
       .shapeSequence(config.maxSequenceLength).generateSample()
-      DataSet
-      TextFeature
     val result = classifier.predict(transformedTextSet, batchPerThread = config.partitions)
     val predictedClasses = classifier.predictClasses(transformedTextSet.toDistributed().rdd.map(_.getSample))
     if (outputFile.nonEmpty) {
@@ -222,29 +219,26 @@ object SHINRA {
       if (parts.size == 4)
         RowFactory.create(parts(2), parts(3))
       else {
-        println(row.getString(0) + "\n")
         RowFactory.create(parts(2), "")
       }
     }).filter(row => row.getString(1).nonEmpty)
+    println("#(validPages) = " + rdd.count())
 
   val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
     "hungarian", "italian", "norwegian", "portuguese", "russian", "spanish", "swedish", "turkish")
 
     val schema = StructType(Array(StructField("clazz", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rdd, schema)
-    val output = if (config.language == "vi") {
-      val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setSplitSentences(true)
-      import org.apache.spark.sql.functions.regexp_replace
-      import org.apache.spark.sql.functions.col
-      val df = vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
-      df.select("clazz", "body")
-    } else {
-      val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns)
-      val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
-      val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
-      import org.apache.spark.sql.functions.concat_ws
-      temp.withColumn("body", concat_ws(" ", $"words")).select("clazz", "body")
-    }
+
+    val (tokenizer, remover) = if (config.language == "vi") {
+      (new VietnameseTokenizer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
+        new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
+    } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
+      new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
+
+    val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
+    import org.apache.spark.sql.functions.concat_ws
+    val output = temp.withColumn("body", concat_ws(" ", $"words")).select("clazz", "body")
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
   }
 
@@ -350,18 +344,16 @@ object SHINRA {
           val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
           val input = sparkSession.createDataFrame(df, schema)
           val docIds = input.select("pageid").map(row => row.getString(0)).collect()
-          val xs = if (config.language == "vi") {
-            val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized").setSplitSentences(true)
-            import org.apache.spark.sql.functions.regexp_replace
-            import org.apache.spark.sql.functions.col
-            vietnameseTokenizer.transform(input).withColumn("body", regexp_replace(col("tokenized"), "_", ""))
-          } else {
-            val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns)
-            val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language)))
-            val temp = remover.transform(tokenizer.transform(input))
-            import org.apache.spark.sql.functions.concat_ws
-            temp.withColumn("body", concat_ws(" ", $"words"))
-          }
+
+          val (tokenizer, remover) = if (config.language == "vi") {
+            (new VietnameseTokenizer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
+              new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
+          } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
+            new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
+
+          val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
+          import org.apache.spark.sql.functions.concat_ws
+          val xs = temp.withColumn("body", concat_ws(" ", $"words")).select("clazz", "body")
           xs.show()
           val textRDD = xs.select("body").rdd.map(row => {
             val content = row.getString(0).split("\\s+").toArray
@@ -374,6 +366,8 @@ object SHINRA {
         case "stat" => statistics(sparkSession, config)
         case "bert" => 
           transformer()
+        case "err" => 
+          
       }
       sparkSession.stop()
       case None =>

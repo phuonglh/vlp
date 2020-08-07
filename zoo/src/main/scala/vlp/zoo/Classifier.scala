@@ -9,7 +9,6 @@ import com.intel.analytics.bigdl.optim.{Adam, Top1Accuracy, Top5Accuracy}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.zoo.feature.text.{TextFeature, TextSet}
-import com.intel.analytics.zoo.models.textclassification.TextClassifier
 import com.intel.analytics.zoo.pipeline.api.keras.objectives.SparseCategoricalCrossEntropy
 import scopt.OptionParser
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.SparseCategoricalAccuracy
@@ -18,7 +17,6 @@ import java.text.SimpleDateFormat
 import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
-import vlp.tok.TokenizerTransformer
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.Accuracy
 
 import org.json4s._
@@ -161,7 +159,7 @@ object Classifier {
     println("Creating text set. Please wait...")
     val textRDD = textSet.select(config.classCol, config.inputCol).rdd.map(row => {
       val content = row.getString(1).toLowerCase().split("\\s+").toArray.filter(w => w != ")" && w != "(" && w != "-")
-      val text = content.map(token => TokenizerTransformer.convertNum(token))
+      val text = content.map(token => VietnameseTokenizer.convertNum(token))
       val label = row.getString(0).split(",").head
       TextFeature(text.mkString(" "), labels(label))
       }

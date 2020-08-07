@@ -61,6 +61,9 @@ class TextClassifier[T: ClassTag] private(
     else {
       throw new IllegalArgumentException(s"Unsupported encoder for TextClassifier: $encoder")
     }
+    model.add(Dense(256))
+    model.add(Dropout(0.1))
+    model.add(Activation("relu"))
     model.add(Dense(classNum, activation = "softmax"))
     model
   }
@@ -137,20 +140,6 @@ object TextClassifier {
     val embedding = WordEmbedding(embeddingFile, wordIndex, inputLength = sequenceLength)
     new TextClassifier[T](classNum, embedding.outputDim, sequenceLength, encoder,
       encoderOutputDim, embedding).build()
-  }
-
-  /**
-   * The factory method to create a TextClassifier instance that takes word vectors as input.
-   */
-  @deprecated("Instead of using 'tokenLength', please pass the arguments 'embeddingFile' " +
-    "and 'wordIndex' to construct a TextClassifier with WordEmbedding as the first layer.")
-  def apply[@specialized(Float, Double) T: ClassTag](
-      classNum: Int,
-      tokenLength: Int,
-      sequenceLength: Int,
-      encoder: String,
-      encoderOutputDim: Int)(implicit ev: TensorNumeric[T]): TextClassifier[T] = {
-    new TextClassifier[T](classNum, tokenLength, sequenceLength, encoder, encoderOutputDim).build()
   }
 
   /**
