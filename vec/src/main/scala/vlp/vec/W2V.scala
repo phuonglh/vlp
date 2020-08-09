@@ -1,6 +1,5 @@
 package vlp.vec
 
-import vlp.tok.TokenizerTransformer
 import org.apache.log4j._
 import org.apache.spark.ml.feature.{Tokenizer, Word2Vec, Word2VecModel}
 import org.apache.spark.ml.linalg.DenseVector
@@ -22,25 +21,18 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
   def train: Unit = {
     import spark.implicits._
     // data is one .txt file or one directory of .json files (result of TokenizerSparkApp)
-    val dataset = if (config.text) 
-        spark.sparkContext.textFile(config.input).filter(_.trim.size > config.minLength).toDF("text")
-      else {
-        // each .json file is read to a df and these dfs are concatenated to form a big df
-        val filenames = new File(config.input).list().filter(_.endsWith(".json"))
-        val dfs = filenames.map(f => spark.read.json(config.input + f))
-        dfs.reduce(_ union _)
-      }
+    val dataset = if (config.text) {
+        spark.sparkContext.textFile(config.input).filter(_.trim.size > config.minLength).toDF(config.inputCol)
+    } else spark.read.json(config.input)
     dataset.cache()
     logger.info("#(texts) = " + dataset.count())
-    dataset.show(20, false)
+    dataset.show(20)
 
-    val vietnameseTokenizer = new TokenizerTransformer().setInputCol("text").setOutputCol("tokenized")
-      .setConvertPunctuation(true).setConvertNumber(true)
-    val tokenizer = new Tokenizer().setInputCol("tokenized").setOutputCol("tokens")
+    val tokenizer = new Tokenizer().setInputCol(config.inputCol).setOutputCol("tokens")
     val w2v = new Word2Vec().setInputCol("tokens").setOutputCol("vector")
       .setMinCount(config.minFrequency).setVectorSize(config.dimension).setWindowSize(config.windowSize)
       .setMaxIter(config.iterations).setSeed(220712)
-    val pipeline = new Pipeline().setStages(Array(vietnameseTokenizer, tokenizer, w2v))
+    val pipeline = new Pipeline().setStages(Array(tokenizer, w2v))
     logger.info("Training the model. Please wait...")
     val model = pipeline.fit(dataset)
     model.write.overwrite().save(config.modelPath)
@@ -78,7 +70,7 @@ object W2V {
   final val logger = LoggerFactory.getLogger(getClass.getName)
 
   def main(args: Array[String]): Unit = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+    Logger.getLogger("org.apache.spark").setLevel(Level.INFO)
 
     val parser = new OptionParser[ConfigW2V]("vlp.vec") {
       head("vlp.vec", "1.0")
@@ -88,11 +80,13 @@ object W2V {
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "minLength").action((x, conf) => conf.copy(minLength = x)).text("min sentence length in characters, default is 20")
-      opt[Int]('w', "windowSize").action((x, conf) => conf.copy(windowSize = x)).text("windows size, default is 5")
-      opt[Int]('d', "dimension").action((x, conf) => conf.copy(dimension = x)).text("vector dimension, default is 50")
+      opt[Int]('w', "windowSize").action((x, conf) => conf.copy(windowSize = x)).text("windows size, default is 3")
+      opt[Int]('d', "dimension").action((x, conf) => conf.copy(dimension = x)).text("vector dimension, default is 100")
+      opt[Int]('k', "iterations").action((x, conf) => conf.copy(iterations = x)).text("number of iterations, default is 30")
+      opt[String]('x', "inputCol").action((x, conf) => conf.copy(inputCol = x)).text("input column, default is 'text'")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input data path")
       opt[Unit]('t', "textFormat").action((_, conf) => conf.copy(text = true)).text("text input data format instead of JSON")
-      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is '/dat/vec/'")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/vec/'")
       opt[String]('o', "output").action((x, conf) => conf.copy(output = x)).text("output path")
     }
     parser.parse(args, ConfigW2V()) match {

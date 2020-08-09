@@ -17,6 +17,8 @@ import java.text.SimpleDateFormat
 import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
+import vlp.tok.VietnameseTokenizer
+
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.Accuracy
 
 import org.json4s._
@@ -351,9 +353,9 @@ object SHINRA {
           } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
             new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
 
-          val temp = remover.transform(tokenizer.transform(input)).select("clazz", "words")
+          val temp = remover.transform(tokenizer.transform(input)).select("words")
           import org.apache.spark.sql.functions.concat_ws
-          val xs = temp.withColumn("body", concat_ws(" ", $"words")).select("clazz", "body")
+          val xs = temp.withColumn("body", concat_ws(" ", $"words")).select("body")
           xs.show()
           val textRDD = xs.select("body").rdd.map(row => {
             val content = row.getString(0).split("\\s+").toArray

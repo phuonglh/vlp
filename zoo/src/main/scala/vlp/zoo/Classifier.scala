@@ -33,6 +33,8 @@ import java.nio.charset.StandardCharsets
 import com.intel.analytics.bigdl.dataset.DataSet
 import com.intel.analytics.bigdl.dataset.Sample
 
+import vlp.tok.VietnameseTokenizer
+
 case class ConfigClassifier(
   master: String = "local[*]",
   mode: String = "eval",
