@@ -41,7 +41,7 @@ class W2V(spark: SparkSession, config: ConfigW2V) extends Serializable {
       output.show(false)
     }
     // get the trained word to vec model
-    val m = model.stages(2).asInstanceOf[Word2VecModel]
+    val m = model.stages(1).asInstanceOf[Word2VecModel]
     val pw = new java.io.PrintWriter(new java.io.File(config.output))
     try {
       m.getVectors.collect().foreach { row =>
