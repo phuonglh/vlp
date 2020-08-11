@@ -154,7 +154,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
       val n = row.getAs[Seq[String]](0).size
       val ys = row.getAs[String](1).split(" ")
       val zs = row.getAs[Seq[String]](2).take(n)
-      val st = ys.zip(zs).map{case (y, z) => y + "\t" + z.toUpperCase()}.mkString("\n")
+      val st = ys.zip(zs).map{case (y, z) => y + " " + z.toUpperCase()}.mkString("\n")
       st + "\n"
     }).collect()
     import scala.collection.JavaConversions._
@@ -208,7 +208,8 @@ object NeuralTagger {
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
-      opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
+      opt[String]('e', "embeddingFile").action((x, conf) => conf.copy(embeddingFile = x)).text("embedding file, /path/to/vi/glove.6B.100d.txt")
+      opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size, 100 or 200 or 300")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(outputSize = x)).text("output size of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length of a sentence")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
