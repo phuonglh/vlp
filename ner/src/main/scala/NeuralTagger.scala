@@ -147,7 +147,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     predictor.transform(gamma)
   }
 
-  def predict(inputPathCoNLL: String, preprocessor: PipelineModel, model: DLModel[Float]): Unit = {
+  def predict(inputPathCoNLL: String, preprocessor: PipelineModel, model: DLModel[Float], outputPath: String): Unit = {
     val inputDF = createDataFrame(inputPathCoNLL)
     val outputDF = predict(inputDF, preprocessor, model)
     val result = outputDF.select("words", "y", "z").map(row => {
@@ -158,7 +158,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
       st + "\n"
     }).collect()
     import scala.collection.JavaConversions._
-    Files.write(Paths.get(config.output), result.toList, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+    Files.write(Paths.get(outputPath), result.toList, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 }
 
@@ -228,20 +228,18 @@ object NeuralTagger {
         println(Serialization.writePretty(config))
 
         val tagger = new NeuralTagger(sparkSession, config)
-        val df = tagger.createDataFrame(config.dataPath)
-        df.show()
-        println(df.count())
+        val (training, test) = (tagger.createDataFrame(config.dataPath), tagger.createDataFrame(config.validationPath))
+        training.show()
+        println(training.count())
         config.mode match {
-          case "train" => tagger.train(df, df)
+          case "train" => tagger.train(training, test)
           case "eval" => 
           case "predict" => 
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
             val model = new DLModel(module, featureSize = Array(config.maxSequenceLength))
-            val prediction = tagger.predict(df, preprocessor, model)
-            prediction.select("x", "z").show(false)
-            prediction.printSchema()
-            tagger.predict(config.dataPath, preprocessor, model)
+            tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
+            tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
         }
         sparkSession.stop()
       case None => 
