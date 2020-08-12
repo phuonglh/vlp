@@ -19,6 +19,7 @@ import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
 import com.intel.analytics.zoo.pipeline.api.keras.layers.InputLayer
 import com.intel.analytics.zoo.pipeline.api.keras.layers.utils.KerasUtils
+import com.intel.analytics.zoo.pipeline.api.keras.layers.SelectTable
 
 /**
  * BERT-based implementation for text classification.
@@ -43,8 +44,8 @@ object BERT {
     val shape = Shape(List(Shape(maxSeqLen), Shape(maxSeqLen), Shape(maxSeqLen), Shape(1, 1, maxSeqLen)))
     bert.build(KerasUtils.addBatch(shape))
     val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masks))
-    
-    val output = Dense(hiddenSize, activation = "softmax").inputs(bertNode)
+    val selectNode = SelectTable(0).inputs(bertNode)
+    val output = Dense(hiddenSize, activation = "softmax").inputs(selectNode)
     val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
     model
   }
@@ -65,8 +66,9 @@ object BERT {
       ps.setValue(j, j - 1.0f)
     }
     val ms = Tensor(1, 1, maxSeqLen).zero()
+    ms.fill(1.0f)
     val input = T(is, ss, ps, ms)
-    val model = buildModel(100, maxSeqLen, 4)
+    val model = buildModel(100, maxSeqLen, 24)
     println(input)
     val output = model.forward(input)
     println(output)
