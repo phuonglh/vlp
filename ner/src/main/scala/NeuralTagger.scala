@@ -8,6 +8,7 @@ import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.nn.keras.{GRU, Embedding, Dense, SoftMax}
 import com.intel.analytics.bigdl.nn.keras.Sequential
 import com.intel.analytics.bigdl.nn.keras.TimeDistributed
+import com.intel.analytics.bigdl.nn.keras.Bidirectional
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.bigdl.utils.Shape
@@ -47,8 +48,8 @@ import java.nio.file.StandardOpenOption
 
 /**
   * A neural named entity tagger for Vietnamese.
-  * 
-  * phuonglh
+  * <p/>
+  * phuonglh@gmail.com
   * 
   */
 class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
@@ -127,7 +128,11 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val model = Sequential()
     val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(maxSeqLen))
     model.add(embedding)
-    model.add(GRU(config.outputSize, returnSequences = true))
+    if (!config.bidirectional) {
+      model.add(GRU(config.outputSize, returnSequences = true))
+    } else {
+      model.add(Bidirectional(GRU(config.outputSize, returnSequences = true), mergeMode = "concat"))
+    }
     model.add(TimeDistributed(Dense(labelSize, activation = "softmax")))
   }
 
@@ -214,6 +219,7 @@ object NeuralTagger {
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length of a sentence")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Unit]('v', "verbose").action((x, conf) => conf.copy(verbose = true)).text("verbose mode")
+      opt[Unit]('q', "bidirectional").action((x, conf) => conf.copy(bidirectional = true)).text("bidirectional mode")
     }
     parser.parse(args, ConfigNER()) match {
       case Some(config) =>

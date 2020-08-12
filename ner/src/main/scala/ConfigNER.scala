@@ -23,5 +23,6 @@ case class ConfigNER(
   outputSize: Int = 64,
   embeddingSize: Int = 100,
   embeddingFile: String = "/opt/data/emb/vi/glove.6B.100d.txt",
-  epochs: Int = 100
+  epochs: Int = 100,
+  bidirectional: Boolean = false
 )
