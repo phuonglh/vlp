@@ -45,6 +45,7 @@ import org.apache.spark.ml.PipelineModel
 import com.intel.analytics.bigdl.dlframes.DLModel
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
+import org.apache.spark.ml.feature.VectorAssembler
 
 /**
   * A neural named entity tagger for Vietnamese.
@@ -70,10 +71,14 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
   def train(training: DataFrame, test: DataFrame): Module[Float] = {
     // build a preprocessing pipeline and determine the dictionary and vocab size
     val wordTokenizer = new Tokenizer().setInputCol("x").setOutputCol("words")
-    val wordCountVectorizer = new CountVectorizer().setInputCol("words").setOutputCol("countVector").setMinDF(config.minFrequency)
+    val wordCountVectorizer = new CountVectorizer().setInputCol("words").setOutputCol("wordVector").setMinDF(config.minFrequency)
     val labelTokenizer = new Tokenizer().setInputCol("y").setOutputCol("labels")
     val labelCountVectorizer = new CountVectorizer().setInputCol("labels").setOutputCol("labelVector").setMinDF(config.minFrequency)
-    val preprocessingPipeline = new Pipeline().setStages(Array(wordTokenizer, wordCountVectorizer, labelTokenizer, labelCountVectorizer))
+    val wordShaper = new WordShaper().setInputCol("words").setOutputCol("shapes")
+    val shapeIndexer = new CountVectorizer().setInputCol("shapes").setOutputCol("shapeVector")
+
+    val preprocessingPipeline = new Pipeline().setStages(Array(wordTokenizer, wordCountVectorizer, labelTokenizer, labelCountVectorizer, 
+      wordShaper, shapeIndexer))
     val preprocessingPipelineModel = preprocessingPipeline.fit(training)  
     val (trainingAlpha, testAlpha) = (preprocessingPipelineModel.transform(training), preprocessingPipelineModel.transform(test))
     if (config.verbose) {
@@ -86,13 +91,21 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val vocabSize = wordDictionary.size
     val labelDictionary = preprocessingPipelineModel.stages(3).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
     val labelSize = labelDictionary.size
+    // indices in the shape dictionary need to be counted from vocabSize instead of 1.0
+    val shapeDictionary = preprocessingPipelineModel.stages(5).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
+      .mapValues(v => v + vocabSize).map(x => x)
+    val shapeSize = shapeDictionary.size
     logger.info(labelDictionary.toString)
     logger.info(s"vocabSize = ${vocabSize}")
+    logger.info(shapeDictionary.toString)
 
     // transform sequences of words/labels into vectors of indices for use in the DL model
-    val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("features")
+    val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("word")
     val labelSequenceVectorizer = new SequenceVectorizer(labelDictionary, config.maxSequenceLength).setInputCol("labels").setOutputCol("label")
-    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, labelSequenceVectorizer))
+    val shapeSequenceVectorizer = new SequenceVectorizer(shapeDictionary, config.maxSequenceLength).setInputCol("shapes").setOutputCol("shape")
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape")).setOutputCol("features")
+
+    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, labelSequenceVectorizer, shapeSequenceVectorizer, vectorAssembler))
     val pipelineModel = pipeline.fit(trainingAlpha)
     val (trainingBeta, testBeta) = (pipelineModel.transform(trainingAlpha), pipelineModel.transform(testAlpha))
     if (config.verbose) {
@@ -100,11 +113,11 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
       testBeta.show()
     }
     // train a DL model
-    val model = buildModel(vocabSize + 1, labelSize, config.maxSequenceLength)
+    val model = buildModel(vocabSize + 1 + shapeSize, labelSize, config.maxSequenceLength)
     val trainSummary = TrainSummary(appName = "gru", logDir = "/tmp/ner/" + config.language)
     val validationSummary = ValidationSummary(appName = "gru", logDir = "/tmp/ner/" + config.language)
     val classifier = new DLEstimator(model, TimeDistributedCriterion(ClassNLLCriterion[Float]()), featureSize = Array(config.maxSequenceLength), labelSize = Array(config.maxSequenceLength))
-      .setFeaturesCol("features")
+      .setFeaturesCol("word") // should change to 'features'
       .setLabelCol("label")
       .setBatchSize(config.batchSize)
       .setOptimMethod(new Adam(0.001))
@@ -121,12 +134,12 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     *
     * @param vocabSize
     * @param labelSize
-    * @param maxSeqLen
+    * @param featureSize
     * @return a BigDL Keras-style model
     */
-  def buildModel(vocabSize: Int, labelSize: Int, maxSeqLen: Int): Module[Float] = {
+  def buildModel(vocabSize: Int, labelSize: Int, featureSize: Int): Module[Float] = {
     val model = Sequential()
-    val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(maxSeqLen))
+    val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(featureSize))
     model.add(embedding)
     if (!config.bidirectional) {
       model.add(GRU(config.outputSize, returnSequences = true))
@@ -143,8 +156,13 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val wordTokenizer = new Tokenizer().setInputCol("x").setOutputCol("words")
     val alpha = wordTokenizer.transform(input)
     val wordDictionary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
-    val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("features")
-    val beta = wordSequenceVectorizer.transform(alpha)
+    val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("word")
+    val shapeDictionary = preprocessor.stages(5).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap.mapValues(v => v + wordDictionary.size)
+    val shapeSequenceVectorizer = new SequenceVectorizer(shapeDictionary, config.maxSequenceLength).setInputCol("shapes").setOutputCol("shape")
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape")).setOutputCol("features")
+    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, shapeSequenceVectorizer, vectorAssembler))
+
+    val beta = pipeline.fit(alpha).transform(alpha)
     val gamma = model.transform(beta)
     val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labelMap = (0 until labels.size).zip(labels).toMap
@@ -213,8 +231,7 @@ object NeuralTagger {
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
-      opt[String]('e', "embeddingFile").action((x, conf) => conf.copy(embeddingFile = x)).text("embedding file, /path/to/vi/glove.6B.100d.txt")
-      opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size, 100 or 200 or 300")
+      opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size, default is 100")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(outputSize = x)).text("output size of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length of a sentence")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")

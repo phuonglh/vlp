@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 /**
   * phuonglh, 10/31/17, 18:52
   * 
-  * Converts a string into a sequence of characters or subtokens, with an option to keep diacritics or remve them.
+  * Converts a string into a sequence of characters or subtokens, with an option to keep diacritics or remove them.
   */
 class Sequencer(override val uid: String) extends UnaryTransformer[String, Seq[String], Sequencer] with DefaultParamsWritable {
   

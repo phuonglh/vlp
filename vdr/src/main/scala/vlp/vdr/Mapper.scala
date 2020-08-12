@@ -72,8 +72,7 @@ class Mapper(override val uid: String, val mappingPath: String) extends Transfor
     if (schema.fieldNames.contains($(outputCol))) {
       throw new IllegalArgumentException(s"Output column ${$(outputCol)} already exists.")
     }
-    val outputFields = schema.fields :+
-      StructField($(outputCol), new ArrayType(StringType, false), nullable = false)
+    val outputFields = schema.fields :+ StructField($(outputCol), new ArrayType(StringType, false), nullable = false)
     StructType(outputFields)
   }
 }
