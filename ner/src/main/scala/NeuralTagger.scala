@@ -1,4 +1,3 @@
-
 package vlp.ner
 
 import org.apache.spark.sql.SparkSession
@@ -6,20 +5,24 @@ import org.apache.spark.sql.SparkSession
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.nn.keras.Model
-import com.intel.analytics.bigdl.nn.keras.{GRU, Embedding, Dense, SoftMax}
-import com.intel.analytics.bigdl.nn.keras.Sequential
-import com.intel.analytics.bigdl.nn.keras.TimeDistributed
-import com.intel.analytics.bigdl.nn.keras.Bidirectional
+
+import com.intel.analytics.zoo.pipeline.api.keras.layers.SoftMax
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Dense
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Embedding
+import com.intel.analytics.zoo.pipeline.api.keras.layers.GRU
+import com.intel.analytics.zoo.pipeline.api.keras.layers.TimeDistributed
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Reshape
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Bidirectional
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Merge
+
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.bigdl.utils.Shape
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.nn.keras.Reshape
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
-import com.intel.analytics.bigdl.nn.keras.Input
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Merge
-import org.slf4j.LoggerFactory
 
 import scopt.OptionParser
+import org.slf4j.LoggerFactory
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
 
@@ -144,22 +147,22 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     * @return a BigDL Keras-style model
     */
   def buildModel(vocabSize: Int, shapeSize: Int, labelSize: Int, featureSize: Int): Module[Float] = {
-    val inputNode = Input[Float](inputShape = Shape(featureSize))
+    val inputNode = Input(inputShape = Shape(featureSize))
     val reshapeNode = Reshape(Array(2, featureSize/2)).inputs(inputNode)
     val wordSelectNode = Select(1, 0).inputs(reshapeNode)
     val wordEmbeddingNode = Embedding(vocabSize, config.wordEmbeddingSize).inputs(wordSelectNode)
     val shapeSelectNode = Select(1, 1).inputs(reshapeNode)
     val shapeEmbeddingNode = Embedding(shapeSize, config.shapeEmbeddingSize).inputs(shapeSelectNode)
-    val wordAndShapeNode = Merge[Float](mode = "concat").inputs(Array(wordEmbeddingNode, shapeEmbeddingNode))
+    val wordAndShapeNode = Merge(mode = "concat").inputs(Array(wordEmbeddingNode, shapeEmbeddingNode))
     
     val recurrentNode = if (!config.bidirectional) {
       GRU(config.recurrentSize, returnSequences = true).inputs(wordAndShapeNode)
     } else {
       Bidirectional(GRU(config.recurrentSize, returnSequences = true), mergeMode = "concat").inputs(wordAndShapeNode)
     }
-    val denseNode = TimeDistributed(Dense(config.outputSize, activation = "relu")).inputs(recurrentNode)
-    val outputNode = TimeDistributed(Dense(labelSize, activation = "softmax")).inputs(denseNode)
-    val model = Model[Float](inputNode, outputNode)
+    val denseNode = Dense(config.outputSize, activation = "relu").inputs(recurrentNode)
+    val outputNode = Dense(labelSize, activation = "softmax").inputs(denseNode)
+    val model = Model(inputNode, outputNode)
     model
   }
 
