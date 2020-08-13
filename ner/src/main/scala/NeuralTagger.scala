@@ -153,7 +153,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val wordAndShapeNode = Merge[Float](mode = "concat").inputs(Array(wordEmbeddingNode, shapeEmbeddingNode))
     
     val recurrentNode = if (!config.bidirectional) {
-      GRU(config.outputSize, returnSequences = true).inputs(wordAndShapeNode)
+      GRU(config.recurrentSize, returnSequences = true).inputs(wordAndShapeNode)
     } else {
       Bidirectional(GRU(config.recurrentSize, returnSequences = true), mergeMode = "concat").inputs(wordAndShapeNode)
     }
