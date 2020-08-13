@@ -155,9 +155,10 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val recurrentNode = if (!config.bidirectional) {
       GRU(config.outputSize, returnSequences = true).inputs(wordAndShapeNode)
     } else {
-      Bidirectional(GRU(config.outputSize, returnSequences = true), mergeMode = "concat").inputs(wordAndShapeNode)
+      Bidirectional(GRU(config.recurrentSize, returnSequences = true), mergeMode = "concat").inputs(wordAndShapeNode)
     }
-    val outputNode = TimeDistributed(Dense(labelSize, activation = "softmax")).inputs(recurrentNode)
+    val denseNode = TimeDistributed(Dense(config.outputSize, activation = "relu")).inputs(recurrentNode)
+    val outputNode = TimeDistributed(Dense(labelSize, activation = "softmax")).inputs(denseNode)
     val model = Model[Float](inputNode, outputNode)
     model
   }
@@ -249,7 +250,8 @@ object NeuralTagger {
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
       opt[Int]('w', "wordEmbeddingSize").action((x, conf) => conf.copy(wordEmbeddingSize = x)).text("word embedding size, default is 100")
       opt[Int]('s', "shapeEmbeddingSize").action((x, conf) => conf.copy(shapeEmbeddingSize = x)).text("shape embedding size, default is 10")
-      opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(outputSize = x)).text("output size of the encoder")
+      opt[Int]('r', "recurrentSize").action((x, conf) => conf.copy(recurrentSize = x)).text("output size of the recurrent layer")
+      opt[Int]('o', "outputSize").action((x, conf) => conf.copy(outputSize = x)).text("output size of the dense layer")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length of a sentence")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Unit]('v', "verbose").action((x, conf) => conf.copy(verbose = true)).text("verbose mode")

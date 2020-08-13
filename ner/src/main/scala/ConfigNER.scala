@@ -8,7 +8,7 @@ case class ConfigNER(
   verbose: Boolean = false,
   modelPath: String = "dat/ner/",
   language: String = "vie",
-  dataPath: String = "dat/ner/vie/vie.test",
+  dataPath: String = "dat/ner/vie/vie.train",
   validationPath: String = "dat/ner/vie/vie.test",
   lambda: Double = 1E-6,
   numFeatures: Int = 32768,
@@ -20,9 +20,10 @@ case class ConfigNER(
   output: String = "dat/ner/vie/output.txt",
   maxSequenceLength: Int = 40,
   batchSize: Int = 128,
-  outputSize: Int = 64,
+  recurrentSize: Int = 64,
+  outputSize: Int = 16,
   wordEmbeddingSize: Int = 100,
   shapeEmbeddingSize: Int = 10,
-  epochs: Int = 100,
+  epochs: Int = 80,
   bidirectional: Boolean = false
 )
