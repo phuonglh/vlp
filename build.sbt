@@ -72,11 +72,9 @@ lazy val ner = (project in file("ner"))
     assemblyJarName in assembly := "ner.jar",
     libraryDependencies ++= Seq(
       "com.github.scopt" %% "scopt" % "3.7.1",
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0",
-      "com.intel.analytics.zoo" % "zoo-core-dist-mac" % "0.8.1" pomOnly(),
-      "com.intel.analytics.zoo" % "zoo-core-dist-linux64" % "0.8.1" pomOnly()
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
     )
   )
 
