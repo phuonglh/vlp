@@ -62,7 +62,7 @@ import org.apache.spark.ml.feature.VectorAssembler
   */
 class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
   val logger = LoggerFactory.getLogger(getClass.getName)
-  val prefix = Paths.get(config.modelPath, config.language, "gru", s"${config.outputSize}").toString()
+  val prefix = Paths.get(config.modelPath, config.language, "gru", s"${config.recurrentSize}").toString()
 
   import sparkSession.implicits._
 
@@ -160,8 +160,10 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     } else {
       Bidirectional(GRU(config.recurrentSize, returnSequences = true), mergeMode = "concat").inputs(wordAndShapeNode)
     }
-    val denseNode = Dense(config.outputSize, activation = "relu").inputs(recurrentNode)
-    val outputNode = Dense(labelSize, activation = "softmax").inputs(denseNode)
+    val outputNode = if (config.outputSize > 0) {
+      val denseNode = Dense(config.outputSize, activation = "relu").inputs(recurrentNode)
+      Dense(labelSize, activation = "softmax").inputs(denseNode)
+    } else Dense(labelSize, activation = "softmax").inputs(recurrentNode)
     val model = Model(inputNode, outputNode)
     model
   }
@@ -265,6 +267,8 @@ object NeuralTagger {
         val sparkConfig = Engine.createSparkConf()
           .setMaster(config.master)
           .set("spark.executor.memory", config.executorMemory)
+          .set("spark.executor.extraJavaOptions", "-Dbigdl.engineType=mkldnn -Dcom.github.fommil.netlib.BLAS=com.intel.mkl.MKLBLAS -Dcom.github.fommil.netlib.LAPACK=com.intel.mkl.MKLLAPACK")
+          .set("spark.driver.extraJavaOptions", "-Dbigdl.engineType=mkldnn")
           .setAppName("ner.NeuralTagger")
         val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
         val sparkContext = sparkSession.sparkContext
@@ -284,6 +288,13 @@ object NeuralTagger {
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
           case "eval" => 
+            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
+            val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
+            val model = new DLModel(module, featureSize = Array(2*config.maxSequenceLength))
+            val df = tagger.createDataFrame(config.validationPath)
+            val prediction = tagger.predict(df, preprocessor, model)
+            val scores = Evaluator.run(prediction)
+            println(scores)
           case "predict" => 
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")

@@ -20,10 +20,10 @@ case class ConfigNER(
   output: String = "dat/ner/vie/output.txt",
   maxSequenceLength: Int = 40,
   batchSize: Int = 128,
-  recurrentSize: Int = 64,
-  outputSize: Int = 16,
-  wordEmbeddingSize: Int = 100,
+  wordEmbeddingSize: Int = 200,
   shapeEmbeddingSize: Int = 10,
+  recurrentSize: Int = 64,
+  outputSize: Int = 0,
   epochs: Int = 80,
   bidirectional: Boolean = false
 )
