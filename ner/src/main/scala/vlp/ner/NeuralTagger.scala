@@ -184,16 +184,16 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
    * Predicts label sequence given word sequence. The input data frame has 'x' column.
   */
   def predict(input: DataFrame, preprocessor: PipelineModel, model: DLModel[Float]): DataFrame = {
-    val wordTokenizer = new Tokenizer().setInputCol("x").setOutputCol("words")
-    val wordShaper = new WordShaper().setInputCol("words").setOutputCol("shapes")
-    val alpha = wordShaper.transform(wordTokenizer.transform(input))
+    val alpha = preprocessor.transform(input)
 
     val wordDictionary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
     val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("word")
     val shapeDictionary = preprocessor.stages(5).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
     val shapeSequenceVectorizer = new SequenceVectorizer(shapeDictionary, config.maxSequenceLength).setInputCol("shapes").setOutputCol("shape")
-    val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape")).setOutputCol("features")
-    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, shapeSequenceVectorizer, vectorAssembler))
+    val mentionDictionary = preprocessor.stages(7).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
+    val mentionSequenceVectorizer = new SequenceVectorizer(mentionDictionary, config.maxSequenceLength, binary = true).setInputCol("mentions").setOutputCol("mention")
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape", "mention")).setOutputCol("features")
+    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, shapeSequenceVectorizer, mentionSequenceVectorizer, vectorAssembler))
 
     val beta = pipeline.fit(alpha).transform(alpha)
     if (config.verbose) beta.show(false)
@@ -296,7 +296,7 @@ object NeuralTagger {
           case "train" => 
             val module = tagger.train(training, test)
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
-            val model = new DLModel(module, featureSize = Array(2*config.maxSequenceLength))
+            val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
           case "eval" => 
