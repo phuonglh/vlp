@@ -53,6 +53,7 @@ import com.intel.analytics.bigdl.dlframes.DLModel
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import org.apache.spark.ml.feature.VectorAssembler
+import com.intel.analytics.zoo.pipeline.api.keras.layers.AddConstant
 
 /**
   * A neural named entity tagger for Vietnamese.
@@ -83,13 +84,14 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val labelCountVectorizer = new CountVectorizer().setInputCol("labels").setOutputCol("labelVector").setMinDF(config.minFrequency)
     val wordShaper = new WordShaper().setInputCol("words").setOutputCol("shapes")
     val shapeIndexer = new CountVectorizer().setInputCol("shapes").setOutputCol("shapeVector")
+    val mentionExtractor = new MentionExtractor().setInputCols(Array("words", "labels")).setOutputCol("mentions")
+    val mentionCountVectorizer = new CountVectorizer().setInputCol("mentions").setOutputCol("mentionVector")
 
     val preprocessingPipeline = new Pipeline().setStages(Array(wordTokenizer, wordCountVectorizer, labelTokenizer, labelCountVectorizer, 
-      wordShaper, shapeIndexer))
+      wordShaper, shapeIndexer, mentionExtractor, mentionCountVectorizer))
     val preprocessingPipelineModel = preprocessingPipeline.fit(training)  
     val (trainingAlpha, testAlpha) = (preprocessingPipelineModel.transform(training), preprocessingPipelineModel.transform(test))
     if (config.verbose) {
-      trainingAlpha.show()
       testAlpha.show()
     }
     preprocessingPipelineModel.write.overwrite.save(Paths.get(config.modelPath, config.language, "gru").toString())
@@ -100,25 +102,28 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val labelSize = labelDictionary.size
     val shapeDictionary = preprocessingPipelineModel.stages(5).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
     val shapeSize = shapeDictionary.size
-    logger.info(labelDictionary.toString)
+    val mentionDictionary = preprocessingPipelineModel.stages(7).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
+    val mentionSize = mentionDictionary.size
     logger.info(s"vocabSize = ${vocabSize}")
+    logger.info(labelDictionary.toString)
     logger.info(shapeDictionary.toString)
+    logger.info(s"mentionSize = ${mentionSize}")
 
-    // transform sequences of words/labels into vectors of indices for use in the DL model
+    // transform sequences of words/labels/shapes/mentions into vectors of indices for use in the DL model
     val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("word")
     val labelSequenceVectorizer = new SequenceVectorizer(labelDictionary, config.maxSequenceLength).setInputCol("labels").setOutputCol("label")
     val shapeSequenceVectorizer = new SequenceVectorizer(shapeDictionary, config.maxSequenceLength).setInputCol("shapes").setOutputCol("shape")
-    val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape")).setOutputCol("features")
+    val mentionSequenceVectorizer = new SequenceVectorizer(mentionDictionary, config.maxSequenceLength, binary = true).setInputCol("mentions").setOutputCol("mention")
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape", "mention")).setOutputCol("features")
 
-    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, labelSequenceVectorizer, shapeSequenceVectorizer, vectorAssembler))
+    val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, labelSequenceVectorizer, shapeSequenceVectorizer, mentionSequenceVectorizer, vectorAssembler))
     val pipelineModel = pipeline.fit(trainingAlpha)
     val (trainingBeta, testBeta) = (pipelineModel.transform(trainingAlpha), pipelineModel.transform(testAlpha))
     if (config.verbose) {
-      trainingBeta.show()
       testBeta.show()
     }
     // train a DL model
-    val featureSize = 2*config.maxSequenceLength
+    val featureSize = 3*config.maxSequenceLength
     val model = buildModel(vocabSize + 1, shapeSize + 1, labelSize, featureSize)
     val trainSummary = TrainSummary(appName = "gru", logDir = "/tmp/ner/" + config.language)
     val validationSummary = ValidationSummary(appName = "gru", logDir = "/tmp/ner/" + config.language)
@@ -136,9 +141,9 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
   }
 
   /**
-    * Constructs a sequential model for NER using Keras-style layers. We use both word embeddings and 
-    * shape embeddings in a pipeline as follows:
-    * [w1,...wN, s1,...,sN] => Reshape(2, N) => (Embedding, Embedding) => Merge('concat') => GRU/BiGRU => Dense('softmax')
+    * Constructs a sequential model for NER using Keras-style layers. We use both word embeddings,  
+    * shape embeddings and binary-valued mentions in a pipeline as follows:
+    * [w1,...wN, s1,...,sN, b1,...,bN] => Reshape(3, N) => (Embedding, Embedding, Select) => Merge('concat') => GRU/BiGRU => Dense('softmax')
     *
     * @param vocabSize
     * @param shapeSize
@@ -148,17 +153,24 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     */
   def buildModel(vocabSize: Int, shapeSize: Int, labelSize: Int, featureSize: Int): Module[Float] = {
     val inputNode = Input(inputShape = Shape(featureSize))
-    val reshapeNode = Reshape(Array(2, featureSize/2)).inputs(inputNode)
+    val reshapeNode = Reshape(Array(3, featureSize/3)).inputs(inputNode)
+    
     val wordSelectNode = Select(1, 0).inputs(reshapeNode)
     val wordEmbeddingNode = Embedding(vocabSize, config.wordEmbeddingSize).inputs(wordSelectNode)
+    
     val shapeSelectNode = Select(1, 1).inputs(reshapeNode)
     val shapeEmbeddingNode = Embedding(shapeSize, config.shapeEmbeddingSize).inputs(shapeSelectNode)
-    val wordAndShapeNode = Merge(mode = "concat").inputs(Array(wordEmbeddingNode, shapeEmbeddingNode))
+
+    val mentionSelectNode = Select(1, 2).inputs(reshapeNode)
+    val addOneNode = AddConstant(1).inputs(mentionSelectNode)
+    val mentionEmbeddingNode = Embedding(3, 2).inputs(addOneNode)
+
+    val mergeNode = Merge(mode = "concat").inputs(Array(wordEmbeddingNode, shapeEmbeddingNode, mentionEmbeddingNode))
     
     val recurrentNode = if (!config.bidirectional) {
-      GRU(config.recurrentSize, returnSequences = true).inputs(wordAndShapeNode)
+      GRU(config.recurrentSize, returnSequences = true).inputs(mergeNode)
     } else {
-      Bidirectional(GRU(config.recurrentSize, returnSequences = true), mergeMode = "concat").inputs(wordAndShapeNode)
+      Bidirectional(GRU(config.recurrentSize, returnSequences = true), mergeMode = "concat").inputs(mergeNode)
     }
     val outputNode = if (config.outputSize > 0) {
       val denseNode = Dense(config.outputSize, activation = "relu").inputs(recurrentNode)
@@ -290,7 +302,7 @@ object NeuralTagger {
           case "eval" => 
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
-            val model = new DLModel(module, featureSize = Array(2*config.maxSequenceLength))
+            val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             val df = tagger.createDataFrame(config.validationPath)
             val prediction = tagger.predict(df, preprocessor, model)
             val scores = Evaluator.run(prediction)
@@ -298,7 +310,7 @@ object NeuralTagger {
           case "predict" => 
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
-            val model = new DLModel(module, featureSize = Array(2*config.maxSequenceLength))
+            val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
         }
