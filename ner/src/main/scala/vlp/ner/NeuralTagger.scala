@@ -15,6 +15,7 @@ import com.intel.analytics.zoo.pipeline.api.keras.layers.Reshape
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Bidirectional
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
+import com.intel.analytics.zoo.pipeline.api.keras.layers.AddConstant
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Merge
 
 import com.intel.analytics.bigdl.utils.Engine
@@ -53,7 +54,6 @@ import com.intel.analytics.bigdl.dlframes.DLModel
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import org.apache.spark.ml.feature.VectorAssembler
-import com.intel.analytics.zoo.pipeline.api.keras.layers.AddConstant
 
 /**
   * A neural named entity tagger for Vietnamese.
@@ -313,6 +313,16 @@ object NeuralTagger {
             val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
+          case "extract" =>
+            val df = training.union(test)
+            val wordTokenizer = new Tokenizer().setInputCol("x").setOutputCol("words")
+            val labelTokenizer = new Tokenizer().setInputCol("y").setOutputCol("labels")
+            val mentionExtractor = new MentionExtractor().setInputCols(Array("words", "labels")).setOutputCol("mentions")
+            val pipeline = new Pipeline().setStages(Array(wordTokenizer, labelTokenizer, mentionExtractor))
+            val output = pipeline.fit(df).transform(df).select("mentions")
+            import sparkSession.implicits._
+            val count = output.flatMap(row => row.getAs[Seq[String]](0)).groupBy("value").count().sort($"count".desc)
+            count.show(50, false)
         }
         sparkSession.stop()
       case None => 
