@@ -8,7 +8,7 @@ case class ConfigTeller(
     maxSequenceLength: Int = 40,
     minFrequency: Double = 2.0,
     numFeatures: Int = 32768,
-    modelType: String = "seq",
+    modelType: String = "bow",
     encoderType: String = "cnn",
     embeddingSize: Int = 100,
     encoderOutputSize: Int = 128,
@@ -16,7 +16,7 @@ case class ConfigTeller(
     numLabels: Int = 3,
     modelPath: String = "dat/nli/",
     dataPath: String = "dat/nli/vi.jsonl",
-    batchSize: Int = 32,
+    batchSize: Int = 64,
     epochs: Int = 50,
     learningRate: Double = 0.001,
     verbose: Boolean = false

@@ -27,12 +27,15 @@ import com.intel.analytics.bigdl.nn.{Sequential, Reshape, Transpose}
 import com.intel.analytics.bigdl.nn.Transpose
 import com.intel.analytics.bigdl.nn.Linear
 import com.intel.analytics.bigdl.nn.LookupTable
+import com.intel.analytics.bigdl.nn.Sum
 import com.intel.analytics.bigdl.nn.TemporalConvolution
 import com.intel.analytics.bigdl.nn.TemporalMaxPooling
 import com.intel.analytics.bigdl.nn.JoinTable
 import com.intel.analytics.bigdl.nn.ReLU
+import com.intel.analytics.bigdl.nn.Tanh
 import com.intel.analytics.bigdl.nn.SoftMax
 import com.intel.analytics.bigdl.nn.ParallelTable
+
 import com.intel.analytics.bigdl.nn.ClassNLLCriterion
 import com.intel.analytics.bigdl.dlframes.DLClassifier
 import com.intel.analytics.bigdl.optim.Adam
@@ -118,7 +121,11 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     trainingDF.show()
     testDF.show()
 
-    val dlModel = if (config.modelType == "seq") sequentialTransducer(vocabSize, config.maxSequenceLength) else parallelTransducer(vocabSize, config.maxSequenceLength)
+    val dlModel =  config.modelType match {
+      case "seq" => sequentialTransducer(vocabSize, config.maxSequenceLength)
+      case "par" => parallelTransducer(vocabSize, config.maxSequenceLength)
+      case "bow" => bowTransducer(vocabSize, config.maxSequenceLength)
+    }
 
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
@@ -157,6 +164,25 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val xs = validationSummary.readScalar("Top1Accuracy").map(_._2)
     Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
       encoderSize = config.encoderOutputSize, trainingScores = xs, testScore = scores._2)
+  }
+
+  /**
+   * Concatenates the presentations for premise and hypothesis, [their difference, and their element-wise product].
+   * Then pass the result to a single tanh layer followed by a three-way softmax classifier. Each sentence is represented 
+   * as the sum of the embedding representations of its words. (C-BOW method)
+   *
+   */
+  def bowTransducer(vocabSize: Int, maxSeqLen: Int): Module[Float] = {
+    val model = new Sequential().add(Reshape(Array(2, maxSeqLen))).add(SplitTable(2, 3))     
+    val branches = ParallelTable()
+    val premiseLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize)).add(Sum(2))
+    val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize)).add(Sum(2))
+    branches.add(premiseLayers).add(hypothesisLayers)
+    model.add(branches)
+      .add(JoinTable(2, 2))
+      .add(Linear(2*config.embeddingSize, config.numLabels))
+      .add(Tanh())
+      .add(SoftMax())
   }
 
   /**
@@ -255,6 +281,8 @@ object Teller {
         val sparkConfig = Engine.createSparkConf()
           .setMaster(config.master)
           .set("spark.executor.memory", config.executorMemory)
+          .set("spark.executor.extraJavaOptions", "-Dbigdl.engineType=mkldnn")
+          .set("spark.driver.extraJavaOptions", "-Dbigdl.engineType=mkldnn")
           .setAppName("nli.Teller")
         val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
         val sparkContext = sparkSession.sparkContext
