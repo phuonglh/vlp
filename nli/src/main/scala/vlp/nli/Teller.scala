@@ -297,9 +297,9 @@ object Teller {
           case "eval" => 
           case "predict" => 
           case "experiments" => 
-            val maxSequenceLengths = Array(40, 50, 60)
-            val embeddingSizes = Array(25, 50, 80, 100, 128, 150)
-            val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300, 400, 500)
+            val maxSequenceLengths = Array(40, 50)
+            val embeddingSizes = Array(25, 50, 80, 100)
+            val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300)
             for (n <- maxSequenceLengths)
               for (d <- embeddingSizes)
                 for (o <- encoderOutputSizes) {
