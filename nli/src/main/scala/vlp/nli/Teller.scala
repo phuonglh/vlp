@@ -22,7 +22,8 @@ import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericF
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.nn.keras.{GRU, Embedding, Dense, Convolution1D, GlobalMaxPooling1D}
-import com.intel.analytics.bigdl.nn.keras.{Sequential => SequentialKeras, Reshape => ReshapeKeras}
+import com.intel.analytics.bigdl.nn.keras.Bidirectional
+
 import com.intel.analytics.bigdl.nn.{Sequential, Reshape, Transpose}
 import com.intel.analytics.bigdl.nn.Transpose
 import com.intel.analytics.bigdl.nn.Linear
@@ -35,8 +36,8 @@ import com.intel.analytics.bigdl.nn.ReLU
 import com.intel.analytics.bigdl.nn.Tanh
 import com.intel.analytics.bigdl.nn.SoftMax
 import com.intel.analytics.bigdl.nn.ParallelTable
-
 import com.intel.analytics.bigdl.nn.ClassNLLCriterion
+
 import com.intel.analytics.bigdl.dlframes.DLClassifier
 import com.intel.analytics.bigdl.optim.Adam
 import com.intel.analytics.bigdl.optim.Trigger
@@ -131,8 +132,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
 
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
-    val featureSize = if (config.modelType == "seq") Array(config.maxSequenceLength) else Array(2*config.maxSequenceLength)
-    val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), featureSize)
+    val featureSize = if (config.modelType == "seq") config.maxSequenceLength else 2*config.maxSequenceLength
+    val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(featureSize))
       .setLabelCol("category")
       .setFeaturesCol("features")
       .setBatchSize(config.batchSize)
@@ -177,13 +178,13 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
   def bowTransducer(vocabSize: Int, maxSeqLen: Int): Module[Float] = {
     val model = new Sequential().add(Reshape(Array(2, maxSeqLen))).add(SplitTable(2, 3))     
     val branches = ParallelTable()
-    val premiseLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize)).add(Sum(2))
-    val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize)).add(Sum(2))
+    val premiseLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize)).add(Sum(2, 3))
+    val hypothesisLayers = Sequential().add(LookupTable(vocabSize, config.embeddingSize)).add(Sum(2, 3))
     branches.add(premiseLayers).add(hypothesisLayers)
     model.add(branches)
       .add(JoinTable(2, 2))
-      .add(Linear(2*config.embeddingSize, config.numLabels))
       .add(Tanh())
+      .add(Linear(2*config.embeddingSize, config.numLabels))
       .add(SoftMax())
   }
 
@@ -195,14 +196,17 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     * @return a BigDL Keras-style model
     */
   def sequentialTransducer(vocabSize: Int, maxSeqLen: Int): Module[Float] = {
-    val model = SequentialKeras()
+    val model = com.intel.analytics.bigdl.nn.keras.Sequential()
     val embedding = Embedding(vocabSize, config.embeddingSize, inputShape = Shape(maxSeqLen))
     model.add(embedding)
     config.encoderType match {
       case "cnn" => 
         model.add(Convolution1D(config.encoderOutputSize, config.filterSize, activation = "relu"))
         model.add(GlobalMaxPooling1D())
-      case "gru" => model.add(GRU(config.encoderOutputSize))
+      case "gru" => if (!config.bidirectional) model.add(GRU(config.encoderOutputSize)) else {
+        val recurrent = Bidirectional(GRU(config.encoderOutputSize, returnSequences = true), mergeMode = "concat")
+        model.add(recurrent).add(Select(2, -1))
+      }
       case _ => throw new IllegalArgumentException(s"Unsupported encoder type for Teller: $config.encoderType")
     }
     model.add(Dense(config.numLabels, activation = "softmax"))
@@ -272,10 +276,11 @@ object Teller {
       opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either seq or par")
       opt[String]('e', "encoderType").action((x, conf) => conf.copy(encoderType = x)).text("type of encoder, either 'cnn' or 'gru'")
+      opt[Unit]('q', "bidirectional").action((_, conf) => conf.copy(bidirectional = true)).text("bidirectional when using gru, default is 'false'")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("output size of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
-      opt[Unit]('v', "verbose").action((x, conf) => conf.copy(verbose = true)).text("verbose mode")
+      opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
     }
     parser.parse(args, ConfigTeller()) match {
       case Some(config) =>

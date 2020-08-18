@@ -12,6 +12,7 @@ case class ConfigTeller(
     encoderType: String = "cnn",
     embeddingSize: Int = 100,
     encoderOutputSize: Int = 128,
+    bidirectional: Boolean = false, // use with GRU
     filterSize: Int = 5, // filter size when using CNN
     numLabels: Int = 3,
     dataPack: String = "xnli",
