@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.SparkSession
 import com.intel.analytics.bigdl.utils.Shape
-import org.apache.spark.ml.feature.Tokenizer
+import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.spark.ml.feature.CountVectorizer
 import org.apache.spark.sql.functions.udf
 import com.intel.analytics.bigdl.utils.Engine
@@ -74,13 +74,15 @@ import java.nio.file.StandardOpenOption
   * @param config
   */
 
-class Teller(sparkSession: SparkSession, config: ConfigTeller) {
+class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
+  final val delimiters = """[\s,.;:'"]+"""
 
   def train(training: DataFrame, test: DataFrame): Scores = {
     val labelIndexer = new StringIndexer().setInputCol("gold_label").setOutputCol("label")
-    val premiseTokenizer = new Tokenizer().setInputCol("sentence1_tokenized").setOutputCol("premise")
-    val hypothesisTokenizer = new Tokenizer().setInputCol("sentence2_tokenized").setOutputCol("hypothesis")
+    val suffix = if (config.dataPack == "xnli") "_tokenized" else ""
+    val premiseTokenizer = new RegexTokenizer().setInputCol("sentence1" + suffix).setOutputCol("premise").setPattern(delimiters)
+    val hypothesisTokenizer = new RegexTokenizer().setInputCol("sentence2" + suffix).setOutputCol("hypothesis").setPattern(delimiters)
     val sequenceAssembler = new SequenceAssembler().setInputCols(Array("premise", "hypothesis")).setOutputCol("tokens")
     val countVectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("countVector")
       .setVocabSize(config.numFeatures)
@@ -90,7 +92,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
     val prePipeline = new Pipeline().setStages(Array(labelIndexer, premiseTokenizer, hypothesisTokenizer, sequenceAssembler, countVectorizer))
     logger.info("Fitting pre-processing pipeline...")
     val prepocessor = prePipeline.fit(training)
-    prepocessor.write.overwrite().save(Paths.get(config.modelPath, config.language, config.modelType).toString)
+    prepocessor.write.overwrite().save(Paths.get(pack.modelPath(), config.modelType).toString)
     logger.info("Pre-processing pipeline saved.")
     // determine the vocab size and dictionary
     val vocabulary = prepocessor.stages.last.asInstanceOf[CountVectorizerModel].vocabulary
@@ -127,8 +129,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
       case "bow" => bowTransducer(vocabSize, config.maxSequenceLength)
     }
 
-    val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
-    val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.language, config.modelType).toString())
+    val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
+    val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
     val featureSize = if (config.modelType == "seq") Array(config.maxSequenceLength) else Array(2*config.maxSequenceLength)
     val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), featureSize)
       .setLabelCol("category")
@@ -141,8 +143,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller) {
       .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
   
     val model = classifier.fit(trainingDF)
-    dlModel.saveModule(Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoderType}.bigdl").toString(), 
-      Paths.get(config.modelPath, config.language, config.modelType, s"${config.encoderType}.bin").toString(), true)
+    dlModel.saveModule(Paths.get(pack.modelPath(), config.modelType, s"${config.encoderType}.bigdl").toString(), 
+      Paths.get(pack.modelPath(), config.modelType, s"${config.encoderType}.bin").toString(), true)
 
     val prediction = model.transform(testDF)
     prediction.show()
@@ -265,9 +267,8 @@ object Teller {
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
+      opt[String]('d', "dataPack").action((x, conf) => conf.copy(dataPack = x)).text("data pack, either 'xnli' or 'snli'")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language")
-      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
-      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
       opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either seq or par")
       opt[String]('e', "encoderType").action((x, conf) => conf.copy(encoderType = x)).text("type of encoder, either 'cnn' or 'gru'")
@@ -287,10 +288,20 @@ object Teller {
         val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
         val sparkContext = sparkSession.sparkContext
         Engine.init
-        val df = sparkSession.read.json(config.dataPath).select("gold_label", "sentence1_tokenized", "sentence2_tokenized")
-        df.groupBy("gold_label").count().show(false)
-        val Array(training, test) = df.randomSplit(Array(0.8, 0.2), seed = 12345)
-        val teller = new Teller(sparkSession, config)
+        val dataPack = new DataPack(config.dataPack, config.language)
+        val (trainingPath, devPath, testPath) = dataPack.dataPath()
+        val Array(training, test) = config.dataPack match {
+          case "xnli" => 
+            val df = sparkSession.read.json(trainingPath).select("gold_label", "sentence1_tokenized", "sentence2_tokenized")
+            df.randomSplit(Array(0.8, 0.2), seed = 12345)
+          case "snli" => 
+            val training = sparkSession.read.json(trainingPath).select("gold_label", "sentence1", "sentence2")
+            val dev = sparkSession.read.json(devPath).select("gold_label", "sentence1", "sentence2")
+            training.show()
+            import sparkSession.implicits._
+            Array(training.filter($"gold_label" !== "-"), dev.filter($"gold_label" !== "-"))
+        }
+        val teller = new Teller(sparkSession, config, dataPack)
         config.mode match {
           case "train" => 
             teller.train(training, test)
@@ -304,7 +315,8 @@ object Teller {
               for (d <- embeddingSizes)
                 for (o <- encoderOutputSizes) {
                   val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
-                  val teller = new Teller(sparkSession, conf)
+                  val pack = new DataPack(config.dataPack, config.language)
+                  val teller = new Teller(sparkSession, conf, pack)
                   val scores = teller.train(training, test)
                   val content = Serialization.writePretty(scores) + ",\n"
                   Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
@@ -316,13 +328,3 @@ object Teller {
     }
   }
 }
-
-case class Scores(
-  arch: String,
-  encoder: String,
-  maxSequenceLength: Int,
-  embeddingSize: Int,
-  encoderSize: Int,
-  trainingScores: Array[Float],
-  testScore: Double
-)
