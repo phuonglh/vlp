@@ -296,7 +296,7 @@ object NewsIndexer {
     urls ++= extractURLs("https://dautubds.baodautu.vn", "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (_: String) => true)
     val categories = Set("thoi-su-d1", "dau-tu-d2", "quoc-te-d54", "doanh-nghiep-d3", "doanh-nhan-d4", "ngan-hang-d5", "tai-chinh-chung-khoan-d6")
     for (category <- categories) {
-      urls ++= extractURLs("https://baodautu.vn/" + category, "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => true)
+      urls ++= extractURLs("https://baodautu.vn" + category, "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => true)
     }
     logger.info("baodautu.vn => " + urls.size)
     urls.toSet
@@ -311,6 +311,15 @@ object NewsIndexer {
     urls.toSet
   }
 
+  def ictnews: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = Seq("tin-nong-ict/", "cuoc-song-so/", "vien-thong/", "san-pham-so/", "bao-mat/", "game/", "khoi-nghiep/", "kham-pha/")
+    for (category <- categories)
+      urls ++= extractURLs("https://ictnews.vietnamnet.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (_: String) => true)
+    logger.info("ictnews.vietnamnet.vn => " + urls.size)
+    urls.toSet
+  }
+
   def run(date: String): Unit = {
     System.setProperty("http.agent", "Chrome")
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
@@ -319,26 +328,27 @@ object NewsIndexer {
     val existingURLs = MySQL.getURLs
     logger.info(s"#(existingURLs) = ${existingURLs.size}")
     val urls = mutable.Set[String]()
-    urls ++= vnAgency(date)
-    urls ++= vtv(date)
-    urls ++= youth(date)
-    urls ++= vnEconomy(date)
-    urls ++= labor(date)
-    urls ++= saigonTimes
-    urls ++= vnExpress
-    urls ++= adolescence
-    urls ++= sggp
-    urls ++= pioneer
-    urls ++= customs
-    urls ++= vietnamFinance
-    urls ++= fastStockNews
-    urls ++= light
-    urls ++= vcci
-    urls ++= vnExpressOthers
-    urls ++= vietnamnetAll
-    urls ++= vir
-    urls ++= finance
-    urls ++= transport
+    // urls ++= vnAgency(date)
+    // urls ++= vtv(date)
+    // urls ++= youth(date)
+    // urls ++= vnEconomy(date)
+    // urls ++= labor(date)
+    // urls ++= saigonTimes
+    // urls ++= vnExpress
+    // urls ++= adolescence
+    // urls ++= sggp
+    // urls ++= pioneer
+    // urls ++= customs
+    // urls ++= vietnamFinance
+    // urls ++= fastStockNews
+    // urls ++= light
+    // urls ++= vcci
+    // urls ++= vnExpressOthers
+    // urls ++= vietnamnetAll
+    // urls ++= vir
+    // urls ++= finance
+    // urls ++= transport
+    urls ++= ictnews
 
     logger.info(s"#(totalURLs) = ${urls.size}")
     val novelUrls = urls.diff(existingURLs)
@@ -354,10 +364,21 @@ object NewsIndexer {
       val xs = news.filter(x => accept(x.content))
       implicit val formats = Serialization.formats(NoTypeHints)
       val content = Serialization.writePretty(xs)
-      Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE)
+      Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
       // update the MySQL database `url`
       MySQL.insert(novelUrls)
       logger.info(s"#(insertedURLs) = ${novelUrls.size}")
+      // index News elements to an ES server
+      val texts = xs.map(page => new vlp.idx.News(page.url, page.content, page.date))
+      try {
+        import scala.collection.JavaConversions._
+        Indexer.indexManyNews(texts)
+      } catch {
+        case e: Exception => e.printStackTrace
+      } finally {
+        logger.info(s"(indexedNews) = ${texts.size}")
+        Indexer.close()
+      }
     }    
   }
 
