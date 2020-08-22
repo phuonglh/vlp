@@ -377,6 +377,7 @@ object NewsIndexer {
         case e: Exception => e.printStackTrace
       } finally {
         logger.info(s"(indexedNews) = ${texts.size}")
+        Thread.sleep(10000)
         Indexer.close()
       }
     }    
