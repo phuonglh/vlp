@@ -18,7 +18,7 @@ object CorpusReader {
     * @param dataPath
     * @return a list of sentences.
     */
-  def readCoNLL(dataPath: String): List[Sentence] = {
+  def readCoNLL(dataPath: String, twoColumns: Boolean = false): List[Sentence] = {
     val lines = (Source.fromFile(dataPath, "UTF-8").getLines() ++ List("")).toArray
     val sentences = new ListBuffer[Sentence]()
     val indices = lines.zipWithIndex.filter(p => p._1.trim.isEmpty).map(p => p._2)
@@ -28,9 +28,12 @@ object CorpusReader {
       v = indices(i)
       if (v > u) { // don't treat two consecutive empty lines
         val s = lines.slice(u, v)
-        val tokens = s.map(line => {
+        val tokens = if (!twoColumns) s.map(line => {
           val parts = line.trim.split("\\s+")
           Token(parts(0), Map(Label.PartOfSpeech -> parts(1), Label.Chunk -> parts(2), Label.NamedEntity -> parts(3)))
+        }) else s.map(line => {
+          val parts = line.trim.split("\\s+")
+          Token(parts(0), Map(Label.NamedEntity -> parts(1)))
         })
         sentences.append(Sentence(tokens.toList.to[ListBuffer]))
       }
@@ -69,13 +72,13 @@ object CorpusReader {
   }
 
   /**
-    * Reads sentences in raw text of VLSP 2018 dataset which use XML format and writes them to an external files.
+    * Reads sentences in raw text of VLSP 2018 dataset which use XML format and writes them to an external files
+    * of two-column format.
     *
     * @param dataPath
     * @param outputPath 
     */
-  def readVLSP2018(dataPath: String, outputPath: String): Unit = {
-    val delimiters = """[\s,)(".“”']+"""
+  def convertVLSP2018(dataPath: String, outputPath: String): Unit = {
 
     def xml2Column(element: scala.xml.Elem): List[String] = {
       val tokens = element.child.flatMap(node => {
@@ -111,7 +114,6 @@ object CorpusReader {
     Files.write(Paths.get(outputPath), texts, StandardCharsets.UTF_8)
   }
   
-
   def main(args: Array[String]): Unit = {
     val path = "dat/ner/vie/vie.test"
     val sentences = readCoNLL(path)
@@ -119,8 +121,8 @@ object CorpusReader {
     sentences.take(10).foreach(s => VLP.log(s.toString))
     sentences.takeRight(10).foreach(s => VLP.log(s.toString))
 
-    readVLSP2018("dat/ner/xml/dev/", "dat/ner/xml/dev.txt")
-    readVLSP2018("dat/ner/xml/test/", "dat/ner/xml/test.txt")
-    readVLSP2018("dat/ner/xml/train/", "dat/ner/xml/train.txt")
+    convertVLSP2018("dat/ner/xml/dev/", "dat/ner/two/dev.txt")
+    convertVLSP2018("dat/ner/xml/test/", "dat/ner/two/test.txt")
+    convertVLSP2018("dat/ner/xml/train/", "dat/ner/two/train.txt")
   }
 }

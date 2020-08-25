@@ -63,12 +63,12 @@ import org.apache.spark.ml.feature.VectorAssembler
   */
 class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
   val logger = LoggerFactory.getLogger(getClass.getName)
-  val prefix = Paths.get(config.modelPath, config.language, "gru", s"${config.recurrentSize}").toString()
+  val prefix = Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString, config.recurrentSize.toString).toString()
 
   import sparkSession.implicits._
 
   def createDataFrame(dataPath: String): DataFrame = {
-    val sentences = CorpusReader.readCoNLL(dataPath)
+    val sentences = CorpusReader.readCoNLL(dataPath, config.twoColumns)
     val seqPairs = sentences.map(sentence => {
       val tokens = sentence.tokens
       (tokens.map(_.word).mkString(" "), tokens.map(_.namedEntity).mkString(" "))
@@ -94,7 +94,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     if (config.verbose) {
       testAlpha.show()
     }
-    preprocessingPipelineModel.write.overwrite.save(Paths.get(config.modelPath, config.language, "gru").toString())
+    preprocessingPipelineModel.write.overwrite.save(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString()).toString())
 
     val wordDictionary = preprocessingPipelineModel.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
     val vocabSize = wordDictionary.size
@@ -125,8 +125,8 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     // train a DL model
     val featureSize = 3*config.maxSequenceLength
     val model = buildModel(vocabSize + 1, shapeSize + 1, labelSize, featureSize)
-    val trainSummary = TrainSummary(appName = "gru", logDir = "/tmp/ner/" + config.language)
-    val validationSummary = ValidationSummary(appName = "gru", logDir = "/tmp/ner/" + config.language)
+    val trainSummary = TrainSummary(appName = config.recurrentSize.toString, logDir = "/tmp/ner/" + config.language)
+    val validationSummary = ValidationSummary(appName = config.recurrentSize.toString, logDir = "/tmp/ner/" + config.language)
     val classifier = new DLEstimator(model, TimeDistributedCriterion(ClassNLLCriterion[Float]()), featureSize = Array(featureSize), labelSize = Array(config.maxSequenceLength))
       .setFeaturesCol("features")
       .setLabelCol("label")
@@ -273,6 +273,7 @@ object NeuralTagger {
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Unit]('v', "verbose").action((x, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Unit]('q', "bidirectional").action((x, conf) => conf.copy(bidirectional = true)).text("bidirectional mode")
+      opt[Unit]('j', "twoColumns").action((x, conf) => conf.copy(twoColumns = true)).text("two-column mode")
     }
     parser.parse(args, ConfigNER()) match {
       case Some(config) =>
@@ -292,15 +293,17 @@ object NeuralTagger {
         val (training, test) = (tagger.createDataFrame(config.dataPath), tagger.createDataFrame(config.validationPath))
         training.show()
         println(training.count())
+        test.show()
+        println(test.count())
         config.mode match {
           case "train" => 
             val module = tagger.train(training, test)
-            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
+            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString).toString())
             val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
           case "eval" => 
-            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
+            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString).toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
             val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             val df = tagger.createDataFrame(config.validationPath)
@@ -308,7 +311,7 @@ object NeuralTagger {
             val scores = Evaluator.run(prediction)
             println(scores)
           case "predict" => 
-            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru").toString())
+            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString()).toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
             val model = new DLModel(module, featureSize = Array(3*config.maxSequenceLength))
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
