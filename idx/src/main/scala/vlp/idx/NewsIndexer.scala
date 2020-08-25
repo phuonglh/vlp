@@ -320,6 +320,13 @@ object NewsIndexer {
     urls.toSet
   }
 
+  def cafef(date: String): Set[String] = {
+    val urls = mutable.Set[String]()
+    urls ++= extractURLs("https://m.cafef.vn", "", "/[\\p{Alnum}-]+\\.chn", (s: String) => s.indexOf(date) > 0)
+    logger.info("m.cafef.vn => " + urls.size)
+    urls.toSet
+  }
+  
   def run(date: String): Unit = {
     System.setProperty("http.agent", "Chrome")
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
@@ -349,7 +356,8 @@ object NewsIndexer {
     urls ++= finance
     urls ++= transport
     urls ++= ictnews
-
+    urls ++= cafef(date)
+    
     logger.info(s"#(totalURLs) = ${urls.size}")
     val novelUrls = urls.diff(existingURLs)
     logger.info(s"#(novelURLs) = ${novelUrls.size}")
