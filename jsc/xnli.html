@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="us">
+    <head>
+        <meta charset="utf-8">
+        <title>XNLI - Vietnamese Dataset</title>
+    </head>
+    <body>
+        <p>Browse an XNLI file to show its content.</p>
+        <input type=file>
+        <script>
+            let input = document.querySelector("input");
+            input.addEventListener("change", () => {
+                if (input.files.length > 0) {
+                    let file = input.files[0];
+                    console.log("You chose", file.name);
+                    if (file.type) console.log("It has type", file.type);
+                    let reader = new FileReader();
+                    reader.addEventListener("load", () => {
+                        let content = reader.result;
+                        let lines = content.split(/\n/).slice(0, 120);
+                        for (let line of lines) {
+                            let row = table.insertRow();
+                            let object = JSON.parse(line.trim());
+                            let premise = row.insertCell();
+                            let premiseText = document.createTextNode(object["sentence1"]);
+                            premise.appendChild(premiseText);
+                            let label = row.insertCell();
+                            let labelText = document.createTextNode(object["gold_label"]);
+                            label.appendChild(labelText);
+                            let hypothesis = row.insertCell();
+                            let hypothesisText = document.createTextNode(object["sentence2"]);
+                            hypothesis.appendChild(hypothesisText);
+                        }
+                    })
+                    reader.readAsText(file, "utf-8");
+                    let table = document.getElementById("data");
+                    let tHead = table.createTHead();
+                    // header
+                    let row = tHead.insertRow();
+                    let premiseTH = document.createElement("th");
+                    let premiseText = document.createTextNode("Premise");
+                    premiseTH.appendChild(premiseText);
+                    row.appendChild(premiseTH);
+                    let goldLabelTH = document.createElement("th");
+                    let goldLabelText = document.createTextNode("Label");
+                    goldLabelTH.appendChild(goldLabelText);
+                    row.appendChild(goldLabelTH);
+                    let hypothesisTH = document.createElement("th");
+                    let hypothesisText = document.createTextNode("Hypothesis");
+                    hypothesisTH.appendChild(hypothesisText);
+                    row.appendChild(hypothesisTH);
+                }
+            });
+        </script>
+        <table border="1" cellpadding="3" id="data">
+            <tbody></tbody>
+        </table>
+    </body>
+</html>
