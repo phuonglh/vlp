@@ -372,7 +372,7 @@ object NewsIndexer {
       val xs = news.filter(x => accept(x.content))
       implicit val formats = Serialization.formats(NoTypeHints)
       val content = Serialization.writePretty(xs)
-      Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+      Files.write(Paths.get("/home/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
       // update the MySQL database `url`
       MySQL.insert(novelUrls)
       logger.info(s"#(insertedURLs) = ${novelUrls.size}")
