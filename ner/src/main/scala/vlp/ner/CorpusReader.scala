@@ -114,15 +114,78 @@ object CorpusReader {
     Files.write(Paths.get(outputPath), texts, StandardCharsets.UTF_8)
   }
   
-  def main(args: Array[String]): Unit = {
-    val path = "dat/ner/vie/vie.test"
-    val sentences = readCoNLL(path)
-    VLP.log("Number of sentences = " + sentences.length)
-    sentences.take(10).foreach(s => VLP.log(s.toString))
-    sentences.takeRight(10).foreach(s => VLP.log(s.toString))
+  /**
+    * Reads sentences in ViSTM format and writes them to an external files
+    * of two-column format.
+    *
+    * @param dataPath
+    * @param outputPath 
+    */
+  def convertSTM(dataPath: String, outputPath: String): Unit = {
+    val labelMap = Map("Organization" -> "ORG", "Location" -> "LOC", "Person" -> "PER", "DocType" -> "DOC", "DocCode" -> "DOC", "Date" -> "DATE")
+    val lines = (Source.fromFile(dataPath, "UTF-8").getLines() ++ List("")).toArray
+      .filter(line => !line.startsWith("#"))
+    val sentences = new ListBuffer[Sentence]()
+    val indices = lines.zipWithIndex.filter(p => p._1.trim.isEmpty).map(p => p._2)
+    var u = 0
+    var v = 0
+    for (i <- (0 until indices.length)) {
+      v = indices(i)
+      if (v > u) { // don't treat two consecutive empty lines
+        val s = lines.slice(u, v)
+        val tokens = s.map(line => {
+          val parts = line.trim.split("\\s+")
+          Token(parts(2), Map(Label.NamedEntity -> parts(3)))
+        })
+        val filteredTokens = tokens.filterNot(token => token.word.trim() == "|")
+        sentences.append(Sentence(filteredTokens.toList.to[ListBuffer]))
+      }
+      u = v + 1
+    }
+    // convert label[labelId] to B-I format
+    val pattern = raw"(\w+)\[(\d+)\]".r
+    val newSentences = sentences.toList.map(sentence =>  {
+      val entities = sentence.tokens.map(_.namedEntity).toArray
+      var count = 0
+      var start = true
+      val newEntities = entities.map(entity => {
+        entity match {
+          case pattern(label, id) => {
+            if (id.toInt != count) {
+              count = id.toInt
+              start = true
+            } else start = false
+            (if (start) "B-" else "I-") + labelMap(label)
+          }
+          case _ => "O"
+        }
+      })
+      val newTokens = sentence.tokens.zip(newEntities).map(p => Token(p._1.word, Map(Label.NamedEntity -> p._2)))
+      Sentence(newTokens)
+    })
+    // remove all 1-token sentences and write the result to a file of two-column format
+    val texts = newSentences.filter(sentence => sentence.tokens.size > 1).map(sentence => {
+      sentence.tokens.map(token => token.word + "\t" + token.namedEntity).mkString("\n") + "\n"
+    })
+    import scala.collection.JavaConversions._
+    Files.write(Paths.get(outputPath), texts, StandardCharsets.UTF_8)
+  }
 
-    convertVLSP2018("dat/ner/xml/dev/", "dat/ner/two/dev.txt")
-    convertVLSP2018("dat/ner/xml/test/", "dat/ner/two/test.txt")
-    convertVLSP2018("dat/ner/xml/train/", "dat/ner/two/train.txt")
+  def main(args: Array[String]): Unit = {
+    // val path = "dat/ner/vie/vie.test"
+    // val sentences = readCoNLL(path)
+    // VLP.log("Number of sentences = " + sentences.length)
+    // sentences.take(10).foreach(s => VLP.log(s.toString))
+    // sentences.takeRight(10).foreach(s => VLP.log(s.toString))
+
+    // convertVLSP2018("dat/ner/xml/dev/", "dat/ner/two/dev.txt")
+    // convertVLSP2018("dat/ner/xml/test/", "dat/ner/two/test.txt")
+    // convertVLSP2018("dat/ner/xml/train/", "dat/ner/two/train.txt")
+
+    val pathSTM = "dat/ner/stm/2.txt"
+    // val sentences = readSTM(pathSTM)
+    // println(sentences.size)
+    // sentences.takeRight(2).foreach(println)
+    val ss = convertSTM(pathSTM, "dat/ner/stm/2.tsv")
   }
 }

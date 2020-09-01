@@ -26,5 +26,5 @@ case class ConfigNER(
   outputSize: Int = 0,
   epochs: Int = 80,
   bidirectional: Boolean = false,
-  twoColumns: Boolean = true
+  twoColumns: Boolean = false
 )

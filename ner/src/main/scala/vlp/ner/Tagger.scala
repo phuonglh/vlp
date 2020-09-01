@@ -196,7 +196,7 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     * @param outputPath an output path for conlleval script
     */
   def combine(inputPath: String, outputPath: String): List[Sentence] = {
-    val testSet = CorpusReader.readCoNLL(inputPath)
+    val testSet = CorpusReader.readCoNLL(inputPath, config.twoColumns)
     VLP.log("#(sentences) = " + testSet.length)
     combine(testSet, outputPath)
   }
@@ -306,13 +306,14 @@ object Tagger {
       opt[Int]('u', "dimension").action((x, conf) => conf.copy(numFeatures = x)).text("number of features or domain dimension")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/ner/'")
       opt[String]('i', "input").action((x, conf) => conf.copy(input = x)).text("input path")
+      opt[Unit]('j', "twoColumns").action((x, conf) => conf.copy(twoColumns = true)).text("two-column mode")
     }
 
     parser.parse(args, ConfigNER()) match {
       case Some(config) =>
         val sparkSession = SparkSession.builder().appName(getClass.getName).master(config.master).getOrCreate()
         val tagger = new Tagger(sparkSession, config)
-        val sentences = CorpusReader.readCoNLL(config.dataPath)
+        val sentences = CorpusReader.readCoNLL(config.dataPath, config.twoColumns)
         config.mode match {
           case "train" => tagger.train(sentences)
           case "test" => tagger.test(sentences)
