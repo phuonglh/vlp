@@ -261,11 +261,12 @@ object SHINRA {
         val idx = element("index").asInstanceOf[Map[String,Any]] 
         idx("_id").toString 
       } else element("text").toString
-    }
-    val pairs = result.rdd.zipWithIndex
-    val ids = pairs.filter(pair => pair._2 % 2 == 0).map(_._1.toString())
-    val texts = pairs.filter(pair => pair._2 % 2 == 1).map(_._1)
-    val rows = ids.zip(texts).map(p => RowFactory.create(p._1, p._2))
+    }.collect()
+    println("#(pages) = " + result.size)
+
+    val pairs = (0 until result.size/2).map(j => (result(2*j), result(2*j+1)))
+    val rows = sparkSession.sparkContext.parallelize(pairs).map(p => RowFactory.create(p._1, p._2))
+
     val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rows, schema)
     val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
@@ -276,7 +277,8 @@ object SHINRA {
         new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
     } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
       new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
-
+    
+    println("Tokenizing the pages...")
     val temp = remover.transform(tokenizer.transform(input)).select("pageid", "words")
     import org.apache.spark.sql.functions.concat_ws
     val output = temp.withColumn("body", concat_ws(" ", $"words")).select("pageid", "body")
