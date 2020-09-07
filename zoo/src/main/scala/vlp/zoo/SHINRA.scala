@@ -251,7 +251,7 @@ object SHINRA {
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
   }
 
-  def targetData2Json(sparkSession: SparkSession, config: ConfigSHINRA, inputPath: String): DataFrame = {
+  def targetData2Json(sparkSession: SparkSession, config: ConfigSHINRA, inputPath: String): Unit = {
     val outputPath = Paths.get(config.dataPath, config.language).toString()
     import sparkSession.implicits._
     val result = sparkSession.read.text(inputPath).map { row => 
@@ -281,7 +281,6 @@ object SHINRA {
     import org.apache.spark.sql.functions.concat_ws
     val output = temp.withColumn("body", concat_ws(" ", $"words")).select("pageid", "body")
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
-    output
   }
 
   def statistics(sparkSession: SparkSession, config: ConfigSHINRA): Unit = {
@@ -380,8 +379,10 @@ object SHINRA {
           val textSet = TextSet.rdd(textRDD)
           app.predict(textSet, classifier, docIds, "dat/shi/" + config.language + ".json." + config.encoder)
         case "stat" => statistics(sparkSession, config)
-        case "target" => 
-          val input = targetData2Json(sparkSession, config, config.inputPath)
+        case "targetPre" => 
+          targetData2Json(sparkSession, config, config.inputPath)
+        case "targetRun" => 
+          val input = sparkSession.read.json(config.dataPath + config.language)
           import sparkSession.implicits._
           val docIds = input.select("pageid").map(row => row.getString(0)).collect()
           val textRDD = input.select("body").rdd.map(row => TextFeature(row.getString(0), -1))
