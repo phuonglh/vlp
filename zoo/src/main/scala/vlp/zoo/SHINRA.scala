@@ -252,9 +252,8 @@ object SHINRA {
   }
 
   def targetData2Json(sparkSession: SparkSession, config: ConfigSHINRA, inputPath: String): Unit = {
-    val outputPath = Paths.get(config.dataPath, config.language).toString()
     import sparkSession.implicits._
-    val result = sparkSession.read.text(inputPath).map { row => 
+    val result = sparkSession.read.text(inputPath).sample(config.percentage).map { row => 
       val s = row.getString(0)
       val element = JSON.parseFull(s).get.asInstanceOf[Map[String,Any]]
       if (s.indexOf("\"_id\"") > 0) {
@@ -262,8 +261,6 @@ object SHINRA {
         idx("_id").toString 
       } else element("text").toString
     }
-    println("#(pages) = " + result.count())
-
     val ids = result.rdd.filter(s => vlp.tok.WordShape.shape(s) == "number")
     val texts = result.rdd.filter(s => vlp.tok.WordShape.shape(s) != "number")
     val rows = ids.zip(texts).map(p => RowFactory.create(p._1, p._2))
@@ -284,6 +281,7 @@ object SHINRA {
     val temp = remover.transform(tokenizer.transform(input)).select("pageid", "words")
     import org.apache.spark.sql.functions.concat_ws
     val output = temp.withColumn("body", concat_ws(" ", $"words")).select("pageid", "body")
+    val outputPath = Paths.get(config.dataPath, config.language).toString()
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
   }
 
