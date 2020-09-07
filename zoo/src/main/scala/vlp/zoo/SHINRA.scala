@@ -261,14 +261,16 @@ object SHINRA {
         val idx = element("index").asInstanceOf[Map[String,Any]] 
         idx("_id").toString 
       } else element("text").toString
-    }.collect()
-    println("#(pages) = " + result.size)
+    }
+    println("#(pages) = " + result.count())
 
-    val pairs = (0 until result.size/2).map(j => (result(2*j), result(2*j+1)))
-    val rows = sparkSession.sparkContext.parallelize(pairs).map(p => RowFactory.create(p._1, p._2))
+    val ids = result.rdd.filter(s => vlp.tok.WordShape.shape(s) == "number")
+    val texts = result.rdd.filter(s => vlp.tok.WordShape.shape(s) != "number")
+    val rows = ids.zip(texts).map(p => RowFactory.create(p._1, p._2))
 
     val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
     val input = sparkSession.createDataFrame(rows, schema)
+    input.show()
     val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
       "hungarian", "italian", "norwegian", "portuguese", "russian", "spanish", "swedish", "turkish")
 
