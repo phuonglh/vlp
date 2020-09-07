@@ -23,6 +23,7 @@ case class ConfigSHINRA(
   minFrequency: Int = 2,
   verbose: Boolean = false,
   inputCol: String = "body",
-  classCol: String = "clazz"
+  classCol: String = "clazz",
+  inputPath: String = "frwiki-20190121-cirrussearch-content.json"
 )
 

@@ -1,6 +1,7 @@
 package vlp.zoo
 
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.SparkContext
 import org.apache.log4j.{Level, Logger}
 import org.slf4j.LoggerFactory
@@ -29,15 +30,17 @@ import vlp.tok.VietnameseTokenizer
 
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.Accuracy
 
+import scala.util.parsing.json._
 import org.json4s._
 import org.json4s.jackson.Serialization._
 import org.json4s.jackson.Serialization
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import scala.io.Source
 import java.nio.charset.StandardCharsets
 import com.intel.analytics.bigdl.dataset.DataSet
@@ -248,6 +251,39 @@ object SHINRA {
     output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
   }
 
+  def targetData2Json(sparkSession: SparkSession, config: ConfigSHINRA, inputPath: String): DataFrame = {
+    val outputPath = Paths.get(config.dataPath, config.language).toString()
+    import sparkSession.implicits._
+    val result = sparkSession.read.text(inputPath).map { row => 
+      val s = row.getString(0)
+      val element = JSON.parseFull(s).get.asInstanceOf[Map[String,Any]]
+      if (s.indexOf("\"_id\"") > 0) {
+        val idx = element("index").asInstanceOf[Map[String,Any]] 
+        idx("_id").toString 
+      } else element("text").toString
+    }
+    val pairs = result.rdd.zipWithIndex
+    val ids = pairs.filter(pair => pair._2 % 2 == 0).map(_._1.toString())
+    val texts = pairs.filter(pair => pair._2 % 2 == 1).map(_._1)
+    val rows = ids.zip(texts).map(p => RowFactory.create(p._1, p._2))
+    val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
+    val input = sparkSession.createDataFrame(rows, schema)
+    val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
+      "hungarian", "italian", "norwegian", "portuguese", "russian", "spanish", "swedish", "turkish")
+
+    val (tokenizer, remover) = if (config.language == "vi") {
+      (new VietnameseTokenizer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
+        new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
+    } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
+      new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
+
+    val temp = remover.transform(tokenizer.transform(input)).select("pageid", "words")
+    import org.apache.spark.sql.functions.concat_ws
+    val output = temp.withColumn("body", concat_ws(" ", $"words")).select("pageid", "body")
+    output.repartition(config.partitions).write.mode(SaveMode.Overwrite).json(outputPath)
+    output
+  }
+
   def statistics(sparkSession: SparkSession, config: ConfigSHINRA): Unit = {
     val languagePack = new LanguagePack(config)
     val textSet = sparkSession.read.json(languagePack.dataPath)
@@ -281,6 +317,7 @@ object SHINRA {
       opt[Double]('r', "percentage").action((x, conf) => conf.copy(percentage = x)).text("ratio of the training set to use, default is 1.0")
       opt[String]('x', "inputCol").action((x, conf) => conf.copy(inputCol = x)).text("input column")
       opt[String]('y', "classCol").action((x, conf) => conf.copy(classCol = x)).text("class column")
+      opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("target input data")
     }
     parser.parse(args, ConfigSHINRA()) match {
       case Some(config) =>
@@ -343,6 +380,15 @@ object SHINRA {
           val textSet = TextSet.rdd(textRDD)
           app.predict(textSet, classifier, docIds, "dat/shi/" + config.language + ".json." + config.encoder)
         case "stat" => statistics(sparkSession, config)
+        case "target" => 
+          val input = targetData2Json(sparkSession, config, config.inputPath)
+          import sparkSession.implicits._
+          val docIds = input.select("pageid").map(row => row.getString(0)).collect()
+          val textRDD = input.select("body").rdd.map(row => TextFeature(row.getString(0), -1))
+          val classifier = TextClassifier.loadModel[Float](languagePack.modelPath)
+          classifier.setEvaluateStatus()
+          val textSet = TextSet.rdd(textRDD)
+          app.predict(textSet, classifier, docIds, "dat/shi/" + config.language + ".json." + config.encoder)
       }
       sparkSession.stop()
       case None =>

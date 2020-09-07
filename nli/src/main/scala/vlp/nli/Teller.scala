@@ -64,6 +64,9 @@ import org.json4s._
 import org.json4s.jackson.Serialization
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
+import org.apache.spark.ml.feature.Tokenizer
+import java.nio.charset.StandardCharsets
+import vlp.tok.WordShape
 
 
 /**
@@ -315,17 +318,40 @@ object Teller {
           case "experiments" => 
             val maxSequenceLengths = Array(40, 50)
             val embeddingSizes = Array(25, 50, 80, 100)
-            val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300)
             for (n <- maxSequenceLengths)
-              for (d <- embeddingSizes)
-                for (o <- encoderOutputSizes) {
-                  val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
-                  val pack = new DataPack(config.dataPack, config.language)
-                  val teller = new Teller(sparkSession, conf, pack)
-                  val scores = teller.train(training, test)
-                  val content = Serialization.writePretty(scores) + ",\n"
-                  Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+              for (d <- embeddingSizes) {
+                if (config.modelType != "bow") {
+                  val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300)
+                  for (o <- encoderOutputSizes) {
+                    val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
+                    val pack = new DataPack(config.dataPack, config.language)
+                    val teller = new Teller(sparkSession, conf, pack)
+                    val scores = teller.train(training, test)
+                    val content = Serialization.writePretty(scores) + ",\n"
+                    Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                  }
+                } else {
+                    val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1)
+                    val pack = new DataPack(config.dataPack, config.language)
+                    val teller = new Teller(sparkSession, conf, pack)
+                    val scores = teller.train(training, test)
+                    val content = Serialization.writePretty(scores) + ",\n"
+                    Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                 }
+              }
+          case "dict" => 
+              val df = sparkSession.read.json("dat/nli/XNLI-1.0/vi.tok.json").select("both")
+              val tokenizer = new Tokenizer().setInputCol("both").setOutputCol("tokens")
+              val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features")
+              val pipeline = new Pipeline().setStages(Array(tokenizer, vectorizer))
+              val model = pipeline.fit(df)
+              val vocabulary = model.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.toList
+              val words = vocabulary.filterNot { word => 
+                val shape = WordShape.shape(word)
+                (word.size == 1) || (shape == "number") || (shape == "punctuation") || (shape == "percentage")
+              }
+              import scala.collection.JavaConversions._
+              Files.write(Paths.get("dat/nli/XNLI-1.0/vi.vocab.txt"), words, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
           case _ => System.err.println("Unsupported mode!")
         }
         sparkSession.stop()
