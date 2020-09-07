@@ -253,13 +253,13 @@ object SHINRA {
 
   def targetData2Json(sparkSession: SparkSession, config: ConfigSHINRA, inputPath: String): Unit = {
     import sparkSession.implicits._
-    val result = sparkSession.read.text(inputPath).sample(config.percentage).map { row => 
+    val result = sparkSession.read.text(inputPath).map { row => 
       val s = row.getString(0)
       val element = JSON.parseFull(s).get.asInstanceOf[Map[String,Any]]
       if (s.indexOf("\"_id\"") > 0) {
         val idx = element("index").asInstanceOf[Map[String,Any]] 
         idx("_id").toString 
-      } else element("text").toString
+      } else element("text").toString.take(1000)
     }
     val ids = result.rdd.filter(s => vlp.tok.WordShape.shape(s) == "number")
     val texts = result.rdd.filter(s => vlp.tok.WordShape.shape(s) != "number")
