@@ -334,18 +334,22 @@ object Teller {
                       batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized)
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
-                    val scores = teller.train(training, test)
-                    val content = Serialization.writePretty(scores) + ",\n"
-                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    for (times <- 0 until 3) {
+                      val scores = teller.train(training, test)
+                      val content = Serialization.writePretty(scores) + ",\n"
+                      Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    }
                   }
                 } else {
                     val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
                       batchSize = config.batchSize, tokenized = config.tokenized)
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
-                    val scores = teller.train(training, test)
-                    val content = Serialization.writePretty(scores) + ",\n"
-                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    for (times <- 0 until 3) {
+                      val scores = teller.train(training, test)
+                      val content = Serialization.writePretty(scores) + ",\n"
+                      Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    }
                 }
               }
           case "dict" => 

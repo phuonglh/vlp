@@ -54,7 +54,7 @@ object XNLI {
         val jsonlPath = "dat/nli/XNLI-1.0/vi.jsonl"
         val jsonPath = "dat/nli/XNLI-1.0/vi.json"
         // convert(jsonlPath, jsonPath)
-        tokenize(jsonlPath, "dat/nli/XNLI-1.0/vi.tok.json")
+        tokenize(jsonlPath, "dat/nli/XNLI-1.0/vi.tok.jsonl")
         println("Done.")
     }
 }
