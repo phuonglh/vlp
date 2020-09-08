@@ -6,6 +6,8 @@ final case class Scores(
   maxSequenceLength: Int,
   embeddingSize: Int,
   encoderSize: Int,
+  bidirectional: Boolean,
+  tokenized: Boolean,
   trainingScores: Array[Float],
   testScore: Double
 )

@@ -19,5 +19,6 @@ case class ConfigTeller(
     batchSize: Int = 64,
     epochs: Int = 50,
     learningRate: Double = 0.001,
-    verbose: Boolean = false
+    verbose: Boolean = false,
+    tokenized: Boolean = false
 )

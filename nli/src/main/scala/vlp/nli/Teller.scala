@@ -169,7 +169,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     }
     val xs = validationSummary.readScalar("Top1Accuracy").map(_._2)
     Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
-      encoderSize = config.encoderOutputSize, trainingScores = xs.takeRight(20), testScore = scores._2)
+      encoderSize = config.encoderOutputSize, bidirectional = config.bidirectional, tokenized = config.tokenized, 
+      trainingScores = xs.takeRight(20), testScore = scores._2)
   }
 
   /**
@@ -284,6 +285,7 @@ object Teller {
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
+      opt[Unit]('a', "tokenized").action((_, conf) => conf.copy(tokenized = true)).text("use the Vietnamese tokenized sentences, default is 'false'")
     }
     parser.parse(args, ConfigTeller()) match {
       case Some(config) =>
@@ -297,7 +299,7 @@ object Teller {
         val sparkContext = sparkSession.sparkContext
         Engine.init
         val dataPack = new DataPack(config.dataPack, config.language)
-        val (trainingPath, devPath, testPath) = dataPack.dataPath()
+        val (trainingPath, devPath, testPath) = dataPack.dataPath(config.tokenized)
         val Array(training, test) = config.dataPack match {
           case "xnli" => 
             val df = sparkSession.read.json(trainingPath).select("gold_label", "sentence1_tokenized", "sentence2_tokenized")
@@ -316,7 +318,7 @@ object Teller {
           case "eval" => 
           case "predict" => 
           case "experiments" => 
-            val maxSequenceLengths = Array(40, 50)
+            val maxSequenceLengths = Array(40)
             val embeddingSizes = Array(25, 50, 80, 100)
             for (n <- maxSequenceLengths)
               for (d <- embeddingSizes) {
@@ -328,7 +330,7 @@ object Teller {
                     val teller = new Teller(sparkSession, conf, pack)
                     val scores = teller.train(training, test)
                     val content = Serialization.writePretty(scores) + ",\n"
-                    Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                   }
                 } else {
                     val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1)
@@ -336,7 +338,7 @@ object Teller {
                     val teller = new Teller(sparkSession, conf, pack)
                     val scores = teller.train(training, test)
                     val content = Serialization.writePretty(scores) + ",\n"
-                    Files.write(Paths.get("dat/nli/scores.nli.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                 }
               }
           case "dict" => 
