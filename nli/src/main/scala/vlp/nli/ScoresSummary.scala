@@ -10,6 +10,7 @@ import java.text.DecimalFormat
 
 object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
+  val encoderSize = 300
 
   def bow(elements: Seq[Scores]): Unit = {
       println("Number of elements = " + elements.size)
@@ -53,23 +54,19 @@ object ScoresSummary {
     val result = ListBuffer[Scores]()
     for (js <- jsArray.children)
       result += js.extract[Scores]
-    println(result.size)
 
     val n = 40
-    val arch = "bow"
+    val arch = "par"
     if (arch == "bow") {
       val elements = result.filter(_.arch == arch).filter(_.maxSequenceLength == n)
       bow(elements)
     } else {
-      val encoderSize = 25
       val types = List("cnn", "gru")
       for (r <- types) {
         println(r)
         val elements = result.filter(_.arch == arch).filter(_.encoder == r).filter(_.maxSequenceLength == n).filter(_.encoderSize == encoderSize)
-        println("Number of elements = " + elements.size)
         val averageAccuracy = elements.groupBy(_.embeddingSize).map { pair =>
           val k = pair._2.size
-          println(k)
           (pair._1, pair._2.map(_.trainingScores.last).sum/k, pair._2.map(_.testScore).sum/k)
         }.toList.sortBy(_._1)
         averageAccuracy.foreach(println)

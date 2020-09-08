@@ -169,7 +169,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     }
     val xs = validationSummary.readScalar("Top1Accuracy").map(_._2)
     Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
-      encoderSize = config.encoderOutputSize, trainingScores = xs, testScore = scores._2)
+      encoderSize = config.encoderOutputSize, trainingScores = xs.takeRight(20), testScore = scores._2)
   }
 
   /**
