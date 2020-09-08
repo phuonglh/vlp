@@ -291,6 +291,7 @@ object Teller {
     }
     parser.parse(args, ConfigTeller()) match {
       case Some(config) =>
+        println(Serialization.writePretty(config))
         val sparkConfig = Engine.createSparkConf()
           .setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
@@ -329,7 +330,8 @@ object Teller {
                 if (config.modelType != "bow") {
                   val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300)
                   for (o <- encoderOutputSizes) {
-                    val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o)
+                    val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
+                      batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized)
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
                     val scores = teller.train(training, test)
@@ -337,7 +339,8 @@ object Teller {
                     Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                   }
                 } else {
-                    val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1)
+                    val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
+                      batchSize = config.batchSize, tokenized = config.tokenized)
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
                     val scores = teller.train(training, test)
