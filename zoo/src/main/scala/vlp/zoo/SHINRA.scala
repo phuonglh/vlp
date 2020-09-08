@@ -252,20 +252,20 @@ object SHINRA {
   }
 
   def targetData2Json(sparkSession: SparkSession, config: ConfigSHINRA, inputPath: String): Unit = {
-    import sparkSession.implicits._
-    val result = sparkSession.read.text(inputPath).map { row => 
-      val s = row.getString(0)
-      val element = JSON.parseFull(s).get.asInstanceOf[Map[String,Any]]
-      if (s.indexOf("\"_id\"") > 0) {
-        val idx = element("index").asInstanceOf[Map[String,Any]] 
-        idx("_id").toString 
-      } else element("text").toString.take(1000)
+    val lines = Source.fromFile(inputPath, "UTF-8").getLines().toList
+    println("#(lines) = " + lines.size)
+    val pairs = lines.sliding(2, 2).toList
+    val result = pairs.par.map { pair => 
+      val first = JSON.parseFull(pair(0)).get.asInstanceOf[Map[String,Any]]
+      val idx = first("index").asInstanceOf[Map[String,Any]] 
+      val pageid = idx("_id").toString 
+      val second = JSON.parseFull(pair(1)).get.asInstanceOf[Map[String,Any]]
+      val text = second("text").toString
+      (pageid, text.take(1000))
     }
-    val ids = result.rdd.filter(s => vlp.tok.WordShape.shape(s) == "number")
-    val texts = result.rdd.filter(s => vlp.tok.WordShape.shape(s) != "number")
-    val rows = ids.zip(texts).map(p => RowFactory.create(p._1, p._2))
-
+    val rows = sparkSession.sparkContext.parallelize(result.toList).map(p => RowFactory.create(p._1, p._2))
     val schema = StructType(Array(StructField("pageid", StringType, false), StructField("text", StringType, false)))
+    import sparkSession.implicits._
     val input = sparkSession.createDataFrame(rows, schema)
     input.show()
     val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
