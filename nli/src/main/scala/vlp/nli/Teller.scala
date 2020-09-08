@@ -271,6 +271,8 @@ object Teller {
       head("vlp.nli.Teller", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
+      opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
+      opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
       opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
@@ -291,6 +293,8 @@ object Teller {
       case Some(config) =>
         val sparkConfig = Engine.createSparkConf()
           .setMaster(config.master)
+          .set("spark.executor.cores", config.executorCores.toString)
+          .set("spark.cores.max", config.totalCores.toString)
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.executor.extraJavaOptions", "-Dbigdl.engineType=mkldnn")
           .set("spark.driver.extraJavaOptions", "-Dbigdl.engineType=mkldnn")

@@ -2,6 +2,8 @@ package vlp.nli
 
 case class ConfigTeller(
     master: String = "local[*]",
+    totalCores: Int = 8,
+    executorCores: Int = 8,
     executorMemory: String = "8g",
     language: String = "vi",
     mode: String = "eval",
