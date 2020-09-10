@@ -209,22 +209,24 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     * @return a list of sentences
     */
   def combine(sentences: List[Sentence], forwardDecoder: Decoder, backwardDecoder: Decoder): List[Sentence] = {
-    // forward tagging
-    val us = sentences.map(x => Sentence(x.tokens.clone()))
-    val ys = tag(forwardDecoder, us)
-    // backward tagging
-    val vs = sentences.map(x => Sentence(x.tokens.clone().reverse))
-    val zs = tag(backwardDecoder, vs)
-    // combine the result of ys and zs
     val result = ListBuffer[Sentence]()
-    for (i <- ys.indices) {
-      val y = ys(i)
-      val z = Sentence(zs(i).tokens.reverse)
-      val s = ListBuffer[Token]()
-      for (j <- 0 until y.length)
-        if (z.tokens(j).namedEntity.endsWith("LOC") && !y.tokens(j).namedEntity.endsWith("ORG"))
-          s.append(z.tokens(j)) else s.append(y.tokens(j))
-      result.append(Sentence(s))
+    VLP.timing {
+      // forward tagging
+      val us = sentences.map(x => Sentence(x.tokens.clone()))
+      val ys = tag(forwardDecoder, us)
+      // backward tagging
+      val vs = sentences.map(x => Sentence(x.tokens.clone().reverse))
+      val zs = tag(backwardDecoder, vs)
+      // combine the result of ys and zs
+      for (i <- ys.indices) {
+        val y = ys(i)
+        val z = Sentence(zs(i).tokens.reverse)
+        val s = ListBuffer[Token]()
+        for (j <- 0 until y.length)
+          if (z.tokens(j).namedEntity.endsWith("LOC") && !y.tokens(j).namedEntity.endsWith("ORG"))
+            s.append(z.tokens(j)) else s.append(y.tokens(j))
+        result.append(Sentence(s))
+      }
     }
     result.toList
   }
@@ -320,11 +322,13 @@ object Tagger {
           case "eval" => tagger.combine(config.input, config.input + ".out")
           case "tag" => 
             val xs = Source.fromFile(config.input, "UTF-8").getLines().toList.map(_.trim()).filter(_.nonEmpty)
+            import scala.collection.JavaConversions._
+            println("Number of sentences = " + xs.size)
+            println("Number of syllables = " + xs.mkString(" ").split("\\s+").size)
             val ss = tagger.inference(xs)
             val lines = ss.map(s => {
               s.tokens.map(token => token.word + "/" + token.partOfSpeech + "/" + token.namedEntity).mkString(" ")
             })
-            import scala.collection.JavaConversions._
             Files.write(Paths.get(config.input + ".out"), lines.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
             logger.info("Done.")
         }

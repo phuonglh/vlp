@@ -2,7 +2,7 @@
 // 
 val sparkVersion = "2.4.5"
 
-javacOptions ++= Seq("-encoding", "UTF-8")
+javacOptions ++= Seq("-encoding", "UTF-8", "-XDignore.symbol.file", "true")
 
 scalacOptions ++= Seq(
     "-Xfatal-warnings",
@@ -142,6 +142,7 @@ lazy val vdg = (project in file("vdg"))
 
 // Natural language inference module
 lazy val nli = (project in file("nli"))
+  .dependsOn(tok)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.nli.Teller"),
@@ -150,7 +151,8 @@ lazy val nli = (project in file("nli"))
     libraryDependencies ++= Seq(
       "com.intel.analytics.bigdl" % "bigdl-SPARK_2.3" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
+      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
+      "org.scalaj" %% "scalaj-http" % "2.4.2"
     )
   )
 

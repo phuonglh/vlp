@@ -182,10 +182,10 @@ object CorpusReader {
     // convertVLSP2018("dat/ner/xml/test/", "dat/ner/two/test.txt")
     // convertVLSP2018("dat/ner/xml/train/", "dat/ner/two/train.txt")
 
-    val pathSTM = "dat/ner/stm/2.txt"
+    val pathSTM = "dat/ner/stm/1-lanvy.tsv"
     // val sentences = readSTM(pathSTM)
     // println(sentences.size)
     // sentences.takeRight(2).foreach(println)
-    val ss = convertSTM(pathSTM, "dat/ner/stm/2.tsv")
+    val ss = convertSTM(pathSTM, "dat/ner/stm/two/1-lanvy.tsv")
   }
 }
