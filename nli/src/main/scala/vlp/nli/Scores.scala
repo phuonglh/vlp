@@ -9,5 +9,5 @@ final case class Scores(
   bidirectional: Boolean,
   tokenized: Boolean,
   trainingScores: Array[Float],
-  testScore: Double
+  testScore: Float
 )
