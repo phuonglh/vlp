@@ -86,12 +86,12 @@ object ConceptNet {
   }
 
   def main(args: Array[String]): Unit = {
-    // val vocabulary = Source.fromFile("dat/nli/XNLI-1.0/vi.vocab.txt").getLines().toList
-    // val startIndex = if (args.size > 0) args(0).toInt else 0
-    // val endIndex = if (args.size > 1) args(1).toInt else vocabulary.size
-    // val selection = vocabulary.slice(startIndex, endIndex)
-    // lookup(selection, "dat/nli/ccn.json")
-    // println("Done.")
+    val vocabulary = Source.fromFile("dat/nli/XNLI-1.0/vi.vocab.txt").getLines().toList
+    val startIndex = if (args.size > 0) args(0).toInt else 0
+    val endIndex = if (args.size > 1) args(1).toInt else vocabulary.size
+    val selection = vocabulary.slice(startIndex, endIndex)
+    lookup(selection, "dat/nli/ccn.json")
+    println("Done.")
 
     // val node = Source.fromFile("dat/ccn/0.json").getLines().toList.mkString(" ")
     // val relations = Array("/r/Synonym", "/r/Antonym", "/r/IsA", "/r/PartOf", "/r/HasA", "/r/UsedFor", "/r/CapableOf", "/r/MadeOf", 
@@ -101,6 +101,6 @@ object ConceptNet {
     //   println(relation + " => " + result.mkString(" "))
     // }
 
-    println(lookup("vào", 40))
+    // println(lookup("vào", 40))
   }
 }
