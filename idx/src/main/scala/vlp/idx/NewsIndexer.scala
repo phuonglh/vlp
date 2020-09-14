@@ -22,6 +22,12 @@ import org.json4s.jackson.Serialization
 import org.json4s._
 import java.nio.file.{Paths, Files, StandardOpenOption}
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import java.util.concurrent.TimeoutException
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 case class Page(url: String, content: String, date: Date)
 
@@ -48,6 +54,7 @@ object NewsIndexer {
       case e: MalformedURLException => logger.error(e.getMessage); ""
       case e: BoilerpipeProcessingException => logger.error(e.getMessage); ""
       case e: IOException => logger.error(e.getMessage); ""
+      case _: Exception => logger.error("Other exception"); ""
     }
   }
 
@@ -320,6 +327,14 @@ object NewsIndexer {
     urls.toSet
   }
 
+  def runWithTimeout[T](timeout: Long)(f: => T)(implicit ec: ExecutionContext): Option[T] = {
+    try {
+      Some(Await.result(Future(f), timeout.seconds))
+    } catch {
+      case e: TimeoutException => None
+    }
+  }
+
   def run(date: String): Unit = {
     System.setProperty("http.agent", "Chrome")
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
@@ -355,8 +370,8 @@ object NewsIndexer {
     logger.info(s"#(novelURLs) = ${novelUrls.size}")
     val news = novelUrls.par.map(url => {
       logger.info(url)
-      val content = extract(url)
-      Page(url, content, new Date())
+      val content = runWithTimeout(5000)(extract(url))
+      Page(url, content.get, new Date())
     }).toList
     if (news.nonEmpty) {
       val accept = (s: String) => (s.size >= 500 && !s.contains("<div") && !s.contains("<table") && !s.contains("</p>"))
