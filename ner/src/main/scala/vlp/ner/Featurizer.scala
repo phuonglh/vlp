@@ -28,9 +28,10 @@ object Featurizer extends Serializable {
    * Extracts a labeled context at a position of a sentence.
    * @param sentence
    * @param position
+   * @param extendedFeatureSet
    * @return a labeled context object.
    */
-  def extract(sentence: Sentence, position: Int): LabeledContext = {
+  def extract(sentence: Sentence, position: Int, extendedFeatureSet: Set[String]): LabeledContext = {
     def basicFeatures(): String = {
       val features = new StringBuilder()
       val currentToken = sentence.tokens(position)
@@ -38,14 +39,18 @@ object Featurizer extends Serializable {
       features.append("w(0)=")
       features.append(currentToken.word)
       features.append(' ')
-      // current part-of-speech
-      features.append("p(0)=")
-      features.append(currentToken.partOfSpeech)
-      features.append(' ')
-      // current chunk
-      features.append("c(0)=")
-      features.append(currentToken.chunk)
-      features.append(' ')
+      if (extendedFeatureSet.contains("pos")) {
+        // current part-of-speech
+        features.append("p(0)=")
+        features.append(currentToken.partOfSpeech)
+        features.append(' ')
+      }
+      if (extendedFeatureSet.contains("chunk")) {
+        // current chunk
+        features.append("c(0)=")
+        features.append(currentToken.chunk)
+        features.append(' ')
+      }
       // previous tag or "BOS" sentinel (begin of sentence)
       features.append("t(-1)=")
       features.append(if (position > 0) sentence.tokens(position - 1).namedEntity else "BOS")
@@ -89,40 +94,42 @@ object Featurizer extends Serializable {
       features.append('+')
       features.append(nextWord)
       features.append(' ')
-      // p(-1)
-      val prevPoS = if (position > 0) sentence.tokens(position - 1).partOfSpeech else "BOS"
-      features.append("p(-1)=")
-      features.append(prevPoS)
-      features.append(' ')
-      // p(0)+p(-1)
-      features.append("p(0)+p(-1)=")
-      features.append(currentToken.partOfSpeech)
-      features.append('+')
-      features.append(prevPoS)
-      features.append(' ')
-      // p(+1)
-      val nextPoS = if (position < sentence.length-1) sentence.tokens(position + 1).partOfSpeech else "EOS"
-      features.append("p(+1)=")
-      features.append(nextPoS)
-      features.append(' ')
-      // p(0)+p(+1)
-      features.append("p(0)+p(+1)=")
-      features.append(currentToken.partOfSpeech)
-      features.append('+')
-      features.append(nextPoS)
-      features.append(' ')
-      // p(-1)+p(+1)
-      features.append("p(-1)+p(+1)=")
-      features.append(prevPoS)
-      features.append('+')
-      features.append(nextPoS)
-      features.append(' ')
-      // w(0)+t(-1)
-      features.append("w(0)+t(-1)=")
-      features.append(currentToken.word)
-      features.append('+')
-      features.append(if (position > 0) sentence.tokens(position - 1).namedEntity else "BOS")
-      features.append(' ')
+      if (extendedFeatureSet.contains("pos")) {
+        // p(-1)
+        val prevPoS = if (position > 0) sentence.tokens(position - 1).partOfSpeech else "BOS"
+        features.append("p(-1)=")
+        features.append(prevPoS)
+        features.append(' ')
+        // p(0)+p(-1)
+        features.append("p(0)+p(-1)=")
+        features.append(currentToken.partOfSpeech)
+        features.append('+')
+        features.append(prevPoS)
+        features.append(' ')
+        // p(+1)
+        val nextPoS = if (position < sentence.length-1) sentence.tokens(position + 1).partOfSpeech else "EOS"
+        features.append("p(+1)=")
+        features.append(nextPoS)
+        features.append(' ')
+        // p(0)+p(+1)
+        features.append("p(0)+p(+1)=")
+        features.append(currentToken.partOfSpeech)
+        features.append('+')
+        features.append(nextPoS)
+        features.append(' ')
+        // p(-1)+p(+1)
+        features.append("p(-1)+p(+1)=")
+        features.append(prevPoS)
+        features.append('+')
+        features.append(nextPoS)
+        features.append(' ')
+        // w(0)+t(-1)
+        features.append("w(0)+t(-1)=")
+        features.append(currentToken.word)
+        features.append('+')
+        features.append(if (position > 0) sentence.tokens(position - 1).namedEntity else "BOS")
+        features.append(' ')
+      }
       // return the entire feature string
       features.toString().trim()
     }
@@ -198,9 +205,6 @@ object Featurizer extends Serializable {
       features.toString().trim()
     }
     
-    // first, run a wordsRegexp on this sentence to annotate regexp type for each token 
-    WordRegexp.annotate(sentence)
-    
     // build a string containing all space-separated feature strings 
     val features = new StringBuilder() 
     features.append(basicFeatures())
@@ -209,8 +213,11 @@ object Featurizer extends Serializable {
     features.append(' ')
     features.append(jointFeatures())
     features.append(' ')
-    features.append(regexpFeatures())
-    
+    if (extendedFeatureSet.contains("regexp")) {
+      // first, run a wordsRegexp on this sentence to annotate regexp type for each token 
+      WordRegexp.annotate(sentence)
+      features.append(regexpFeatures()) 
+    }
     // create a labeled context 
     val currentToken = sentence.tokens(position)
     new LabeledContext(currentToken.word, currentToken.namedEntity, features.toString)
@@ -219,12 +226,12 @@ object Featurizer extends Serializable {
   /**
    * Extracts a list of labeled contexts from a sentence.
    * @param sentence
+   * @param extendedFeatureSet
    * @return a list of labeled contexts
    */
-  def extract(sentence: Sentence): List[LabeledContext] = {
-    for (position <- (0 until sentence.length).toList) yield extract(sentence, position)
+  def extract(sentence: Sentence, extendedFeatureSet: Set[String] = Set("pos", "chunk", "regexp")): List[LabeledContext] = {
+    for (position <- (0 until sentence.length).toList) yield extract(sentence, position, extendedFeatureSet)
   }
-  
   
   def main(args: Array[String]): Unit = {
     val t1 = Token("Barack", Map(Label.PartOfSpeech -> "Np", Label.Chunk -> "I-NP", Label.NamedEntity -> "I-PER"))
@@ -233,15 +240,18 @@ object Featurizer extends Serializable {
     val t4 = Token("Abu", Map(Label.PartOfSpeech -> "N", Label.NamedEntity -> "O"))
     val t5 = Token("Dhabi", Map(Label.PartOfSpeech -> "N", Label.NamedEntity -> "O"))
     
+    // val extendedFeatureSet = Set[String]("pos", "chunk", "regexp")
+    val extendedFeatureSet = Set.empty[String]
+
     var sentence = Sentence(ListBuffer(t1, t2, t3, t4, t5))
-    var context = extract(sentence, 0)
+    var context = extract(sentence, 0, extendedFeatureSet)
     println(context)
     
     val words = ListBuffer("UNBD", "tỉnh", "Cà_Mau", "đã", "xây", 
         "TP", "tiểu_học", "Hữu_Nghị", "báo", "Tuổi_Trẻ", "đưa", 
         "HĐND", "thành_phố", "Hà_Nội", "gặp", "UBND", "TP.", "HCM")
     sentence = Sentence(words.map(w => Token(w, Map[Label.Value, String]())))
-    context = extract(sentence, 0)
+    context = extract(sentence, 0, extendedFeatureSet)
     println(context)
   }
   

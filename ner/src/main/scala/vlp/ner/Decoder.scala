@@ -19,7 +19,7 @@ object DecoderType extends Enumeration {
  * Sequence decoder. 
  * 
  */
-class Decoder(spark: SparkSession, decodeType: DecoderType.Value, model: PipelineModel) {
+class Decoder(spark: SparkSession, decodeType: DecoderType.Value, model: PipelineModel, extendedFeatureSet: Set[String]) {
   val logger = LoggerFactory.getLogger(getClass)
   val labels = model.stages(0).asInstanceOf[StringIndexerModel].labels
   val numLabels = labels.length
@@ -58,7 +58,7 @@ class Decoder(spark: SparkSession, decodeType: DecoderType.Value, model: Pipelin
       val tokens = sentence.tokens
       val numLabels = labels.length
       for (j <- 0 until tokens.length) {
-        val context = Featurizer.extract(sentence, j)
+        val context = Featurizer.extract(sentence, j, extendedFeatureSet)
         val features = context.bof.toLowerCase().split("\\s+")
         val x = hashingTF.transform(features).toSparse      
         val scores = (0 until numLabels).map {
@@ -79,7 +79,7 @@ class Decoder(spark: SparkSession, decodeType: DecoderType.Value, model: Pipelin
       val lattice = Array.ofDim[Double](numLabels, tokens.length) 
       // compute lattice
       for (j <- 0 until tokens.length) {
-        val context = Featurizer.extract(sentence, j)
+        val context = Featurizer.extract(sentence, j, extendedFeatureSet)
         val features = context.bof.toLowerCase().split("\\s+")
         val x = hashingTF.transform(features).toSparse
         val scores = (0 until numLabels).map {

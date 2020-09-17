@@ -33,10 +33,14 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
   lazy val partOfSpeechTagger = new vlp.tag.Tagger(sparkSession, vlp.tag.ConfigPoS())
   lazy val partOfSpeechModel = PipelineModel.load(vlp.tag.ConfigPoS().modelPath)
 
+  lazy val extendedFeatureSet = if (config.twoColumns) Set.empty[String] else Set[String]("pos", "chunk", "regexp")
+
   private def createDF(sentences: List[Sentence]): Dataset[LabeledContext] = {
-    val contexts = sentences.flatMap {
-      sentence => Featurizer.extract(sentence)
-    }
+    logger.info("Featurizing the dataset. Please wait...")
+    val contexts = sentences.par.flatMap {
+      sentence => Featurizer.extract(sentence, extendedFeatureSet)
+    }.toList
+    logger.info("Done. Creating data frame...")
     import sparkSession.implicits._
     sparkSession.createDataFrame(contexts).as[LabeledContext]
   }
@@ -106,7 +110,7 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
   }
 
   def tag(model: PipelineModel, sentences: List[Sentence]): List[Sentence] = {
-    val decoder = new Decoder(sparkSession, DecoderType.Greedy, model)
+    val decoder = new Decoder(sparkSession, DecoderType.Greedy, model, extendedFeatureSet)
     decoder.decode(sentences)
   }
 
@@ -167,8 +171,8 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
     * @return a list of [[Sentence]]
     */
   def combine(sentences: List[Sentence], outputPath: String = ""): List[Sentence] = {
-    val forwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, forwardModel)
-    val backwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, backwardModel)
+    val forwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, forwardModel, extendedFeatureSet)
+    val backwardDecoder = new Decoder(sparkSession, DecoderType.Greedy, backwardModel, extendedFeatureSet)
     val result = combine(sentences, forwardDecoder, backwardDecoder)
     // save the lines to a file if the output path is not empty
     if (outputPath.nonEmpty) {
@@ -319,7 +323,7 @@ object Tagger {
         config.mode match {
           case "train" => tagger.train(sentences)
           case "test" => tagger.test(sentences)
-          case "eval" => tagger.combine(config.input, config.input + ".out")
+          case "eval" => tagger.combine(config.dataPath, config.dataPath + ".out")
           case "tag" => 
             val xs = Source.fromFile(config.input, "UTF-8").getLines().toList.map(_.trim()).filter(_.nonEmpty)
             import scala.collection.JavaConversions._

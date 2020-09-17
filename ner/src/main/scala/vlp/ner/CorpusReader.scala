@@ -10,6 +10,7 @@ import java.util.stream.Collectors
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.{util => ju}
+import java.nio.file.StandardOpenOption
 
 object CorpusReader {
 
@@ -40,6 +41,23 @@ object CorpusReader {
       u = v + 1
     }
     sentences.toList
+  }
+
+  /**
+   * Reads all TSV files in a directory. For each file, we skip the first sentence and the last sentence since in a LAD 
+   * file, the first sentence usually is the title (Cong hoa Xa hoi Chu nghia Viet Nam) and the 2 last sentences can be 
+   * ignored.
+  */ 
+  def readDirectorySTM(dataPath: String, twoColumns: Boolean = false): List[Sentence] = {
+    val dir = new File(dataPath)
+    if (dir.exists() && dir.isDirectory()) {
+      val files = dir.listFiles().filter(file => file.getName().endsWith("tsv")).toList
+      println("Number of files = " + files.size)
+      files.flatMap{ path => 
+        val ss = readCoNLL(path.toString, twoColumns)
+        ss.slice(1, ss.size - 2)
+      }
+    } else List.empty[Sentence]
   }
 
   /**
@@ -182,10 +200,13 @@ object CorpusReader {
     // convertVLSP2018("dat/ner/xml/test/", "dat/ner/two/test.txt")
     // convertVLSP2018("dat/ner/xml/train/", "dat/ner/two/train.txt")
 
-    val pathSTM = "dat/ner/stm/1-lanvy.tsv"
-    // val sentences = readSTM(pathSTM)
-    // println(sentences.size)
-    // sentences.takeRight(2).foreach(println)
-    val ss = convertSTM(pathSTM, "dat/ner/stm/two/1-lanvy.tsv")
+    // Reads all 2-col LAD files and write all collected sentences to a files: 'dat/ner/lad.tsv'
+    val ss = readDirectorySTM("dat/ner/lad", true)
+    println("Number of sentences = " + ss.size)
+    val content = ss.map { sentence => 
+      sentence.tokens.map(token => token.word + "\t" + token.namedEntity).mkString("\n") + "\n"
+    }
+    import scala.collection.JavaConversions._
+    Files.write(Paths.get("dat/ner/lad.tsv"), content, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 }

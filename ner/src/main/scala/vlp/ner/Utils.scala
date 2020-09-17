@@ -12,7 +12,7 @@ import java.nio.file.SimpleFileVisitor
 object Utils {
 
   /**
-    * Renames all files in the STM annotation directory: "1.txt/lanvy.tsv" should be renamed to "1-lanvy.txt"
+    * Renames all files in the STM annotation directory: "1.txt/lanvy.tsv" should be renamed to "1-lanvy.tsv"
     *
     * @param inputPath
     * @param outputPath
@@ -24,6 +24,8 @@ object Utils {
         val currentDirName = dir.getFileName().toString()
         if (currentDirName.endsWith(".txt")) {
           id = currentDirName.substring(0, currentDirName.indexOf("."))
+        } else {
+          println("Current dir = " + id + " from " + currentDirName)
         }
         FileVisitResult.CONTINUE
       }
@@ -65,6 +67,6 @@ object Utils {
 
   def main(args: Array[String]): Unit = {
     // rename("/Users/phuonglh/Downloads/annotation-2/", "/Users/phuonglh/vlp/dat/ner/stm")
-    convert("/Users/phuonglh/vlp/dat/ner/stm", "/Users/phuonglh/vlp/dat/ner/stm/two")
+    convert("/Users/phuonglh/vlp/dat/ner/stm", "/Users/phuonglh/vlp/dat/ner/lad/")
   }
 }
