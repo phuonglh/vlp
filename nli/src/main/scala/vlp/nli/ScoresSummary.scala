@@ -13,7 +13,7 @@ object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
 
   def main(args: Array[String]): Unit = {
-    val path = "dat/nli/scores.json"
+    val path = "dat/nli/scores.json.2f"
     val content = Source.fromFile(path).getLines().toList.mkString(" ")
     implicit val formats = DefaultFormats
     val jsArray = parse(content)

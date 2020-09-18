@@ -8,7 +8,7 @@ case class ConfigTeller(
     language: String = "vi",
     mode: String = "eval",
     maxSequenceLength: Int = 40,
-    minFrequency: Double = 2.0,
+    minFrequency: Double = 1.0,
     numFeatures: Int = 32768,
     modelType: String = "seq",
     encoderType: String = "cnn",

@@ -324,17 +324,18 @@ object Teller {
           case "predict" => 
           case "experiments" => 
             val maxSequenceLengths = Array(40)
-            val embeddingSizes = Array(25, 50, 80, 100)
+            val embeddingSizes = Array(25, 50)
+            val times = 5
             for (n <- maxSequenceLengths)
               for (d <- embeddingSizes) {
                 if (config.modelType != "bow") {
-                  val encoderOutputSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300)
+                  val encoderOutputSizes = Array(100, 128, 150, 200, 256, 300)
                   for (o <- encoderOutputSizes) {
                     val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
                       batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency)
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
-                    for (times <- 0 until 5) {
+                    for (times <- 0 until times) {
                       val scores = teller.train(training, test)
                       val content = Serialization.writePretty(scores) + ",\n"
                       Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
@@ -345,7 +346,7 @@ object Teller {
                       batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency)
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
-                    for (times <- 0 until 5) {
+                    for (times <- 0 until times) {
                       val scores = teller.train(training, test)
                       val content = Serialization.writePretty(scores) + ",\n"
                       Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
