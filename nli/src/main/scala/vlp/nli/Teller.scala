@@ -167,7 +167,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
         logger.info(sb.toString)
       })
     }
-    val xs = validationSummary.readScalar("Top1Accuracy").map(_._2)
+    val xs = trainSummary.readScalar("Top1Accuracy").map(_._2)
     Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
       encoderSize = config.encoderOutputSize, bidirectional = config.bidirectional, tokenized = config.tokenized, 
       trainingScores = xs.takeRight(20), testScore = scores._2.toFloat)
@@ -323,36 +323,35 @@ object Teller {
           case "eval" => 
           case "predict" => 
           case "experiments" => 
-            val maxSequenceLengths = Array(40)
+            val n = if (config.tokenized) 30 else 40
             val embeddingSizes = Array(25, 50)
             val times = 5
-            for (n <- maxSequenceLengths)
-              for (d <- embeddingSizes) {
-                if (config.modelType != "bow") {
-                  val encoderOutputSizes = Array(100, 128, 150, 200, 256, 300)
-                  for (o <- encoderOutputSizes) {
-                    val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
-                      batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency)
-                    val pack = new DataPack(config.dataPack, config.language)
-                    val teller = new Teller(sparkSession, conf, pack)
-                    for (times <- 0 until times) {
-                      val scores = teller.train(training, test)
-                      val content = Serialization.writePretty(scores) + ",\n"
-                      Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
-                    }
+            for (d <- embeddingSizes) {
+              if (config.modelType != "bow") {
+                val encoderOutputSizes = Array(100, 128, 150, 200, 256, 300)
+                for (o <- encoderOutputSizes) {
+                  val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
+                    batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency)
+                  val pack = new DataPack(config.dataPack, config.language)
+                  val teller = new Teller(sparkSession, conf, pack)
+                  for (times <- 0 until times) {
+                    val scores = teller.train(training, test)
+                    val content = Serialization.writePretty(scores) + ",\n"
+                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                   }
-                } else {
-                    val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
-                      batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency)
-                    val pack = new DataPack(config.dataPack, config.language)
-                    val teller = new Teller(sparkSession, conf, pack)
-                    for (times <- 0 until times) {
-                      val scores = teller.train(training, test)
-                      val content = Serialization.writePretty(scores) + ",\n"
-                      Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
-                    }
                 }
+              } else {
+                  val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
+                    batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency)
+                  val pack = new DataPack(config.dataPack, config.language)
+                  val teller = new Teller(sparkSession, conf, pack)
+                  for (times <- 0 until times) {
+                    val scores = teller.train(training, test)
+                    val content = Serialization.writePretty(scores) + ",\n"
+                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                  }
               }
+            }
           case "dict" => 
               val df = sparkSession.read.json("dat/nli/XNLI-1.0/vi.tok.json").select("both")
               val tokenizer = new Tokenizer().setInputCol("both").setOutputCol("tokens")

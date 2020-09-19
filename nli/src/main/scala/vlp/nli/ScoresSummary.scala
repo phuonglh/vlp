@@ -13,7 +13,7 @@ object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
 
   def main(args: Array[String]): Unit = {
-    val path = "dat/nli/scores.json.2f"
+    val path = "dat/nli/scores.seq.syllable.json"
     val content = Source.fromFile(path).getLines().toList.mkString(" ")
     implicit val formats = DefaultFormats
     val jsArray = parse(content)
@@ -25,7 +25,7 @@ object ScoresSummary {
     val arch = "seq"
     val types = List("cnn", "gru")
     val embeddingSizes = Array(25, 50, 80, 100)
-    val encoderSizes = Array(25, 50, 80, 100, 128, 150, 200, 256, 300)
+    val encoderSizes = Array(100, 128, 150, 200, 256, 300)
     for (r <- types) {
       val mean = Map[(Int, Int), (Double, Double)]()
       val variance = Map[(Int, Int), (Double, Double)]()
