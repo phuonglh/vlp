@@ -133,8 +133,15 @@ object Parser {
         .config("spark.driver.host", "localhost")
         .getOrCreate()
       val corpusPack = if (config.language == "eng") new CorpusPack(Language.English) ; else new CorpusPack()
-      val trainingGraphs = GraphReader.read(corpusPack.dataPaths._1)
-      val developmentGraphs = GraphReader.read(corpusPack.dataPaths._2)
+      val (trainingGraphs, developmentGraphs) = if (corpusPack.dataPaths._1 != corpusPack.dataPaths._2) 
+        (GraphReader.read(corpusPack.dataPaths._1), GraphReader.read(corpusPack.dataPaths._2))
+        else {
+          val graphs = GraphReader.read(corpusPack.dataPaths._1)
+          scala.util.Random.setSeed(220712)
+          val randomGraphs = scala.util.Random.shuffle(graphs)
+          val trainingSize = (randomGraphs.size * 0.8).toInt
+          (randomGraphs.take(trainingSize), randomGraphs.slice(trainingSize, randomGraphs.size))
+        }
       val classifierType = config.classifier match {
         case "mlr" => ClassifierType.MLR
         case "mlp" => ClassifierType.MLP
