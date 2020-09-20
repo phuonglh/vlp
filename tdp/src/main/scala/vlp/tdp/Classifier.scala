@@ -97,7 +97,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
     if (config.verbose) {
       logger.info("#(distinctFeatures) = " + featureSet.size)
       logger.info(s"#(features with count >= ${config.minFrequency}) = " + featureCounter.size)
-      input.show(5, false)
+      input.show(10, false)
     }
 
     val labelIndexer = new StringIndexer().setInputCol("transition").setOutputCol("label").setHandleInvalid("skip")
@@ -269,8 +269,15 @@ object Classifier {
         val corpusPack = if (config.language == "eng") new CorpusPack(Language.English); else new CorpusPack()
         val extended = config.extended
         val modelPath = corpusPack.modelPath
-        val trainingGraphs = GraphReader.read(corpusPack.dataPaths._1)
-        val developmentGraphs = GraphReader.read(corpusPack.dataPaths._2)
+        val (trainingGraphs, developmentGraphs) = if (corpusPack.dataPaths._1 != corpusPack.dataPaths._2) 
+          (GraphReader.read(corpusPack.dataPaths._1), GraphReader.read(corpusPack.dataPaths._2))
+          else {
+            val graphs = GraphReader.read(corpusPack.dataPaths._1)
+            scala.util.Random.setSeed(220712)
+            val randomGraphs = scala.util.Random.shuffle(graphs)
+            val trainingSize = (randomGraphs.size * 0.8).toInt
+            (randomGraphs.take(trainingSize), randomGraphs.slice(trainingSize, randomGraphs.size))
+          }
         val classifierType = config.classifier match {
           case "mlr" => ClassifierType.MLR
           case "mlp" => ClassifierType.MLP
@@ -284,7 +291,7 @@ object Classifier {
         logger.info("classifierName = " + config.classifier)
 
         val classifier = new Classifier(spark, config)
-        // MLP does not need joint features to perform well
+        // MLP does not need joint features in order to perform well
         if (config.independent) {
           classifier.setFeatureExtractor(new FeatureExtractor(false))
         } else {

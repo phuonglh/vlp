@@ -27,13 +27,15 @@ object GraphReader {
         val s = lines.slice(u, v)
         val tokens = s.map(line => {
           val parts = line.trim.split("\\t+")
+          val j = parts(7).indexOf(':') // don't consideer 2-level label (after the colon)
+          val label = if (j > 0) parts(7).substring(0, j) else parts(7)
           Token(parts(1).replaceAll("\\s+", "_"), mutable.Map(Label.Id -> parts(0),
             Label.Lemma -> parts(2),
             Label.UniversalPartOfSpeech -> parts(3),
             Label.PartOfSpeech -> parts(4), 
             Label.FeatureStructure -> parts(5), 
             Label.Head -> parts(6),
-            Label.DependencyLabel -> parts(7),
+            Label.DependencyLabel -> label,
             Label.SuperTag -> parts(parts.length - 1)))
         })
         val x = root +: tokens
