@@ -13,7 +13,7 @@ object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
 
   def main(args: Array[String]): Unit = {
-    val path = "dat/nli/scores.seq.syllable.json"
+    val path = "dat/nli/scores.par.json"
     val content = Source.fromFile(path).getLines().toList.mkString(" ")
     implicit val formats = DefaultFormats
     val jsArray = parse(content)
@@ -22,7 +22,7 @@ object ScoresSummary {
       result += js.extract[Scores]
 
     val n = 40
-    val arch = "seq"
+    val arch = "par"
     val types = List("cnn", "gru")
     val embeddingSizes = Array(25, 50, 80, 100)
     val encoderSizes = Array(100, 128, 150, 200, 256, 300)
@@ -32,8 +32,8 @@ object ScoresSummary {
       for (encoderSize <- encoderSizes) {
         val elements = result.filter(_.arch == arch).filter(_.encoder == r).filter(_.maxSequenceLength == n).filter(_.encoderSize == encoderSize)
         val averageAccuracy = elements.groupBy(_.embeddingSize).map { pair =>
-          val k = pair._2.size
-          (pair._1, pair._2.map(_.trainingScores.last).sum/k, pair._2.map(_.testScore).sum/k)
+           val k = Math.min(pair._2.size, 3)
+          (pair._1, pair._2.map(_.trainingScores.last).sum/k, pair._2.map(_.testScore).sorted.takeRight(k).sum/k)
         }.toList.sortBy(_._1)
         for (j <- 0 until averageAccuracy.size) {
           mean += ((averageAccuracy(j)._1, encoderSize) -> (averageAccuracy(j)._2, averageAccuracy(j)._3))

@@ -21,7 +21,8 @@ class CorpusPack(val language: Language.Value = Language.Vietnamese) extends Ser
     */
   def dataPaths: (String, String) = {
     language match {
-      case Language.Vietnamese => ("dat/dep/vie/vi-ud-train.conllu", "dat/dep/vie/vi-ud-dev.conllu")
+      // case Language.Vietnamese => ("dat/dep/vie/vi-ud-train.conllu", "dat/dep/vie/vi-ud-dev.conllu")
+      case Language.Vietnamese => ("dat/dep/vie/vi-ud-5K.conllu", "dat/dep/vie/vi-ud-5K.conllu")
       case Language.English => ("dat/dep/eng/tag/train.txt", "dat/dep/eng/tag/dev.txt")
     }
   }

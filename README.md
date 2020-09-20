@@ -134,7 +134,7 @@ On a large dataset, in order to avoid the out-of-memory error, you should consid
 
 ## 4. Dependency Parser
 
-The dependency parser module implements a transition-based dependency parsing algorithm. The `vlp.tdp.Classifier` learns a mapping from a parsing context to a labeled transition. Training samples in the form of (parsing context, labeled transition) pairs are extracted automatically from an available treebank in the CoNLLU format, as defined by the [Universal Dependency](http://universaldependencies.org) project. This classifier implements both a multinomial logistic regression (MLR) model and a multi-layer perceptron (MLP) model for classification. 
+The dependency parser module implements a transition-based dependency parsing algorithm. The `vlp.tdp.Classifier` learns a mapping from a parsing context to a labeled transition. Training samples in the form of (parsing context, labeled transition) pairs are extracted automatically from an available treebank in the CoNLLU format, as defined by the [Universal Dependency](http://universaldependencies.org) project. This classifier implements both multinomial logistic regression (MLR) model and multi-layer perceptron (MLP) model for classification. 
 
 Two dependency treebanks, one for English and one for Vietnamese are available in the `dat/dep/eng` and `dat/dep/vie`. These datasets of version 2.0 are publicly available at the [Universal Dependency](http://universaldependencies.org) website. In the Vietnamese treebank, there are 1,400 training sentences and 800 development sentences. Refer to the class `vlp.tdp.FeatureExtractor` for the list of (discrete) features used in this classifier implementation.
 
@@ -156,7 +156,7 @@ The option `-c` stands for classifier type. To use a MLP with two hidden layers,
 
 The resulting model will be saved to its default directory `dat/tdp/vie/mlp`.
 
-There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 3) or `-u` (for domain dimension, default value is 1,024). See the code for detail.
+There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 2) or `-u` (for domain dimension, default value is 1,024). See the code for detail.
 
 To train a transition classifier for English, use the option `-l eng` (`-l` is for language). For example:
 
@@ -184,7 +184,7 @@ The following table shows the average F1-scores of the transition classifier tra
 
 ### 4.2. Parser
 
-The parser is in `vlp.tdp.Parser` class. It implements the arc-eager transition parsing algorithm, where the next transition is predicted by using the current parsing configuration as input to the transition classifier. The transition set are contains labels such as `SH` (shift), `RE` (reduce), `LA-dep` (left arc with label `dep`) and `RA-dep` (right arc with label `dep`). The dependency labels are scanned from a training corpus. For the Vietnamese dependency treebank, the transition set contains 54 disctict labeled transitions. Each parse corresponds to a sequence of best transitions which are obtained by a greed inference method.
+The parser is in `vlp.tdp.Parser` class. It implements the arc-eager transition parsing algorithm, where the next transition is predicted by using the current parsing configuration as input to the transition classifier. The transition set are contains labels such as `SH` (shift), `RE` (reduce), `LA-dep` (left arc with label `dep`) and `RA-dep` (right arc with label `dep`). The dependency labels are scanned from a training corpus. For the Vietnamese dependency treebank, the transition set contains 54 disctict labeled transitions. Each parse corresponds to a sequence of best transitions which are obtained by a greedy inference method.
 
 When using 65,536 features in the classifier, the labeled attachment scores (LAS) of the parser on the development and test set of the Vietnamese dependency treebank is LAS(dev.) = 0.5303 and LAS(train.) = 0.6194.
 
@@ -254,7 +254,11 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 
 - TODO
 
-## 9. Zoo
+## 9. Natural Language Inference
+
+- TODO 
+
+## 10. Zoo 
 
 - TODO 
 
