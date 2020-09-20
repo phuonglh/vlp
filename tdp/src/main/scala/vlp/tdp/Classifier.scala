@@ -114,7 +114,7 @@ class Classifier(spark: SparkSession, config: ConfigTDP) {
         val vocabSize = pipelineModel.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numLabels = input.select("transition").distinct().count().toInt
         val layers = Array[Int](vocabSize) ++ hiddenLayers ++ Array[Int](numLabels)
-        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations).setTol(1E-5).setBlockSize(64)
+        val mlp = new MultilayerPerceptronClassifier().setLayers(layers).setMaxIter(config.iterations).setTol(1E-5).setBlockSize(config.batchSize)
         new Pipeline().setStages(Array(labelIndexer, tokenizer, countVectorizer, mlp)).fit(input)
     }
 
@@ -255,6 +255,7 @@ object Classifier {
       opt[String]('h', "hiddenUnits").action((x, conf) => conf.copy(hiddenUnits = x)).text("hidden units of MLP")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
+      opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Unit]('x', "extended").action((_, conf) => conf.copy(extended = true)).text("extended mode for English parsing")
       opt[Int]('s', "tag embedding size").action((x, conf) => conf.copy(tagEmbeddingSize = x)).text("tag embedding size 10/20/40")
     }

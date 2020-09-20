@@ -14,6 +14,7 @@ case class ConfigTDP
   minFrequency: Int = 2,
   numFeatures: Int = 65536,
   iterations: Int = 400,
+  batchSize: Int = 32,
   extended: Boolean = false, // use super-tag features
   tagEmbeddingSize: Int = 10, // super-tag embedding size
   independent: Boolean = false,
