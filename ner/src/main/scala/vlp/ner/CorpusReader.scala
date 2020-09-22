@@ -200,6 +200,7 @@ object CorpusReader {
     // convertVLSP2018("dat/ner/xml/test/", "dat/ner/two/test.txt")
     // convertVLSP2018("dat/ner/xml/train/", "dat/ner/two/train.txt")
 
+    // HUS-group documents:
     // Reads all 2-col LAD files and write all collected sentences to a files: 'dat/ner/lad.tsv'
     val ss = readDirectorySTM("dat/ner/lad", true)
     println("Number of sentences = " + ss.size)
