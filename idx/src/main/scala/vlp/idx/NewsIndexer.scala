@@ -28,6 +28,7 @@ import scala.concurrent.ExecutionContext
 import java.util.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import org.apache.kafka.clients.producer.ProducerRecord
 
 case class Page(url: String, content: String, date: Date)
 
@@ -370,12 +371,16 @@ object NewsIndexer {
     logger.info(s"#(totalURLs) = ${urls.size}")
     val novelUrls = urls.diff(existingURLs)
     logger.info(s"#(novelURLs) = ${novelUrls.size}")
+
+    val kafkaProducer = Kafka.createProducer("localhost:9092")
     val news = novelUrls.par.map(url => {
       logger.info(url)
       val content = runWithTimeout(5000)(extract(url))
+      kafkaProducer.send(new ProducerRecord[String, String]("news", url, content.get))
       Page(url, content.get, new Date())
     }).toList
-    
+    kafkaProducer.close()
+
     if (news.nonEmpty) {
       val accept = (s: String) => (s.size >= 500 && !s.contains("<div") && !s.contains("<table") && !s.contains("</p>"))
       // write News elements to a JSON file of today
