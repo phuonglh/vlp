@@ -85,6 +85,9 @@ object NewsIndexer {
       }
     } catch {
       case e: IOException => e.printStackTrace()
+      case e: Exception => 
+        logger.error(site + "/" + category)
+        e.printStackTrace()
     }
     urls.toSet
   }
@@ -346,7 +349,6 @@ object NewsIndexer {
     urls ++= vnAgency(date)
     urls ++= vtv(date)
     urls ++= youth(date)
-    urls ++= vnEconomy(date)
     urls ++= labor(date)
     urls ++= saigonTimes
     urls ++= vnExpress
@@ -373,6 +375,7 @@ object NewsIndexer {
       val content = runWithTimeout(5000)(extract(url))
       Page(url, content.get, new Date())
     }).toList
+    
     if (news.nonEmpty) {
       val accept = (s: String) => (s.size >= 500 && !s.contains("<div") && !s.contains("<table") && !s.contains("</p>"))
       // write News elements to a JSON file of today
