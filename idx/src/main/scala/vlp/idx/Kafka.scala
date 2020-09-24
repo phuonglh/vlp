@@ -9,12 +9,16 @@ import org.apache.kafka.clients.producer.KafkaProducer
   * phuonglh
   */
 object Kafka {
-  def createProducer(bootstrapServers: String) = {
+  def createProducer(bootstrapServers: String): KafkaProducer[String, String] = {
     val props = new ju.Properties()
     props.put("bootstrap.servers", bootstrapServers)
     props.put("acks", "all")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     new KafkaProducer[String, String](props)
+  }
+
+  def createConsumer(bootstrapServers: String) = {
+    
   }
 }

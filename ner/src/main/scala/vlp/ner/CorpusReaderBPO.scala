@@ -40,6 +40,7 @@ object CorpusReaderBPO {
     val content = Source.fromFile(path + ".json", "UTF-8").getLines().toList.mkString(" ")
     val documents = JSON.parseFull(content).get.asInstanceOf[List[Map[String, String]]]
     println(documents.size)
+    // filter all sentences which have at leat one entity and has at least 20 characters
     val xs = documents.flatMap{ document => 
       val about = document("about")
       val body = selectBody(document("content"))
