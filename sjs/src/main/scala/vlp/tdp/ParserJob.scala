@@ -19,7 +19,7 @@ object ParserJob extends NewSparkJob {
   type JobData = String
   type JobOutput = Seq[String]
 
-  lazy val parser = new Parser(SparkSession.getActiveSession.get, new CorpusPack(), ClassifierType.MLR, false)
+  lazy val parser = new Parser(SparkSession.builder().getOrCreate(), ConfigTDP(modelPath = "/opt/models/tdp/"), ClassifierType.MLR, false)
 
   def runJob(sc: SparkContext, runtime: JobEnvironment, data: JobData): JobOutput = {
     val graph = parser.parseWithPartOfSpeech(data)

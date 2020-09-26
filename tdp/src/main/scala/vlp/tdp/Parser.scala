@@ -19,8 +19,8 @@ class Parser(spark: SparkSession, configTDP: ConfigTDP, classifierType: Classifi
   var verbose: Boolean = false
   val logger = LoggerFactory.getLogger(getClass)
   val pipeline = classifierType match {
-    case ClassifierType.MLR => PipelineModel.load(configTDP.modelPath + "/mlr")
-    case ClassifierType.MLP => PipelineModel.load(configTDP.modelPath + "/mlp")
+    case ClassifierType.MLR => PipelineModel.load(configTDP.modelPath + configTDP.language + "/mlr")
+    case ClassifierType.MLP => PipelineModel.load(configTDP.modelPath + configTDP.language + "/mlp")
   }
 
   val featureExtractor = if (classifierType == ClassifierType.MLR) new FeatureExtractor(true, useSuperTag) ; else new FeatureExtractor(true, useSuperTag) 
