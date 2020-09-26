@@ -15,13 +15,12 @@ import scopt.OptionParser
   * A transition-based dependency parser.
   * 
   */
-class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: ClassifierType.Value, useSuperTag: Boolean = false) extends Serializable {
+class Parser(spark: SparkSession, configTDP: ConfigTDP, classifierType: ClassifierType.Value, useSuperTag: Boolean = false) extends Serializable {
   var verbose: Boolean = false
   val logger = LoggerFactory.getLogger(getClass)
-  val modelPath = corpusPack.modelPath
   val pipeline = classifierType match {
-    case ClassifierType.MLR => PipelineModel.load(modelPath + "/mlr")
-    case ClassifierType.MLP => PipelineModel.load(modelPath + "/mlp")
+    case ClassifierType.MLR => PipelineModel.load(configTDP.modelPath + "/mlr")
+    case ClassifierType.MLP => PipelineModel.load(configTDP.modelPath + "/mlp")
   }
 
   val featureExtractor = if (classifierType == ClassifierType.MLR) new FeatureExtractor(true, useSuperTag) ; else new FeatureExtractor(true, useSuperTag) 
@@ -42,19 +41,19 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
     val stack = mutable.Stack[String]()
     val queue = mutable.Queue[String]()
     // create input tokens without head and dependencyLabel information
-    val x = sentence.tokens.map(t => Token(t.word, mutable.Map[Label.Value, String](
+    val x = sentence.tokens.map{ t => Token(t.word, mutable.Map[Label.Value, String](
       Label.Id -> t.id,
       Label.Lemma -> t.lemma,
       Label.UniversalPartOfSpeech -> t.universalPartOfSpeech,
       Label.PartOfSpeech -> t.partOfSpeech,
       Label.FeatureStructure -> t.featureStructure
-    )))
+    ))}
     val s = Sentence(x)
     // transition-based dependency parsing
     s.tokens.foreach(t => queue.enqueue(t.id))
 
     val arcs = new ListBuffer[Dependency]()
-    val easyFirstAnnotator = new EasyFirstAnnotator(corpusPack.language)
+    val easyFirstAnnotator = new EasyFirstAnnotator(configTDP.language)
     arcs ++= easyFirstAnnotator.annotate(sentence)
     
     var config = Config(s, stack, queue, arcs).next("SH")
@@ -103,6 +102,38 @@ class Parser(spark: SparkSession, corpusPack: CorpusPack, classifierType: Classi
   def info(): Unit = {
     logger.info(model.info())
   }
+
+  /**
+    * Parses a raw string given part-of-speech information in the form of "w1/up1/p1 w2/up2/p2 ... ",
+    * where "w" are words, "up" are universal part-of-speech tags and "p" are local part-of-speech tags.
+    *
+    * @param sentence
+    * @return a graph
+    */
+  def parseWithPartOfSpeech(sentence: String): Graph = {
+    val xs = sentence.split("""\s+""").toList
+    val tokens = xs.zipWithIndex.map { case (x, id) =>
+      val parts = x.split("/")
+      val word = if (parts(0).nonEmpty) parts(0) else "/"
+      val annotation = if (parts.size == 4) { // that is: "/PUNCT/PUNCT"
+        mutable.Map[Label.Value, String](Label.Id -> (id + 1).toString(), Label.Lemma -> word.toLowerCase(), 
+          Label.UniversalPartOfSpeech -> parts(2),
+          Label.PartOfSpeech -> parts(3))
+      } else if (parts.size == 3) {
+        mutable.Map[Label.Value, String](Label.Id -> (id + 1).toString(), Label.Lemma -> word.toLowerCase(), 
+          Label.UniversalPartOfSpeech -> parts(1),
+          Label.PartOfSpeech -> parts(2))
+      } else if (parts.size == 2) {
+        mutable.Map[Label.Value, String](Label.Id -> (id + 1).toString(), Label.Lemma -> word.toLowerCase(),
+          Label.UniversalPartOfSpeech -> parts(1))
+      } else {
+        mutable.Map[Label.Value, String](Label.Id -> (id + 1).toString(), Label.Lemma -> word.toLowerCase())
+      }
+      Token(word, annotation)
+    }
+    val s = Sentence(GraphReader.root +: tokens.to[ListBuffer])
+    parse(s)
+  }
 }
 
 /**
@@ -119,6 +150,7 @@ object Parser {
       head("vlp.tdp.Parser", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/debug")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tdp/'")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng, default is vie")
@@ -146,7 +178,7 @@ object Parser {
         case "mlr" => ClassifierType.MLR
         case "mlp" => ClassifierType.MLP
       }
-      val parser = new Parser(spark, corpusPack, classifierType, config.extended)
+      val parser = new Parser(spark, config, classifierType, config.extended)
       parser.setVerbose(config.verbose)
       parser.info()
       config.mode match {
@@ -162,6 +194,10 @@ object Parser {
             logger.info("\n" + developmentGraphs(i).toString + "\n")
             logger.info("\n" + y(i).toString + "\n")
           }
+        case "parse" => 
+          val sentence = "Nên/SCONJ/SC trước_nhất/N/N người/N/Nc đảng_viên/N/N phải/VERB/V làm_gương/VERB/V ./PUNCT/PUNCT"
+          val graph = parser.parseWithPartOfSpeech(sentence)
+          logger.info(graph.toString)
       }
       spark.stop()
       case None => 

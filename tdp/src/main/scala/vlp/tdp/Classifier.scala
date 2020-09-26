@@ -249,6 +249,7 @@ object Classifier {
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[String]('e', "executorMemory").action((x, conf) => conf.copy(memory = x)).text("executor memory, default is 8g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/tdp/'")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[String]('c', "classifier").action((x, conf) => conf.copy(classifier = x)).text("classifier, either mlr or mlp")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either vie or eng")
@@ -269,7 +270,7 @@ object Classifier {
           .getOrCreate()
         val corpusPack = if (config.language == "eng") new CorpusPack(Language.English); else new CorpusPack()
         val extended = config.extended
-        val modelPath = corpusPack.modelPath
+        val modelPath = config.modelPath + config.language + "/"
         val (trainingGraphs, developmentGraphs) = if (corpusPack.dataPaths._1 != corpusPack.dataPaths._2) 
           (GraphReader.read(corpusPack.dataPaths._1), GraphReader.read(corpusPack.dataPaths._2))
           else {

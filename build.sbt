@@ -1,6 +1,7 @@
 // phuonglh, May 3, 2020
 // 
 val sparkVersion = "2.4.5"
+val jobServerVersion = "0.10.0"
 
 javacOptions ++= Seq("-encoding", "UTF-8", "-XDignore.symbol.file", "true")
 
@@ -226,4 +227,18 @@ lazy val vio = (project in file("vio"))
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
     }
+  )
+
+// Spark-JobServer module
+lazy val sjs = (project in file("sjs"))
+  .dependsOn(tdp)
+  .settings(
+    commonSettings,
+    assemblyJarName in assembly := "sjs.jar",
+    resolvers ++= Seq("Job Server Bintray" at "https://dl.bintray.com/spark-jobserver/maven", 
+      "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"),
+    libraryDependencies ++= Seq(
+      "spark.jobserver" % "job-server-api_2.11" % jobServerVersion % "provided",
+      "spark.jobserver" % "job-server-extras_2.11" % jobServerVersion % "provided"
+    )
   )

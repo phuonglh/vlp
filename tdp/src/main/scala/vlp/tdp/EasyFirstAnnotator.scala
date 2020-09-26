@@ -15,7 +15,15 @@ trait Rule extends Serializable {
 }
 
 class EasyFirstAnnotator(val language: Language.Value) {
+
   val VietnameseRules = List[Rule](new Tense, new Passive, new Case)
+
+  def this(lang: String) = {
+    this(lang match {
+      case "vie" => Language.Vietnamese
+      case "eng" => Language.English
+    }) 
+  }
 
   /**
     * Annotates a sentence by using easy-first rules
@@ -43,6 +51,7 @@ class EasyFirstAnnotator(val language: Language.Value) {
     arcs.toList
   }
 }
+
 
 class Tense extends Rule {
   val anchors = List[String]("đã", "sẽ", "sớm", "không", "chưa", "chẳng")

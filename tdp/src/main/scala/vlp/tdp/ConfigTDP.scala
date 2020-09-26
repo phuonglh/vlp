@@ -9,6 +9,7 @@ case class ConfigTDP
   memory: String = "8g",
   mode: String = "eval",
   verbose: Boolean = false,
+  modelPath: String = "dat/tdp/",
   language: String = "vie",
   classifier: String = "mlr",
   minFrequency: Int = 2,
