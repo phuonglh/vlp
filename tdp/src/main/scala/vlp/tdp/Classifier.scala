@@ -11,6 +11,7 @@ import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.apache.spark.storage.StorageLevel
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
+import java.nio.file.Paths
 
 object ClassifierType extends Enumeration {
   val MLR, MLP = Value
@@ -270,7 +271,7 @@ object Classifier {
           .getOrCreate()
         val corpusPack = if (config.language == "eng") new CorpusPack(Language.English); else new CorpusPack()
         val extended = config.extended
-        val modelPath = config.modelPath + config.language + "/"
+        val modelPath = Paths.get(config.modelPath, config.language, config.classifier).toString()
         val (trainingGraphs, developmentGraphs) = if (corpusPack.dataPaths._1 != corpusPack.dataPaths._2) 
           (GraphReader.read(corpusPack.dataPaths._1), GraphReader.read(corpusPack.dataPaths._2))
           else {
@@ -304,34 +305,34 @@ object Classifier {
 
         config.mode match {
           case "eval" => {
-            classifier.evalManual(modelPath + config.classifier, developmentGraphs)
-            classifier.evalManual(modelPath + config.classifier, trainingGraphs)
+            classifier.evalManual(modelPath, developmentGraphs)
+            classifier.evalManual(modelPath, trainingGraphs)
             if (!extended) {
-              classifier.eval(modelPath + config.classifier, developmentGraphs)
-              classifier.eval(modelPath + config.classifier, trainingGraphs)
+              classifier.eval(modelPath, developmentGraphs)
+              classifier.eval(modelPath, trainingGraphs)
             } else {
-              classifier.eval(modelPath + config.classifier, developmentGraphs, wordVectors, discrete)
-              classifier.eval(modelPath + config.classifier, trainingGraphs, wordVectors, discrete)
+              classifier.eval(modelPath, developmentGraphs, wordVectors, discrete)
+              classifier.eval(modelPath, trainingGraphs, wordVectors, discrete)
             }
           }
           case "train" => {
             val hiddenLayersConfig = config.hiddenUnits
             val hiddenLayers = if (hiddenLayersConfig.isEmpty) Array[Int](); else hiddenLayersConfig.split("[,\\s]+").map(_.toInt)
             if (!extended)
-              classifier.train(modelPath + config.classifier, trainingGraphs, classifierType, hiddenLayers)
+              classifier.train(modelPath, trainingGraphs, classifierType, hiddenLayers)
             else {
               logger.info("ltagPath = " + ltagPath)
               logger.info("#(wordVectors) = " + wordVectors.size)
-              classifier.train(modelPath + config.classifier, trainingGraphs, classifierType, hiddenLayers, wordVectors, discrete)              
+              classifier.train(modelPath, trainingGraphs, classifierType, hiddenLayers, wordVectors, discrete)              
             }
             if (!extended) {
-              classifier.eval(modelPath + config.classifier, developmentGraphs)
-              classifier.eval(modelPath + config.classifier, trainingGraphs)
+              classifier.eval(modelPath, developmentGraphs)
+              classifier.eval(modelPath, trainingGraphs)
             } else {
               logger.info("ltagPath = " + ltagPath)
               logger.info("#(wordVectors) = " + wordVectors.size)
-              classifier.eval(modelPath + config.classifier, developmentGraphs, wordVectors, discrete)
-              classifier.eval(modelPath + config.classifier, trainingGraphs, wordVectors, discrete)
+              classifier.eval(modelPath, developmentGraphs, wordVectors, discrete)
+              classifier.eval(modelPath, trainingGraphs, wordVectors, discrete)
             }
           }
           case "test" => {
