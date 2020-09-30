@@ -25,11 +25,11 @@ object XNLI {
     }
 
     /**
-      * Tokenizes XNLI corpus using a Vietnamese tokenizer.
-      * 
-      * @param jsonlPath
-      * @param jsonPath
-      */
+         * Tokenizes XNLI corpus using a Vietnamese tokenizer.
+         * 
+         * @param jsonlPath
+         * @param jsonPath
+         */
     def tokenize(jsonlPath: String, jsonPath: String): Unit = {
         val s = scala.io.Source.fromFile(jsonlPath).getLines().toList
         val elements = s.map(x => JSON.parseFull(x).get.asInstanceOf[Map[String,Any]])
@@ -47,7 +47,6 @@ object XNLI {
         val content = tokElements.map(e => Serialization.write(e))
         import scala.collection.JavaConversions._
         Files.write(Paths.get(jsonPath), content, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
-
     }
 
     def main(args: Array[String]): Unit = {

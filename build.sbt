@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
 
 // root project
 lazy val root = (project in file("."))
-  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, vio, nli)
+  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, vio, nli, sjs)
 
 // tokenization module
 lazy val tok = (project in file("tok"))
@@ -144,7 +144,7 @@ lazy val vdg = (project in file("vdg"))
 
 // Natural language inference module
 lazy val nli = (project in file("nli"))
-  .dependsOn(tok)
+  .dependsOn(tag)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.nli.Teller"),
@@ -187,7 +187,7 @@ lazy val zoo = (project in file("zoo"))
     }
   )
 
-// Analytic Zoo (for assembly only as a uber jar to be used as a dependency)
+// Analytic Zoo (for assembly as a uber jar to be used as a dependency)
 lazy val biz = (project in file("biz"))
   .settings(
     commonSettings,
