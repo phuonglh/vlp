@@ -35,17 +35,17 @@ object CorpusReaderBPO {
   }
 
   def main(args: Array[String]): Unit = {
-    val path = "dat/ner/bpo/99-5000-batch-01.txt"
+    val path = "dat/ner/bpo/99-5000-batch-04.txt"
     // preprocess(path)
-    val content = Source.fromFile(path + ".json", "UTF-8").getLines().toList.mkString(" ")
+    val content = Source.fromFile(path, "UTF-8").getLines().toList.mkString(" ")
     val documents = JSON.parseFull(content).get.asInstanceOf[List[Map[String, String]]]
     println(documents.size)
     // filter all sentences which have at leat one entity and has at least 20 characters
     val xs = documents.flatMap{ document => 
-      val about = document("about")
-      val body = selectBody(document("content"))
+      val about = document("about").replaceAll("|", "")
+      val body = selectBody(document("content")).replaceAll("|", "")
       val sents = SentenceDetection.run(body)
-      List(about) ++ sents.filter(s => s.size >= 20 && s.contains("<") && s.contains("</")) ++ List("")
+      List(about) ++ sents.filter(s => s.size >= 20) ++ List("")
     }
     Files.write(Paths.get(path + ".sents"), xs, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
   }

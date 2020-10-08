@@ -46,7 +46,7 @@ object CorpusReader {
   /**
    * Reads all TSV files in a directory. For each file, we skip the first sentence and the last sentence since in a LAD 
    * file, the first sentence usually is the title (Cong hoa Xa hoi Chu nghia Viet Nam) and the 2 last sentences can be 
-   * ignored.
+   * ignored. We also remove short sentences which has less than 5 tokens.
   */ 
   def readDirectorySTM(dataPath: String, twoColumns: Boolean = false): List[Sentence] = {
     val dir = new File(dataPath)
@@ -55,7 +55,8 @@ object CorpusReader {
       println("Number of files = " + files.size)
       files.flatMap{ path => 
         val ss = readCoNLL(path.toString, twoColumns)
-        ss.slice(1, ss.size - 2)
+        ss.slice(1, ss.size - 2) // Remove the first and last sentence from the corpus.
+        .filter(s => s.tokens.size >= 5) // Remove short sentences
       }
     } else List.empty[Sentence]
   }
@@ -186,7 +187,7 @@ object CorpusReader {
       sentence.tokens.map(token => token.word + "\t" + token.namedEntity).mkString("\n") + "\n"
     })
     import scala.collection.JavaConversions._
-    Files.write(Paths.get(outputPath), texts, StandardCharsets.UTF_8)
+    Files.write(Paths.get(outputPath), texts, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 
   def main(args: Array[String]): Unit = {
@@ -202,12 +203,12 @@ object CorpusReader {
 
     // HUS-group documents:
     // Reads all 2-col LAD files and write all collected sentences to a files: 'dat/ner/lad.tsv'
-    val ss = readDirectorySTM("dat/ner/lad", true)
+    val ss = readDirectorySTM("dat/ner/lad/b1", true)
     println("Number of sentences = " + ss.size)
     val content = ss.map { sentence => 
       sentence.tokens.map(token => token.word + "\t" + token.namedEntity).mkString("\n") + "\n"
     }
     import scala.collection.JavaConversions._
-    Files.write(Paths.get("dat/ner/lad.tsv"), content, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+    Files.write(Paths.get("dat/ner/lad-b1.tsv"), content, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 }

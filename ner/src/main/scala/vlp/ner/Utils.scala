@@ -12,6 +12,8 @@ import java.util.stream.Collectors
 import scala.io.Source
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 
 object Utils {
 
@@ -37,7 +39,7 @@ object Utils {
         val currentFileName = file.getFileName().toString()
         if (id.nonEmpty && currentFileName.endsWith("tsv")) {
           val target = Paths.get(outputPath, id + "-" + currentFileName)
-          Files.copy(file, target)
+          Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING)
         }
         FileVisitResult.CONTINUE
       }
@@ -113,10 +115,53 @@ object Utils {
 
   }
 
+  /**
+    * Converts a file of 2-col BIO format into XML format (as used in BPO data).
+    *
+    * @param inputPath
+    * @param outputPath
+    */
+  def bio2Xml(inputPath: String, outputPath: String): Unit = {
+    val typMap = Map("B-ORG" -> "cq", "I-ORG" -> "cq", "B-LOC" -> "dd", "I-LOC" -> "dd", "B-PER" -> "ng", "I-PER" -> "ng", 
+      "B-DATE" -> "date", "I-DATE" -> "date", "B-DOC" -> "vb", "I-DOC" -> "vb")
+
+    def convert(sentence: Sentence): String = {
+      val pairs = sentence.tokens.toList.map(token => (token.word, typMap.getOrElse(token.namedEntity, "O")))
+      val n = pairs.size
+      val st = new StringBuffer()
+      var u = 0
+      var v = 0
+      var t = pairs(u)._2
+      while (u < n) {
+        v = u + 1
+        while (v < n && pairs(v)._2 == pairs(u)._2)
+          v = v + 1
+        val content = pairs.slice(u, v).map(_._1).mkString(" ")
+        if (t != "O") {
+          st.append("<" + t + ">")
+          st.append(content)
+          st.append("</" + t + ">")
+          st.append(" ")
+        } else {
+          st.append(content)
+          st.append(" ")
+        }
+        u = v
+        if (u < n) t = pairs(u)._2
+      }
+      st.toString().trim()
+    }
+    val sentences = CorpusReader.readCoNLL(inputPath, true)
+    val xs = sentences.map(s => convert(s)).filter(s => s.indexOf("</") > 0)
+    import scala.collection.JavaConversions._
+    Files.write(Paths.get(outputPath), xs, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+  }
+
   def main(args: Array[String]): Unit = {
-    // rename("/Users/phuonglh/Downloads/annotation-2/", "/Users/phuonglh/vlp/dat/ner/stm")
-    // convertHUS("/Users/phuonglh/vlp/dat/ner/stm", "/Users/phuonglh/vlp/dat/ner/lad/")
-    convertBPO("/Users/phuonglh/vlp/dat/ner/bpo/man", "/Users/phuonglh/vlp/dat/ner/bpo/man.tsv")
+    // rename("/Users/phuonglh/Downloads/annotation-3/b2", "/Users/phuonglh/vlp/dat/ner/stm/b2")
+    // convertHUS("/Users/phuonglh/vlp/dat/ner/stm/b2", "/Users/phuonglh/vlp/dat/ner/lad/b2")
+    // convertBPO("/Users/phuonglh/vlp/dat/ner/bpo/man", "/Users/phuonglh/vlp/dat/ner/bpo/man.tsv")
+    bio2Xml("dat/ner/lad-b2.tsv", "dat/ner/lad-b2.txt")
     println("Done.")
   }
 }
