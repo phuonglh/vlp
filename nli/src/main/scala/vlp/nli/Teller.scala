@@ -38,7 +38,6 @@ import com.intel.analytics.bigdl.nn.SoftMax
 import com.intel.analytics.bigdl.nn.ParallelTable
 import com.intel.analytics.bigdl.nn.ClassNLLCriterion
 
-import com.intel.analytics.bigdl.dlframes.DLClassifier
 import com.intel.analytics.bigdl.optim.Adam
 import com.intel.analytics.bigdl.optim.Trigger
 import com.intel.analytics.bigdl.optim.Top1Accuracy
@@ -67,6 +66,17 @@ import java.nio.file.StandardOpenOption
 import org.apache.spark.ml.feature.Tokenizer
 import java.nio.charset.StandardCharsets
 import vlp.tok.WordShape
+
+import com.intel.analytics.zoo.pipeline.api.keras.models.Model
+import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
+import com.intel.analytics.zoo.pipeline.api.keras.layers.{Reshape => ReshapeZoo}
+import com.intel.analytics.zoo.pipeline.api.keras.layers.{Select => SelectZoo}
+import com.intel.analytics.zoo.pipeline.api.keras.layers.{SelectTable => SelectTableZoo}
+
+import com.intel.analytics.bigdl.utils.T
+import org.apache.spark.ml.feature.VectorAssembler
+import com.intel.analytics.bigdl.dlframes.DLClassifier
+import com.intel.analytics.zoo.pipeline.nnframes.NNClassifier
 
 
 /**
@@ -103,21 +113,40 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     val vocabSize = Math.min(config.numFeatures, vocabulary.size) + 1 // plus one (see [[SequenceVectorizer]])
     val dictionary: Map[String, Int] = vocabulary.zipWithIndex.toMap
 
+    val maxLen = config.maxSequenceLength
     // prepare the training and test data frames for BigDL model
     val df = prepocessor.transform(training)
     val tdf = prepocessor.transform(test)
     val (dlTrainingDF, dlTestDF) = if (config.modelType == "seq") {
-      val sequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("tokens").setOutputCol("features")
+      // pre-processing pipeline of the sequential model
+      val sequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("tokens").setOutputCol("features")
       (sequenceVectorizer.transform(df.select("label", "tokens")), sequenceVectorizer.transform(tdf.select("label", "tokens")))
-    } else {
-      val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("premise").setOutputCol("premiseIndexVector")
-      val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, config.maxSequenceLength).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
+    } else if (config.modelType == "par") {
+      // pre-processing pipeline of the parallel model 
+      val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("premise").setOutputCol("premiseIndexVector")
+      val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
       val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("features")
       val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker))
       val ef = df.select("label", "premise", "hypothesis")
       val tef = tdf.select("label", "premise", "hypothesis")
       val pm = pipeline.fit(ef)
       (pm.transform(ef), pm.transform(tef))
+    } else { 
+      // pre-processing pipeline of the BERT model
+      val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("premise").setOutputCol("premiseIndexVector")
+      val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
+      val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("tokenId")
+      val premiseTokenTypeFiller = new Filler(0.0).setInputCol("premiseIndexVector").setOutputCol("premiseTokenType")
+      val hypothesisTokenTypeFiller = new Filler(1.0).setInputCol("hypothesisIndexVector").setOutputCol("hypothesisTokenType")
+      val positionFiller = new PositionFiller(2*maxLen).setInputCol("tokenId").setOutputCol("positionId")
+      val maskFiller = new Filler(1.0).setInputCol("tokenId").setOutputCol("mask")
+      val vectorAssembler = new VectorAssembler().setInputCols(Array("tokenId", "premiseTokenType", "hypothesisTokenType", "positionId", "mask")).setOutputCol("features")
+      val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker, 
+        premiseTokenTypeFiller, hypothesisTokenTypeFiller, positionFiller, maskFiller, vectorAssembler))
+      val ef = df.select("label", "premise", "hypothesis")
+      val tef = tdf.select("label", "premise", "hypothesis")
+      val pm = pipeline.fit(ef)
+      (pm.transform(ef), pm.transform(tef))     
     }
 
     // add 1 to the 'label' column to get the 'category' column for BigDL model to train
@@ -125,26 +154,44 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     val trainingDF = dlTrainingDF.withColumn("category", increase(dlTrainingDF("label")))
     val testDF = dlTestDF.withColumn("category", increase(dlTestDF("label")))
     trainingDF.show()
-    testDF.show()
 
     val dlModel =  config.modelType match {
-      case "seq" => sequentialTransducer(vocabSize, config.maxSequenceLength)
-      case "par" => parallelTransducer(vocabSize, config.maxSequenceLength)
-      case "bow" => bowTransducer(vocabSize, config.maxSequenceLength)
+      case "bow" => bowTransducer(vocabSize, maxLen)
+      case "seq" => sequentialTransducer(vocabSize, maxLen)
+      case "par" => parallelTransducer(vocabSize, maxLen)
+      case "trs" => bertTransducer(vocabSize, 2*maxLen, config.encoderOutputSize)
     }
 
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
-    val featureSize = if (config.modelType == "seq") config.maxSequenceLength else 2*config.maxSequenceLength
-    val classifier = new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(featureSize))
-      .setLabelCol("category")
-      .setFeaturesCol("features")
-      .setBatchSize(config.batchSize)
-      .setOptimMethod(new Adam(config.learningRate))
-      .setMaxEpoch(config.epochs)
-      .setTrainSummary(trainSummary)
-      .setValidationSummary(validationSummary)
-      .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
+    val classifier = config.modelType match {
+      case "seq" => new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(maxLen))
+          .setLabelCol("category").setFeaturesCol("features")
+          .setBatchSize(config.batchSize)
+          .setOptimMethod(new Adam(config.learningRate))
+          .setMaxEpoch(config.epochs)
+          .setTrainSummary(trainSummary)
+          .setValidationSummary(validationSummary)
+          .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
+      case "par" => new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(2*maxLen))
+          .setLabelCol("category").setFeaturesCol("features")
+          .setBatchSize(config.batchSize)
+          .setOptimMethod(new Adam(config.learningRate))
+          .setMaxEpoch(config.epochs)
+          .setTrainSummary(trainSummary)
+          .setValidationSummary(validationSummary)
+          .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
+      case "trs" => 
+        val featureSize = Array(Array(2*maxLen), Array(2*maxLen), Array(2*maxLen), Array(2*maxLen))
+        NNClassifier(dlModel, ClassNLLCriterion[Float](), featureSize)
+          .setLabelCol("category").setFeaturesCol("features")
+          .setBatchSize(config.batchSize)
+          .setOptimMethod(new Adam(config.learningRate))
+          .setMaxEpoch(config.epochs)
+          .setTrainSummary(trainSummary)
+          .setValidationSummary(validationSummary)
+          .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
+    } 
   
     val model = classifier.fit(trainingDF)
     dlModel.saveModule(Paths.get(pack.modelPath(), config.modelType, s"${config.encoderType}.bigdl").toString(), 
@@ -259,6 +306,28 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
       .add(Linear(2*config.encoderOutputSize, config.numLabels))
       .add(SoftMax())
   }
+
+  /**
+   * Constructs a BERT model for NLI using Zoo layers
+   **/ 
+  def bertTransducer(vocabSize: Int, maxSeqLen: Int, hiddenSize: Int): Model[Float] = {
+    val inputIds = Input(inputShape = Shape(maxSeqLen))
+    val segmentIds = Input(inputShape = Shape(maxSeqLen))
+    val positionIds = Input(inputShape = Shape(maxSeqLen))
+    val masks = Input(inputShape = Shape(maxSeqLen))
+    val masksReshaped = ReshapeZoo(Array(1, 1, maxSeqLen)).inputs(masks)
+
+    val bert = com.intel.analytics.zoo.pipeline.api.keras.layers.BERT(vocab = vocabSize, hiddenSize = hiddenSize, nBlock = 12, nHead = 4,
+      maxPositionLen = maxSeqLen, intermediateSize = 1024, outputAllBlock = false)
+
+    val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
+    val bertOutput = SelectTableZoo(0).inputs(bertNode)
+    val lastState = SelectZoo(1, -1).inputs(bertOutput)
+    val output = Dense(config.numLabels, activation = "softmax").inputs(lastState)
+    val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
+    model
+  }
+
 }
 
 object Teller {
@@ -280,7 +349,7 @@ object Teller {
       opt[String]('d', "dataPack").action((x, conf) => conf.copy(dataPack = x)).text("data pack, either 'xnli' or 'snli'")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language")
       opt[Int]('w', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
-      opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either seq or par")
+      opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either bow/seq/par/trs")
       opt[String]('e', "encoderType").action((x, conf) => conf.copy(encoderType = x)).text("type of encoder, either 'cnn' or 'gru'")
       opt[Unit]('q', "bidirectional").action((_, conf) => conf.copy(bidirectional = true)).text("bidirectional when using gru, default is 'false'")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("output size of the encoder")
@@ -308,7 +377,8 @@ object Teller {
         val Array(training, test) = config.dataPack match {
           case "xnli" => 
             val df = sparkSession.read.json(trainingPath).select("gold_label", "sentence1_tokenized", "sentence2_tokenized")
-            df.randomSplit(Array(0.8, 0.2), seed = 12345)
+            val dfCount = (df.count()/config.batchSize)*config.batchSize
+            df.limit(dfCount.toInt).randomSplit(Array(0.8, 0.2), seed = 12345)
           case "snli" => 
             val training = sparkSession.read.json(trainingPath).select("gold_label", "sentence1", "sentence2")
             val dev = sparkSession.read.json(devPath).select("gold_label", "sentence1", "sentence2")

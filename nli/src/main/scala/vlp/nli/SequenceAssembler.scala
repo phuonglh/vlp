@@ -14,6 +14,9 @@ import org.apache.spark.sql.functions.{udf, col}
 
 /**
  * phuonglh, July 2020
+ * 
+ * Join two sequences of strings into one sequence of strings.
+ * 
  */
 class SequenceAssembler(override val uid: String) extends Transformer with HasInputCols with HasOutputCol
     with DefaultParamsWritable {

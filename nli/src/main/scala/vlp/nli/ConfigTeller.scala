@@ -18,7 +18,7 @@ case class ConfigTeller(
     filterSize: Int = 5, // filter size when using CNN
     numLabels: Int = 3,
     dataPack: String = "xnli",
-    batchSize: Int = 64,
+    batchSize: Int = 32,
     epochs: Int = 50,
     learningRate: Double = 0.001,
     verbose: Boolean = false,
