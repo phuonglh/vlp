@@ -16,6 +16,7 @@ import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
 
 import com.intel.analytics.zoo.pipeline.api.keras.layers.SelectTable
+import com.intel.analytics.zoo.mkl.MKL
 
 object BERT {
 
