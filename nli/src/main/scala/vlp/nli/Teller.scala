@@ -442,7 +442,7 @@ object Teller {
           case "trs" => 
               val encoderOutputSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
               for (o <- encoderOutputSizes) {
-                val conf = ConfigTeller(modelType = config.modelType, encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
+                val conf = ConfigTeller(modelType = "trs", encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
                   tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, numBlocks = config.numBlocks, numHeads = config.numHeads, intermediateSize = config.intermediateSize)
                 val pack = new DataPack(config.dataPack, config.language)
                 val teller = new Teller(sparkSession, conf, pack)
