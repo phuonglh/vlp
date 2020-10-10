@@ -159,7 +159,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
       case "bow" => bowTransducer(vocabSize, maxLen)
       case "seq" => sequentialTransducer(vocabSize, maxLen)
       case "par" => parallelTransducer(vocabSize, maxLen)
-      case "trs" => bertTransducer(vocabSize, 2*maxLen, config.encoderOutputSize)
+      case "trs" => bertTransducer(vocabSize, 2*maxLen)
     }
 
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
@@ -310,20 +310,21 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
   /**
    * Constructs a BERT model for NLI using Zoo layers
    **/ 
-  def bertTransducer(vocabSize: Int, maxSeqLen: Int, hiddenSize: Int): Model[Float] = {
+  def bertTransducer(vocabSize: Int, maxSeqLen: Int): Model[Float] = {
     val inputIds = Input(inputShape = Shape(maxSeqLen))
     val segmentIds = Input(inputShape = Shape(maxSeqLen))
     val positionIds = Input(inputShape = Shape(maxSeqLen))
     val masks = Input(inputShape = Shape(maxSeqLen))
     val masksReshaped = ReshapeZoo(Array(1, 1, maxSeqLen)).inputs(masks)
 
-    val bert = com.intel.analytics.zoo.pipeline.api.keras.layers.BERT(vocab = vocabSize, hiddenSize = hiddenSize, nBlock = 2, nHead = 8,
-      maxPositionLen = maxSeqLen, intermediateSize = 256, outputAllBlock = false)
+    val bert = com.intel.analytics.zoo.pipeline.api.keras.layers.BERT(vocab = vocabSize, hiddenSize = config.encoderOutputSize, nBlock = config.numBlocks, nHead = config.numHeads,
+      maxPositionLen = maxSeqLen, intermediateSize = config.intermediateSize, outputAllBlock = false)
 
     val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
     val bertOutput = SelectTableZoo(0).inputs(bertNode)
     val lastState = SelectZoo(1, -1).inputs(bertOutput)
-    val output = Dense(config.numLabels, activation = "softmax").inputs(lastState)
+    val dense = Dense(config.numLabels).inputs(lastState)
+    val output = com.intel.analytics.bigdl.nn.keras.SoftMax().inputs(dense)
     val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
     model
   }
@@ -357,6 +358,9 @@ object Teller {
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Unit]('a', "tokenized").action((_, conf) => conf.copy(tokenized = true)).text("use the Vietnamese tokenized sentences, default is 'false'")
+      opt[Int]('x', "nBlocks").action((x, conf) => conf.copy(numBlocks = x)).text("number of blocks if using BERT")
+      opt[Int]('y', "nHeads").action((x, conf) => conf.copy(numHeads = x)).text("number of attention heads if using BERT")
+      opt[Int]('z', "intermediateSize").action((x, conf) => conf.copy(intermediateSize = x)).text("number of hidden units in feed-forward layer if using BERT")
     }
     parser.parse(args, ConfigTeller()) match {
       case Some(config) =>
@@ -398,7 +402,7 @@ object Teller {
             val times = 5
             for (d <- embeddingSizes) {
               if (config.modelType != "bow") {
-                val encoderOutputSizes = Array(100, 128, 150, 200, 256, 300)
+                val encoderOutputSizes = if (config.modelType == "trs") Array(128, 160, 200, 256, 304) else Array(100, 128, 150, 200, 256, 300)
                 for (o <- encoderOutputSizes) {
                   val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
                     batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency)
