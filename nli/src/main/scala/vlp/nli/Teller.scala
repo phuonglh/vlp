@@ -317,8 +317,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     val masks = Input(inputShape = Shape(maxSeqLen))
     val masksReshaped = ReshapeZoo(Array(1, 1, maxSeqLen)).inputs(masks)
 
-    val bert = com.intel.analytics.zoo.pipeline.api.keras.layers.BERT(vocab = vocabSize, hiddenSize = hiddenSize, nBlock = 12, nHead = 4,
-      maxPositionLen = maxSeqLen, intermediateSize = 1024, outputAllBlock = false)
+    val bert = com.intel.analytics.zoo.pipeline.api.keras.layers.BERT(vocab = vocabSize, hiddenSize = hiddenSize, nBlock = 2, nHead = 8,
+      maxPositionLen = maxSeqLen, intermediateSize = 256, outputAllBlock = false)
 
     val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
     val bertOutput = SelectTableZoo(0).inputs(bertNode)
