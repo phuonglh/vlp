@@ -72,13 +72,14 @@ object Utils {
   }
 
   /**
-    * Converts the XML format of BPO annotated files into 2-col with B-I-O format.
+    * Converts the XML format of BPO annotated files into 2-col with B-I-O format; word segmentation is performed 
+    * during the conversion.
     *
     * @param inputPath
     * @param outputPath
     */
   def convertBPO(inputPath: String, outputPath: String): Unit = {
-    val entityMap = Map[String, String]("cq" -> "ORG", "dd" -> "LOC", "ng" -> "PER", "vb" -> "DOC")
+    val entityMap = Map[String, String]("cq" -> "ORG", "dd" -> "LOC", "ng" -> "PER", "vb" -> "DOC", "date" -> "DATE")
 
     def xml2Column(element: scala.xml.Elem): List[String] = {
       val tokens = element.child.flatMap(node => {
@@ -160,8 +161,10 @@ object Utils {
   def main(args: Array[String]): Unit = {
     // rename("/Users/phuonglh/Downloads/annotation-3/b2", "/Users/phuonglh/vlp/dat/ner/stm/b2")
     // convertHUS("/Users/phuonglh/vlp/dat/ner/stm/b2", "/Users/phuonglh/vlp/dat/ner/lad/b2")
-    // convertBPO("/Users/phuonglh/vlp/dat/ner/bpo/man", "/Users/phuonglh/vlp/dat/ner/bpo/man.tsv")
-    bio2Xml("dat/ner/lad-b2.tsv", "dat/ner/lad-b2.txt")
+
+    convertBPO("/Users/phuonglh/vlp/dat/ner/man/man.txt", "/Users/phuonglh/vlp/dat/ner/man/man.tsv")
+
+    // bio2Xml("dat/ner/lad-b2.tsv", "dat/ner/lad-b2.txt")
     println("Done.")
   }
 }

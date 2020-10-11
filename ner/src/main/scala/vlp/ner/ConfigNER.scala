@@ -16,7 +16,7 @@ case class ConfigNER(
   iterations: Int = 300,
   independent: Boolean = false,
   reversed: Boolean = false,
-  input: String = "dat/txt/vlsp.txt",
+  input: String = "dat/ner/vie/input.txt",
   maxSequenceLength: Int = 80,
   batchSize: Int = 128,
   wordEmbeddingSize: Int = 200,

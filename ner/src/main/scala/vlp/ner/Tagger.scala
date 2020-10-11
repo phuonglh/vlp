@@ -30,8 +30,9 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
   lazy val forwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-f")
   lazy val backwardModel = PipelineModel.load(config.modelPath + config.language + "/cmm-b")
 
-  lazy val partOfSpeechTagger = new vlp.tag.Tagger(sparkSession, vlp.tag.ConfigPoS())
-  lazy val partOfSpeechModel = PipelineModel.load(vlp.tag.ConfigPoS().modelPath)
+  lazy val configPoS = vlp.tag.ConfigPoS()
+  lazy val partOfSpeechTagger = new vlp.tag.Tagger(sparkSession, configPoS)
+  lazy val partOfSpeechModel = PipelineModel.load(configPoS.modelPath)
 
   lazy val extendedFeatureSet = if (config.twoColumns) Set.empty[String] else Set[String]("pos", "chunk", "regexp")
 
@@ -273,7 +274,8 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
   }
 
   /**
-   * Infers NE tags for raw sentences. We first run a part-of-speech tagger and then run the name tagger.
+   * Infers NE tags for raw sentences. If the PoS tags are used, we first run a part-of-speech tagger and then run the name tagger; otherwise 
+   * we use only raw surface text to tag.
    * @param xs a sequence of input raw sentences.
    * @return an annotated sentence with NE tags.
    */
@@ -285,10 +287,18 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
         case _ => pos
       }
     }
-    val ts = partOfSpeechTagger.tag(partOfSpeechModel, xs)
-    val sentences = ts.map { t => 
-      val tokens = t.map(pair => Token(pair._1, Map(Label.PartOfSpeech -> convertPoS(pair._2)))).toList
-      Sentence(tokens.to[ListBuffer])
+    val sentences = if (config.twoColumns == false) {
+      val ts = partOfSpeechTagger.tag(partOfSpeechModel, xs)
+      ts.map { t => 
+        val tokens = t.map(pair => Token(pair._1, Map(Label.PartOfSpeech -> convertPoS(pair._2)))).toList
+        Sentence(tokens.to[ListBuffer])
+      }
+    } else { 
+      xs.map { x => 
+        val ws = vlp.tok.Tokenizer.tokenize(x).map(_._3)
+        val tokens = ws.map(w => Token(w, Map.empty))
+        Sentence(tokens.to[ListBuffer])
+      }
     }
     combine(sentences.toList)
   }
@@ -330,8 +340,10 @@ object Tagger {
             println("Number of sentences = " + xs.size)
             println("Number of syllables = " + xs.mkString(" ").split("\\s+").size)
             val ss = tagger.inference(xs)
-            val lines = ss.map(s => {
+            val lines = if (!config.twoColumns) ss.map(s => {
               s.tokens.map(token => token.word + "/" + token.partOfSpeech + "/" + token.namedEntity).mkString(" ")
+            }) else ss.map(s => {
+              s.tokens.map(token => token.word + "/" + token.namedEntity).mkString(" ")
             })
             Files.write(Paths.get(config.input + ".out"), lines.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
             logger.info("Done.")

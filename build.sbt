@@ -233,7 +233,7 @@ lazy val vio = (project in file("vio"))
 
 // Spark-JobServer module
 lazy val sjs = (project in file("sjs"))
-  .dependsOn(tdp)
+  .dependsOn(tdp, ner)
   .settings(
     commonSettings,
     assemblyJarName in assembly := "sjs.jar",
