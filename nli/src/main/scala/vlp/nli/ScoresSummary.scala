@@ -12,17 +12,8 @@ import java.text.DecimalFormat
 object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
 
-  def main(args: Array[String]): Unit = {
-    val path = "dat/nli/scores.par.json"
-    val content = Source.fromFile(path).getLines().toList.mkString(" ")
-    implicit val formats = DefaultFormats
-    val jsArray = parse(content)
-    val result = ListBuffer[Scores]()
-    for (js <- jsArray.children)
-      result += js.extract[Scores]
 
-    val n = 40
-    val arch = "par"
+  def firstThreeArch(n:Int = 40, arch: String = "par", result: ListBuffer[Scores]): Unit = {
     val types = List("cnn", "gru")
     val embeddingSizes = Array(25, 50, 80, 100)
     val encoderSizes = Array(100, 128, 150, 200, 256, 300)
@@ -40,9 +31,9 @@ object ScoresSummary {
         }
         val deviation = elements.groupBy(_.embeddingSize).map { pair =>
           val k = pair._2.size
-          val trainSum = pair._2.map(_.trainingScores.last).sum.toDouble
+          val trainSum = pair._2.map(_.trainingScores.last).sum.toDouble/k
           val trainStd = pair._2.map(score => (score.trainingScores.last - trainSum)*(score.trainingScores.last - trainSum)).sum/k
-          val testSum = pair._2.map(_.testScore).sum.toDouble
+          val testSum = pair._2.map(_.testScore).sum.toDouble/k
           val testStd = pair._2.map(score => (score.testScore - testSum)*(score.testScore - testSum)).sum/k
           (pair._1, trainStd, testStd)
         }.toList.sortBy(_._1)
@@ -67,5 +58,39 @@ object ScoresSummary {
       }
       println()
     }
+  }
+
+  def transformers(n: Int = 40, result: ListBuffer[Scores]): Unit = {
+    val encoderSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
+    val mean = Map[Int, Double]()
+    val std = Map[Int, Double]()
+    for (encoderSize <- encoderSizes) {
+      val elements = result.filter(_.arch == "trs").filter(_.maxSequenceLength == n).filter(_.encoderSize == encoderSize)
+      val k = elements.size
+      val testAvg = elements.map { e => e.testScore }.sum/k
+      val testVar = elements.map(e => (e.testScore - testAvg)*(e.testScore - testAvg)).sum/k
+      mean += (encoderSize -> testAvg)
+      std += (encoderSize -> Math.sqrt(testVar))
+    }
+    println("encoderSize\tmean\tstd")
+    for (e <- encoderSizes) {
+      println(e.toString + '\t' + mean.getOrElse(e, 0d) + '\t' + std.getOrElse(e, 0d))
+    }
+  }
+
+  def main(args: Array[String]): Unit = {
+    // val path = "dat/nli/scores.par.json"
+    // val path = "dat/nli/scores.trs.x2.syllable.json"
+    val path = "dat/nli/scores.trs.x2.word.json"
+    val n = if (path.contains("syllable")) 40 else 30
+    
+    val content = Source.fromFile(path).getLines().toList.mkString(" ")
+    implicit val formats = DefaultFormats
+    val jsArray = parse(content)
+    val result = ListBuffer[Scores]()
+    for (js <- jsArray.children)
+      result += js.extract[Scores]
+
+    transformers(n, result)
   }
 }

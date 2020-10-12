@@ -23,7 +23,7 @@ case class ConfigTeller(
     learningRate: Double = 0.001,
     verbose: Boolean = false,
     tokenized: Boolean = false,
-    numBlocks: Int = 2,
-    numHeads: Int = 8,
-    intermediateSize: Int = 256
+    numBlocks: Int = 2, // use with BERT
+    numHeads: Int = 8, // user with BERT
+    intermediateSize: Int = 256 // user with BERT
 )
