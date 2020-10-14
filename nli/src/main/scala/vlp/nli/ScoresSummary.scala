@@ -12,7 +12,6 @@ import java.text.DecimalFormat
 object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
 
-
   def firstThreeArch(n:Int = 40, arch: String = "par", result: ListBuffer[Scores]): Unit = {
     val types = List("cnn", "gru")
     val embeddingSizes = Array(25, 50, 80, 100)
@@ -81,9 +80,9 @@ object ScoresSummary {
   def main(args: Array[String]): Unit = {
     // val path = "dat/nli/scores.par.json"
     // val path = "dat/nli/scores.trs.x2.syllable.json"
-    val path = "dat/nli/scores.trs.x2.word.json"
+    val path = "dat/nli/scores.trs.x4.word.json"
     val n = if (path.contains("syllable")) 40 else 30
-    
+
     val content = Source.fromFile(path).getLines().toList.mkString(" ")
     implicit val formats = DefaultFormats
     val jsArray = parse(content)
