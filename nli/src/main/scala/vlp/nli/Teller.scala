@@ -433,7 +433,7 @@ object Teller {
                 val encoderOutputSizes = Array(100, 128, 150, 200, 256, 300)
                 for (o <- encoderOutputSizes) {
                   val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
-                    batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency)
+                    batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs)
                   val pack = new DataPack(config.dataPack, config.language)
                   val teller = new Teller(sparkSession, conf, pack)
                   for (times <- 0 until times) {
@@ -444,7 +444,7 @@ object Teller {
                 }
               } else {
                   val conf = ConfigTeller(modelType = config.modelType, encoderType = "bow", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
-                    batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency)
+                    batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs)
                   val pack = new DataPack(config.dataPack, config.language)
                   val teller = new Teller(sparkSession, conf, pack)
                   for (times <- 0 until times) {
