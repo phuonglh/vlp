@@ -5,16 +5,13 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.SparkSession
 import com.intel.analytics.bigdl.utils.Shape
-import org.apache.spark.ml.feature.RegexTokenizer
-import org.apache.spark.ml.feature.CountVectorizer
+import org.apache.spark.ml.feature.{RegexTokenizer, CountVectorizer, FeatureHasher, StringIndexer, CountVectorizerModel}
 import org.apache.spark.sql.functions.udf
 import com.intel.analytics.bigdl.utils.Engine
 import org.apache.spark.SparkContext
 import java.nio.file.Paths
-import org.apache.spark.ml.feature.StringIndexer
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.ml.feature.CountVectorizerModel
 
 import org.slf4j.LoggerFactory
 
@@ -91,6 +88,7 @@ import com.intel.analytics.zoo.pipeline.nnframes.NNClassifier
 class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   final val delimiters = """[\s,.;:'"]+"""
+  implicit val formats = Serialization.formats(NoTypeHints)
 
   def train(training: DataFrame, test: DataFrame): Scores = {
     val labelIndexer = new StringIndexer().setInputCol("gold_label").setOutputCol("label")
@@ -111,42 +109,61 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     // determine the vocab size and dictionary
     val vocabulary = prepocessor.stages.last.asInstanceOf[CountVectorizerModel].vocabulary
     val vocabSize = Math.min(config.numFeatures, vocabulary.size) + 1 // plus one (see [[SequenceVectorizer]])
+    logger.info("vocabSize = " + vocabSize)
     val dictionary: Map[String, Int] = vocabulary.zipWithIndex.toMap
 
     val maxLen = config.maxSequenceLength
+    var conceptSize = 0
     // prepare the training and test data frames for BigDL model
     val df = prepocessor.transform(training)
     val tdf = prepocessor.transform(test)
-    val (dlTrainingDF, dlTestDF) = if (config.modelType == "seq") {
-      // pre-processing pipeline of the sequential model
-      val sequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("tokens").setOutputCol("features")
-      (sequenceVectorizer.transform(df.select("label", "tokens")), sequenceVectorizer.transform(tdf.select("label", "tokens")))
-    } else if (config.modelType == "par") {
-      // pre-processing pipeline of the parallel model 
-      val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("premise").setOutputCol("premiseIndexVector")
-      val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
-      val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("features")
-      val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker))
-      val ef = df.select("label", "premise", "hypothesis")
-      val tef = tdf.select("label", "premise", "hypothesis")
-      val pm = pipeline.fit(ef)
-      (pm.transform(ef), pm.transform(tef))
-    } else { 
-      // pre-processing pipeline of the BERT model
-      val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("premise").setOutputCol("premiseIndexVector")
-      val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
-      val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("tokenId")
-      val premiseTokenTypeFiller = new Filler(0.0).setInputCol("premiseIndexVector").setOutputCol("premiseTokenType")
-      val hypothesisTokenTypeFiller = new Filler(1.0).setInputCol("hypothesisIndexVector").setOutputCol("hypothesisTokenType")
-      val positionFiller = new PositionFiller(2*maxLen).setInputCol("tokenId").setOutputCol("positionId")
-      val maskFiller = new Filler(1.0).setInputCol("tokenId").setOutputCol("mask")
-      val vectorAssembler = new VectorAssembler().setInputCols(Array("tokenId", "premiseTokenType", "hypothesisTokenType", "positionId", "mask")).setOutputCol("features")
-      val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker, 
-        premiseTokenTypeFiller, hypothesisTokenTypeFiller, positionFiller, maskFiller, vectorAssembler))
-      val ef = df.select("label", "premise", "hypothesis")
-      val tef = tdf.select("label", "premise", "hypothesis")
-      val pm = pipeline.fit(ef)
-      (pm.transform(ef), pm.transform(tef))     
+    val (dlTrainingDF, dlTestDF) = config.modelType match {
+      case "seq" =>
+        // pre-processing pipeline of the sequential model
+        val sequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("tokens").setOutputCol("features")
+        (sequenceVectorizer.transform(df.select("label", "tokens")), sequenceVectorizer.transform(tdf.select("label", "tokens")))
+      case "par" =>
+        // pre-processing pipeline of the parallel model 
+        val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("premise").setOutputCol("premiseIndexVector")
+        val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
+        val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("features")
+        val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker))
+        val ef = df.select("label", "premise", "hypothesis")
+        val tef = tdf.select("label", "premise", "hypothesis")
+        val pm = pipeline.fit(ef)
+        (pm.transform(ef), pm.transform(tef))
+      case "trs" => 
+        // pre-processing pipeline of the BERT model
+        val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("premise").setOutputCol("premiseIndexVector")
+        val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
+        val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("tokenId")
+        val premiseTokenTypeFiller = new Filler(0.0).setInputCol("premiseIndexVector").setOutputCol("premiseTokenType")
+        val hypothesisTokenTypeFiller = new Filler(1.0).setInputCol("hypothesisIndexVector").setOutputCol("hypothesisTokenType")
+        val positionFiller = new PositionFiller(2*maxLen).setInputCol("tokenId").setOutputCol("positionId")
+        val maskFiller = new Filler(1.0).setInputCol("tokenId").setOutputCol("mask")
+        val vectorAssembler = new VectorAssembler().setInputCols(Array("tokenId", "premiseTokenType", "hypothesisTokenType", "positionId", "mask")).setOutputCol("features")
+        val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker, 
+          premiseTokenTypeFiller, hypothesisTokenTypeFiller, positionFiller, maskFiller, vectorAssembler))
+        val ef = df.select("label", "premise", "hypothesis")
+        val tef = tdf.select("label", "premise", "hypothesis")
+        val pm = pipeline.fit(ef)
+        (pm.transform(ef), pm.transform(tef))
+      case "sem" => 
+        val tokenVectorizer = new SequenceVectorizer(dictionary, 2*maxLen, 0).setInputCol("tokens").setOutputCol("wordIndex")
+        val lines = scala.io.Source.fromFile("dat/ccn/ccn.vi.tsv", "UTF-8").getLines().toList
+        val conceptMap = lines.map(line => line.split("\\s+")).filter(xs => xs.size > 1).map(xs => (xs(0), xs.tail.toSet)).toMap
+        val conceptLookup = new ConceptLookup(conceptMap,  String => true).setInputCol("tokens").setOutputCol("concepts")
+        val countVectorizer = new CountVectorizer().setInputCol("concepts").setOutputCol("conceptVector")
+        val pipeline = new Pipeline().setStages(Array(tokenVectorizer, conceptLookup, countVectorizer))
+        val pm = pipeline.fit(df)
+        val conceptDict = pm.stages.last.asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
+        conceptSize = conceptDict.size
+        logger.info("#(concepts) = " + conceptSize)
+        val conceptVectorizer = new SequenceVectorizer(conceptDict, 2*maxLen, vocabSize).setInputCol("concepts").setOutputCol("conceptIndex")
+        val vectorAssembler = new VectorAssembler().setInputCols(Array("wordIndex", "conceptIndex")).setOutputCol("features")
+        val pipeline2 = new Pipeline().setStages(Array(tokenVectorizer, conceptLookup, conceptVectorizer, vectorAssembler))
+        val pm2 = pipeline2.fit(df)
+        (pm2.transform(df.select("label", "tokens")), pm2.transform(tdf.select("label", "tokens"))) 
     }
 
     // add 1 to the 'label' column to get the 'category' column for BigDL model to train
@@ -160,6 +177,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
       case "seq" => sequentialTransducer(vocabSize, maxLen)
       case "par" => parallelTransducer(vocabSize, maxLen)
       case "trs" => bertTransducer(vocabSize, 2*maxLen)
+      case "sem" => sequentialTransducer(vocabSize + conceptSize, 4*maxLen)
     }
 
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
@@ -191,6 +209,14 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
           .setTrainSummary(trainSummary)
           .setValidationSummary(validationSummary)
           .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
+      case "sem" => new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(4*maxLen))
+          .setLabelCol("category").setFeaturesCol("features")
+          .setBatchSize(config.batchSize)
+          .setOptimMethod(new Adam(config.learningRate))
+          .setMaxEpoch(config.epochs)
+          .setTrainSummary(trainSummary)
+          .setValidationSummary(validationSummary)
+          .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
     } 
   
     val model = classifier.fit(trainingDF)
@@ -215,9 +241,11 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
       })
     }
     val xs = validationSummary.readScalar("Top1Accuracy").map(_._2)
-    Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
+    val output = Scores(arch = config.modelType, encoder = config.encoderType, maxSequenceLength = config.maxSequenceLength, embeddingSize = config.embeddingSize, 
       encoderSize = config.encoderOutputSize, bidirectional = config.bidirectional, tokenized = config.tokenized, 
       trainingScores = xs.takeRight(20), testScore = scores._2.toFloat)
+    logger.info(Serialization.writePretty(output))
+    output
   }
 
   /**
@@ -415,7 +443,7 @@ object Teller {
                   }
                 }
               } else {
-                  val conf = ConfigTeller(modelType = config.modelType, encoderType = "NA", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
+                  val conf = ConfigTeller(modelType = config.modelType, encoderType = "bow", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
                     batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency)
                   val pack = new DataPack(config.dataPack, config.language)
                   val teller = new Teller(sparkSession, conf, pack)

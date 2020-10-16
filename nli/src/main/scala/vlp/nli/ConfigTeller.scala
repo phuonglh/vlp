@@ -12,7 +12,7 @@ case class ConfigTeller(
     numFeatures: Int = 32768,
     modelType: String = "seq",
     encoderType: String = "cnn",
-    embeddingSize: Int = 100,
+    embeddingSize: Int = 25,
     encoderOutputSize: Int = 128,
     bidirectional: Boolean = false, // use with GRU
     filterSize: Int = 5, // filter size when using CNN

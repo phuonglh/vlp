@@ -18,20 +18,20 @@ import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
   *
   * phuonglh@gmail.com
   */
-class SequenceVectorizer(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int) extends UnaryTransformer[Seq[String], Vector, SequenceVectorizer]
+class SequenceVectorizer(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int, offset: Int = 0) extends UnaryTransformer[Seq[String], Vector, SequenceVectorizer]
   with DefaultParamsWritable {
 
   var dictionaryBr: Option[Broadcast[Map[String, Int]]] = None
 
-  def this(dictionary: Map[String, Int], maxSequenceLength: Int) = {
-    this(Identifiable.randomUID("seqVec"), dictionary, maxSequenceLength)
+  def this(dictionary: Map[String, Int], maxSequenceLength: Int, offset: Int) = {
+    this(Identifiable.randomUID("seqVec"), dictionary, maxSequenceLength, offset)
     val sparkContext = SparkSession.getActiveSession.get.sparkContext
     dictionaryBr = Some(sparkContext.broadcast(dictionary))
   }
 
   override protected def createTransformFunc: Seq[String] => Vector = {
     def f(xs: Seq[String]): Vector = {
-      val indices = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0) + 1.0).toArray
+      val indices = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0) + 1.0 + offset).toArray
       val values = if (indices.size >= maxSequenceLength) 
         indices.take(maxSequenceLength) 
       else indices ++ Array.fill(maxSequenceLength - indices.size)(1.0)
