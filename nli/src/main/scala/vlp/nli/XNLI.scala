@@ -58,16 +58,15 @@ object XNLI {
         // Reads all `dev` and `test` JSONL files of XNLI and filter all samples of a given language
         implicit val formats = Serialization.formats(NoTypeHints)
         import scala.collection.JavaConversions._
-        val language = "fr"
+        val language = "en"
         val paths = Array("dat/nli/XNLI-1.0/xnli.dev.jsonl", "dat/nli/XNLI-1.0/xnli.test.jsonl")
-        for (path <- paths) {
+        val samples = paths.flatMap { path =>
             val s = scala.io.Source.fromFile(path).getLines().toList.filter(line => line.contains("\"" + language + "\""))
             val elements = s.map(x => JSON.parseFull(x).get.asInstanceOf[Map[String,Any]])
             println(elements.size)
-            val content = elements.map(e => Serialization.writePretty(e) + ",")
-            val output = List("[") ++ content ++ List("]")
-            Files.write(Paths.get(path + "." + language), output, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+            elements.map(e => Serialization.write(e))
         }
+        Files.write(Paths.get("dat/nli/XNLI-1.0/" + language + ".jsonl"), samples.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
         println("Done.")
     }
 }

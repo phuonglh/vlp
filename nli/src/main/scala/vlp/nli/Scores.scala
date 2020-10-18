@@ -1,6 +1,7 @@
 package vlp.nli
 
 final case class Scores(
+  lang: String = "vi",
   arch: String,
   encoder: String,
   maxSequenceLength: Int,

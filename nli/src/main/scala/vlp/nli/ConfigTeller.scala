@@ -19,7 +19,7 @@ case class ConfigTeller(
     numLabels: Int = 3,
     dataPack: String = "xnli",
     batchSize: Int = 32,
-    epochs: Int = 50,
+    epochs: Int = 40,
     learningRate: Double = 0.001,
     verbose: Boolean = false,
     tokenized: Boolean = false,
