@@ -75,7 +75,6 @@ import org.apache.spark.ml.feature.VectorAssembler
 import com.intel.analytics.bigdl.dlframes.DLClassifier
 import com.intel.analytics.zoo.pipeline.nnframes.NNClassifier
 
-
 /**
   * Natural Language Inference module
   * phuonglh, July 2020.
@@ -456,18 +455,31 @@ object Teller {
               }
             }
           case "dict" => 
-              val df = sparkSession.read.json("dat/nli/XNLI-1.0/vi.tok.json").select("both")
+              // val df = sparkSession.read.json("dat/nli/XNLI-1.0/vi.tok.json").select("both")
+              import org.apache.spark.sql.functions.concat_ws
+              import org.apache.spark.sql.functions.col
+              val df = sparkSession.read.json("dat/nli/XNLI-1.0/en.jsonl").select("sentence1_tokenized", "sentence2_tokenized")
+                .withColumn("both", concat_ws(" ", col("sentence1_tokenized"), col("sentence2_tokenized")))
+              df.show(false)
               val tokenizer = new Tokenizer().setInputCol("both").setOutputCol("tokens")
-              val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features")
-              val pipeline = new Pipeline().setStages(Array(tokenizer, vectorizer))
+              
+              val pipeline = if (config.language == "vi") {
+                val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features")
+                new Pipeline().setStages(Array(tokenizer, vectorizer))
+              } else {
+                  val stemmer = new Stemmer().setInputCol("tokens").setOutputCol("stems").setLanguage("English")
+                  val vectorizer = new CountVectorizer().setInputCol("stems").setOutputCol("features")
+                  new Pipeline().setStages(Array(tokenizer, stemmer, vectorizer))
+                }
               val model = pipeline.fit(df)
-              val vocabulary = model.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.toList
+              val vocabulary = model.stages.last.asInstanceOf[CountVectorizerModel].vocabulary.toList
               val words = vocabulary.filterNot { word => 
                 val shape = WordShape.shape(word)
-                (word.size == 1) || (shape == "number") || (shape == "punctuation") || (shape == "percentage")
+                (word.size == 1) || (shape == "number") || (shape == "punctuation") || (shape == "percentage") || (word.contains("'"))
               }
+              val outputPath = "dat/nli/XNLI-1.0/" + config.language + ".vocab.txt"
               import scala.collection.JavaConversions._
-              Files.write(Paths.get("dat/nli/XNLI-1.0/vi.vocab.txt"), words, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+              Files.write(Paths.get(outputPath), words, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
           case "trs" => 
               val encoderOutputSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
               for (o <- encoderOutputSizes) {

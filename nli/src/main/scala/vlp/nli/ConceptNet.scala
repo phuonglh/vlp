@@ -22,7 +22,8 @@ import scala.collection.mutable
   * 
   */
 object ConceptNet {
-  val path = "http://api.conceptnet.io/c/vi/"
+  // val path = "http://api.conceptnet.io/c/vi/"
+  val path = "http://api.conceptnet.io/c/en/"
   implicit val formats = Serialization.formats(NoTypeHints)
 
   /**
@@ -125,13 +126,15 @@ object ConceptNet {
   def main(args: Array[String]): Unit = {
     // println(lookup("vào", 40))
 
-    // query the ConceptNet server using al words in the Vietnamese vocab and 
+    // query the ConceptNet server using al words in a vocab and 
     // write result to a JSON file.
     // val vocabulary = Source.fromFile("dat/nli/XNLI-1.0/vi.vocab.txt").getLines().toList
-    // val startIndex = if (args.size > 0) args(0).toInt else 0
-    // val endIndex = if (args.size > 1) args(1).toInt else vocabulary.size
-    // val selection = vocabulary.slice(startIndex, endIndex)
+    val vocabulary = Source.fromFile("dat/nli/XNLI-1.0/en.vocab.txt").getLines().toList
+    val startIndex = if (args.size > 0) args(0).toInt else 0
+    val endIndex = if (args.size > 1) args(1).toInt else vocabulary.size
+    val selection = vocabulary.slice(startIndex, endIndex)
     // lookup(selection, "dat/nli/ccn.json")
+    lookup(selection, "dat/nli/en.ccn.json")
 
     // val node = Source.fromFile("dat/ccn/0.json").getLines().toList.mkString(" ")
     // val relations = Seq("/r/Synonym", "/r/Antonym", "/r/IsA", "/r/PartOf", "/r/HasA", "/r/UsedFor", "/r/CapableOf", "/r/MadeOf", 
@@ -139,9 +142,9 @@ object ConceptNet {
     // val result = query(node, relations)
     // result.foreach(println)
 
-    val nodes = Source.fromFile("dat/ccn/ccn.vi.json", "UTF-8").getLines().toList
-    val relations = Seq("/r/Synonym", "/r/Antonym", "/r/IsA", "/r/PartOf", "/r/HasA", "/r/UsedFor", "/r/CapableOf", "/r/MadeOf", 
-      "/r/DefinedAs", "/r/Causes", "/r/Desires", "/r/RelatedTo")
-    query(nodes, relations, "dat/ccn/ccn.vi.tsv")
+    // val nodes = Source.fromFile("dat/ccn/ccn.vi.json", "UTF-8").getLines().toList
+    // val relations = Seq("/r/Synonym", "/r/Antonym", "/r/IsA", "/r/PartOf", "/r/HasA", "/r/UsedFor", "/r/CapableOf", "/r/MadeOf", 
+    //   "/r/DefinedAs", "/r/Causes", "/r/Desires", "/r/RelatedTo")
+    // query(nodes, relations, "dat/ccn/ccn.vi.tsv")
   }
 }
