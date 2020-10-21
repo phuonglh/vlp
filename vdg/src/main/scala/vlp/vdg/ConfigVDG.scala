@@ -43,7 +43,7 @@ case class ConfigVDG(
   jsonData: Boolean = false,
   dataPath: String = "dat/txt/vtb.txt",
   percentage: Double = 1.0, 
-  modelPath: String = "dat/vdg/vtb/",
+  modelPath: String = "dat/vdg/",
   batchSize: Int = 32,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 100,
@@ -55,7 +55,7 @@ case class ConfigVDG(
   hiddenUnits: Int = 64, // number of hidden units in each layer
   dropout: Double = 0,
   inputPath: String = "dat/vdg/test.txt",
-  logPath: String = "dat/vdg/scores",
+  logPath: String = "dat/vdg/scores.json",
   modelType: Int = 1,
   lookupWordSize: Int = 300,
   lookupCharacterSize: Int = 30,

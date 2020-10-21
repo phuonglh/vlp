@@ -137,7 +137,6 @@ lazy val vdg = (project in file("vdg"))
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
       "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
     )
   )
@@ -153,7 +152,6 @@ lazy val nli = (project in file("nli"))
     libraryDependencies ++= Seq(
       "org.scalaj" %% "scalaj-http" % "2.4.2",
       "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
       "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.8.1" % "provided",
       "com.intel.analytics.zoo" % "zoo-core-torchnet-java-mac" % "0.8.1" % "provided"
