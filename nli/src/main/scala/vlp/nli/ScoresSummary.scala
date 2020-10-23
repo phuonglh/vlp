@@ -12,7 +12,7 @@ import java.text.DecimalFormat
 object ScoresSummary {
   val formatter = new DecimalFormat("##.####")
 
-  def firstThreeArch(n:Int = 40, arch: String = "par", result: ListBuffer[Scores]): Unit = {
+  def firstThreeArch(n:Int = 40, arch: String = "seq", result: ListBuffer[Scores]): Unit = {
     val types = List("cnn", "gru")
     val embeddingSizes = Array(25, 50, 80, 100)
     val encoderSizes = Array(100, 128, 150, 200, 256, 300)
@@ -20,7 +20,7 @@ object ScoresSummary {
       val mean = Map[(Int, Int), (Double, Double)]()
       val variance = Map[(Int, Int), (Double, Double)]()
       for (encoderSize <- encoderSizes) {
-        val elements = result.filter(_.arch == arch).filter(_.encoder == r).filter(_.maxSequenceLength == n).filter(_.encoderSize == encoderSize)
+        val elements = result.filter(e => e.arch == arch && e.encoder == r && e.maxSequenceLength == n && e.encoderSize == encoderSize)
         val averageAccuracy = elements.groupBy(_.embeddingSize).map { pair =>
            val k = Math.min(pair._2.size, 3)
           (pair._1, pair._2.map(_.trainingScores.last).takeRight(k).sum/k, pair._2.map(_.testScore).sorted.takeRight(k).sum/k)
@@ -43,7 +43,9 @@ object ScoresSummary {
       println(s"mean($r) = ")
       for (w <- embeddingSizes) {
         for (e <- encoderSizes) {
-          print((w, e) + "->" + mean.getOrElse((w, e), (0, 0)) + ", ")
+          val value = mean.getOrElse((w, e), (0d, 0d))
+          val s = (formatter.format(value._1), formatter.format(value._2))
+          print((w, e) + "->" + s + ", ")
         }
         println()
       }
@@ -51,7 +53,9 @@ object ScoresSummary {
       println(s"variance($r) = ")
       for (w <- embeddingSizes) {
         for (e <- encoderSizes) {
-          print((w, e) + "->" + variance.getOrElse((w, e), (0, 0)) + ", ")
+          val value = variance.getOrElse((w, e), (0d, 0d))
+          val s = (formatter.format(value._1), formatter.format(value._2))
+          print((w, e) + "->" + s + ", ")
         }
         println()
       }
@@ -64,7 +68,7 @@ object ScoresSummary {
     val mean = Map[Int, Double]()
     val std = Map[Int, Double]()
     for (encoderSize <- encoderSizes) {
-      val elements = result.filter(_.arch == "trs").filter(_.maxSequenceLength == n).filter(_.encoderSize == encoderSize)
+      val elements = result.filter(e => e.arch == "trs" && e.maxSequenceLength == n && e.encoderSize == encoderSize)
       val k = elements.size
       val testAvg = elements.map { e => e.testScore }.sum/k
       val testVar = elements.map(e => (e.testScore - testAvg)*(e.testScore - testAvg)).sum/k
@@ -80,8 +84,8 @@ object ScoresSummary {
   def main(args: Array[String]): Unit = {
     // val path = "dat/nli/scores.par.json"
     // val path = "dat/nli/scores.trs.x2.syllable.json"
-    val path = "dat/nli/scores.sem.gru.json"
-    val n = if (path.contains("syllable")) 40 else 30
+    // val path = "dat/nli/scores.sem.gru.json"
+    val path = "dat/nli/scores.en.json"
 
     val content = Source.fromFile(path).getLines().toList.mkString(" ")
     implicit val formats = DefaultFormats
@@ -89,8 +93,10 @@ object ScoresSummary {
     val result = ListBuffer[Scores]()
     for (js <- jsArray.children)
       result += js.extract[Scores]
+    result.take(3).foreach(println)
 
     // transformers(n, result)
-    firstThreeArch(n, "sem", result)
+    firstThreeArch(40, "seq", result)
+    firstThreeArch(40, "par", result)
   }
 }
