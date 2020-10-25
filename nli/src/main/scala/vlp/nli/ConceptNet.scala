@@ -15,6 +15,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import scala.collection.mutable
+import java.net.SocketTimeoutException
 
 
 /**
@@ -53,15 +54,22 @@ object ConceptNet {
    */
   def lookup(words: List[String], outputPath: String): Unit = {
     val results = new mutable.ListBuffer[String]()
-    for (j <- 0 until words.size) {
-      val json = lookup(words(j))
-      results.append(json)
-      Thread.sleep(510)
-      if (j % 100 == 0)
-        println(words(j))
+    try {
+      for (j <- 0 until words.size) {
+        val json = lookup(words(j))
+        results.append(json)
+        Thread.sleep(1000)
+        if (j % 20 == 0)
+          println(words(j) + ", j = " + j)
+      }
+    } catch {
+      case e: SocketTimeoutException => println("Read timeout. The server does not like bulk request.")
+    } finally {
+      if (results.nonEmpty) {
+        import scala.collection.JavaConversions._
+        Files.write(Paths.get(outputPath), results.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+      }
     }
-    import scala.collection.JavaConversions._
-    Files.write(Paths.get(outputPath), results.toList, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   }
 
   /**
