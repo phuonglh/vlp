@@ -156,37 +156,56 @@ The option `-c` stands for classifier type. To use a MLP with two hidden layers,
 
 The resulting model will be saved to its default directory `dat/tdp/vie/mlp`.
 
-There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 2) or `-u` (for domain dimension, default value is 1,024). See the code for detail.
+There are some other options for fine-tuning the training, such as `-f` (for min feature frequency cutoff, default value is 2) or `-u` (for domain dimension, default value is 65,536). See the code for detail.
 
 To train a transition classifier for English, use the option `-l eng` (`-l` is for language). For example:
 
 `$spark-submit --class vlp.tdp.Classifier tdp.jar -m train -l eng -u 2048`
 
-The resulting model will be saved to its default directory `dat/tdp/eng/mlr`.
+The resulting model will be saved to its default directory `dat/tdp/eng/mlr`. There are 67 dependency labels for English.
 
 As above, by default, the master URL is set to `local[*]`, which means that all CPU cores of the current machine are used by Apache Spark. You can specify a custom master URL with option `-M`. On a large dataset such as the English treebank, in order to avoid the out-of-memory error, you should consider to use the option `--driver-memory` of Apache Spark when submitting the job, as follows: 
 
 `$spark-submit --driver-memory 16g --class vlp.tdp.Classifier tdp.jar -m train -l eng -u 16384`
 
-The executor memory is set to default value of `8g`.
+The executor memory is set to the default value of `8g`.
 
 The following table shows the average F1-scores of the transition classifier trained on the Vietnamese dependency treebank when using a MLR. The classifier performance depends largely on the number of features in use.
 
 |#(features) | F1 dev. | F1 train.|
 | ---:       | :---:   | :---:    |
-| 1024       | 0.7861  | 0.8757   |
+| 1024       | **0.7861**  | 0.8757   |
 | 2048       | 0.7728  | 0.9091   |
 | 4096       | 0.7483  | 0.9470   |
-| 8192       | 0.7322  | 0.980    |
+| 8192       | 0.7322  | 0.9800   |
 | 16384      | 0.7249  | 0.9946   |
 | 32768      | 0.7367  | 0.9978   |
-| 65536      | 0.7399  | 0.9990   |
+| 65536      | 0.7411  | 0.9990   |
+
+On the English treebank which contains 10,008 training graphs and 1,648 dev graphs, the classifier performance are as follows:
+
+|#(features) | F1 dev. | F1 train.|
+| ---:       | :---:   | :---:    |
+| 2048       | 0.8757  | 0.9034   |
+| 4096       | 0.8751  | 0.9213   | 
+| 8192       | 0.8660  | 0.9420   | 
+| 16384      | 0.8473  | 0.9708   | 
+| 32768      | 0.8367  | 0.9885   | 
+| 65536      | 0.8369  | 0.9950   | 
+| 100000     | 0.8368  | 0.9967   |  
+| 131072     | 0.8368  | 0.9967   |  -> 
+
+The English parser performance score are:
+- With 65,536 features: UAS(dev.) = 0.6184, LAS(dev.) = 0.5775; and UAS(train.) = 0.8186, LAS(train.) = 0.8111. 
+- With 100,000 features: UAS(dev.) = 0.6489, LAS(dev.) = 0.6099; and UAS(train.) = 0.9253, LAS(train.) = 0.9225.
+- With 131,072 features:  
+
 
 ### 4.2. Parser
 
-The parser is in `vlp.tdp.Parser` class. It implements the arc-eager transition parsing algorithm, where the next transition is predicted by using the current parsing configuration as input to the transition classifier. The transition set are contains labels such as `SH` (shift), `RE` (reduce), `LA-dep` (left arc with label `dep`) and `RA-dep` (right arc with label `dep`). The dependency labels are scanned from a training corpus. For the Vietnamese dependency treebank, the transition set contains 54 disctict labeled transitions. Each parse corresponds to a sequence of best transitions which are obtained by a greedy inference method.
+The parser is in `vlp.tdp.Parser` class. It implements the arc-eager transition parsing algorithm, where the next transition is predicted by using the current parsing configuration as input to the transition classifier. The transition set are contains labels such as `SH` (shift), `RE` (reduce), `LA-dep` (left arc with label `dep`) and `RA-dep` (right arc with label `dep`). The dependency labels are scanned from a training corpus. For the Vietnamese dependency treebank, the transition set contains 52 disctict labeled transitions. Each parse corresponds to a sequence of best transitions which are obtained by a greedy inference method.
 
-When using 65,536 features in the classifier, the labeled attachment scores (LAS) of the parser on the development and test set of the Vietnamese dependency treebank is LAS(dev.) = 0.5303 and LAS(train.) = 0.6194.
+When using 65,536 features in the classifier, the labeled attachment scores (LAS) of the parser on the development and test set of the Vietnamese dependency treebank is LAS(dev.) = 0.5303 and LAS(train.) = 0.9953.
 
 To evaluate a transition parser using the default MLR classifier:
 
