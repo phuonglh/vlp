@@ -194,6 +194,7 @@ On the English treebank which contains 10,008 training graphs and 1,648 dev grap
 | 65,536      | 0.8369  | 0.9950   | 
 | 100,000     | 0.8368  | 0.9967   |  
 | 131,072     | 0.8344  | 0.9976   |  
+| 180,000     | 0.8305  | 0.9982   |
 
 The English parser scores are as follows:
 
@@ -202,6 +203,7 @@ The English parser scores are as follows:
 | 65,536     | 0.6184  | 0.5775   |  0.8186    | 0.8111    |
 | 100,000    | 0.6484  | 0.6099   |  0.9253    | 0.9225    |
 | 131,072    | 0.6183  | 0.5109   |  0.9517    | 0.9500    |
+| 180,000    | 0.6742  | 0.6332   |  0.9812    | 0.9802    |
 
 
 ### 4.2. Parser
