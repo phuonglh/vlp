@@ -161,7 +161,7 @@ object Parser {
       case Some(config) =>
         val spark = SparkSession.builder().appName(getClass.getName)
         .master(config.master)
-        .config("spark.executor.memory", config.memory)
+        .config("spark.executor.memory", config.executorMemory)
         .config("spark.driver.host", "localhost")
         .getOrCreate()
       val corpusPack = if (config.language == "eng") new CorpusPack(Language.English) ; else new CorpusPack()
