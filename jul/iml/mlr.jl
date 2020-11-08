@@ -31,6 +31,12 @@ function g!(∇, θ)
   end
 end
 
+function classify(X, θ)::Array{Int}
+	scores = θ*X'
+	indices = argmax(scores, dims=1)[:]
+	map(i -> (indices[i])[1], 1:N)
+end
+
 # main program
 #
 
@@ -58,3 +64,7 @@ result_bfgs = optimize(t -> cost(X, y, t), g!, θ)
 println("θ_bfgs: ")
 println(θ_bfgs)
 println("J(θ_bfgs) = ", cost(X, y, θ_bfgs))
+
+ŷ = classify(X, θ_bfgs)
+accuracy = sum(ŷ .== y)/N
+println("training accuracy = ", accuracy)
