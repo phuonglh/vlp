@@ -93,6 +93,7 @@ object Generator {
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path, default is 'dat/txt/test.txt'")
       opt[Unit]('y', "jsonData").action((x, conf) => conf.copy(jsonData = true)).text("use JSON dataset, default is true for 'dat/txt/news.json'")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
+      opt[Int]('e', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("encoder output size of the transformer")
     }
     parser.parse(args, ConfigVDG()) match {
       case Some(config) =>

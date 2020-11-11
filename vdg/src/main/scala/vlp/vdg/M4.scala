@@ -33,6 +33,8 @@ import scala.collection.mutable
   * Vietnamese Diacritic Generation: the character-based transformer model.
   */
 class M4(config: ConfigVDG) extends M1(config) {
+  final val paddingXs = PaddingParam[Float](Some(Array(Tensor(T(1f)), Tensor(T(0f)), Tensor(T(0f)), Tensor(T(1f)))))
+
     /**
    * Constructs a BERT model for VDG using Zoo layers
    **/ 
@@ -88,7 +90,7 @@ class M4(config: ConfigVDG) extends M1(config) {
     val n = config.maxSequenceLength
     val trainingRDD = training.select("input", "output").rdd.map { row =>
       val y = row.get(1).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
-      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(_.toFloat)
+      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
       val tokenIds = Tensor(x, Array(n))
       val segmentIds = Tensor(n).fill(0f)
       val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
@@ -102,7 +104,7 @@ class M4(config: ConfigVDG) extends M1(config) {
 
     val validationRDD = validation.select("input", "output").rdd.map { row =>
       val y = row.get(1).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
-      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(_.toFloat)
+      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
       val tokenIds = Tensor(x, Array(n))
       val segmentIds = Tensor(n).fill(0f)
       val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
@@ -110,13 +112,13 @@ class M4(config: ConfigVDG) extends M1(config) {
       Sample(Array(tokenIds, segmentIds, positionIds, masks), Tensor(y, Array(n))) 
     }
 
-    val model = transducer(Array(numInputLabels), numOutputLabels)
+    val model = transducer(Array(numInputLabels + 1), numOutputLabels)
     val optimizer = Optimizer(
       model = model,
       sampleRDD = trainingRDD,
       criterion = TimeDistributedCriterion(ClassNLLCriterion[Float](paddingValue = 0), true),
       batchSize = config.batchSize,
-      featurePaddingParam = paddingX,
+      featurePaddingParam = paddingXs,
       labelPaddingParam = paddingY
     )
 
