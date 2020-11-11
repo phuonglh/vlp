@@ -66,7 +66,7 @@ class M4(config: ConfigVDG) extends M1(config) {
 
     val inputLabels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
     val outputLabels = preprocessor.stages(5).asInstanceOf[CountVectorizerModel].vocabulary
-    val inputEncoder = new OneHotEncoder(inputLabels).setInputCol("x").setOutputCol("input")
+    val inputEncoder = new TokenEncoder(inputLabels).setInputCol("x").setOutputCol("input")
       .setNumFeatures(inputLabels.length)
       .setSequenceLength(config.maxSequenceLength)
     val outputEncoder = new TokenEncoder(outputLabels).setInputCol("y").setOutputCol("output")
@@ -85,12 +85,11 @@ class M4(config: ConfigVDG) extends M1(config) {
     val training = outputEncoder.transform(df1)
     training.show(10)
 
+    val n = config.maxSequenceLength
     val trainingRDD = training.select("input", "output").rdd.map { row =>
       val y = row.get(1).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
-      val x = row.get(0).asInstanceOf[mutable.WrappedArray[mutable.WrappedArray[Float]]].array.map(_.toArray)
-      val fx = x.flatten.map(_.toFloat)
-      val n = fx.size
-      val tokenIds = Tensor(fx, Array(n))
+      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(_.toFloat)
+      val tokenIds = Tensor(x, Array(n))
       val segmentIds = Tensor(n).fill(0f)
       val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
       val masks = Tensor(n).fill(1f)
@@ -103,10 +102,8 @@ class M4(config: ConfigVDG) extends M1(config) {
 
     val validationRDD = validation.select("input", "output").rdd.map { row =>
       val y = row.get(1).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
-      val x = row.get(0).asInstanceOf[mutable.WrappedArray[mutable.WrappedArray[Float]]].array.map(_.toArray)
-      val fx = x.flatten.map(_.toFloat)
-      val n = fx.size
-      val tokenIds = Tensor(fx, Array(n))
+      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(_.toFloat)
+      val tokenIds = Tensor(x, Array(n))
       val segmentIds = Tensor(n).fill(0f)
       val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
       val masks = Tensor(n).fill(1f)
