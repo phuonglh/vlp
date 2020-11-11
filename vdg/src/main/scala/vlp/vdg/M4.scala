@@ -88,13 +88,13 @@ class M4(config: ConfigVDG) extends M1(config) {
     val trainingRDD = training.select("input", "output").rdd.map { row =>
       val y = row.get(1).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
       val x = row.get(0).asInstanceOf[mutable.WrappedArray[mutable.WrappedArray[Float]]].array.map(_.toArray)
-      val tokenIds = x.flatten.map(_.toFloat)
-      val segmentIds = Array.fill(tokenIds.size)(0f)
-      val positionIds = (0 until tokenIds.size).toArray.map(_.toFloat)
-      val masks = Array.fill(tokenIds.size)(1.0f)
-      val input = tokenIds ++ segmentIds ++ positionIds ++ masks
-      Sample(featureTensor = Tensor(input, Array(config.maxSequenceLength, config.maxSequenceLength, config.maxSequenceLength, config.maxSequenceLength)),
-        labelTensor = Tensor(y, Array(config.maxSequenceLength))) 
+      val fx = x.flatten.map(_.toFloat)
+      val n = fx.size
+      val tokenIds = Tensor(fx, Array(n))
+      val segmentIds = Tensor(n).fill(0f)
+      val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
+      val masks = Tensor(n).fill(1f)
+      Sample(Array(tokenIds, segmentIds, positionIds, masks), Tensor(y, Array(n))) 
     }
 
     val df0v = preprocessor.transform(validationSet)
@@ -104,13 +104,13 @@ class M4(config: ConfigVDG) extends M1(config) {
     val validationRDD = validation.select("input", "output").rdd.map { row =>
       val y = row.get(1).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
       val x = row.get(0).asInstanceOf[mutable.WrappedArray[mutable.WrappedArray[Float]]].array.map(_.toArray)
-      val tokenIds = x.flatten.map(_.toFloat)
-      val segmentIds = Array.fill(tokenIds.size)(0f)
-      val positionIds = (0 until tokenIds.size).toArray.map(_.toFloat)
-      val masks = Array.fill(tokenIds.size)(1.0f)
-      val input = tokenIds ++ segmentIds ++ positionIds ++ masks
-      Sample(featureTensor = Tensor(input, Array(config.maxSequenceLength, config.maxSequenceLength, config.maxSequenceLength, config.maxSequenceLength)),
-        labelTensor = Tensor(y, Array(config.maxSequenceLength)))
+      val fx = x.flatten.map(_.toFloat)
+      val n = fx.size
+      val tokenIds = Tensor(fx, Array(n))
+      val segmentIds = Tensor(n).fill(0f)
+      val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
+      val masks = Tensor(n).fill(1f)
+      Sample(Array(tokenIds, segmentIds, positionIds, masks), Tensor(y, Array(n))) 
     }
 
     val model = transducer(Array(numInputLabels), numOutputLabels)
