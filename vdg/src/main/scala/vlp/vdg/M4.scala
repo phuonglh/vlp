@@ -62,7 +62,7 @@ class M4(config: ConfigVDG) extends M1(config) {
   override def train(trainingSet: DataFrame, validationSet: DataFrame): Module[Float] = {
     val preprocessor = buildPreprocessor(trainingSet)
     logger.info("Saving the Spark pre-processing pipeline...")
-    val modelSt = "M" + config.modelType + "X" + config.numHeads + "O" + config.encoderOutputSize + "B" + config.numBlocks + "H" + config.hiddenUnits
+    val modelSt = "M" + config.modelType + "X" + config.numHeads + "B" + config.numBlocks + "O" + config.encoderOutputSize + "H" + config.hiddenUnits
     val path = config.modelPath + modelSt + "/"
     preprocessor.write.overwrite().save(path)
 
