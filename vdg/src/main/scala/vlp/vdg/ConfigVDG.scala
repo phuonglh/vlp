@@ -52,7 +52,7 @@ case class ConfigVDG(
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
   peephole: Boolean = false,
-  hiddenUnits: Int = 64, // number of hidden units in each layer
+  hiddenUnits: Int = 64, // number of hidden units in each layer (or feed-forward size in Transformers model)
   dropout: Double = 0,
   inputPath: String = "dat/vdg/test.txt",
   logPath: String = "dat/vdg/scores.json",
@@ -60,5 +60,8 @@ case class ConfigVDG(
   lookupWordSize: Int = 300,
   lookupCharacterSize: Int = 30,
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
-  verbose: Boolean = false
+  verbose: Boolean = false,
+  encoderOutputSize: Int = 128, // transformer encoder size
+  numBlocks: Int = 2, // number of transformer blocks
+  numHeads: Int = 8 // number of transformer heads
 ) extends Serializable

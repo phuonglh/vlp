@@ -30,8 +30,8 @@ class M1(config: ConfigVDG) extends M(config) {
     val inputTokenizer = new RegexTokenizer().setInputCol("x0").setOutputCol("x").setPattern(".").setGaps(false).setToLowercase(true)
     val outputTokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("y0").setPattern(".").setGaps(false).setToLowercase(true)
     val outputConverter = new CharConverter().setInputCol("y0").setOutputCol("y")
-    val inputVectorizer = new CountVectorizer().setInputCol("x").setMinDF(config.minFrequency).setBinary(true)
-    val outputVectorizer = new CountVectorizer().setInputCol("y").setMinDF(config.minFrequency).setBinary(true)
+    val inputVectorizer = new CountVectorizer().setInputCol("x").setOutputCol("cx").setMinDF(config.minFrequency).setBinary(true)
+    val outputVectorizer = new CountVectorizer().setInputCol("y").setOutputCol("cy").setMinDF(config.minFrequency).setBinary(true)
     new Pipeline().setStages(Array(remover, inputTokenizer, outputTokenizer, outputConverter, inputVectorizer, outputVectorizer)).fit(trainingSet)
   }
   
