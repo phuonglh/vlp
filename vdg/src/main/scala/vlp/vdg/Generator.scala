@@ -122,7 +122,11 @@ object Generator {
         // use MKL to speedup the processing
         MKL.setNumThreads(4)
     
-        val modelSt = "M" + config.modelType + (if (config.gru) "G"; else "L") + config.layers + "H" + config.hiddenUnits
+        val modelSt = if (config.modelType < 4) {
+          "M" + config.modelType + (if (config.gru) "G"; else "L") + config.layers + "H" + config.hiddenUnits
+        } else {
+          "M" + config.modelType + "X" + config.numHeads + "B" + config.numBlocks + "O" + config.encoderOutputSize + "H" + config.hiddenUnits
+        }
         val path = config.modelPath + s"${modelSt}/"
 
         val needDataModes = Set("train", "eval", "exp")
