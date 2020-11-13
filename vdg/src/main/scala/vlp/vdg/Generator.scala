@@ -160,9 +160,14 @@ object Generator {
               }
               eval(config, vdg, dataSet, preprocessor, module)
             case "exp" =>
-              val preprocessor = vdg.buildPreprocessor(validationSet)
-              val output = preprocessor.transform(validationSet)
-              output.show(10, false)
+              for (m <- 1 to 3) {
+                val startTime = System.currentTimeMillis()
+                val module = vdg.train(trainingSet, validationSet.limit(numValidationSamples.toInt))
+                val endTime = System.currentTimeMillis()
+                val trainingTime = (endTime - startTime)/1000
+                val preprocessor = PipelineModel.load(path)
+                eval(config, vdg, dataSet, preprocessor, module, trainingTime)
+              }
           }
         } else {
           config.mode match {
