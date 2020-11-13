@@ -141,5 +141,45 @@ class M4(config: ConfigVDG) extends M1(config) {
     logger.info("Saving the Transformer transducer...")
     model.saveModule(path + "vdg.bigdl", path + "vdg.bin", true)
   }
+
+  override def predict(dataset: DataFrame, preprocessor: PipelineModel, module: Module[Float]): RDD[Row] = {
+    val inputLabels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    val outputLabels = preprocessor.stages(5).asInstanceOf[CountVectorizerModel].vocabulary
+
+    val inputEncoder = new TokenEncoder(inputLabels).setInputCol("x").setOutputCol("input")
+      .setNumFeatures(inputLabels.length)
+      .setSequenceLength(config.maxSequenceLength)
+
+    val df0 = preprocessor.transform(dataset)
+    val df1 = inputEncoder.transform(df0) 
+
+    val n = config.maxSequenceLength
+
+    val rdd = df1.select("input").rdd.map { row =>
+      val x = row.get(0).asInstanceOf[Seq[Int]].toArray.map(e => e.toFloat + 1)
+      val tokenIds = Tensor(x, Array(n))
+      val segmentIds = Tensor(n).fill(0f)
+      val positionIds = Tensor((0 until n).toArray.map(_.toFloat), Array(n))
+      val masks = Tensor(n).fill(1f)
+      Sample(Array(tokenIds, segmentIds, positionIds, masks)) 
+    }
+    
+    val predictions = module.predict(rdd).map(activity => {
+      val ys = activity.toTensor[Float].split(1).toSeq
+      val zs = ys.map(tensor => {
+        val k = (0 until tensor.toArray().size).zip(tensor.toArray()).maxBy(p => p._2)._1
+        outputLabels(k)
+      })
+      zs
+    })
+    df0.select("x", "y").rdd.zip(predictions).map(p => {
+      val xs = p._1.getAs[Seq[String]](0)
+      val ys = p._1.getAs[Seq[String]](1)
+      val zs = p._2
+      val n = Math.min(xs.size, config.maxSequenceLength)
+      Row(xs.slice(0, n), ys.slice(0, n), zs.slice(0, n))
+    })
+  }
+
 }
 

@@ -14,6 +14,7 @@ import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
 import com.intel.analytics.bigdl.mkl.MKL
+import com.intel.analytics.zoo.pipeline.api.Net
 
 /**
   * Vietnamese Diacritics Generation
@@ -152,7 +153,11 @@ object Generator {
               eval(config, vdg, dataSet, preprocessor, module, trainingTime)
             case "eval" =>
               val preprocessor = PipelineModel.load(path)
-              val module = Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
+              val module = if (config.modelType < 4) {
+                Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
+              } else {
+                Net.load[Float](path + "vdg.bigdl", path + "vdg.bin")
+              }
               eval(config, vdg, dataSet, preprocessor, module)
             case "exp" =>
               val preprocessor = vdg.buildPreprocessor(validationSet)
