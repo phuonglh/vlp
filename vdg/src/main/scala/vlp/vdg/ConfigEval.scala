@@ -9,6 +9,7 @@ case class ConfigEval(
   recurrentType: String = "gru",
   numLayers: Int = 1,
   hiddenUnits: Int = 50,
+  encoderOutputSize: Int = 128, // for use with Transformers
   trainingScore: Double = 0,
   validationScore: Double = 0,
   testScore: Double = 0,

@@ -58,7 +58,7 @@ object Generator {
     val validationScore = vdg.eval(validationSet.limit(numValidationSamples.toInt), preprocessor, module)
     val testScore = vdg.eval(testSet.limit(numTestSamples.toInt), preprocessor, module)
     val eval = ConfigEval("vdg", config.dataPath, config.percentage, config.modelPath, config.modelType,
-      if (config.gru) "GRU"; else "LSTM", config.layers, config.hiddenUnits, trainingScore, validationScore, testScore, trainingTime)
+      if (config.gru) "GRU"; else "LSTM", config.layers, config.hiddenUnits, config.encoderOutputSize, trainingScore, validationScore, testScore, trainingTime)
     implicit val formats = Serialization.formats(NoTypeHints)
     val content = Serialization.writePretty(eval) + ",\n"
     Files.write(Paths.get(config.logPath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
