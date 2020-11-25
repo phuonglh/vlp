@@ -41,7 +41,7 @@ case class ConfigVDG(
   mode: String = "eval",
   minFrequency: Int = 3,
   jsonData: Boolean = false,
-  dataPath: String = "dat/txt/100K.txt",
+  dataPath: String = "dat/txt/vtb.txt",
   percentage: Double = 1.0, 
   modelPath: String = "dat/vdg/",
   batchSize: Int = 32,
@@ -62,6 +62,6 @@ case class ConfigVDG(
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
   verbose: Boolean = false,
   encoderOutputSize: Int = 64, // transformer encoder size
-  numBlocks: Int = 2, // number of transformer blocks
+  numBlocks: Int = 1, // number of transformer blocks
   numHeads: Int = 8 // number of transformer heads
 ) extends Serializable
