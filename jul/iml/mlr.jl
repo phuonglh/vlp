@@ -25,9 +25,7 @@ function g!(∇, θ)
   G = gradient(X, y, θ)
   K, D = size(θ)
   for k in 1:K
-      for j in 1:D
-          ∇[k,j] = G[k,j]
-      end
+    ∇[k,:] = G[k,:]
   end
 end
 
