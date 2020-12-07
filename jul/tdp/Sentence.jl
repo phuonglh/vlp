@@ -20,6 +20,7 @@ function readCorpus(path::String)::Array{Sentence}
   for line in lines
     parts = split(strip(line), r"\s+")
     if length(parts) == 1
+      prepend!(tokens, [Token("ROOT", Dict(:id => "0", :head => "NA", :label => "NA"))])
       push!(sentences, Sentence(tokens))
       empty!(tokens)
     else
@@ -30,9 +31,3 @@ function readCorpus(path::String)::Array{Sentence}
   end
   sentences
 end
-
-sentences = readCorpus("jul/tdp/dat/tests.conllu")
-println(length(sentences))
-foreach(println, sentences[1].tokens)
-println("")
-foreach(println, sentences[2].tokens)
