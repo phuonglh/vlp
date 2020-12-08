@@ -1,6 +1,8 @@
 using DataStructures
 
+
 include("Sentence.jl")
+include("../../tok/src/Brick.jl")
 
 struct Arc
   head::String
@@ -12,6 +14,11 @@ struct Config
   stack::Stack{String}
   queue::Queue{String}
   arcs::Array{Arc}
+end
+
+struct Context
+  features::Array{String}
+  transition::String
 end
 
 """
@@ -66,14 +73,40 @@ function next(config::Config, transition::String)::Config
 end
 
 """
+  featurize(config, tokenMap)
+
+  Extract feature strings from a parsing `config`. The `tokenMap` contains a map of tokenId to token.
+
+"""
+function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
+  features = []
+  σ, β = config.stack, config.queue
+  u, v = tokenMap[first(σ)], tokenMap[first(β)]
+  push!(features, string("ws0:", u.word))
+  push!(features, string("ss0:", shape(u.word)))
+  push!(features, string("ls0:", get(u.annotation, :lemma, "NA")))
+  push!(features, string("ts0:", get(u.annotation, :pos, "NA")))
+  push!(features, string("us0:", get(u.annotation, :upos, "NA")))
+  push!(features, string("wq0:", v.word))
+  push!(features, string("sq0:", shape(v.word)))
+  push!(features, string("lq0:", get(v.annotation, :lemma, "NA")))
+  push!(features, string("tq0:", get(v.annotation, :pos, "NA")))
+  push!(features, string("uq0:", get(v.annotation, :upos, "NA")))
+  features
+end
+
+"""
   decode(sentence)
 
   Decode an annotated sentence (or a dependency graph) to get a sequence of (currentConfig, nextAction) pairs.
-  Here, we use the ARC-EAGER parsing method.
+  Then a feature extractor will extract feature strings from the currentConfig.
+  Here, we use the ARC-EAGER parsing method. The result will be used as training data for building a transition 
+  classifier.
 """
-function decode(sentence::Sentence)::Array{Tuple{Config,String}}
+function decode(sentence::Sentence)::Array{Context}
   σ = Stack{String}()
   β = Queue{String}()
+  tokenMap = Dict{String,Token}(token.annotation[:id] => token for token in sentence.tokens)
   for id in map(token -> token.annotation[:id], sentence.tokens)
     enqueue!(β, id)
   end
@@ -84,8 +117,7 @@ function decode(sentence::Sentence)::Array{Tuple{Config,String}}
   foreach(println, arcList)
 
   config = Config(σ, β, A)
-  pairs = []
-  push!(pairs, (config, "SH"))
+  contexts = []
   config = next(config, "SH")
   transition = "SH"
   while !isempty(β)
@@ -104,14 +136,14 @@ function decode(sentence::Sentence)::Array{Tuple{Config,String}}
       transition = "SH"
     end
     @info string(config, " => ", transition)
-    push!(pairs, (config, transition))
+    push!(contexts, Context(featurize(config, tokenMap), transition))
     config = next(config, transition)
   end
-  pairs
+  contexts
 end
 
 sentences = readCorpus("jul/tdp/dat/tests.conllu")
-pairs = decode(sentences[1])
-foreach(println, pairs)
-
-# In most practical parser implementations, an incomplete graph is converted into a tree by adding arcs from the root node to all words that lack a head.
+contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
+foreach(println, contexts)
+println("#(sentences) = ", length(sentences))
+println("#(contexts) = ", length(contexts))

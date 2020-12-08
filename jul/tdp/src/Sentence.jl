@@ -15,6 +15,7 @@ end
 """
 function readCorpus(path::String)::Array{Sentence}
   lines = filter(line -> !startswith(line, "#"), readlines(path))
+  append!(lines, [""])
   sentences = []
   tokens = []
   for line in lines
