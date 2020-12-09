@@ -114,8 +114,6 @@ function decode(sentence::Sentence)::Array{Context}
   arcList = map(token -> ((token.annotation[:head], token.annotation[:id]), token.annotation[:label]), sentence.tokens)
   arcMap = Dict{Tuple{String, String}, String}(arcList)
 
-  foreach(println, arcList)
-
   config = Config(σ, β, A)
   contexts = []
   config = next(config, "SH")
@@ -135,15 +133,10 @@ function decode(sentence::Sentence)::Array{Context}
     else
       transition = "SH"
     end
-    @info string(config, " => ", transition)
+    # @info string(config, " => ", transition)
     push!(contexts, Context(featurize(config, tokenMap), transition))
     config = next(config, transition)
   end
   contexts
 end
 
-sentences = readCorpus("jul/tdp/dat/tests.conllu")
-contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
-foreach(println, contexts)
-println("#(sentences) = ", length(sentences))
-println("#(contexts) = ", length(contexts))
