@@ -92,6 +92,15 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
   push!(features, string("lq0:", get(v.annotation, :lemma, "NA")))
   push!(features, string("tq0:", get(v.annotation, :pos, "NA")))
   push!(features, string("uq0:", get(v.annotation, :upos, "NA")))
+  if length(β) > 1
+    id = [t for t in β][2]
+    v = tokenMap[id]
+    push!(features, string("wq1:", v.word))
+    push!(features, string("sq1:", shape(v.word)))
+    push!(features, string("lq1:", get(v.annotation, :lemma, "NA")))
+    push!(features, string("tq1:", get(v.annotation, :pos, "NA")))
+    push!(features, string("uq1:", get(v.annotation, :upos, "NA")))
+  end
   features
 end
 
