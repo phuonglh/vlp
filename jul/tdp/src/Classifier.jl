@@ -15,7 +15,7 @@ options = Dict{Symbol,Any}(
     :embeddingSize => 100,
     :hiddenSize => 128,
     :batchSize => 32,
-    :numEpochs => 50,
+    :numEpochs => 20,
     :corpusPath => string(pwd(), "/dat/dep/eng/en-ud-dev.conllu"),
     :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson"),
     :vocabPath => string(pwd(), "/jul/tdp/dat/vocab.txt"),
@@ -58,7 +58,7 @@ end
     Train a neural network transition classifier.
 """
 function train(options::Dict{Symbol,Any})
-    sentences = readCorpus(options[:corpusPath])
+    sentences = readCorpus(options[:corpusPath])[1:200]
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
     @info "Number of sentences = $(length(sentences))"
     @info "Number of contexts  = $(length(contexts))"
@@ -109,6 +109,7 @@ function train(options::Dict{Symbol,Any})
     @info typeof(dataset[1][2]), size(dataset[1][2])
     # define a model and a loss function
     mlp = model(options, length(labels))
+    @info sum(mlp[1].W[1])
     loss(x, y) = Flux.logitcrossentropy(mlp(x), y)
     optimizer = ADAM()
     evalcb = Flux.throttle(30) do
@@ -116,6 +117,7 @@ function train(options::Dict{Symbol,Any})
     end
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
+    @info sum(mlp[1].W[1])
     # evaluate the model on the training set
     Ŷb = Flux.onecold.(mlp.(Xs))
     pairs = collect(zip(Ŷb, Yb))
