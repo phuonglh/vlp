@@ -5,6 +5,30 @@ using BSON: @save, @load
 
 
 include("Oracle.jl")
+include("Embedding.jl")
+
+options = Dict{Symbol,Any}(
+    :minFreq => 2,
+    :lowercase => true,
+    :featuresPerContext => 15,
+    :numFeatures => 2^14,
+    :embeddingSize => 100,
+    :hiddenSize => 128,
+    :batchSize => 32,
+    :numEpochs => 50,
+    :corpusPath => string(pwd(), "/dat/dep/eng/en-ud-dev.conllu"),
+    :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson"),
+    :vocabPath => string(pwd(), "/jul/tdp/dat/vocab.txt"),
+    :labelPath => string(pwd(), "/jul/tdp/dat/label.txt")
+)
+
+function model(options::Dict{Symbol,Any}, numLabels::Int)
+    Chain(
+        Embedding(options[:numFeatures], options[:embeddingSize]),
+        Dense(options[:embeddingSize], options[:hiddenSize], σ),
+        Dense(options[:hiddenSize], numLabels)
+    )
+end 
 
 """
     vocab(contexts, minFreq, makeLowercase)
@@ -28,30 +52,6 @@ function vocab(contexts::Array{Context}, minFreq::Int = 2, makeLowercase::Bool =
     (collect(keys(frequency)), unique(transitions))
 end
 
-
-
-options = Dict{Symbol,Any}(
-    :minFreq => 2,
-    :lowercase => true,
-    :numFeatures => 2^14,
-    :embeddingSize => 100,
-    :hiddenSize => 128,
-    :batchSize => 32,
-    :numEpochs => 20,
-    :corpusPath => string(pwd(), "/dat/dep/eng/en-ud-dev.conllu"),
-    :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson")
-)
-
-function model(options::Dict{Symbol,Any}, numLabels::Int)
-    Chain(
-        Dense(options[:numFeatures], options[:embeddingSize]),
-        W -> sum(W, dims=2),
-        Dense(options[:embeddingSize], options[:hiddenSize], σ),
-        Dense(options[:hiddenSize], numLabels)
-    )
-end 
-
-
 """
     train(options)
 
@@ -65,7 +65,7 @@ function train(options::Dict{Symbol,Any})
     # build vocabulary and label list, truncate the vocabulary to the maximum number of features if necessary.
     vocabulary, labels = vocab(contexts, options[:minFreq], options[:lowercase])
     # add [UNK] symbol at index 1
-    prepend!(vocabulary, ["[UNK]"])
+    prepend!(vocabulary, ["[UNK]"])    
     if length(vocabulary) < options[:numFeatures]
         options[:numFeatures] = length(vocabulary)
     else
@@ -75,17 +75,30 @@ function train(options::Dict{Symbol,Any})
     featureIndex = Dict{String, Int}(feature => i for (i, feature) in enumerate(vocabulary))
     # build a label index to map each transition to an id
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(labels))
+    # save the vocabulary and label into exteral files
+    file = open(options[:vocabPath], "w")
+    for f in vocabulary
+        write(file, string(f, "\t", featureIndex[f]), "\n")
+    end
+    file = open(options[:labelPath], "w")
+    for f in labels
+        write(file, string(f, "\t", labelIndex[f]), "\n")
+    end
+    # build training dataset       
     X, y = Array{Array{Int,1},1}(), Array{Int,1}()
     for context in contexts
         fs = unique(map(f -> get(featureIndex, f, 1), context.features))
-        x = sum(Flux.onehotbatch(fs, 1:options[:numFeatures]), dims=2)
-        push!(X, vec(x))
+        x = ones(Int, options[:featuresPerContext])
+        for i in 1:length(fs)
+            x[i] = fs[i]
+        end
+        push!(X, x)
         push!(y, labelIndex[context.transition])
     end
     # build batches of data for training
     Xb = Iterators.partition(X, options[:batchSize])
     # convert each input batch to a 2-d matrix of size batchSize x vocabSize
-    Xs = map(b -> Float32.(Flux.batch(b)), Xb)
+    Xs = map(b -> Int.(Flux.batch(b)), Xb)
     Yb = Iterators.partition(y, options[:batchSize])
     # convert each output batch to an one-hot matrix
     Ys = map(b -> Flux.onehotbatch(b, 1:length(labels)), Yb)
@@ -99,7 +112,7 @@ function train(options::Dict{Symbol,Any})
     loss(x, y) = Flux.logitcrossentropy(mlp(x), y)
     optimizer = ADAM()
     evalcb = Flux.throttle(30) do
-         @show(loss(dataset[1]...)) 
+         @info string("loss = ", loss(dataset[1]...))
     end
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)

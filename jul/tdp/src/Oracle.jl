@@ -21,6 +21,8 @@ struct Context
   transition::String
 end
 
+specialShapes = Set{String}(["email", "url", "punct", "number", "numberSeq", "time", "date1", "date2", "date3"])
+
 """
   reducible(config)
 
@@ -82,21 +84,30 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
   features = []
   σ, β = config.stack, config.queue
   u, v = tokenMap[first(σ)], tokenMap[first(β)]
-  push!(features, string("ws0:", u.word))
-  push!(features, string("ss0:", shape(u.word)))
+  s = shape(u.word)
+  push!(features, string("ss0:", s))
+  if !(s ∈ specialShapes)
+    push!(features, string("ws0:", u.word))
+  end
   push!(features, string("ls0:", get(u.annotation, :lemma, "NA")))
   push!(features, string("ts0:", get(u.annotation, :pos, "NA")))
   push!(features, string("us0:", get(u.annotation, :upos, "NA")))
-  push!(features, string("wq0:", v.word))
-  push!(features, string("sq0:", shape(v.word)))
+  s = shape(v.word)
+  push!(features, string("sq0:", s))
+  if !(s ∈  specialShapes)
+    push!(features, string("wq0:", v.word))
+  end
   push!(features, string("lq0:", get(v.annotation, :lemma, "NA")))
   push!(features, string("tq0:", get(v.annotation, :pos, "NA")))
   push!(features, string("uq0:", get(v.annotation, :upos, "NA")))
   if length(β) > 1
     id = [t for t in β][2]
     v = tokenMap[id]
-    push!(features, string("wq1:", v.word))
-    push!(features, string("sq1:", shape(v.word)))
+    s = shape(v.word)
+    push!(features, string("sq1:", s))
+    if !(s ∈ specialShapes)
+      push!(features, string("wq0:", v.word))
+    end  
     push!(features, string("lq1:", get(v.annotation, :lemma, "NA")))
     push!(features, string("tq1:", get(v.annotation, :pos, "NA")))
     push!(features, string("uq1:", get(v.annotation, :upos, "NA")))

@@ -26,7 +26,10 @@ function readCorpus(path::String)::Array{Sentence}
       empty!(tokens)
     else
       word = parts[2]
-      annotation = Dict(:id => parts[1], :lemma => parts[3], :upos => parts[4], :pos => parts[5], :fs => parts[6], :head => parts[7], :label => parts[8])
+      fullLabel = parts[8]
+      colonIndex = findfirst(':', fullLabel)
+      label = if (colonIndex !== nothing) fullLabel[1:colonIndex-1] else fullLabel end
+      annotation = Dict(:id => parts[1], :lemma => parts[3], :upos => parts[4], :pos => parts[5], :fs => parts[6], :head => parts[7], :label => label)
       push!(tokens, Token(word, annotation))
     end
   end
