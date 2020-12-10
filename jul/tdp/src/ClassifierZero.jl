@@ -5,6 +5,7 @@ using BSON: @save, @load
 
 
 include("Oracle.jl")
+include("Embedding.jl")
 
 """
     vocab(contexts, minFreq, makeLowercase)
@@ -33,19 +34,17 @@ end
 options = Dict{Symbol,Any}(
     :minFreq => 2,
     :lowercase => true,
-    :numFeatures => 2^14,
+    :numFeatures => 2^16, 
     :embeddingSize => 100,
     :hiddenSize => 128,
     :batchSize => 32,
-    :numEpochs => 20,
+    :numEpochs => 50,
     :corpusPath => string(pwd(), "/dat/dep/eng/en-ud-dev.conllu"),
     :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson")
 )
 
 function model(options::Dict{Symbol,Any}, numLabels::Int)
     Chain(
-        Dense(options[:numFeatures], options[:embeddingSize]),
-        W -> sum(W, dims=2),
         Dense(options[:embeddingSize], options[:hiddenSize], σ),
         Dense(options[:hiddenSize], numLabels)
     )
@@ -77,15 +76,16 @@ function train(options::Dict{Symbol,Any})
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(labels))
     X, y = Array{Array{Int,1},1}(), Array{Int,1}()
     for context in contexts
-        fs = unique(map(f -> get(featureIndex, f, 1), context.features))
-        x = sum(Flux.onehotbatch(fs, 1:options[:numFeatures]), dims=2)
+        x = unique(map(f -> get(featureIndex, f, 1), context.features))
         push!(X, vec(x))
         push!(y, labelIndex[context.transition])
     end
+    # feature embedding matrix
+    embedding = Embedding(rand(Float32, options[:embeddingSize], options[:numFeatures]))
     # build batches of data for training
     Xb = Iterators.partition(X, options[:batchSize])
-    # convert each input batch to a 2-d matrix of size batchSize x vocabSize
-    Xs = map(b -> Float32.(Flux.batch(b)), Xb)
+    # convert each input batch to a 2-d matrix of size batchSize x embeddingSize
+    Xs = map(b -> Flux.batch([embedding(x) for x in b]), Xb)
     Yb = Iterators.partition(y, options[:batchSize])
     # convert each output batch to an one-hot matrix
     Ys = map(b -> Flux.onehotbatch(b, 1:length(labels)), Yb)
@@ -102,7 +102,7 @@ function train(options::Dict{Symbol,Any})
          @show(loss(dataset[1]...)) 
     end
     # train the model
-    @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
+    @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
     # evaluate the model on the training set
     Ŷb = Flux.onecold.(mlp.(Xs))
     pairs = collect(zip(Ŷb, Yb))
@@ -111,10 +111,10 @@ function train(options::Dict{Symbol,Any})
     @info "Training accuracy = $accuracy"
     # save the model to a BSON file
     @save options[:modelPath] mlp
-    mlp
+    (embedding, mlp)
 end
 
 function predict(options::Dict{Symbol,Any})
 end
 
-mlp = train(options)
+(embedding, mlp) = train(options)
