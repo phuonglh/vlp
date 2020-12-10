@@ -12,11 +12,13 @@ struct Embedding
     W
 end
 
-# Fine-tuned embedding layer
-Embedding(W::Array{Float32,2}) = Embedding(params(W))
 # Random embeddings layer
-Embedding(vocabSize::Int, outputSize::Int) = Embedding(param(randn(outputSize, vocabSize)))
+Embedding(vocabSize::Int, outputSize::Int) = Embedding(rand(outputSize, vocabSize))
 
 # overload call, so the object can be used as a function
 # x is a word index or an array of word indices (1 <= x < vocabSize)
 (f::Embedding)(x) = (f.W[1])[:, x]
+
+# make the embedding layer trainable
+# updated on December 10, 2020
+Flux.@functor Embedding
