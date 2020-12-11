@@ -8,6 +8,7 @@ include("Oracle.jl")
 include("Embedding.jl")
 
 options = Dict{Symbol,Any}(
+    :mode => :eval,
     :minFreq => 2,
     :lowercase => true,
     :featuresPerContext => 15,
@@ -78,11 +79,11 @@ function train(options::Dict{Symbol,Any})
     # save the vocabulary and label into exteral files
     file = open(options[:vocabPath], "w")
     for f in vocabulary
-        write(file, string(f, "\t", featureIndex[f]), "\n")
+        write(file, string(f, " ", featureIndex[f]), "\n")
     end
     file = open(options[:labelPath], "w")
     for f in labels
-        write(file, string(f, "\t", labelIndex[f]), "\n")
+        write(file, string(f, " ", labelIndex[f]), "\n")
     end
     # build training dataset       
     X, y = Array{Array{Int,1},1}(), Array{Int,1}()
@@ -97,7 +98,7 @@ function train(options::Dict{Symbol,Any})
     end
     # build batches of data for training
     Xb = Iterators.partition(X, options[:batchSize])
-    # convert each input batch to a 2-d matrix of size batchSize x vocabSize
+    # convert each input batch to a 2-d matrix
     Xs = map(b -> Int.(Flux.batch(b)), Xb)
     Yb = Iterators.partition(y, options[:batchSize])
     # convert each output batch to an one-hot matrix
@@ -127,7 +128,71 @@ function train(options::Dict{Symbol,Any})
     mlp
 end
 
-function predict(options::Dict{Symbol,Any})
+
+"""
+    dict(path)
+
+    Load a dictionary (vocab or label) from a text file.
+"""
+function dict(path::String)::Dict{String,Int}
+    lines = filter(line -> !isempty(strip(line)), readlines(path))
+    dict = Dict{String,Int}()
+    for line in lines
+        j = findfirst(' ', line)
+        if (j !== nothing)
+            v = nextind(line, j)
+            dict[strip(line[1:v-1])] = parse(Int, line[v:end])
+        end
+    end
+    dict
 end
 
-mlp = train(options)
+"""
+    predict(options)
+
+    Evaluate the accuracy of the transition classifier.
+"""
+function eval(options::Dict{Symbol,Any})
+    @load options[:modelPath] mlp
+    sentences = readCorpus(options[:corpusPath])
+    contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
+    @info "Number of sentences = $(length(sentences))"
+    @info "Number of contexts  = $(length(contexts))"
+    featureIndex = dict(options[:vocabPath])
+    labelIndex = dict(options[:labelPath])
+    foreach(println, labelIndex)
+    X, y = Array{Array{Int,1},1}(), Array{Int,1}()
+    for context in contexts
+        fs = unique(map(f -> get(featureIndex, f, 1), context.features))
+        x = ones(Int, options[:featuresPerContext])
+        for i in 1:length(fs)
+            x[i] = fs[i]
+        end
+        push!(X, x)
+        push!(y, labelIndex[context.transition])
+    end
+    # build batches of data for training
+    Xb = Iterators.partition(X, options[:batchSize])
+    # convert each input batch to a 2-d matrix
+    Xs = map(b -> Int.(Flux.batch(b)), Xb)
+    Yb = Iterators.partition(y, options[:batchSize])
+    # convert each output batch to an one-hot matrix
+    Ys = map(b -> Flux.onehotbatch(b, 1:length(labelIndex)), Yb)
+    dataset = collect(zip(Xs, Ys))
+    @info "numFeatures = ", options[:numFeatures]
+    @info "numBatches  = ", length(dataset)
+    @info typeof(dataset[1][1]), size(dataset[1][1])
+    @info typeof(dataset[1][2]), size(dataset[1][2])
+    Ŷb = Flux.onecold.(mlp.(Xs))
+    pairs = collect(zip(Ŷb, Yb))
+    matches = map(p -> sum(p[1] .== p[2]), pairs)
+    accuracy = reduce((a, b) -> a + b, matches)/length(y)
+    @info "Training accuracy = $accuracy"
+    mlp
+end
+
+mlp = if options[:mode] == :train
+    train(options)
+elseif options[:mode] == :eval
+    eval(options)
+end
