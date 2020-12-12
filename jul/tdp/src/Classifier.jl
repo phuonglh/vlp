@@ -15,12 +15,12 @@ options = Dict{Symbol,Any}(
     :mode => :train,
     :minFreq => 2,
     :lowercase => true,
-    :featuresPerContext => 15,
+    :featuresPerContext => 20,
     :numFeatures => 2^14,
-    :embeddingSize => 100,
+    :embeddingSize => 64,
     :hiddenSize => 128,
     :batchSize => 32,
-    :numEpochs => 50,
+    :numEpochs => 20,
     :corpusPath => string(pwd(), "/dat/dep/vie/vi-ud-train.conllu"),
     :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson"),
     :vocabPath => string(pwd(), "/jul/tdp/dat/vocab.txt"),
@@ -66,7 +66,7 @@ end
 function batch(contexts::Array{Context}, featureIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     X, y = Array{Array{Int,1},1}(), Array{Int,1}()
     for context in contexts
-        fs = unique(map(f -> get(featureIndex, f, 1), context.features))
+        x = unique(map(f -> get(featureIndex, f, 1), context.features))
         # pad x if necessary
         append!(x, ones(options[:featuresPerContext] - length(x)))
         push!(X, x)
@@ -153,7 +153,7 @@ function dict(path::String)::Dict{String,Int}
     lines = filter(line -> !isempty(strip(line)), readlines(path))
     dict = Dict{String,Int}()
     for line in lines
-        j = findfirst(' ', line)
+        j = findlast(' ', line)
         if (j !== nothing)
             v = nextind(line, j)
             dict[strip(line[1:v-1])] = parse(Int, line[v:end])

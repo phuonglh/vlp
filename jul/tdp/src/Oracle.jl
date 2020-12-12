@@ -83,8 +83,9 @@ end
 function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
   features = []
   σ, β = config.stack, config.queue
+  # top tokens of the stack and queue
   u, v = tokenMap[first(σ)], tokenMap[first(β)]
-  s = shape(u.word)
+  s = shape(u.word) 
   push!(features, string("ss0:", s))
   if !(s ∈ specialShapes)
     push!(features, string("ws0:", u.word))
@@ -92,6 +93,7 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
   push!(features, string("ls0:", get(u.annotation, :lemma, "NA")))
   push!(features, string("ts0:", get(u.annotation, :pos, "NA")))
   push!(features, string("us0:", get(u.annotation, :upos, "NA")))
+
   s = shape(v.word)
   push!(features, string("sq0:", s))
   if !(s ∈  specialShapes)
@@ -100,17 +102,31 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
   push!(features, string("lq0:", get(v.annotation, :lemma, "NA")))
   push!(features, string("tq0:", get(v.annotation, :pos, "NA")))
   push!(features, string("uq0:", get(v.annotation, :upos, "NA")))
+  # second token of the queue
   if length(β) > 1
-    id = [t for t in β][2]
+    id = collect(β)[2]
     v = tokenMap[id]
     s = shape(v.word)
     push!(features, string("sq1:", s))
     if !(s ∈ specialShapes)
-      push!(features, string("wq0:", v.word))
+      push!(features, string("wq1:", v.word))
     end  
     push!(features, string("lq1:", get(v.annotation, :lemma, "NA")))
     push!(features, string("tq1:", get(v.annotation, :pos, "NA")))
     push!(features, string("uq1:", get(v.annotation, :upos, "NA")))
+  end
+  # second token of the stack
+  if length(σ) > 1
+    id = collect(σ)[2]
+    v = tokenMap[id]
+    s = shape(v.word)
+    push!(features, string("ss1:", s))
+    if !(s ∈ specialShapes)
+      push!(features, string("ws1:", v.word))
+    end  
+    push!(features, string("ls1:", get(v.annotation, :lemma, "NA")))
+    push!(features, string("ts1:", get(v.annotation, :pos, "NA")))
+    push!(features, string("us1:", get(v.annotation, :upos, "NA")))
   end
   features
 end
