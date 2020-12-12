@@ -1,3 +1,7 @@
+### (C) phuonglh
+### Transition-based dependency parsing.
+### December 10, 2020.
+
 
 using Flux
 using Flux: @epochs
@@ -8,7 +12,7 @@ include("Oracle.jl")
 include("Embedding.jl")
 
 options = Dict{Symbol,Any}(
-    :mode => :eval,
+    :mode => :train,
     :minFreq => 2,
     :lowercase => true,
     :featuresPerContext => 15,
@@ -17,7 +21,7 @@ options = Dict{Symbol,Any}(
     :hiddenSize => 128,
     :batchSize => 32,
     :numEpochs => 50,
-    :corpusPath => string(pwd(), "/dat/dep/eng/en-ud-dev.conllu"),
+    :corpusPath => string(pwd(), "/dat/dep/vie/vi-ud-train.conllu"),
     :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson"),
     :vocabPath => string(pwd(), "/jul/tdp/dat/vocab.txt"),
     :labelPath => string(pwd(), "/jul/tdp/dat/label.txt")
@@ -47,10 +51,35 @@ function vocab(contexts::Array{Context}, minFreq::Int = 2, makeLowercase::Bool =
     end
     # filter out infrequent tokens
     filter!(p -> p.second >= minFreq, frequency)
-    # sort the word by frequency in decreasing order
-    sort!(collect(frequency), by = p -> p.second, rev = true)
-    # return a sorted vocabulary of features and a vocabulary of transitions
+    # return a vocabulary of features and a vocabulary of transitions
     (collect(keys(frequency)), unique(transitions))
+end
+
+"""
+    batch(contexts, featureIndex, labelIndex)
+
+    Create batches of data for training or evaluating. Each batch contains a pair (Xb, Yb) where 
+    Xb is a matrix of size (featuresPerContext x batchSize). Each column of Xb is a vector represent a bag of features extracted 
+    from a context. If that number of features is less than `featuresPerContext`, this vector is padded with the [UNK] feature,
+    which is `1`. Yb is an one-hot matrix of size (numLabels x batchSize).
+"""
+function batch(contexts::Array{Context}, featureIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
+    X, y = Array{Array{Int,1},1}(), Array{Int,1}()
+    for context in contexts
+        fs = unique(map(f -> get(featureIndex, f, 1), context.features))
+        # pad x if necessary
+        append!(x, ones(options[:featuresPerContext] - length(x)))
+        push!(X, x)
+        push!(y, labelIndex[context.transition])
+    end
+    # build batches of data for training
+    Xb = Iterators.partition(X, options[:batchSize])
+    Yb = Iterators.partition(y, options[:batchSize])
+    # stack each input batch to a 2-d matrix
+    Xs = map(b -> Int.(Flux.batch(b)), Xb)
+    # convert each output batch to an one-hot matrix
+    Ys = map(b -> Flux.onehotbatch(b, 1:length(labelIndex)), Yb)
+    (Xs, Ys)
 end
 
 """
@@ -85,24 +114,8 @@ function train(options::Dict{Symbol,Any})
     for f in labels
         write(file, string(f, " ", labelIndex[f]), "\n")
     end
-    # build training dataset       
-    X, y = Array{Array{Int,1},1}(), Array{Int,1}()
-    for context in contexts
-        fs = unique(map(f -> get(featureIndex, f, 1), context.features))
-        x = ones(Int, options[:featuresPerContext])
-        for i in 1:length(fs)
-            x[i] = fs[i]
-        end
-        push!(X, x)
-        push!(y, labelIndex[context.transition])
-    end
-    # build batches of data for training
-    Xb = Iterators.partition(X, options[:batchSize])
-    # convert each input batch to a 2-d matrix
-    Xs = map(b -> Int.(Flux.batch(b)), Xb)
-    Yb = Iterators.partition(y, options[:batchSize])
-    # convert each output batch to an one-hot matrix
-    Ys = map(b -> Flux.onehotbatch(b, 1:length(labels)), Yb)
+    # build training dataset
+    Xs, Ys = batch(contexts, featureIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
     @info "numFeatures = ", options[:numFeatures]
     @info "numBatches  = ", length(dataset)
@@ -118,10 +131,12 @@ function train(options::Dict{Symbol,Any})
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
     # evaluate the model on the training set
+    @info "Evaluating the model..."
     Ŷb = Flux.onecold.(mlp.(Xs))
+    Yb = Flux.onecold.(Ys)
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
-    accuracy = reduce((a, b) -> a + b, matches)/length(y)
+    accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
     @info "Training accuracy = $accuracy"
     # save the model to a BSON file
     @save options[:modelPath] mlp
@@ -148,45 +163,42 @@ function dict(path::String)::Dict{String,Int}
 end
 
 """
+    load(options)
+
+    Load a pre-trained classifier and return a triple of (mlp, featureIndex, labelIndex).    
+"""
+function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{String,Int}}
+    @load options[:modelPath] mlp
+    featureIndex = dict(options[:vocabPath])
+    labelIndex = dict(options[:labelPath])
+    (mlp, featureIndex, labelIndex)
+end
+
+"""
     predict(options)
 
     Evaluate the accuracy of the transition classifier.
 """
-function eval(options::Dict{Symbol,Any})
-    @load options[:modelPath] mlp
+function eval(options::Dict{Symbol,Any})    
     sentences = readCorpus(options[:corpusPath])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
     @info "Number of sentences = $(length(sentences))"
     @info "Number of contexts  = $(length(contexts))"
-    featureIndex = dict(options[:vocabPath])
-    labelIndex = dict(options[:labelPath])
-    foreach(println, labelIndex)
-    X, y = Array{Array{Int,1},1}(), Array{Int,1}()
-    for context in contexts
-        fs = unique(map(f -> get(featureIndex, f, 1), context.features))
-        x = ones(Int, options[:featuresPerContext])
-        for i in 1:length(fs)
-            x[i] = fs[i]
-        end
-        push!(X, x)
-        push!(y, labelIndex[context.transition])
-    end
-    # build batches of data for training
-    Xb = Iterators.partition(X, options[:batchSize])
-    # convert each input batch to a 2-d matrix
-    Xs = map(b -> Int.(Flux.batch(b)), Xb)
-    Yb = Iterators.partition(y, options[:batchSize])
-    # convert each output batch to an one-hot matrix
-    Ys = map(b -> Flux.onehotbatch(b, 1:length(labelIndex)), Yb)
+
+    mlp, featureIndex, labelIndex = load(options)
+    Xs, Ys = batch(contexts, featureIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
     @info "numFeatures = ", options[:numFeatures]
     @info "numBatches  = ", length(dataset)
     @info typeof(dataset[1][1]), size(dataset[1][1])
     @info typeof(dataset[1][2]), size(dataset[1][2])
     Ŷb = Flux.onecold.(mlp.(Xs))
+    Yb = Flux.onecold.(Ys)
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
-    accuracy = reduce((a, b) -> a + b, matches)/length(y)
+    numMatches = reduce((a, b) -> a + b, matches)
+    @info numMatches
+    accuracy = numMatches/length(contexts)
     @info "Training accuracy = $accuracy"
     mlp
 end
