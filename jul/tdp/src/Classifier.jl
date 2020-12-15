@@ -30,7 +30,7 @@ options = Dict{Symbol,Any}(
 function model(options::Dict{Symbol,Any}, numLabels::Int)
     Chain(
         Embedding(options[:numFeatures], options[:embeddingSize]),
-        Dense(options[:embeddingSize], options[:hiddenSize], σ),
+        Dense(options[:embeddingSize], options[:hiddenSize], relu),
         Dense(options[:hiddenSize], numLabels)
     )
 end 
@@ -89,7 +89,7 @@ end
 """
 function train(options::Dict{Symbol,Any})
     sentences = readCorpus(options[:corpusPath])
-    contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
+    contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
     @info "Number of sentences = $(length(sentences))"
     @info "Number of contexts  = $(length(contexts))"
     # build vocabulary and label list, truncate the vocabulary to the maximum number of features if necessary.
@@ -175,11 +175,11 @@ function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{Stri
 end
 
 """
-    predict(options)
+    eval(options)
 
     Evaluate the accuracy of the transition classifier.
 """
-function eval(options::Dict{Symbol,Any})    
+function eval(options::Dict{Symbol,Any})
     sentences = readCorpus(options[:corpusPath])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
     @info "Number of sentences = $(length(sentences))"
@@ -203,8 +203,8 @@ function eval(options::Dict{Symbol,Any})
     mlp
 end
 
-mlp = if options[:mode] == :train
-    train(options)
-elseif options[:mode] == :eval
-    eval(options)
-end
+# mlp = if options[:mode] == :train
+#     train(options)
+# elseif options[:mode] == :eval
+#     eval(options)
+# end
