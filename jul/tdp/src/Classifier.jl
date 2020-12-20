@@ -11,26 +11,10 @@ using BSON: @save, @load
 include("Oracle.jl")
 include("Embedding.jl")
 
-options = Dict{Symbol,Any}(
-    :mode => :train,
-    :minFreq => 2,
-    :lowercase => true,
-    :featuresPerContext => 20,
-    :numFeatures => 2^14,
-    :embeddingSize => 16,
-    :hiddenSize => 128,
-    :batchSize => 32,
-    :numEpochs => 50,
-    :corpusPath => string(pwd(), "/dat/dep/vie/vi-ud-train.conllu"),
-    :modelPath => string(pwd(), "/jul/tdp/dat/mlp.bson"),
-    :vocabPath => string(pwd(), "/jul/tdp/dat/vocab.txt"),
-    :labelPath => string(pwd(), "/jul/tdp/dat/label.txt")
-)
-
 function model(options::Dict{Symbol,Any}, numLabels::Int)
     Chain(
         Embedding(options[:numFeatures], options[:embeddingSize]),
-        Dense(options[:embeddingSize], options[:hiddenSize], relu),
+        Dense(options[:embeddingSize], options[:hiddenSize], σ),
         Dense(options[:hiddenSize], numLabels)
     )
 end 
@@ -88,7 +72,7 @@ end
     Train a neural network transition classifier.
 """
 function train(options::Dict{Symbol,Any})
-    sentences = readCorpus(options[:corpusPath])
+    sentences = readCorpus(options[:trainCorpus])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
     @info "Number of sentences = $(length(sentences))"
     @info "Number of contexts  = $(length(contexts))"
@@ -180,7 +164,7 @@ end
     Evaluate the accuracy of the transition classifier.
 """
 function eval(options::Dict{Symbol,Any})
-    sentences = readCorpus(options[:corpusPath])
+    sentences = readCorpus(options[:trainCorpus])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
     @info "Number of sentences = $(length(sentences))"
     @info "Number of contexts  = $(length(contexts))"
