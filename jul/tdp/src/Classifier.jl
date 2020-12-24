@@ -6,7 +6,7 @@
 using Flux
 using Flux: @epochs
 using BSON: @save, @load
-
+using CUDA
 
 include("Oracle.jl")
 include("Embedding.jl")
@@ -103,10 +103,19 @@ function train(options::Dict{Symbol,Any})
     dataset = collect(zip(Xs, Ys))
     @info "numFeatures = ", options[:numFeatures]
     @info "numBatches  = ", length(dataset)
+
+    # create a model 
+    mlp = model(options, length(labels))
+
+    # bring the dataset and the model to GPU if any
+    if options[:gpu]
+        dataset = map(p -> p |> gpu, dataset)
+        mlp = mlp |> gpu
+    end
     @info typeof(dataset[1][1]), size(dataset[1][1])
     @info typeof(dataset[1][2]), size(dataset[1][2])
-    # define a model and a loss function
-    mlp = model(options, length(labels))
+
+    # define a loss function, an optimizer and train the model
     loss(x, y) = Flux.logitcrossentropy(mlp(x), y)
     optimizer = ADAM()
     evalcb = Flux.throttle(30) do
@@ -116,13 +125,14 @@ function train(options::Dict{Symbol,Any})
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
     # evaluate the model on the training set
     @info "Evaluating the model..."
-    Ŷb = Flux.onecold.(mlp.(Xs))
-    Yb = Flux.onecold.(Ys)
+    Ŷb = Flux.onecold.(mlp.(Xs)) |> cpu
+    Yb = Flux.onecold.(Ys) |> cpu
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
     accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
     @info "Training accuracy = $accuracy"
     # save the model to a BSON file
+    mlp = mlp |> cpu
     @save options[:modelPath] mlp
     mlp
 end

@@ -17,7 +17,8 @@ options = Dict{Symbol,Any}(
     :vocabPath => string(pwd(), "/jul/tdp/dat/vie/vocab.txt"),
     :labelPath => string(pwd(), "/jul/tdp/dat/vie/label.txt"),
     :numCores => 4,
-    :verbose => false
+    :verbose => false,
+    :gpu => false
 )
 
 # English Web Treebank corpus
@@ -38,6 +39,7 @@ optionsEWT = Dict{Symbol,Any}(
     :vocabPath => string(pwd(), "/jul/tdp/dat/eng/vocab.txt"),
     :labelPath => string(pwd(), "/jul/tdp/dat/eng/label.txt"),
     :numCores => 4,
-    :verbose => false
+    :verbose => false,
+    :gpu => false
 )
 
