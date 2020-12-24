@@ -21,7 +21,7 @@ function readCorpus(path::String)::Array{Sentence}
   for line in lines
     parts = split(strip(line), r"\t+")
     if length(parts) == 1
-      prepend!(tokens, [Token("ROOT", Dict(:id => "0", :head => "NA", :label => "NA"))])
+      prepend!(tokens, [Token("ROOT", Dict(:id => "0", :upos => "NA", :head => "NA", :label => "NA"))])
       push!(sentences, Sentence(tokens))
       empty!(tokens)
     else

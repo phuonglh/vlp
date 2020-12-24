@@ -43,7 +43,7 @@ end
     batch(contexts, featureIndex, labelIndex)
 
     Create batches of data for training or evaluating. Each batch contains a pair (Xb, Yb) where 
-    Xb is a matrix of size (featuresPerContext x batchSize). Each column of Xb is a vector represent a bag of features extracted 
+    Xb is a matrix of size (featuresPerContext x batchSize). Each column of Xb is a vector representing a bag of features extracted 
     from a context. If that number of features is less than `featuresPerContext`, this vector is padded with the [UNK] feature,
     which is `1`. Yb is an one-hot matrix of size (numLabels x batchSize).
 """
