@@ -94,10 +94,12 @@ function train(options::Dict{Symbol,Any})
     for f in vocabulary
         write(file, string(f, " ", featureIndex[f]), "\n")
     end
+    close(file)
     file = open(options[:labelPath], "w")
     for f in labels
         write(file, string(f, " ", labelIndex[f]), "\n")
     end
+    close(file)
     # build training dataset
     Xs, Ys = batch(contexts, featureIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
@@ -118,11 +120,15 @@ function train(options::Dict{Symbol,Any})
     # define a loss function, an optimizer and train the model
     loss(x, y) = Flux.logitcrossentropy(mlp(x), y)
     optimizer = ADAM()
+    file = open(options[:logPath], "w")
     evalcb = Flux.throttle(30) do
-         @info string("loss = ", loss(dataset[1]...))
+        ℓ = loss(dataset[1]...)
+        @info string("loss = ", ℓ)
+        write(file, string(ℓ, "\n"))
     end
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
+    close(file)
     # evaluate the model on the training set
     @info "Evaluating the model..."
     Ŷb = Flux.onecold.(mlp.(Xs)) |> cpu

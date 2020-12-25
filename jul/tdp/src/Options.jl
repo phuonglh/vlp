@@ -18,7 +18,8 @@ options = Dict{Symbol,Any}(
     :labelPath => string(pwd(), "/jul/tdp/dat/vie/label.txt"),
     :numCores => 4,
     :verbose => false,
-    :gpu => false
+    :gpu => false,
+    :logPath => string(pwd(), "/jul/tdp/dat/vie/loss.txt")
 )
 
 # English Web Treebank corpus
@@ -28,7 +29,7 @@ optionsEWT = Dict{Symbol,Any}(
     :lowercase => true,
     :featuresPerContext => 20,
     :numFeatures => 2^16,
-    :embeddingSize => 50,
+    :embeddingSize => 100,
     :hiddenSize => 128,
     :batchSize => 32,
     :numEpochs => 50,
@@ -40,6 +41,7 @@ optionsEWT = Dict{Symbol,Any}(
     :labelPath => string(pwd(), "/jul/tdp/dat/eng/label.txt"),
     :numCores => 4,
     :verbose => false,
-    :gpu => false
+    :gpu => false,
+    :logPath => string(pwd(), "/jul/tdp/dat/eng/loss.txt")
 )
 
