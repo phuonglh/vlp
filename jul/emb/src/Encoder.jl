@@ -38,7 +38,7 @@ function vocab(sentences::Array{Sentence}, minFreq::Int = 2)::Vocabularies
         haskey(wordFrequency, word) ? wordFrequency[word] += 1 : wordFrequency[word] = 1
         shapes[shape(token.word)] = 0
         partsOfSpeech[token.annotation[:upos]] = 0
-        labels[token.annotation[:head]] = 0
+        labels[token.annotation[:pos]] = 0
     end
     # filter out infrequent words
     filter!(p -> p.second >= minFreq, wordFrequency)
@@ -57,7 +57,7 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     X, Y = Array{Array{Int,2},1}(), Array{Array{Int,2},1}()
     for sentence in sentences
         xs = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:upos]]], sentence.tokens)
-        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:head]], 1:length(labelIndex), 1), sentence.tokens)
+        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:pos]], 1:length(labelIndex), 1), sentence.tokens)
         # pad the columns of xs and ys to maxSequenceLength
         if length(xs) > options[:maxSequenceLength]
             xs = xs[1:options[:maxSequenceLength]]
@@ -108,11 +108,33 @@ function train(options::Dict{Symbol,Any})
     @info size(Xs[1])
     @info size(Ys[1])
 
+    # save the vocabulary, shape, part-of-speech and label information to external files
+    file = open(options[:vocabPath], "w")
+    for f in vocabularies.words
+        write(file, string(f, " ", wordIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:shapePath], "w")
+    for f in vocabularies.shapes
+        write(file, string(f, " ", shapeIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:posPath], "w")
+    for f in vocabularies.partsOfSpeech
+        write(file, string(f, " ", posIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:labelPath], "w")
+    for f in vocabularies.labels
+        write(file, string(f, " ", labelIndex[f]), "\n")
+    end
+    close(file)
+
     # define a model for sentence encoding
     encoder = Chain(
         EmbeddingWSP(min(length(wordIndex), options[:vocabSize]), options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
         GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize]),
-        Dense(options[:hiddenSize], length(labelIndex), relu)
+        Dense(options[:hiddenSize], length(labelIndex))
     )
 
     @info "Total weights of initial word embeddings = $(sum(encoder[1].word.W))"
@@ -140,34 +162,13 @@ function train(options::Dict{Symbol,Any})
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(encoder), dataset, optimizer, cb = evalcb)
     close(file)
+    # save the model to a BSON file
+    @save options[:modelPath] encoder
+
     @info "Total weights of final word embeddings = $(sum(encoder[1].word.W))"
     @info "Evaluating the model on the training set..."
     accuracy = evaluate(encoder, Xs, Ys)
     @info "Training accuracy = $accuracy"
-    # save the model to a BSON file
-    @save options[:modelPath] encoder
-    # save the vocabulary, shape, part-of-speech and label information into external files
-    file = open(options[:vocabPath], "w")
-    for f in vocabularies.words
-        write(file, string(f, " ", wordIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:shapePath], "w")
-    for f in vocabularies.shapes
-        write(file, string(f, " ", shapeIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:posPath], "w")
-    for f in vocabularies.partsOfSpeech
-        write(file, string(f, " ", posIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:labelPath], "w")
-    for f in vocabularies.labels
-        write(file, string(f, " ", labelIndex[f]), "\n")
-    end
-    close(file)
-
     encoder
 end
 
@@ -178,18 +179,28 @@ end
     3-d ground-truth output matrices. 
 """
 function evaluate(encoder, Xs, Ys)
-    b = options[:batchSize]
-    numTokens = reduce((a, b) -> a + b, map(X -> size(X,2) * size(X,3), Xs))
-    @floop ThreadedEx(basesize=b÷options[:numCores]) for i=1:b
-        Ŷb = [Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:options[:batchSize])]
-        Yb = [Flux.onecold.(Ys[i][:,:,t] for t=1:options[:batchSize])]
-        pairs = collect(zip(Ŷb, Yb))
-        matches = sum(map(p -> sum(p[1] .== p[2]), pairs))
-        @info matches
-        @reduce(s += matches)
+    numBatches = length(Xs)
+    # normally, size(X,3) is the batch size except the last batch
+    @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
+        b = size(Xs[i],3)
+        Ŷb = Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:b)
+        Yb = Flux.onecold.(Ys[i][:,:,t] for t=1:b)
+        # number of tokens and number of matches in this batch
+        tokens, matches = 0, 0
+        for t=1:b
+            n = options[:maxSequenceLength]
+            # find the last position of non-padded element (which is 1)
+            while Yb[t][n] == 1
+                n = n - 1
+            end
+            tokens += n
+            matches += sum(Ŷb[t][1:n] .== Yb[t][1:n])
+        end
+        @reduce(numTokens += tokens, numMatches += matches)
     end
-    @info s
-    return s/numTokens
+    @info "Total tokens = $(numTokens)"
+    @info "Total token matches = $(numMatches)"
+    return numMatches/numTokens
 end
 
 encoder = train(options)
