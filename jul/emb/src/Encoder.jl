@@ -137,7 +137,7 @@ function train(options::Dict{Symbol,Any})
         Dense(options[:hiddenSize], length(labelIndex))
     )
 
-    @info "Total weights of initial word embeddings = $(sum(encoder[1].word.W))"
+    @info "Total weight of initial word embeddings = $(sum(encoder[1].word.W))"
 
     """
         loss(X, Y)
@@ -165,7 +165,7 @@ function train(options::Dict{Symbol,Any})
     # save the model to a BSON file
     @save options[:modelPath] encoder
 
-    @info "Total weights of final word embeddings = $(sum(encoder[1].word.W))"
+    @info "Total weight of final word embeddings = $(sum(encoder[1].word.W))"
     @info "Evaluating the model on the training set..."
     accuracy = evaluate(encoder, Xs, Ys)
     @info "Training accuracy = $accuracy"

@@ -89,7 +89,7 @@ function train(options::Dict{Symbol,Any})
     featureIndex = Dict{String, Int}(feature => i for (i, feature) in enumerate(vocabulary))
     # build a label index to map each transition to an id
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(labels))
-    # save the vocabulary and label into exteral files
+    # save the vocabulary and label to external files
     file = open(options[:vocabPath], "w")
     for f in vocabulary
         write(file, string(f, " ", featureIndex[f]), "\n")
