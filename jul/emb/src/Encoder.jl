@@ -3,6 +3,10 @@
 # dense vectors. 
 
 using Flux
+using Flux: @epochs
+using BSON: @save, @load
+
+using FLoops
 
 include("Embedding.jl")
 include("Options.jl")
@@ -76,21 +80,93 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     (Xs, Ys)
 end
 
-sentences = readCorpus(options[:trainCorpus])
-vocabularies = vocab(sentences)
 
-# encoder = Chain(
-#     EmbeddingWSP(min(length(wordVocab), options[:vocabSize]), options[:wordSize], length(shapeVocab), options[:shapeSize], length(posVocab), options[:posSize]),
-#     GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize])
-# )
 
-prepend!(vocabularies.words, ["UNK"])
-wordIndex = Dict{String,Int}(word => i for (i, word) in enumerate(vocabularies.words))
-shapeIndex = Dict{String,Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
-posIndex = Dict{String,Int}(pos => i for (i, pos) in enumerate(vocabularies.partsOfSpeech))
-labelIndex = Dict{String,Int}(label => i for (i, label) in enumerate(vocabularies.labels))
+"""
+    train(options)
 
-Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
+    Train an encoder.
+"""
+function train(options::Dict{Symbol,Any})
+    sentences = readCorpus(options[:trainCorpus])
+    vocabularies = vocab(sentences)
+    
+    prepend!(vocabularies.words, ["UNK"])
+    wordIndex = Dict{String,Int}(word => i for (i, word) in enumerate(vocabularies.words))
+    shapeIndex = Dict{String,Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
+    posIndex = Dict{String,Int}(pos => i for (i, pos) in enumerate(vocabularies.partsOfSpeech))
+    labelIndex = Dict{String,Int}(label => i for (i, label) in enumerate(vocabularies.labels))
+    
+    # create batches of data, each batch is a 3-d matrix of size 3 x maxSequenceLength x batchSize
+    Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
+    dataset = collect(zip(Xs, Ys))
+    @info "vocabSize = ", length(wordIndex)
+    @info "shapeSize = ", length(shapeIndex)
+    @info "posSize = ", length(posIndex)
+    @info "numLabels = ", length(labelIndex)
+    @info "numBatches  = ", length(dataset)
+    @info size(Xs[1])
+    @info size(Ys[1])
 
-@info Xs[1]
-@info Ys[1]
+    # define a model for sentence encoding
+    encoder = Chain(
+        EmbeddingWSP(min(length(wordIndex), options[:vocabSize]), options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
+        GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize]),
+        Dense(options[:hiddenSize], length(labelIndex), relu)
+    )
+
+    @info encoder
+
+    """
+        loss(X, Y)
+
+        Compute the loss on one batch of data where X and Y are 3-d matrices of size (K x maxSequenceLength x batchSize).
+        We use the log cross-entropy loss to measure the average distance between prediction and true sequence pairs.
+    """
+    function loss(X, Y)
+        b = size(X,3)
+        predictions = [encoder(X[:,:,i]) for i=1:b]
+        truths = [Y[:,:,i] for i=1:b]
+        sum(Flux.logitcrossentropy(predictions[i], truths[i]) for i=1:b)
+    end
+
+    optimizer = ADAM()
+    file = open(options[:logPath], "w")
+    evalcb = Flux.throttle(30) do
+        ℓ = loss(dataset[1]...)
+        @info string("loss = ", ℓ)
+        write(file, string(ℓ, "\n"))
+    end
+    # train the model
+    @time @epochs options[:numEpochs] Flux.train!(loss, params(encoder), dataset, optimizer, cb = evalcb)
+    close(file)
+    @info "Evaluating the model on the training set..."
+    accuracy = evaluate(encoder, Xs, Ys)
+    @info "Training accuracy = $accuracy"
+    # save the model to a BSON file
+    @save options[:modelPath] encoder
+    encoder
+end
+
+"""
+    evaluate(encoder, Xs, Ys)
+
+    Evaluate the accuracy of the encoder on a dataset. `Xs` is a list of 3-d input matrices and `Ys` is a list of 
+    3-d ground-truth output matrices. 
+"""
+function evaluate(encoder, Xs, Ys)
+    b = options[:batchSize]
+    numTokens = reduce((a, b) -> a + b, map(X -> size(X,2) * size(X,3), Xs))
+    @floop ThreadedEx(basesize=b÷options[:numCores]) for i=1:b
+        Ŷb = [Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:options[:batchSize])]
+        Yb = [Flux.onecold.(Ys[i][:,:,t] for t=1:options[:batchSize])]
+        pairs = collect(zip(Ŷb, Yb))
+        matches = sum(map(p -> sum(p[1] .== p[2]), pairs))
+        @info matches
+        @reduce(s += matches)
+    end
+    @info s
+    return s/numTokens
+end
+
+encoder = train(options)

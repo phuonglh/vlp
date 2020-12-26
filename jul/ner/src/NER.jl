@@ -170,7 +170,7 @@ if g
     println("Bringing data to GPU...")
     Xb = map(t -> gpu.(t), Xb)
     Yb = map(t -> gpu.(t), Yb)
-  end
+end
  
 
 # create a data set for training, each training point is a pair of batch

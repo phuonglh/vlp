@@ -34,7 +34,8 @@ EmbeddingWSP(inpW::Int, outW::Int, inpS::Int, outS::Int, inpP::Int, outP::Int) =
 # the first token of word index 3, shape index 2 and part-of-speech index 1; and the second column is the vector [4 3 2] which
 #  represents the second token of word index 4, shape index 3 and part-of-speech index 2.
 # For each token, we concatenate its word embedding, shape embedding and part-of-speech embedding 
-(f::EmbeddingWSP)(x) = Flux.batch([vcat(f.word(x[1,t]), f.shape(x[2,t]), f.partOfSpeech(x[3,t])) for t=1:size(x,2)])
+# Note that we use hcat(xs...) instead of Flux.batch(xs) since the back-propagation algorithm does not support mutating array on-the-fly.
+(f::EmbeddingWSP)(x) = hcat([vcat(f.word(x[1,t]), f.shape(x[2,t]), f.partOfSpeech(x[3,t])) for t=1:size(x,2)]...)
 
 # Example usage: 
 # x = [3 4 5; 2 3 4; 1 2 3]

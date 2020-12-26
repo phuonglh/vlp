@@ -9,11 +9,12 @@ options = Dict{Symbol,Any}(
     :hiddenSize => 64,
     :maxSequenceLength => 40,
     :batchSize => 32,
-    :numEpochs => 50,
+    :numEpochs => 30,
     :trainCorpus => string(pwd(), "/dat/dep/eng/2.7/en_ewt-ud-dev.conllu"),
-    :modelPath => string(pwd(), "/jul/tdp/dat/eng/encoder.bson"),
-    :vocabPath => string(pwd(), "/jul/tdp/dat/eng/vocab.txt"),
-    :embeddingPath => string(pwd(), "/jul/tdp/dat/eng/embeds.txt"),
+    :modelPath => string(pwd(), "/jul/emb/dat/eng/encoder.bson"),
+    :vocabPath => string(pwd(), "/jul/emb/dat/eng/vocab.txt"),
+    :embeddingPath => string(pwd(), "/jul/emb/dat/eng/embeds.txt"),
     :numCores => 4,
-    :verbose => false
+    :verbose => false,
+    :logPath => string(pwd(), "/jul/emb/dat/eng/loss.txt")
 )
