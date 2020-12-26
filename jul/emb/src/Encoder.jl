@@ -115,7 +115,7 @@ function train(options::Dict{Symbol,Any})
         Dense(options[:hiddenSize], length(labelIndex), relu)
     )
 
-    @info encoder
+    @info "Total weights of initial word embeddings = $(sum(encoder[1].word.W))"
 
     """
         loss(X, Y)
@@ -140,11 +140,34 @@ function train(options::Dict{Symbol,Any})
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(encoder), dataset, optimizer, cb = evalcb)
     close(file)
+    @info "Total weights of final word embeddings = $(sum(encoder[1].word.W))"
     @info "Evaluating the model on the training set..."
     accuracy = evaluate(encoder, Xs, Ys)
     @info "Training accuracy = $accuracy"
     # save the model to a BSON file
     @save options[:modelPath] encoder
+    # save the vocabulary, shape, part-of-speech and label information into external files
+    file = open(options[:vocabPath], "w")
+    for f in vocabularies.words
+        write(file, string(f, " ", wordIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:shapePath], "w")
+    for f in vocabularies.shapes
+        write(file, string(f, " ", shapeIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:posPath], "w")
+    for f in vocabularies.partsOfSpeech
+        write(file, string(f, " ", posIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:labelPath], "w")
+    for f in vocabularies.labels
+        write(file, string(f, " ", labelIndex[f]), "\n")
+    end
+    close(file)
+
     encoder
 end
 
