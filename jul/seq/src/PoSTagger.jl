@@ -1,6 +1,8 @@
 # phuonglh@gmail.com
 # Sentence encoder which encodes a sequence of tokens into a sequence of 
-# dense vectors. 
+# dense vectors and perform sequence tagging. This programme performs part-of-speech 
+# tagging on a Universal Dependencies treebank data. Here, we use (word, shape, universal PoS) to 
+# infer language-specific part-of-speech.
 
 using Flux
 using Flux: @epochs
@@ -55,6 +57,8 @@ end
 """
 function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     X, Y = Array{Array{Int,2},1}(), Array{Array{Int,2},1}()
+    paddingX = [wordIndex[options[:paddingX]]; 1; 1]
+    paddingY = Flux.onehot(labelIndex[options[:paddingY]], 1:length(labelIndex))
     for sentence in sentences
         xs = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:upos]]], sentence.tokens)
         ys = map(token -> Flux.onehot(labelIndex[token.annotation[:pos]], 1:length(labelIndex), 1), sentence.tokens)
@@ -64,8 +68,8 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
             ys = ys[1:options[:maxSequenceLength]]
         end
         for t=length(xs)+1:options[:maxSequenceLength]
-            push!(xs, ones(3))
-            push!(ys, Flux.onehot(1, 1:length(labelIndex)))
+            push!(xs, paddingX) 
+            push!(ys, paddingY)
         end
         push!(X, Flux.batch(xs))
         push!(Y, Flux.batch(ys))
@@ -89,12 +93,17 @@ end
 """
 function train(options::Dict{Symbol,Any})
     sentences = readCorpus(options[:trainCorpus])
+    sentencesValidation = readCorpus(options[:validCorpus])
+    @info "Number of training sentences = $(length(sentences))"
+    @info "Number of validation sentences = $(length(sentencesValidation))"
     vocabularies = vocab(sentences)
     
-    prepend!(vocabularies.words, ["UNK"])
+    prepend!(vocabularies.words, [options[:unknown]])
+    append!(vocabularies.words, [options[:paddingX]])
     wordIndex = Dict{String,Int}(word => i for (i, word) in enumerate(vocabularies.words))
     shapeIndex = Dict{String,Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
     posIndex = Dict{String,Int}(pos => i for (i, pos) in enumerate(vocabularies.partsOfSpeech))
+    prepend!(vocabularies.labels, [options[:paddingY]])
     labelIndex = Dict{String,Int}(label => i for (i, label) in enumerate(vocabularies.labels))
     
     # create batches of data, each batch is a 3-d matrix of size 3 x maxSequenceLength x batchSize
@@ -152,12 +161,18 @@ function train(options::Dict{Symbol,Any})
         sum(Flux.logitcrossentropy(predictions[i], truths[i]) for i=1:b)
     end
 
+    Us, Vs = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
+    datasetValidation = collect(zip(Us, Vs))
+
     optimizer = ADAM()
     file = open(options[:logPath], "w")
+    write(file, "loss,trainingAccuracy,validationAccuracy\n")
     evalcb = Flux.throttle(30) do
         ℓ = loss(dataset[1]...)
-        @info string("loss = ", ℓ)
-        write(file, string(ℓ, "\n"))
+        trainingAccuracy = evaluate(encoder, Xs, Ys)
+        validationAccuracy = evaluate(encoder, Us, Vs)
+        @info string("loss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
+        write(file, string(ℓ, ',', trainingAccuracy, ',', validationAccuracy, "\n"))
     end
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(encoder), dataset, optimizer, cb = evalcb)
@@ -169,16 +184,18 @@ function train(options::Dict{Symbol,Any})
     @info "Evaluating the model on the training set..."
     accuracy = evaluate(encoder, Xs, Ys)
     @info "Training accuracy = $accuracy"
+    accuracyValidation = evaluate(encoder, Us, Vs)
+    @info "Validation accuracy = $accuracyValidation"
     encoder
 end
 
 """
-    evaluate(encoder, Xs, Ys)
+    evaluate(encoder, Xs, Ys, paddingY)
 
     Evaluate the accuracy of the encoder on a dataset. `Xs` is a list of 3-d input matrices and `Ys` is a list of 
     3-d ground-truth output matrices. 
 """
-function evaluate(encoder, Xs, Ys)
+function evaluate(encoder, Xs, Ys, paddingY::Int=1)
     numBatches = length(Xs)
     # normally, size(X,3) is the batch size except the last batch
     @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
@@ -189,8 +206,8 @@ function evaluate(encoder, Xs, Ys)
         tokens, matches = 0, 0
         for t=1:b
             n = options[:maxSequenceLength]
-            # find the last position of non-padded element (which is 1)
-            while Yb[t][n] == 1
+            # find the last position of non-padded element
+            while Yb[t][n] == paddingY
                 n = n - 1
             end
             tokens += n
@@ -198,9 +215,6 @@ function evaluate(encoder, Xs, Ys)
         end
         @reduce(numTokens += tokens, numMatches += matches)
     end
-    @info "Total tokens = $(numTokens)"
-    @info "Total token matches = $(numMatches)"
+    @info "Total matched tokens = $(numTokens)/$(numMatches)"
     return numMatches/numTokens
 end
-
-encoder = train(options)
