@@ -21,7 +21,7 @@ struct Context
   transition::String
 end
 
-specialShapes = Set{String}(["email", "url", "punct", "number", "numberSeq", "time", "date1", "date2", "date3"])
+specialShapes = Set{String}(["email", "url", "number", "numberSeq", "time", "date1", "date2", "date3"])
 
 """
   reducible(config)
