@@ -97,7 +97,8 @@ function evaluate(mlp, Xs, Ys)
     Yb = Flux.onecold.(Ys) |> cpu
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
-    accuracy = reduce((a, b) -> a + b, matches)
+    numSamples = sum(map(y -> length(y), Yb))
+    accuracy = reduce((a, b) -> a + b, matches)/numSamples
     return accuracy
 end
 
@@ -110,6 +111,7 @@ end
 function train(options)
     sentences = readCorpus(options[:testCorpus])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
+    @info "#(contexts) = $(length(contexts))"
     vocabulary, labels = vocab(contexts)
     prepend!(vocabulary, [options[:unknown]])
     wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(vocabulary))
