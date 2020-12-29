@@ -97,7 +97,7 @@ function evaluate(mlp, Xs, Ys)
     Yb = Flux.onecold.(Ys) |> cpu
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
-    accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
+    accuracy = reduce((a, b) -> a + b, matches)
     return accuracy
 end
 
