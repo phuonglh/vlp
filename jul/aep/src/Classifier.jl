@@ -80,12 +80,27 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, labelInd
     X = map(sample -> sample[1], samples)   
     y = map(sample -> sample[2], samples)
     # build batches of data for training
-    Xs = Iterators.partition(X, options[:batchSize])
-    Y = Iterators.partition(y, options[:batchSize])
+    Xs = collect(Iterators.partition(X, options[:batchSize]))
+    Y = collect(Iterators.partition(y, options[:batchSize]))
     # convert each output batch to an one-hot matrix
     Ys = map(b -> Flux.onehotbatch(b, 1:length(labelIndex)), Y)
     (Xs, Ys)
 end
+
+"""
+    evaluate(mlp, Xs, Ys)
+
+    Evaluate the accuracy of a model on a dataset.
+"""
+function evaluate(mlp, Xs, Ys)
+    Ŷb = Flux.onecold.(mlp.(Xs)) |> cpu
+    Yb = Flux.onecold.(Ys) |> cpu
+    pairs = collect(zip(Ŷb, Yb))
+    matches = map(p -> sum(p[1] .== p[2]), pairs)
+    accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
+    return accuracy
+end
+
 
 """
     train(options)
@@ -101,6 +116,13 @@ function train(options)
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(labels))
 
     vocabSize = min(options[:vocabSize], length(wordIndex))
+
+    # build training dataset
+    Xs, Ys = batch(sentences, wordIndex, labelIndex)
+    dataset = collect(zip(Xs, Ys))
+    @info "vocabSize = $(vocabSize)"
+    @info "numBatches  = $(length(dataset))"    
+
     mlp = Chain(
         Join(
             Embedding(vocabSize, options[:embeddingSize]),
@@ -108,6 +130,7 @@ function train(options)
         ),
         Dense(options[:featuresPerContext] * options[:hiddenSize], length(labelIndex))
     )
+
     # save the vocabulary and label index to external files
     file = open(options[:vocabPath], "w")
     for f in vocabulary
@@ -119,11 +142,6 @@ function train(options)
         write(file, string(f, " ", labelIndex[f]), "\n")
     end
     close(file)
-    # build training dataset
-    Xs, Ys = batch(sentences, wordIndex, labelIndex)
-    dataset = collect(zip(Xs, Ys))
-    @info "vocabSize = $(vocabSize)"
-    @info "numBatches  = $(length(dataset))"
 
     # bring the dataset and the model to GPU if any
     if options[:gpu]
@@ -158,19 +176,5 @@ function train(options)
     mlp = mlp |> cpu
     @save options[:modelPath] mlp
     mlp    
-end
-
-"""
-    evaluate(mlp, Xs, Ys)
-
-    Evaluate the accuracy of a model on a dataset.
-"""
-function evaluate(mlp, Xs, Ys)
-    Ŷb = Flux.onecold.(mlp.(Xs)) |> cpu
-    Yb = Flux.onecold.(Ys) |> cpu
-    pairs = collect(zip(Ŷb, Yb))
-    matches = map(p -> sum(p[1] .== p[2]), pairs)
-    accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
-    return accuracy
 end
 

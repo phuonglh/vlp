@@ -12,10 +12,10 @@ end
 
 Join(fs...) = Join(fs)
 
-function (g::Join)(x::Tuple)
+function (g::Join)(x::Tuple{Array{Int,1},Array{Int,1}})
     a, b = x
     u = g.fs[2](g.fs[1](a)) # if `fs[2]` is a RNN and `a` is an index array, this gives a sequence
-    vcat(u[:, b]...)  # if `b` is an index array, this gives a concatenated vector 
+    vec(u[:, b])  # if `b` is an index array, this gives a concatenated vector 
 end
 
 Flux.@functor Join
