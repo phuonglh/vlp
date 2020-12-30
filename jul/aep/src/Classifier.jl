@@ -11,8 +11,15 @@ include("../../tdp/src/Oracle.jl")
 include("Options.jl")
 
 
-function extract(features::Array{String})::Array{String}
-    xs = filter(feature -> startswith(feature, "ws") || startswith(feature, "wq"), features)
+struct Vocabularies
+    words::Array{String}
+    shapes::Array{String}
+    partsOfSpeech::Array{String}
+    labels::Array{String}
+end
+
+function extract(features::Array{String}, prefixes::Array{String})::Array{String}
+    xs = filter(feature -> startswith(feature, prefixes[1]) || startswith(feature, prefixes[2]), features)
     ws = map(x -> lowercase(x[findfirst(':', x)+1:end]), xs)
     if length(ws) < options[:featuresPerContext]
         for _=1:(options[:featuresPerContext] - length(ws))
@@ -26,57 +33,58 @@ end
 """
     vocab(contexts, minFreq)
 
-    Builds two vocabularies of words and transitions. The word vocabulary is sorted by frequency.
+    Builds vocabularies of words and transitions. The word vocabulary is sorted by frequency.
     Only features whose count is greater than `minFreq` are kept.
 """    
-function vocab(contexts::Array{Context}, minFreq::Int = 2)::Tuple{Array{String},Array{String}}
-    features = Iterators.flatten(map(context -> extract(context.features), contexts))
+function vocab(contexts::Array{Context}, minFreq::Int = 2)::Vocabularies
     transitions = map(context -> context.transition, contexts)
-    frequency = Flux.frequencies(features)
-    # filter frequent tokens
-    filter!(p -> p.second >= minFreq, frequency)
-    # return a vocabulary of features and a vocabulary of transitions
-    (collect(keys(frequency)), unique(transitions))
+    features = Iterators.flatten(map(context -> extract(context.features, ["ws", "wq"]), contexts))
+    wordFrequency = Flux.frequencies(features)
+    filter!(p -> p.second >= minFreq, wordFrequency)
+    shapes = Iterators.flatten(map(context -> extract(context.features, ["ss", "sq"]), contexts))
+    partsOfSpeech = Iterators.flatten(map(context -> extract(context.features, ["ts", "tq"]), contexts))
+    Vocabularies(collect(keys(wordFrequency)), unique(shapes), unique(partsOfSpeech), unique(transitions))
 end
 
+
 """
-    vectorize(sentence, wordIndex, labelIndex)
+    vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex)
 
     Vectorize a training sentence. An oracle is used to extract (context, transition) pairs from 
-    the sentence. Then each context is vectorized to a tuple of (word id array of the sentence, word id array of the context).
+    the sentence. Then each context is vectorized to a tuple of (token matrix of the sentence, word id array of the context).
     The word id array of the sentence is the same across all contexts. This function returns an array of pairs (xs, ys) where 
-    each xs is a pair (ws, x)
+    each xs is a pair (ws, x). Each token matrix is a 3-row matrix corresponding to the word id, shape id, and part-of-speech id arrays.
 """
-function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, labelIndex::Dict{String,Int})::Array{Tuple{Tuple{Array{Int},Array{Int}},Int}}
-    ws = map(token -> get(wordIndex, lowercase(token.word), 1), sentence.tokens)
+function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})::Array{Tuple{Tuple{Array{Int},Array{Int}},Int}}
+    ws = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:upos]]], sentence.tokens)
     if length(ws) < options[:maxSequenceLength]
         for _ = 1:(options[:maxSequenceLength]-length(ws))
-            append!(ws, [wordIndex[options[:padding]]])
+            append!(ws, [wordIndex[options[:padding]], 1, 1]) # use 1 as padding for shape and part-of-speech
         end
     else
         ws = ws[1:options[:maxSequenceLength]]
     end
-    append!(ws, [wordIndex[options[:padding]]])
+    append!(ws, [wordIndex[options[:padding], 1, 1]]) # add the last padding token
     contexts = decode(sentence)
-    fs = map(context -> extract(context.features), contexts)
+    fs = map(context -> extract(context.features, ["ws", "wq"]), contexts)
     words = map(token -> lowercase(token.word), sentence.tokens)
     append!(words, [options[:padding]])
     positionIndex = Dict{String,Int}(word => i for (i, word) in enumerate(words))
     xs = map(f -> map(word -> positionIndex[word], f), fs)
     ys = map(context -> labelIndex[context.transition], contexts)
-    # return a collection of tuples for this sentence
-    collect(zip(map(x -> (ws, x), xs), ys))
+    # return a collection of tuples for this sentence, use Flux.batch to convert ws to a matrix of size 3x(maxSequenceLength+1).
+    collect(zip(map(x -> (Flux.batch(ws), x), xs), ys))
 end
 
 """
-    batch(sentences, wordIndex, labelIndex)
+    batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
 
     Create batches of data for training or evaluating. Each batch contains a pair (`Xb`, `Yb`) where 
     `Xb` is an array of `batchSize` samples. `Yb` is an one-hot matrix of size (`numLabels` x `batchSize`).
 """
-function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
+function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     # vectorizes all sentences and flatten the samples
-    samples = collect(Iterators.flatten(map(sentence -> vectorize(sentence, wordIndex, labelIndex), sentences)))
+    samples = collect(Iterators.flatten(map(sentence -> vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex), sentences)))
     X = map(sample -> sample[1], samples)   
     y = map(sample -> sample[2], samples)
     # build batches of data for training
@@ -112,41 +120,53 @@ function train(options)
     sentences = readCorpus(options[:testCorpus])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
     @info "#(contexts) = $(length(contexts))"
-    vocabulary, labels = vocab(contexts)
-    prepend!(vocabulary, [options[:unknown]])
-    wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(vocabulary))
-    labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(labels))
+    vocabularies = vocab(contexts)
+    prepend!(vocabularies.words, [options[:unknown]])
+    labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(vocabularies.labels))
+    wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(vocabularies.words))
+    shapeIndex = Dict{String, Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
+    posIndex = Dict{String, Int}(tag => i for (i, tag) in enumerate(vocabularies.partsOfSpeech))
 
     vocabSize = min(options[:vocabSize], length(wordIndex))
 
     # build training dataset
-    Xs, Ys = batch(sentences, wordIndex, labelIndex)
+    Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
-    @info "vocabSize = $(vocabSize)"
     @info "numBatches  = $(length(dataset))"    
+    @info "vocabSize = $(vocabSize)"
 
     mlp = Chain(
         Join(
-            Embedding(vocabSize, options[:embeddingSize]),
-            GRU(options[:embeddingSize], options[:hiddenSize])
+            EmbeddingWSP(vocabSize, options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
+            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize]),
         ),
         Dense(options[:featuresPerContext] * options[:hiddenSize], length(labelIndex))
     )
 
     # save the vocabulary and label index to external files
-    file = open(options[:vocabPath], "w")
-    for f in vocabulary
+    file = open(options[:wordPath], "w")
+    for f in vocabularies.words
         write(file, string(f, " ", wordIndex[f]), "\n")
+    end
+    file = open(options[:shapePath], "w")
+    for f in vocabularies.shapes
+        write(file, string(f, " ", shapeIndex[f]), "\n")
+    end
+    close(file)
+    file = open(options[:posPath], "w")
+    for f in vocabularies.partsOfSpeech
+        write(file, string(f, " ", posIndex[f]), "\n")
     end
     close(file)
     file = open(options[:labelPath], "w")
-    for f in labels
+    for f in vocabualries.labels
         write(file, string(f, " ", labelIndex[f]), "\n")
     end
     close(file)
 
     # bring the dataset and the model to GPU if any
     if options[:gpu]
+        @info "Bring data to GPU..."
         dataset = map(p -> p |> gpu, dataset)
         mlp = mlp |> gpu
     end
