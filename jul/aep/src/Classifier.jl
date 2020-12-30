@@ -21,11 +21,6 @@ end
 function extract(features::Array{String}, prefixes::Array{String})::Array{String}
     xs = filter(feature -> startswith(feature, prefixes[1]) || startswith(feature, prefixes[2]), features)
     ws = map(x -> x[findfirst(':', x)+1:end], xs)
-    if length(ws) < options[:featuresPerContext]
-        for _=1:(options[:featuresPerContext] - length(ws))
-            append!(ws, [options[:padding]])
-        end
-    end
     @assert length(ws) == options[:featuresPerContext]
     return ws
 end

@@ -21,7 +21,6 @@ struct Context
   transition::String
 end
 
-specialShapes = Set{String}(["email", "url", "number", "numberSeq", "time", "date1", "date2", "date3"])
 
 """
   reducible(config)
@@ -87,18 +86,14 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
   u, v = tokenMap[first(σ)], tokenMap[first(β)]
   s = shape(u.word) 
   push!(features, string("ss0:", s))
-  if !(s ∈ specialShapes)
-    push!(features, string("ws0:", lowercase(u.word)))
-  end
+  push!(features, string("ws0:", lowercase(u.word)))
   push!(features, string("ls0:", get(u.annotation, :lemma, "NA")))
   push!(features, string("ts0:", get(u.annotation, :pos, "NA")))
   push!(features, string("us0:", get(u.annotation, :upos, "NA")))
 
   s = shape(v.word)
   push!(features, string("sq0:", s))
-  if !(s ∈  specialShapes)
-    push!(features, string("wq0:", lowercase(v.word)))
-  end
+  push!(features, string("wq0:", lowercase(v.word)))
   push!(features, string("lq0:", get(v.annotation, :lemma, "NA")))
   push!(features, string("tq0:", get(v.annotation, :pos, "NA")))
   push!(features, string("uq0:", get(v.annotation, :upos, "NA")))
@@ -108,12 +103,12 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
     v = tokenMap[id]
     s = shape(v.word)
     push!(features, string("sq1:", s))
-    if !(s ∈ specialShapes)
-      push!(features, string("wq1:", v.word))
-    end  
+    push!(features, string("wq1:", v.word))
     push!(features, string("lq1:", get(v.annotation, :lemma, "NA")))
     push!(features, string("tq1:", get(v.annotation, :pos, "NA")))
     push!(features, string("uq1:", get(v.annotation, :upos, "NA")))
+  else
+    append!(features, ["sq1:[pad]"; "wq1:[pad]"; "lq1:[pad]"; "tq1:[pad]"; "uq1:[pad]"])
   end
   # second token of the stack
   if length(σ) > 1
@@ -121,12 +116,12 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
     v = tokenMap[id]
     s = shape(v.word)
     push!(features, string("ss1:", s))
-    if !(s ∈ specialShapes)
-      push!(features, string("ws1:", lowercase(v.word)))
-    end  
+    push!(features, string("ws1:", lowercase(v.word)))
     push!(features, string("ls1:", get(v.annotation, :lemma, "NA")))
     push!(features, string("ts1:", get(v.annotation, :pos, "NA")))
     push!(features, string("us1:", get(v.annotation, :upos, "NA")))
+  else 
+    append!(features, ["ss1:[pad]"; "ws1:[pad]"; "ls1:[pad]"; "ts1:[pad]"; "us1:[pad]"])
   end
   features
 end

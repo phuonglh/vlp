@@ -23,6 +23,7 @@ EmbeddingWSP(inpW::Int, outW::Int, inpS::Int, outS::Int, inpP::Int, outP::Int) =
 (f::EmbeddingWSP)(x) = hcat([vcat(f.word(x[1,t]), f.shape(x[2,t]), f.partOfSpeech(x[3,t])) for t=1:size(x,2)]...)
 Flux.@functor EmbeddingWSP
 
+
 # Example usage: 
 # x = [3 4 5; 2 3 4; 1 2 3]
 # f = EmbeddingWSP(6,3,4,2,3,1)
