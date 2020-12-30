@@ -46,7 +46,6 @@ function vocab(contexts::Array{Context}, minFreq::Int = 2)::Vocabularies
     Vocabularies(collect(keys(wordFrequency)), unique(shapes), unique(partsOfSpeech), unique(transitions))
 end
 
-
 """
     vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex)
 
@@ -56,19 +55,20 @@ end
     each xs is a pair (ws, x). Each token matrix is a 3-row matrix corresponding to the word id, shape id, and part-of-speech id arrays.
 """
 function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})::Array{Tuple{Tuple{Array{Int},Array{Int}},Int}}
-    ws = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:pos]]], sentence.tokens)
+    ws = map(token -> [get(wordIndex, lowercase(token.word), wordIndex[options[:unknown]]), shapeIndex[shape(token.word)], posIndex[token.annotation[:pos]]], sentence.tokens)
+    pad = options[:padding]
     if length(ws) < options[:maxSequenceLength]
         for _ = 1:(options[:maxSequenceLength]-length(ws))
-            append!(ws, [[wordIndex[options[:padding]], 1, 1]]) # use 1 as padding for shape and part-of-speech
+            append!(ws, [[wordIndex[pad], shapeIndex[pad], posIndex[pad]]])
         end
     else
         ws = ws[1:options[:maxSequenceLength]]
     end
-    append!(ws, [[wordIndex[options[:padding]], 1, 1]]) # add the last padding token
+    append!(ws, [[wordIndex[pad], shapeIndex[pad], posIndex[pad]]]) # add the last padding token
     contexts = decode(sentence)
     fs = map(context -> extract(context.features, ["ws", "wq"]), contexts)
     words = map(token -> lowercase(token.word), sentence.tokens)
-    append!(words, [options[:padding]])
+    append!(words, [pad])
     positionIndex = Dict{String,Int}(word => i for (i, word) in enumerate(words))
     xs = map(f -> map(word -> positionIndex[lowercase(word)], f), fs)
     ys = map(context -> labelIndex[context.transition], contexts)
@@ -85,7 +85,7 @@ end
 function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     # vectorizes all sentences and flatten the samples
     samples = collect(Iterators.flatten(map(sentence -> vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex), sentences)))
-    X = map(sample -> sample[1], samples)   
+    X = map(sample -> sample[1], samples)
     y = map(sample -> sample[2], samples)
     # build batches of data for training
     Xs = collect(Iterators.partition(X, options[:batchSize]))
@@ -122,7 +122,6 @@ function train(options)
     @info "#(contexts) = $(length(contexts))"
     vocabularies = vocab(contexts)
     prepend!(vocabularies.words, [options[:unknown]])
-    append!(vocabularies.words, [options[:padding]])
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(vocabularies.labels))
     wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(vocabularies.words))
     shapeIndex = Dict{String, Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
