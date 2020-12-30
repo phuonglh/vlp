@@ -116,24 +116,27 @@ function train(options)
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
     @info "#(contexts) = $(length(contexts))"
     vocabularies = vocab(contexts)
+
     prepend!(vocabularies.words, [options[:unknown]])
+
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(vocabularies.labels))
     wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(vocabularies.words))
     shapeIndex = Dict{String, Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
     posIndex = Dict{String, Int}(tag => i for (i, tag) in enumerate(vocabularies.partsOfSpeech))
 
     vocabSize = min(options[:vocabSize], length(wordIndex))
+    @info "vocabSize = $(vocabSize)"
 
     # build training dataset
     Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
     @info "numBatches  = $(length(dataset))"    
-    @info "vocabSize = $(vocabSize)"
 
     mlp = Chain(
         Join(
             EmbeddingWSP(vocabSize, options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
-            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize]),
+            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize])
+            # GRU(options[:hiddenSize], options[:hiddenSize])
         ),
         Dense(options[:featuresPerContext] * options[:hiddenSize], length(labelIndex))
     )
