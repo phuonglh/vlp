@@ -5,7 +5,7 @@ using Flux: @epochs
 using BSON: @save, @load
 using CUDA
 
-include("Embedding.jl")
+include("EmbeddingWSP.jl")
 include("Join.jl")
 include("../../tdp/src/Oracle.jl")
 include("Options.jl")
@@ -20,7 +20,7 @@ end
 
 function extract(features::Array{String}, prefixes::Array{String})::Array{String}
     xs = filter(feature -> startswith(feature, prefixes[1]) || startswith(feature, prefixes[2]), features)
-    ws = map(x -> lowercase(x[findfirst(':', x)+1:end]), xs)
+    ws = map(x -> x[findfirst(':', x)+1:end], xs)
     if length(ws) < options[:featuresPerContext]
         for _=1:(options[:featuresPerContext] - length(ws))
             append!(ws, [options[:padding]])
@@ -38,8 +38,8 @@ end
 """    
 function vocab(contexts::Array{Context}, minFreq::Int = 2)::Vocabularies
     transitions = map(context -> context.transition, contexts)
-    features = Iterators.flatten(map(context -> extract(context.features, ["ws", "wq"]), contexts))
-    wordFrequency = Flux.frequencies(features)
+    words = Iterators.flatten(map(context -> extract(context.features, ["ws", "wq"]), contexts))
+    wordFrequency = Flux.frequencies(map(lowercase, words))
     filter!(p -> p.second >= minFreq, wordFrequency)
     shapes = Iterators.flatten(map(context -> extract(context.features, ["ss", "sq"]), contexts))
     partsOfSpeech = Iterators.flatten(map(context -> extract(context.features, ["ts", "tq"]), contexts))
@@ -56,21 +56,21 @@ end
     each xs is a pair (ws, x). Each token matrix is a 3-row matrix corresponding to the word id, shape id, and part-of-speech id arrays.
 """
 function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})::Array{Tuple{Tuple{Array{Int},Array{Int}},Int}}
-    ws = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:upos]]], sentence.tokens)
+    ws = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:pos]]], sentence.tokens)
     if length(ws) < options[:maxSequenceLength]
         for _ = 1:(options[:maxSequenceLength]-length(ws))
-            append!(ws, [wordIndex[options[:padding]], 1, 1]) # use 1 as padding for shape and part-of-speech
+            append!(ws, [[wordIndex[options[:padding]], 1, 1]]) # use 1 as padding for shape and part-of-speech
         end
     else
         ws = ws[1:options[:maxSequenceLength]]
     end
-    append!(ws, [wordIndex[options[:padding], 1, 1]]) # add the last padding token
+    append!(ws, [[wordIndex[options[:padding]], 1, 1]]) # add the last padding token
     contexts = decode(sentence)
     fs = map(context -> extract(context.features, ["ws", "wq"]), contexts)
     words = map(token -> lowercase(token.word), sentence.tokens)
     append!(words, [options[:padding]])
     positionIndex = Dict{String,Int}(word => i for (i, word) in enumerate(words))
-    xs = map(f -> map(word -> positionIndex[word], f), fs)
+    xs = map(f -> map(word -> positionIndex[lowercase(word)], f), fs)
     ys = map(context -> labelIndex[context.transition], contexts)
     # return a collection of tuples for this sentence, use Flux.batch to convert ws to a matrix of size 3x(maxSequenceLength+1).
     collect(zip(map(x -> (Flux.batch(ws), x), xs), ys))
@@ -122,6 +122,7 @@ function train(options)
     @info "#(contexts) = $(length(contexts))"
     vocabularies = vocab(contexts)
     prepend!(vocabularies.words, [options[:unknown]])
+    append!(vocabularies.words, [options[:padding]])
     labelIndex = Dict{String, Int}(label => i for (i, label) in enumerate(vocabularies.labels))
     wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(vocabularies.words))
     shapeIndex = Dict{String, Int}(shape => i for (i, shape) in enumerate(vocabularies.shapes))
@@ -159,7 +160,7 @@ function train(options)
     end
     close(file)
     file = open(options[:labelPath], "w")
-    for f in vocabualries.labels
+    for f in vocabularies.labels
         write(file, string(f, " ", labelIndex[f]), "\n")
     end
     close(file)
@@ -173,7 +174,7 @@ function train(options)
     @info typeof(dataset[1][1]), size(dataset[1][1])
     @info typeof(dataset[1][2]), size(dataset[1][2])
 
-    @info "Total weight of initial word embeddings = $(sum(mlp[1].fs[1].W))"
+    @info "Total weight of initial word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
     # define a loss function, an optimizer and train the model
     loss(x, y) = Flux.logitcrossentropy(hcat(mlp.(x)...), y)
@@ -188,7 +189,7 @@ function train(options)
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
     close(file)
-    @info "Total weight of final word embeddings = $(sum(mlp[1].fs[1].W))"
+    @info "Total weight of final word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
     # evaluate the model on the training set
     @info "Evaluating the model..."

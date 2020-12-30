@@ -25,8 +25,8 @@ options = Dict{Symbol,Any}(
     :verbose => false,
     :gpu => false,
     :logPath => string(pwd(), "/jul/aep/dat/vie/loss.txt"),
-    :unknown => "[UNK]",
-    :padding => "[PAD]"
+    :unknown => "[unk]",
+    :padding => "[pad]"
 )
 
 # English Web Treebank corpus
@@ -53,7 +53,7 @@ optionsEWT = Dict{Symbol,Any}(
     :verbose => false,
     :gpu => false,
     :logPath => string(pwd(), "/jul/aep/dat/eng/loss.txt"),
-    :unknown => "[UNK]",
-    :padding => "[PAD]"
+    :unknown => "[unk]",
+    :padding => "[pad]"
 )
 

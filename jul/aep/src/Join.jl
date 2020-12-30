@@ -7,18 +7,18 @@
 using Flux
 
 struct Join
-    fs # functions (typically two layers: [Embedding, RNN])
+    fs # functions (typically two layers: [EmbeddingWSP, RNN])
 end
 
 Join(fs...) = Join(fs)
 
-function (g::Join)(x::Tuple{AbstractArray{Int,1},AbstractArray{Int,1}})
+function (g::Join)(x::Tuple{Array{Int,2},Array{Int,1}})
     a, b = x
     u = g.fs[2](g.fs[1](a)) # if `fs[2]` is a RNN and `a` is an index array, this gives a sequence
     vec(u[:, b])  # if `b` is an index array, this gives a concatenated vector 
 end
 
-function (g::Join)(x::SubArray{Tuple{Array{Int64,1},Array{Int64,1}},1,Array{Tuple{Array{Int64,1},Array{Int64,1}},1},Tuple{UnitRange{Int64}},true})
+function (g::Join)(x::SubArray)
     g(x[1])
 end
 
