@@ -101,7 +101,7 @@ function evaluate(mlp, Xs, Ys)
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
     numSamples = sum(map(y -> length(y), Yb))
-    accuracy = reduce((a, b) -> a + b, matches)/numSamples
+    accuracy = sum(matches)/numSamples
     return accuracy
 end
 
@@ -138,7 +138,8 @@ function train(options)
             GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize])
             # GRU(options[:hiddenSize], options[:hiddenSize])
         ),
-        Dense(options[:featuresPerContext] * options[:hiddenSize], length(labelIndex))
+        Dense(options[:featuresPerContext] * options[:hiddenSize], options[:hiddenSize], tanh),
+        Dense(options[:hiddenSize], length(labelIndex))
     )
 
     # save the vocabulary and label index to external files
@@ -173,6 +174,8 @@ function train(options)
 
     @info "Total weight of initial word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
+    numSamples = sum(map(y -> length(y), Flux.onecold.(Ys)))
+    @info "numSamples = $(numSamples)"
     # define a loss function, an optimizer and train the model
     loss(x, y) = Flux.logitcrossentropy(hcat(mlp.(x)...), y)
     optimizer = ADAM()
