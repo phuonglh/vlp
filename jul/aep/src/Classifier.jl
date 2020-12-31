@@ -112,9 +112,10 @@ end
     Train a classifier model.
 """
 function train(options)
-    sentences = readCorpus(options[:testCorpus])
+    sentences = readCorpus(options[:trainCorpus])
+    @info "#(sentencesTrain) = $(length(sentences))"
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
-    @info "#(contexts) = $(length(contexts))"
+    @info "#(contextsTrain) = $(length(contexts))"
     vocabularies = vocab(contexts)
 
     prepend!(vocabularies.words, [options[:unknown]])
@@ -176,15 +177,31 @@ function train(options)
 
     @info "Total weight of initial word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
+    # build development dataset
+    sentencesDev = readCorpus(options[:devCorpus])
+    @info "#(sentencesDev) = $(length(sentencesDev))"
+    contextsDev = collect(Iterators.flatten(map(sentence -> decode(sentence), sentencesDev)))
+    @info "#(contextsDev) = $(length(contextsDev))"
+
+    Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
+    dataset = collect(zip(Xs, Ys))
+    @info "numBatches  = $(length(dataset))"
+
+    XsDev, YsDev = batch(sentencesDev, wordIndex, shapeIndex, posIndex, labelIndex)
+    datasetDev = collect(zip(XsDev, YsDev))
+    @info "numBatchesDev  = $(length(datasetDev))"
+
     # define a loss function, an optimizer and train the model
     loss(X, Y) = sum(Flux.logitcrossentropy(mlp(X[i]), Y[i]) for i=1:length(Y))
     optimizer = ADAM()
     file = open(options[:logPath], "w")
+    write(file, "dev. loss,trainingAcc,devAcc\n")
     evalcb = Flux.throttle(30) do
-        ℓ = loss(dataset[1]...)
-        accuracy = evaluate(mlp, Xs, Ys)
-        @info string("loss = $(ℓ), accuracy = $(accuracy)")
-        write(file, string(ℓ, ',', accuracy, "\n"))
+        ℓ = sum(loss(datasetDev[i]...) for i=1:length(datasetDev))
+        trainingAccuracy = evaluate(mlp, Xs, Ys)
+        devAccuracy = evaluate(mlp, XsDev, YsDev)
+        @info string("dev. loss = $(ℓ), training accuracy = $(trainingAccuracy), dev. accuracy = $(devAccuracy)")
+        write(file, string(ℓ, ',', trainingAccuracy, ',', devAccuracy, "\n"))
     end
     # train the model
     @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
