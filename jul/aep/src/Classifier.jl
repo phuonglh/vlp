@@ -112,7 +112,7 @@ end
     Train a classifier model.
 """
 function train(options)
-    sentences = readCorpus(options[:trainCorpus])
+    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
     @info "#(sentencesTrain) = $(length(sentences))"
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
     @info "#(contextsTrain) = $(length(contexts))"
@@ -132,8 +132,8 @@ function train(options)
     Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
     @info "numBatches  = $(length(dataset))"
-    @info size(Xs[1][1][1]), size(Xs[1][1][2])
-    @info size(Ys[1][1])
+    # @info size(Xs[1][1][1]), size(Xs[1][1][2])
+    # @info size(Ys[1][1])
 
     mlp = Chain(
         Join(
@@ -172,13 +172,13 @@ function train(options)
         dataset = map(p -> p |> gpu, dataset)
         mlp = mlp |> gpu
     end
-    @info typeof(dataset[1][1]), size(dataset[1][1])
-    @info typeof(dataset[1][2]), size(dataset[1][2])
+    # @info typeof(dataset[1][1]), size(dataset[1][1])
+    # @info typeof(dataset[1][2]), size(dataset[1][2])
 
     @info "Total weight of initial word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
     # build development dataset
-    sentencesDev = readCorpus(options[:devCorpus])
+    sentencesDev = readCorpus(options[:devCorpus], options[:maxSequenceLength])
     @info "#(sentencesDev) = $(length(sentencesDev))"
     contextsDev = collect(Iterators.flatten(map(sentence -> decode(sentence), sentencesDev)))
     @info "#(contextsDev) = $(length(contextsDev))"

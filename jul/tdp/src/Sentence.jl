@@ -9,11 +9,11 @@ struct Sentence
 end
 
 """
-  readCorpus(path)
+  readCorpus(path, maxSentenceLength=40)
 
   Read a CoNLLU file to build graphs. Each graph is a sentence.
 """
-function readCorpus(path::String)::Array{Sentence}
+function readCorpus(path::String, maxSentenceLength::Int=40)::Array{Sentence}
   lines = filter(line -> !startswith(line, "#"), readlines(path))
   append!(lines, [""])
   sentences = []
@@ -22,7 +22,10 @@ function readCorpus(path::String)::Array{Sentence}
     parts = split(strip(line), r"\t+")
     if length(parts) == 1
       prepend!(tokens, [Token("ROOT", Dict(:id => "0", :lemma => "NA", :upos => "NA", :pos => "NA", :fs => "NA", :head => "NA", :label => "NA"))])
-      push!(sentences, Sentence(tokens))
+      # add sentence if it is not too long...
+      if length(tokens) <= maxSentenceLength
+        push!(sentences, Sentence(tokens))
+      end
       empty!(tokens)
     else
       word = parts[2]
