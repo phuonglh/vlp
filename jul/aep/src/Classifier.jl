@@ -49,7 +49,7 @@ end
     The word id array of the sentence is the same across all contexts. This function returns an array of pairs (xs, ys) where 
     each xs is a pair (ws, x). Each token matrix is a 3-row matrix corresponding to the word id, shape id, and part-of-speech id arrays.
 """
-function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})::Array{Tuple{Tuple{Array{Int},Array{Int}},Int}}
+function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     ws = map(token -> [get(wordIndex, lowercase(token.word), wordIndex[options[:unknown]]), shapeIndex[shape(token.word)], posIndex[token.annotation[:pos]]], sentence.tokens)
     pad = options[:padding]
     if length(ws) < options[:maxSequenceLength]
@@ -67,8 +67,10 @@ function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::
     positionIndex = Dict{String,Int}(word => i for (i, word) in enumerate(words))
     xs = map(f -> map(word -> positionIndex[lowercase(word)], f), fs)
     ys = map(context -> labelIndex[context.transition], contexts)
-    # return a collection of tuples for this sentence, use Flux.batch to convert ws to a matrix of size 3x(maxSequenceLength+1).
-    collect(zip(map(x -> (Flux.batch(ws), x), xs), ys))
+    # return a collection of tuples for this sentence, use Flux.batch to convert ws to a matrix of size 3 x (maxSequenceLength+1).
+    # and xs to a matrix of size 4 x numberOfContexts
+    # convert each output batch to an one-hot matrix of size (numLabels x numberOfContexts)
+    ((Flux.batch(ws), Flux.batch(xs)), Flux.onehotbatch(ys, 1:length(labelIndex)))
 end
 
 """
@@ -78,15 +80,13 @@ end
     `Xb` is an array of `batchSize` samples. `Yb` is an one-hot matrix of size (`numLabels` x `batchSize`).
 """
 function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
-    # vectorizes all sentences and flatten the samples
-    samples = collect(Iterators.flatten(map(sentence -> vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex), sentences)))
+    # vectorizes all sentences 
+    samples = map(sentence -> vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex), sentences)
     X = map(sample -> sample[1], samples)
-    y = map(sample -> sample[2], samples)
+    Y = map(sample -> sample[2], samples)
     # build batches of data for training
     Xs = collect(Iterators.partition(X, options[:batchSize]))
-    Y = collect(Iterators.partition(y, options[:batchSize]))
-    # convert each output batch to an one-hot matrix
-    Ys = map(b -> Flux.onehotbatch(b, 1:length(labelIndex)), Y)
+    Ys = collect(Iterators.partition(Y, options[:batchSize]))
     (Xs, Ys)
 end
 
@@ -96,8 +96,8 @@ end
     Evaluate the accuracy of a model on a dataset.
 """
 function evaluate(mlp, Xs, Ys)
-    Ŷb = Flux.onecold.(mlp.(Xs)) |> cpu
-    Yb = Flux.onecold.(Ys) |> cpu
+    Ŷb = Iterators.flatten(map(X -> Flux.onecold.(mlp.(X)), Xs)) # numSentences arrays
+    Yb = Iterators.flatten(map(Y -> [Flux.onecold(Y[i]) for i=1:length(Y)], Ys)) # numSentences arrays
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
     numSamples = sum(map(y -> length(y), Yb))
@@ -130,7 +130,9 @@ function train(options)
     # build training dataset
     Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
-    @info "numBatches  = $(length(dataset))"    
+    @info "numBatches  = $(length(dataset))"
+    @info size(Xs[1][1][1]), size(Xs[1][1][2])
+    @info size(Ys[1][1])
 
     mlp = Chain(
         Join(
@@ -174,10 +176,8 @@ function train(options)
 
     @info "Total weight of initial word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
-    numSamples = sum(map(y -> length(y), Flux.onecold.(Ys)))
-    @info "numSamples = $(numSamples)"
     # define a loss function, an optimizer and train the model
-    loss(x, y) = Flux.logitcrossentropy(hcat(mlp.(x)...), y)
+    loss(X, Y) = sum(Flux.logitcrossentropy(mlp(X[i]), Y[i]) for i=1:length(Y))
     optimizer = ADAM()
     file = open(options[:logPath], "w")
     evalcb = Flux.throttle(30) do
