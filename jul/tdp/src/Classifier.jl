@@ -175,12 +175,11 @@ function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{Stri
 end
 
 """
-    eval(options)
+    eval(options, sentences)
 
     Evaluate the accuracy of the transition classifier.
 """
-function eval(options::Dict{Symbol,Any})
-    sentences = readCorpus(options[:trainCorpus])
+function eval(options::Dict{Symbol,Any}, sentences::Array{Sentence})
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))   
     @info "Number of sentences = $(length(sentences))"
     @info "Number of contexts  = $(length(contexts))"
@@ -199,7 +198,7 @@ function eval(options::Dict{Symbol,Any})
     numMatches = reduce((a, b) -> a + b, matches)
     @info numMatches
     accuracy = numMatches/length(contexts)
-    @info "Training accuracy = $accuracy"
+    @info "accuracy = $accuracy"
     mlp
 end
 
@@ -208,3 +207,6 @@ end
 # elseif options[:mode] == :eval
 #     eval(options)
 # end
+
+# sentences = readCorpus(options[:trainCorpus], 40)
+# eval(options, sentences)

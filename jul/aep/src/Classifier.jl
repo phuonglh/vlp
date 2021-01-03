@@ -102,12 +102,11 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
 end
 
 """
-    eval(options)
+    eval(sentences)
 
     Evaluate the accuracy of the transition classifier.
 """
-function eval(options::Dict{Symbol,Any})
-    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
+function eval(sentences::Array{Sentence})
     mlp, wordIndex, shapeIndex, posIndex, labelIndex = load(options)
     Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     accuracy = evaluate(mlp, Xs, Ys)
@@ -274,3 +273,6 @@ function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{Stri
     labelIndex = dict(options[:labelPath])
     (mlp, wordIndex, shapeIndex, posIndex, labelIndex)
 end
+
+sentences = readCorpus(options[:devCorpus], options[:maxSequenceLength])
+eval(sentences)
