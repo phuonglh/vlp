@@ -282,5 +282,5 @@ function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{Stri
     (mlp, wordIndex, shapeIndex, posIndex, labelIndex)
 end
 
-sentences = readCorpus(options[:devCorpus], options[:maxSequenceLength])
-eval(sentences)
+# sentences = readCorpus(options[:devCorpus], options[:maxSequenceLength])
+# eval(sentences)
