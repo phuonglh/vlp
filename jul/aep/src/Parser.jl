@@ -5,12 +5,12 @@ include("Classifier.jl")
 """
     run(options)
 
-    Parse an array of sentences. A pre-trained transition classifier, its associated feature index and label index 
+    Parse an array of sentences. A pre-trained transition classifier, its associated indices 
     will be loaded from saved files in advance. The input sentences are updated in-place by appending :h and :l annotations to 
     each token for head and dependency label predictions.
 """
 function run(options::Dict{Symbol,Any}, sentences::Array{Sentence})
-    mlp, featureIndex, labelIndex = load(options)
+    mlp, wordIndex, shapeIndex, posIndex, labelIndex = load(options)
     # create (index => label) map
     labels = Dict{Int,String}(labelIndex[label] => label for label in keys(labelIndex))
     # parse the sentences in parallel to speed up the processing
@@ -23,13 +23,38 @@ function run(options::Dict{Symbol,Any}, sentences::Array{Sentence})
         end
         A = Array{Arc,1}()
         config = Config(σ, β, A)
+        contexts = []
         config = next(config, "SH")
         transition = "SH"
+        # create a word map to position
+        words = map(token -> lowercase(token.word), sentence.tokens)
+        append!(words, [options[:padding]])
+        positionIndex = Dict{String,Int}(word => i for (i, word) in enumerate(words))
+        # convert sentence to a 3 x maxSequenceLength integer matrix
+        ws = vectorizeSentence(sentence, wordIndex, shapeIndex, posIndex)
+        as = Flux.batch(ws)
+        # the greedy parsing loop
         while !isempty(β) && !isempty(σ)
-            features = featurize(config, tokenMap)
-            x = unique(map(f -> get(featureIndex, f, 1), features))
-            # pad x if necessary
-            append!(x, ones(options[:featuresPerContext] - length(x)))
+            u, v = tokenMap[first(σ)], tokenMap[first(β)]
+            ws0 = lowercase(u.word)
+            wq0 = lowercase(v.word)
+            wq1 = if length(β) > 1
+                id = collect(β)[2]
+                v = tokenMap[id]
+                lowercase(v.word)
+            else
+                "[pad]"
+            end
+            ws1 = if length(σ) > 1
+                id = collect(σ)[2]
+                v = tokenMap[id]
+                lowercase(v.word)
+            else
+                "[pad]"
+            end
+            fs = [ws0; wq0; wq1; ws1] # this creates a vector of length 4
+            bs = map(word -> positionIndex[lowercase(word)], fs)
+            x = (as, bs) # input to our model is a pair of (matrix, vector)
             y = mlp(x)
             transition = labels[Flux.onecold(y)[1]]
             config = next(config, transition)
@@ -49,7 +74,7 @@ end
     Evaluate the accuracy of the parser: compute the UAS and LAS scores.
 """
 function evaluate(options::Dict{Symbol,Any})::Tuple{Float64,Float64}
-    sentences = readCorpus(options[:trainCorpus])
+    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
     run(options, sentences)
     uas, las = 0, 0
     numTokens = 0
@@ -68,6 +93,6 @@ function evaluate(options::Dict{Symbol,Any})::Tuple{Float64,Float64}
 end
 
 
-@time uas, las = evaluate(options)
+@time uas, las = evaluate(optionsEWT)
 println("UAS = $uas")
 println("LAS = $las")

@@ -103,7 +103,7 @@ function featurize(config::Config, tokenMap::Dict{String,Token})::Array{String}
     v = tokenMap[id]
     s = shape(v.word)
     push!(features, string("sq1:", s))
-    push!(features, string("wq1:", v.word))
+    push!(features, string("wq1:", lowercase(v.word)))
     push!(features, string("lq1:", get(v.annotation, :lemma, "NA")))
     push!(features, string("tq1:", get(v.annotation, :pos, "NA")))
     push!(features, string("uq1:", get(v.annotation, :upos, "NA")))

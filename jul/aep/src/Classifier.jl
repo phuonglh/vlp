@@ -42,14 +42,12 @@ function vocab(contexts::Array{Context}, minFreq::Int = 2)::Vocabularies
 end
 
 """
-    vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex)
+    vectorizeSentence(sentence, wordIndex, shapeIndex, posIndex)
 
-    Vectorize a training sentence. An oracle is used to extract (context, transition) pairs from 
-    the sentence. Then each context is vectorized to a tuple of (token matrix of the sentence, word id array of the context).
-    The word id array of the sentence is the same across all contexts. This function returns an array of pairs (xs, ys) where 
-    each xs is a pair (ws, x). Each token matrix is a 3-row matrix corresponding to the word id, shape id, and part-of-speech id arrays.
+    Vectorize a given input sentence into an integer matrix of size 3 x maxSentenceLength. The first row contains word indices,
+    the second row contains shape indices, and the third row contains part-of-speech indices.
 """
-function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
+function vectorizeSentence(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int})
     ws = map(token -> [get(wordIndex, lowercase(token.word), wordIndex[options[:unknown]]), shapeIndex[shape(token.word)], posIndex[token.annotation[:pos]]], sentence.tokens)
     pad = options[:padding]
     if length(ws) < options[:maxSequenceLength]
@@ -60,10 +58,23 @@ function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::
         ws = ws[1:options[:maxSequenceLength]]
     end
     append!(ws, [[wordIndex[pad], shapeIndex[pad], posIndex[pad]]]) # add the last padding token
+    return ws
+end
+
+"""
+    vectorize(sentence, wordIndex, shapeIndex, posIndex, labelIndex)
+
+    Vectorize a training sentence. An oracle is used to extract (context, transition) pairs from 
+    the sentence. Then each context is vectorized to a tuple of (token matrix of the sentence, word id array of the context).
+    The word id array of the sentence is the same across all contexts. This function returns an array of pairs (xs, ys) where 
+    each xs is a pair (ws, x). Each token matrix is a 3-row matrix corresponding to the word id, shape id, and part-of-speech id arrays.
+"""
+function vectorize(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
+    ws = vectorizeSentence(sentence, wordIndex, shapeIndex, posIndex)
     contexts = decode(sentence)
     fs = map(context -> extract(context.features, ["ws", "wq"]), contexts)
     words = map(token -> lowercase(token.word), sentence.tokens)
-    append!(words, [pad])
+    append!(words, [options[:padding]])
     positionIndex = Dict{String,Int}(word => i for (i, word) in enumerate(words))
     xs = map(f -> map(word -> positionIndex[lowercase(word)], f), fs)
     ys = map(context -> labelIndex[context.transition], contexts)
@@ -88,6 +99,20 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     Xs = collect(Iterators.partition(X, options[:batchSize]))
     Ys = collect(Iterators.partition(Y, options[:batchSize]))
     (Xs, Ys)
+end
+
+"""
+    eval(options)
+
+    Evaluate the accuracy of the transition classifier.
+"""
+function eval(options::Dict{Symbol,Any})
+    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
+    mlp, wordIndex, shapeIndex, posIndex, labelIndex = load(options)
+    Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
+    accuracy = evaluate(mlp, Xs, Ys)
+    @info "accuracy = $(accuracy)"
+    return accuracy
 end
 
 """
@@ -218,3 +243,34 @@ function train(options)
     mlp    
 end
 
+"""
+    dict(path)
+
+    Load a dictionary (i.e., vocab or label) from a text file.
+"""
+function dict(path::String)::Dict{String,Int}
+    lines = filter(line -> !isempty(strip(line)), readlines(path))
+    dict = Dict{String,Int}()
+    for line in lines
+        j = findlast(' ', line)
+        if (j !== nothing)
+            v = nextind(line, j)
+            dict[strip(line[1:v-1])] = parse(Int, line[v:end])
+        end
+    end
+    dict
+end
+
+"""
+    load(options)
+
+    Load a pre-trained classifier and return a tuple of (mlp, wordIndex, shapeIndex, posIndex, labelIndex).
+"""
+function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{String,Int},Dict{String,Int},Dict{String,Int}}
+    @load options[:modelPath] mlp
+    wordIndex = dict(options[:wordPath])
+    shapeIndex = dict(options[:shapePath])
+    posIndex = dict(options[:posPath])
+    labelIndex = dict(options[:labelPath])
+    (mlp, wordIndex, shapeIndex, posIndex, labelIndex)
+end

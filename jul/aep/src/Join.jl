@@ -19,7 +19,7 @@ Join(fs...) = Join(fs)
 function (g::Join)(x::Tuple{Array{Int,2},Array{Int,1}})
     a, b = x
     as = g.fs[1](a)
-    u = g.fs[2](a) # if `fs[2]` is a RNN and `a` is an index array, this gives a sequence
+    u = g.fs[2](as) # if `fs[2]` is a RNN and `as` is an index array, this gives a sequence
     vec(u[:, b])  # if `b` is an index array, this gives a concatenated vector 
 end
 
@@ -34,7 +34,7 @@ end
 function (g::Join)(x::Tuple{Array{Int,2},Array{Int,2}})
     a, b = x
     as = g.fs[1](a)
-    u = g.fs[2](as) # if `fs[2]` is a RNN and `a` is an index array, this gives a sequence
+    u = g.fs[2](as) # if `fs[2]` is a RNN and `as` is an index array, this gives a sequence
     vs = [vec(u[:, b[:,j]]) for j=1:size(b,2)] # apply for each column in b
     hcat(vs...) # stack vs to get the output matrix instead of an array of arrays
 end
