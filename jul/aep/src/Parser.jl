@@ -69,12 +69,11 @@ function run(options::Dict{Symbol,Any}, sentences::Array{Sentence})
 end
 
 """
-    evaluate(options)
+    evaluate(options, sentences)
 
     Evaluate the accuracy of the parser: compute the UAS and LAS scores.
 """
-function evaluate(options::Dict{Symbol,Any})::Tuple{Float64,Float64}
-    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
+function evaluate(options::Dict{Symbol,Any}, sentences::Array{Sentence})::Tuple{Float64,Float64}
     run(options, sentences)
     uas, las = 0, 0
     numTokens = 0
@@ -93,6 +92,7 @@ function evaluate(options::Dict{Symbol,Any})::Tuple{Float64,Float64}
 end
 
 
-@time uas, las = evaluate(optionsEWT)
-println("UAS = $uas")
-println("LAS = $las")
+# sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
+# @time uas, las = evaluate(options, sentences)
+# println("UAS = $uas")
+# println("LAS = $las")

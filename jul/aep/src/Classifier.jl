@@ -48,7 +48,13 @@ end
     the second row contains shape indices, and the third row contains part-of-speech indices.
 """
 function vectorizeSentence(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int})
-    ws = map(token -> [get(wordIndex, lowercase(token.word), wordIndex[options[:unknown]]), shapeIndex[shape(token.word)], posIndex[token.annotation[:pos]]], sentence.tokens)
+    function featurize(token)
+        w = get(wordIndex, lowercase(token.word), wordIndex[options[:unknown]])
+        s = shapeIndex[shape(token.word)]
+        t = get(posIndex, token.annotation[:pos], posIndex[options[:padding]])
+        return [w, s, t]
+    end
+    ws = map(token -> featurize(token), sentence.tokens)
     pad = options[:padding]
     if length(ws) < options[:maxSequenceLength]
         for _ = 1:(options[:maxSequenceLength]-length(ws))
@@ -237,9 +243,11 @@ function train(options)
     accuracy = evaluate(mlp, Xs, Ys)
     @info "Training accuracy = $accuracy"
     # save the model to a BSON file
-    mlp = mlp |> cpu
+    if (options[:gpu])
+        mlp = mlp |> cpu
+    end
     @save options[:modelPath] mlp
-    mlp    
+    mlp
 end
 
 """

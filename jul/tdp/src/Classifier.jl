@@ -131,14 +131,16 @@ function train(options::Dict{Symbol,Any})
     close(file)
     # evaluate the model on the training set
     @info "Evaluating the model..."
-    Ŷb = Flux.onecold.(mlp.(Xs)) |> cpu
-    Yb = Flux.onecold.(Ys) |> cpu
+    Ŷb = Flux.onecold.(mlp.(Xs))
+    Yb = Flux.onecold.(Ys)
     pairs = collect(zip(Ŷb, Yb))
     matches = map(p -> sum(p[1] .== p[2]), pairs)
     accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
     @info "Training accuracy = $accuracy"
     # save the model to a BSON file
-    mlp = mlp |> cpu
+    if options[:gpu]
+        mlp = mlp |> cpu
+    end
     @save options[:modelPath] mlp
     mlp
 end
