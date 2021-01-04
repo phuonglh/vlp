@@ -1,4 +1,4 @@
-# phuonglh@gmail.com
+# phuonglh@gmail.com, December 2020.
 
 using Flux
 using Flux: @epochs
@@ -10,7 +10,6 @@ include("Join.jl")
 include("../../tdp/src/Oracle.jl")
 include("Options.jl")
 
-
 struct Vocabularies
     words::Array{String}
     shapes::Array{String}
@@ -18,6 +17,11 @@ struct Vocabularies
     labels::Array{String}
 end
 
+"""
+    extract(features, prefixes)
+
+    Extract selected features from an array of features obtained by the Oracle.jl module.
+"""
 function extract(features::Array{String}, prefixes::Array{String})::Array{String}
     xs = filter(feature -> startswith(feature, prefixes[1]) || startswith(feature, prefixes[2]), features)
     ws = map(x -> x[findfirst(':', x)+1:end], xs)
@@ -135,7 +139,6 @@ function evaluate(mlp, Xs, Ys)
     return accuracy
 end
 
-
 """
     train(options)
 
@@ -168,33 +171,24 @@ function train(options)
     mlp = Chain(
         Join(
             EmbeddingWSP(vocabSize, options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
-            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize])
-            # GRU(options[:hiddenSize], options[:hiddenSize])
+            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize]),
+            GRU(options[:hiddenSize], options[:hiddenSize])
         ),
         Dense(options[:featuresPerContext] * options[:hiddenSize], options[:hiddenSize], tanh),
         Dense(options[:hiddenSize], length(labelIndex))
     )
-
-    # save the vocabulary and label index to external files
-    file = open(options[:wordPath], "w")
-    for f in vocabularies.words
-        write(file, string(f, " ", wordIndex[f]), "\n")
+    # save an index to an external file
+    function saveIndex(index, path)
+        file = open(path, "w")
+        for f in keys(index)
+            write(file, string(f, " ", index[f]), "\n")
+        end
+        close(f)
     end
-    file = open(options[:shapePath], "w")
-    for f in vocabularies.shapes
-        write(file, string(f, " ", shapeIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:posPath], "w")
-    for f in vocabularies.partsOfSpeech
-        write(file, string(f, " ", posIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:labelPath], "w")
-    for f in vocabularies.labels
-        write(file, string(f, " ", labelIndex[f]), "\n")
-    end
-    close(file)
+    saveIndex(wordIndex, options[:wordPath])
+    saveIndex(shapeIndex, options[:shapePath])
+    saveIndex(posIndex, options[:posPath])
+    saveIndex(labelIndex, options[:labelPath])
 
     # bring the dataset and the model to GPU if any
     if options[:gpu]
@@ -239,7 +233,7 @@ function train(options)
     bestDevAccuracy = 0
     @time while (t <= options[:numEpochs])
         @info "Epoch $t, k = $k"
-        Flux.train!(loss, params(mlp), dataset, optimizer, cb = Flux.throttle(evalcb, 30))
+        Flux.train!(loss, params(mlp), dataset, optimizer, cb = Flux.throttle(evalcb, 60))
         devAccuracy = evaluate(mlp, XsDev, YsDev)
         if bestDevAccuracy < devAccuracy
             bestDevAccuracy = devAccuracy
