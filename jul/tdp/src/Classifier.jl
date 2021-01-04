@@ -72,14 +72,21 @@ end
     Train a neural network transition classifier.
 """
 function train(options::Dict{Symbol,Any})
-    sentences = readCorpus(options[:trainCorpus])
+    # load training data
+    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
     contexts = collect(Iterators.flatten(map(sentence -> decode(sentence), sentences)))
-    @info "Number of sentences = $(length(sentences))"
-    @info "Number of contexts  = $(length(contexts))"
+    @info "Number of sentencesTrain = $(length(sentences))"
+    @info "Number of contextsTrain  = $(length(contexts))"
+    # load development data
+    sentencesDev = readCorpus(options[:devCorpus], options[:maxSequenceLength])
+    contextsDev = collect(Iterators.flatten(map(sentence -> decode(sentence), sentencesDev)))
+    @info "Number of sentencesDev = $(length(sentencesDev))"
+    @info "Number of contextsDev  = $(length(contextsDev))"
+
     # build vocabulary and label list, truncate the vocabulary to the maximum number of features if necessary.
     vocabulary, labels = vocab(contexts, options[:minFreq], options[:lowercase])
     # add [UNK] symbol at index 1
-    prepend!(vocabulary, ["[UNK]"])    
+    prepend!(vocabulary, ["[UNK]"])
     if length(vocabulary) < options[:numFeatures]
         options[:numFeatures] = length(vocabulary)
     else
@@ -103,8 +110,13 @@ function train(options::Dict{Symbol,Any})
     # build training dataset
     Xs, Ys = batch(contexts, featureIndex, labelIndex)
     dataset = collect(zip(Xs, Ys))
-    @info "numFeatures = ", options[:numFeatures]
-    @info "numBatches  = ", length(dataset)
+    @info "numFeatures =  $(options[:numFeatures])"
+    @info "numLabels = $(length(labels))"
+    @info "numBatches (training) = $(length(dataset))"
+
+    XsDev, YsDev = batch(contextsDev, featureIndex, labelIndex)
+    datasetDev = collect(zip(XsDev, YsDev))
+    @info "numBatches (development) = $(length(datasetDev))"
 
     # create a model 
     mlp = model(options, length(labels))
@@ -121,22 +133,49 @@ function train(options::Dict{Symbol,Any})
     loss(x, y) = Flux.logitcrossentropy(mlp(x), y)
     optimizer = ADAM()
     file = open(options[:logPath], "w")
-    evalcb = Flux.throttle(30) do
-        ℓ = loss(dataset[1]...)
-        @info string("loss = ", ℓ)
-        write(file, string(ℓ, "\n"))
+    write(file, "dev. loss,trainingAcc,devAcc\n")
+    # evaluate the model on a dataset
+    function accuracy(Xs, Ys, numContexts)
+        Ŷb = Flux.onecold.(mlp.(Xs))
+        Yb = Flux.onecold.(Ys)
+        pairs = collect(zip(Ŷb, Yb))
+        matches = map(p -> sum(p[1] .== p[2]), pairs)
+        sum(matches)/numContexts
     end
-    # train the model
-    @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
+    evalcb = function()
+        devLoss = sum(loss(dataset[i]...) for i=1:length(datasetDev))
+        trainAccuracy = accuracy(Xs, Ys, length(contexts))
+        devAccuracy = accuracy(XsDev, YsDev, length(contextsDev))
+        @info "\tdevLoss = $devLoss, trainAccuracy=$trainAccuracy, devAccuracy=$devAccuracy"
+        write(file, string(devLoss, ',', trainAccuracy, ',', devAccuracy, "\n"))
+    end
+    # train the model until the development accuracy decreases 2 consecutive times
+    t = 1
+    k = 0
+    bestDevAccuracy = 0
+    @time while (t <= options[:numEpochs]) 
+        @info "Epoch $t, k = $k"
+        Flux.train!(loss, params(mlp), dataset, optimizer, cb = Flux.throttle(evalcb, 30))
+        devAccuracy = accuracy(XsDev, YsDev, length(contextsDev))
+        if bestDevAccuracy < devAccuracy
+            bestDevAccuracy = devAccuracy
+            k = 0
+        else
+            k = k + 1
+            if (k == 3)
+                @info "Stop training because current accuracy is smaller than the best accuracy: $(devAccuracy) < $(bestDevAccuracy)."
+                break
+            end
+        end
+        @info "bestDevAccuracy = $bestDevAccuracy"
+        t = t + 1
+    end
     close(file)
-    # evaluate the model on the training set
     @info "Evaluating the model..."
-    Ŷb = Flux.onecold.(mlp.(Xs))
-    Yb = Flux.onecold.(Ys)
-    pairs = collect(zip(Ŷb, Yb))
-    matches = map(p -> sum(p[1] .== p[2]), pairs)
-    accuracy = reduce((a, b) -> a + b, matches)/length(contexts)
-    @info "Training accuracy = $accuracy"
+    trainingAcc = accuracy(Xs, Ys, length(contexts))
+    @info "Training accuracy = $trainingAcc"
+    devAcc = accuracy(XsDev, YsDev, length(contextsDev))
+    @info "Development accuracy = $devAcc"
     # save the model to a BSON file
     if options[:gpu]
         mlp = mlp |> cpu
@@ -207,8 +246,6 @@ end
 # mlp = if options[:mode] == :train
 #     train(options)
 # elseif options[:mode] == :eval
-#     eval(options)
+#     sentencesTest = readCorpus(options[:testCorpus], options[:maxSequenceLength])
+#     eval(options, sentencesTest)
 # end
-
-# sentences = readCorpus(options[:trainCorpus], 40)
-# eval(options, sentences)

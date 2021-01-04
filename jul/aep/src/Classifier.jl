@@ -226,15 +226,34 @@ function train(options)
     optimizer = ADAM()
     file = open(options[:logPath], "w")
     write(file, "dev. loss,trainingAcc,devAcc\n")
-    evalcb = Flux.throttle(30) do
-        ℓ = sum(loss(datasetDev[i]...) for i=1:length(datasetDev))
+    evalcb = function()
+        devLoss = sum(loss(datasetDev[i]...) for i=1:length(datasetDev))
         trainingAccuracy = evaluate(mlp, Xs, Ys)
         devAccuracy = evaluate(mlp, XsDev, YsDev)
-        @info string("dev. loss = $(ℓ), training accuracy = $(trainingAccuracy), dev. accuracy = $(devAccuracy)")
-        write(file, string(ℓ, ',', trainingAccuracy, ',', devAccuracy, "\n"))
+        @info string("\tdevLoss = $(devLoss), training accuracy = $(trainingAccuracy), development accuracy = $(devAccuracy)")
+        write(file, string(devLoss, ',', trainingAccuracy, ',', devAccuracy, "\n"))
     end
-    # train the model
-    @time @epochs options[:numEpochs] Flux.train!(loss, params(mlp), dataset, optimizer, cb = evalcb)
+    # train the model until the development loss increases
+    t = 1
+    k = 0
+    bestDevAccuracy = 0
+    @time while (t <= options[:numEpochs])
+        @info "Epoch $t, k = $k"
+        Flux.train!(loss, params(mlp), dataset, optimizer, cb = Flux.throttle(evalcb, 30))
+        devAccuracy = evaluate(mlp, XsDev, YsDev)
+        if bestDevAccuracy < devAccuracy
+            bestDevAccuracy = devAccuracy
+            k = 0
+        else
+            k = k + 1
+            if (k == 3)
+                @info "Stop training because current accuracy is smaller than the best accuracy: $(devAccuracy) < $(bestDevAccuracy)."
+                break
+            end
+        end
+        @info "bestDevAccuracy = $bestDevAccuracy"
+        t = t + 1
+    end
     close(file)
     @info "Total weight of final word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
@@ -242,6 +261,8 @@ function train(options)
     @info "Evaluating the model..."
     accuracy = evaluate(mlp, Xs, Ys)
     @info "Training accuracy = $accuracy"
+    accuracyDev = evaluate(mlp, XsDev, YsDev)
+    @info "Development accuracy = $(accuracyDev)"
     # save the model to a BSON file
     if (options[:gpu])
         mlp = mlp |> cpu
