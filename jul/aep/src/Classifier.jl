@@ -171,8 +171,8 @@ function train(options)
     mlp = Chain(
         Join(
             EmbeddingWSP(vocabSize, options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
-            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize]),
-            GRU(options[:hiddenSize], options[:hiddenSize])
+            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize])
+            # GRU(options[:hiddenSize], options[:hiddenSize])
         ),
         Dense(options[:featuresPerContext] * options[:hiddenSize], options[:hiddenSize], tanh),
         Dense(options[:hiddenSize], length(labelIndex))
@@ -183,7 +183,7 @@ function train(options)
         for f in keys(index)
             write(file, string(f, " ", index[f]), "\n")
         end
-        close(f)
+        close(file)
     end
     saveIndex(wordIndex, options[:wordPath])
     saveIndex(shapeIndex, options[:shapePath])
