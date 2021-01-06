@@ -2,7 +2,7 @@
 # Vietnamese dependency treebank
 options = Dict{Symbol,Any}(
     :mode => :train,
-    :minFreq => 2,
+    :minFreq => 1,
     :lowercase => true,
     :maxSequenceLength => 40,
     :featuresPerContext => 4,

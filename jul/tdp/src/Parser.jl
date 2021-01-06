@@ -66,15 +66,21 @@ function evaluate(options::Dict{Symbol,Any}, sentences::Array{Sentence})::Tuple{
     (uas, las) ./ numTokens
 end
 
+"""
+    evaluateAll(options)
 
-sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
-@time uas, las = evaluate(options, sentences)
-@info "Training scores: UAS = $uas, LAS = $las"
+    Evaluate the performance of the parser on all train/dev./test datasets.
+"""
+function evaluate(options)
+    sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
+    @time uas, las = evaluate(options, sentences)
+    @info "Training scores: UAS = $uas, LAS = $las"
 
-sentences = readCorpus(options[:devCorpus], options[:maxSequenceLength])
-@time uas, las = evaluate(options, sentences)
-@info "Development scores: UAS = $uas, LAS = $las"
+    sentences = readCorpus(options[:devCorpus], options[:maxSequenceLength])
+    @time uas, las = evaluate(options, sentences)
+    @info "Development scores: UAS = $uas, LAS = $las"
 
-sentences = readCorpus(options[:testCorpus], options[:maxSequenceLength])
-@time uas, las = evaluate(options, sentences)
-@info "Test scores: UAS = $uas, LAS = $las"
+    sentences = readCorpus(options[:testCorpus], options[:maxSequenceLength])
+    @time uas, las = evaluate(options, sentences)
+    @info "Test scores: UAS = $uas, LAS = $las"
+end
