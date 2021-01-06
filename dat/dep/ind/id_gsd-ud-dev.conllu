@@ -14286,4 +14286,3 @@
 38	Amerika	amerika	PROPN	NSD	Number=Sing	33	nmod	_	MorphInd=^amerika<n>_NSD$
 39	Serikat	serikat	PROPN	NSD	Number=Sing	38	flat	_	SpaceAfter=No|MorphInd=^serikat<n>_NSD$
 40	.	.	PUNCT	Z--	_	2	punct	_	MorphInd=^.<z>_Z--$
-

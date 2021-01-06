@@ -13448,4 +13448,3 @@
 17	gunanya	guna	NOUN	NSD+PS3	Number=Sing|Number[psor]=Sing|Person[psor]=3	16	acl	_	MorphInd=^guna<n>_NSD+dia<p>_PS3$
 18	bagiku	bagi	NOUN	R--+PS1	Number[psor]=Sing|Person[psor]=1	17	compound	_	SpaceAfter=No|MorphInd=^bagi<r>_R--+aku<p>_PS1$
 19	?	?	PUNCT	Z--	_	3	punct	_	MorphInd=^?<z>_Z--$
-
