@@ -47,3 +47,26 @@ optionsEWT = Dict{Symbol,Any}(
     :logPath => string(pwd(), "/jul/tdp/dat/eng/loss.txt")
 )
 
+# Bahasa Indonesia dependency treebank
+optionsGSD = Dict{Symbol,Any}(
+    :mode => :train,
+    :minFreq => 2,
+    :lowercase => true,
+    :maxSequenceLength => 40,
+    :featuresPerContext => 20,
+    :numFeatures => 2^16,
+    :embeddingSize => 100,
+    :hiddenSize => 64,
+    :batchSize => 32,
+    :numEpochs => 50,
+    :trainCorpus => string(pwd(), "/dat/dep/ind/id_gsd-ud-train.conllu"),
+    :devCorpus => string(pwd(), "/dat/dep/ind/id_gsd-ud-dev.conllu"),
+    :testCorpus => string(pwd(), "/dat/dep/ind/id_gsd-ud-test.conllu"),
+    :modelPath => string(pwd(), "/jul/tdp/dat/ind/mlp.bson"),
+    :vocabPath => string(pwd(), "/jul/tdp/dat/ind/vocab.txt"),
+    :labelPath => string(pwd(), "/jul/tdp/dat/ind/label.txt"),
+    :numCores => 4,
+    :verbose => false,
+    :gpu => false,
+    :logPath => string(pwd(), "/jul/tdp/dat/ind/loss.txt")
+)
