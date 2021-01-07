@@ -67,7 +67,7 @@ function evaluate(options::Dict{Symbol,Any}, sentences::Array{Sentence})::Tuple{
 end
 
 """
-    evaluateAll(options)
+    evaluate(options)
 
     Evaluate the performance of the parser on all train/dev./test datasets.
 """
