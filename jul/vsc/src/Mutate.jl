@@ -126,8 +126,8 @@ function test()
 end
 
 function generateVLP()
-    sentences = lowercase.(readlines("dat/vsc/vlsp.txt"))
+    sentences = lowercase.(readlines("dat/vsc/013.txt"))
     mutation = [:swap, :replace, :insert, :delete]
     alphabet = ['%', '&', '-', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'à', 'á', 'â', 'ã', 'è', 'é', 'ê', 'ì', 'í', 'ò', 'ó', 'ô', 'õ', 'ù', 'ú', 'ý', 'ă', 'đ', 'ĩ', 'ũ', 'ơ', 'ư', 'ạ', 'ả', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ', 'ẹ', 'ẻ', 'ế', 'ề', 'ể', 'ễ', 'ệ', 'ỉ', 'ị', 'ọ', 'ỏ', 'ố', 'ồ', 'ổ', 'ỗ', 'ộ', 'ớ', 'ờ', 'ở', 'ỡ', 'ợ', 'ụ', 'ủ', 'ứ', 'ừ', 'ử', 'ữ', 'ự', 'ỳ', 'ỵ', 'ỷ', 'ỹ', '–']
-    generate(sentences, "dat/vsc/vlsp.txt.mutated-4", alphabet, mutation)
+    generate(sentences, "dat/vsc/013-mutated.txt", alphabet, mutation)
 end
