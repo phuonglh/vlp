@@ -4,8 +4,8 @@
 # These triples are written to a file, each line begins with a head, a \t character, 
 # and a set of all tail/label relation separated by the space character.
 
-include("Sentence.jl")
-include("Options.jl")
+include("../../tdp/src/Sentence.jl")
+include("../../tdp/src/Options.jl")
 
 struct Triplet
     head::String
@@ -14,11 +14,11 @@ struct Triplet
 end
 
 """
-    triplets(options)
+    extractTriplets(options)
 
-    Extracts all triplets from the training set, return a set of words and a set of triplets.
+    Extracts all triplets from the training set, return a list of words (vocabulary) and a set of triplets.
 """
-function triplets(options)::Tuple{Set{String},Set{Triplet}}
+function extractTriplets(options)::Tuple{Array{String},Set{Triplet}}
     sentences = readCorpus(options[:trainCorpus], options[:maxSequenceLength])
     words = Set{String}()
     triplets = Set{Triplet}()
@@ -36,9 +36,8 @@ function triplets(options)::Tuple{Set{String},Set{Triplet}}
             push!(words, tail)
         end
     end
-    (words, triplets)
+    (sort!(collect(words)), triplets)
 end
-
 
 """
     headToTails(options)

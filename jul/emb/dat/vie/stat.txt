@@ -1,0 +1,2381 @@
+"	kiểm_lâm/nsubj câu/nsubj chàng/compound đỗ_quốc_việt/nmod ./punct không/advmod thảo/compound !/punct số/nmod "/punct là/cop bằng/case
+%	90/compound -/punct %/conj 100/nummod 90/nummod 98/nummod là/cc đúng/amod
+...	trạm/nmod với/case dây/nmod đến/case
+/	phút/nmod 3/nummod 1/nummod gương_mặt/dep
+1	-/punct
+10	-/punct
+150	thì/cc %/compound muộn/nmod
+1998	–/punct
+2	-/punct
+200	%/compound
+2004	-/punct
+3	-/punct giảm/xcomp
+35	-/punct tấn/conj
+4	-/punct
+5	-/punct
+8	-/punct
+84_._4	8529126/nummod 5727780/nummod rbkt/punct lbkt/punct
+9	-/punct
+90	%/compound
+:	ung_thư/obj là/cop khi/nmod ./punct ,/punct chữ/nsubj
+NA	root/NA
+ai	người/nsubj dù/cc ?/punct chẳng/advmod có/conj không/advmod thế/discourse bất_cứ/advmod đây/det chủ_nhân/nsubj điều/nsubj chị/nsubj hồ_chí_minh/nsubj là/cop vậy/det
+am_hiểu	máy_móc/obj
+an_ninh	trật_tự/compound
+an_toàn	ngày/nmod phải/aux :/punct ./punct giao_thông/compound tuyệt_đối/amod cửa_ngõ/advcl đều/advmod chủ_tịch/nsubj giao_thông/obj bảo_mật/xcomp
+anh	sinh/conj xã/compound mấy/det tổng_công_ty/compound hai/nummod xe/compound tên/compound công_an/compound ta/det nghe/xcomp nhu/compound và/cc chồng/appos ,/punct cán_bộ/compound cho/case tuấn/nmod csgt/compound đại/compound các/det trưởng/discourse chạy/xcomp của/case người/appos
+anh_chị_em	chỗ/compound
+anh_em	hai/nummod tôi/det tuấn/compound của/case
+anh_hùng	lao_động/compound "/punct thời_kỳ/nmod
+anh_trai	hai/nummod một/nummod tuấn/compound
+ban	kinh_tế/compound biên_tập/xcomp lãnh_đạo/compound chuyên_án/amod trưởng/discourse ,/punct báo/compound của/case
+ban_hành	chính_sách/obj
+ban_ngành	tất_cả/det các/det
+ban_đầu	từ/case
+bao	nhỏ/amod trăm/nummod hai/nummod cát/compound và/cc ,/punct chèn/xcomp 555/nummod hàng/advmod cái/compound một/nummod các/det
+bao_giờ	không/advmod
+bch	khóa/compound đảng_bộ/compound
+bh	-/punct
+bia	đạn/compound đỡ/xcomp
+biên_bản	cuộc/compound tạm/amod và/cc nhận/xcomp kèm/xcomp
+biên_chế	trong/case duyệt/xcomp
+biên_hòa	-/punct
+biến	lao_động/advcl vào/advmod .../punct phải/aux sẽ/advmod bị/aux và/cc ./punct ,/punct ngay/advmod không/advmod quê_hương/obj rồi/advmod lại/advmod chúng_tôi/nsubj phép/nsubj bóng/obl thành/xcomp công_ty/nsubj nạn_nhân/obl tiếng/obl mất/xcomp người/obj thư/nsubj thủ_phạm/obj di_tích/nsubj
+biến_cố	,/punct
+biết	được/advmod chuyện/obj anh_em/nsubj .../punct ?/punct :/punct chắc/xcomp cấm/ccomp nhu/nsubj khiếp_sợ/conj rõ/xcomp con/nsubj chỉ/advmod toàn/nsubj đúng/xcomp con/obj thắng/nsubj ra_sao/ccomp gặp/ccomp lý_do/nsubj ung_thư/ccomp quan_hệ/ccomp và/cc ./punct nhìn/xcomp chủ/ccomp thật/xcomp đầu_tư/ccomp ông/nsubj điều/obj còn/advmod thám_tử/nsubj sao/det mưa/advcl hay_là/cc đời/nsubj lần/obl đàn_ông/ccomp thì/cc bị_cáo/nsubj người_ta/nsubj chuẩn_bị/conj thêm/xcomp ông_bà/nsubj lan/ccomp xét/advcl ,/punct cha/obl cháu/nsubj ở/ccomp làm/ccomp tiếp_cận/advcl cũng/advmod "/punct chính_sách/obj ra_sao/dep nói/ccomp âm_thầm/ccomp vn/ccomp ai/nsubj xe/ccomp có/ccomp trú/ccomp mà/cc chẳng/advmod ngoại_tình/ccomp thầy_cô/nsubj không/advmod trả_lời/xcomp em/nsubj nếu/cc chị/nsubj số_phận/obj dòng/obl kết_luận/ccomp vợ/nsubj được/aux tôi/nsubj
+biếu	nhu/obj
+biển_số	bv/compound 478/nummod
+biểu_dương	và/cc
+biểu_hiện	rõ/xcomp bình_thường/amod bồ_bịch/compound gì/det sự/obj
+biện_pháp	hành_chính/amod trợ_giúp/xcomp xuất_phát/xcomp bằng/case hòa_bình/amod văn_hóa/conj một_vài/det
+bom	lòng/nmod một/nummod quả/compound mìn/compound
+bom_đạn	liên_quân/nmod mảnh/compound
+buông	gánh/obj khỏi/ccomp súng/obj
+buông_tha	gia_đình/obj tại_sao/dep nỗi/nsubj không/advmod
+buồn	xót_xa/conj vừa/advmod hơn/advmod khi/obj tủi/conj không/advmod lại/advmod nhà/obj còn/advmod rất/advmod câu_chuyện/nsubj
+buồn_tẻ	,/punct
+buồng	tắm/xcomp trong/case vào/case
+buổi	tối/compound chợ/compound họp/xcomp định_mệnh/compound trưa/compound ,/punct công_ty/nmod vãn/conj một/nummod những/det buổi/conj chiều/compound cơm/compound
+buộc	cho/xcomp ./punct lan/nsubj
+bà	mấy/det biết/xcomp ốm_đau/xcomp hai/nummod giúp_việc/xcomp ,/punct già/amod còn/cc má/compound một/nummod qua/xcomp của/case bán/xcomp
+bà_con	người/compound nào/det trong/compound việt_kiều/compound về/xcomp cho/case việc/nmod nước/advcl một/nummod kiều_bào/compound của/case
+bà_già	giúp_việc/xcomp
+bà_rịa	vũng_tàu/conj
+bài	:/punct em/ccomp "/punct vì/case báo/compound
+bàn	lần/obj sẽ/advmod từng/advmod bản_thân/nsubj cũng/advmod đã/advmod ./punct việc/nsubj chuyện/obl khi/obl
+bày	:/punct ra/advmod trang/nsubj đến/ccomp ./punct mắt/obl
+bày_tỏ	tình_yêu/obj khuất_phục/obj thì/cc thắng/nsubj cuối_cùng/advcl sự/obj nói/parataxis ./punct ,/punct lan/obl
+bác_sĩ	khám/xcomp một/nummod đó/det đến/xcomp của/case này/det
+bám	vào/advmod lần/advcl anh/nsubj đã/advmod bắt_đầu/conj ./punct điểm/obj được/advmod
+bám_trụ	vợ_chồng/nsubj lại/advmod sài_gòn/advcl còn/advmod
+bán	người/nsubj nghỉ/conj chủ/obl bị/aux ./punct ,/punct thịt/obj lại/advmod sinh/nsubj biết/conj bảo_hiểm_nhân_thọ/obj còn/cc bà/nsubj tứ_tán/xcomp bảo_hiểm/obj hoa_quả/obj sạp/obj ngay/discourse hôm_nay/obl được/aux quán/obj thuốc/obj hàng/obj
+bánh	phong/compound đồng_nghiệp/nmod cả/discourse đến/case
+bánh_mì	ba/nummod thuốc_lá/conj chiếc/compound
+bánh_tráng	phía/compound đầy/amod
+báo	tp_.hcm/compound pháp_luật/compound :/punct xử/ccomp mà/cc tp/compound lập_tức/advmod ./punct không/advmod tờ/compound tt/compound tin/obj mũi/obj anh/obl tuổi_trẻ/compound
+báo_cáo	vụ_việc/obj có/ccomp xử_lý/obl lên/xcomp nữa/advmod lại/advmod viện_kiểm_sát/nmod cũng/advmod phần_mềm/nsubj trên/obj phải/xcomp sở/nsubj phương/nsubj
+báo_điện_tử	trang/compound quê_hương/compound ,/punct dành/appos nhiều/amod
+bây_giờ	như/cc
+bão_lũ	bị/aux hoạn_nạn/conj
+bé	cho/case đứa/compound sơ_sinh/amod
+bén	gần/xcomp đang/advmod thì/cc may_mắn/xcomp khi/obl lửa/nsubj "/punct ./punct ,/punct
+béo	ông/compound
+bên	kia/det với/case phòng/compound nội/amod việc/compound từ/case cạnh/compound hai/nummod trong/compound ngoài/compound ,/punct ba/nummod bờ/compound cho/case khi/nmod dân/compound đường_ống/compound đôi/nummod thềm/compound trên/amod cả/discourse hiệu_quả/compound ấm/compound
+bênh_vực	và/cc
+bêu_xấu	,/punct
+bì	người/nsubj nhưng/cc gái/obj chữ/obj ./punct kịp/xcomp
+bìa	rừng/compound theo/case
+bình	giao/aux tiến/appos thám_tử/nsubj là/cop hải/conj hoa/conj ông/compound hậu/appos ./punct
+bình_dương	ở/case đồng_nai/conj tp_._hcm/conj từ/case
+bình_thường	bất/discourse là/cop và/cc điều/nsubj
+bình_triệu	2/nummod
+bình_yên	nhân_dân/nmod cho/case cuộc_sống/nsubj sau/nmod tp/nmod vì/case vẫn/advmod sự/compound
+bí_mật	sự/compound :/punct ./punct chồng/nmod
+bí_thư	thành_ủy/compound nguyễn_minh_triết/compound
+bò	ăn/xcomp
+bó	sẽ/advmod khít/xcomp khi/obl nó/nsubj bên/advcl ./punct điểm/obj
+bó_tay	y_học/nmod căn_bệnh/nmod họ/nsubj và/cc sự/compound
+bóng	đêm/compound một/nummod nhà/compound tre/compound trong/case ,/punct không/advmod
+bóng_dáng	hắn/det ngoài/compound
+bù_loong	,/punct
+bù_đắp	nổi/advmod sẽ/advmod chắc_chắn/advcl tiền/obj cô/nsubj lan/obl
+bùi_thị_lan	chủ_hộ/conj tuổi/conj
+bùn	cát/conj
+bút	xóa/xcomp
+bút_tích	để/ccomp
+băn_khoăn	dân/nmod nvơnn/nsubj cảnh_sát/nmod được/aux
+băng	gia_đình/nmod ghi_hình/xcomp ghi_hình/conj biên_bản/conj các/det ,/punct ghi_âm/xcomp này/det
+bưng	trong/case thau/obj
+bưu_điện	qua/case địa_chỉ/compound của/case
+bước	tụ_tập/parataxis xe_hơi/obl thì/cc vào/advmod đầu/obj họ/nsubj giám_đốc/nsubj cùng/xcomp từng/advmod ./punct ,/punct họ/det buổi/obl vào/xcomp từng/det
+bước_đi	con_gái/nmod từng/advmod
+bại_liệt	toàn_thân/obj bị/aux viện/nsubj người/obj ./punct chị/nsubj
+bạn	thứ/nsubj người/compound thân/amod mình/nsubj vòng/nmod nhân_viên/nsubj bảo_vệ/xcomp giới_thiệu/xcomp con/nmod khác/amod :/punct anh/compound ./punct phan_văn_đu/compound cựu_chiến_binh/compound đôi/nummod trẻ/amod trai/nmod tốp/compound một/nummod là/cop đồng_nghiệp/compound các/det cùng/amod
+bạn_bè	và/cc ,/punct của/case
+bạn_trai	tên/compound đào/compound
+bạn_đọc	rất/advmod nhiều/amod
+bản	fax/compound nặc_danh/amod lạ/amod nhận/xcomp trùng/xcomp vào/case
+bản_chất	vụ_án/nmod
+bản_thân	ông_bà/compound thành_phố/compound
+bảng	thông_báo/xcomp tại/case
+bảng_biểu	vào/case
+bảo	họ/nsubj khoán/obj :/punct đọc/ccomp quang/nsubj ./punct ông/ccomp gọi/ccomp do/ccomp bà/nsubj "/punct nhau/obj giúp/ccomp thầy/nsubj hải/nsubj đi/iobj
+bảo_hiểm	được/aux
+bảo_hộ	công_dân/obj
+bảo_vệ	pháp_luật/nsubj cái/obj quyền_lợi/obj và/cc được/aux anh/nsubj chuyên_nghiệp/amod lợi_ích/obj an_ninh/obj
+bảo_đảm	an_toàn/xcomp và/cc an_toàn/obj không/advmod
+bấm	thắng/nsubj hai/obj gọi/xcomp và/cc cách/parataxis ./punct ,/punct số/obj đêm/obl điện_thoại/obj ở/ccomp số/obl gọi/ccomp điện_thoại_di_động/obj chị/nsubj chỉ/advmod rồi/cc
+bất_mãn	có/conj
+bất_ngờ	đàn_ông/nsubj thì/cc như/cc quà/obj phóng/xcomp bị/aux khói/obj ./punct ,/punct có_lẽ/aux sức_sống/nmod len_lách/conj gặp/advcl ma/obj thú_vị/amod thái_độ/nmod thấy/xcomp tôi/nsubj
+bần_hàn	,/punct
+bắc_trung_bộ	vn/compound và/cc
+bắn	cát/obj tấn_công/ccomp đá/obj
+bắt	vàng/obj bị/aux đoàn/nsubj đưa/conj quả_tang/advmod ./punct ,/punct không/advmod cảnh_sát/nsubj quả_tang/obj mũi/nsubj có/advcl tiền/obj tín_hiệu/obj trong/obl người/obj khách_sạn/advcl đã/advmod có/obl được/aux
+bắt_buộc	là/cop có/xcomp yêu_cầu/nsubj ./punct
+bắt_chuyện	chủ/obl :/punct giới_thiệu/ccomp bằng/nsubj ./punct
+bắt_đầu	thẩm_vấn/xcomp chuyện/obj năm/obl họ/nsubj cảm_động/xcomp kiên_cố/xcomp .../punct phải/aux lan/nsubj đo_đạc/xcomp và/cc ./punct ,/punct ngày_mai/obl đòi/xcomp nhưng/cc hội_đồng/nsubj nhi/advcl hào_hứng/advcl vẫn/advmod chị/nsubj có/xcomp trau_dồi/xcomp
+bằng	khoa/conj hoạt_động/nmod cũng/advmod minh/conj
+bằng_không	thì/cc !/punct có/parataxis cũng/advmod
+bế_tắc	đang/advmod
+bến	đò/compound kéo/mark kho/compound cầu/nmod từ/case
+bề_dày	kinh_nghiệm/compound
+bề_trên	một/nummod đó/det nào/det
+bệnh	bó_tay/conj về/case sinh/nmod
+bệnh_hoạn	,/punct
+bệnh_lý	sinh/compound
+bệnh_nhân	nghèo/amod
+bệnh_viện	cao/amod vào/case ung_bướu/compound cấp_cứu/xcomp
+bị	rùi/cc hỏa_hoạn/conj lũ_lụt/obj lặn_lội/parataxis .../punct đồng_bào/nsubj ,/punct
+bị_cáo	hai/nummod lã_thị_kim_oanh/compound rbkt/punct nguyễn_thiện_luân/compound lbkt/punct các/det luân/compound của/case thứ_trưởng/appos
+bịn_rịn	lúc/obj
+bịt	mũi/obj
+bọn	có_thể/aux là/cop thì/cc ./punct nếu/cc họ/det
+bỏ	toản/nsubj đi/xcomp thất_vọng/advcl con/obj mở/parataxis như/cc việc/obj cưới/conj trốn/xcomp anh/nsubj chồng/nsubj xoay/xcomp ra/parataxis về/xcomp sẽ/advmod học/xcomp qui_định/obj ./punct ,/punct lâu_lâu/obl khoán/nsubj không/advmod không_thể/advmod lơ_ngơ/xcomp nhà/obj nhưng/cc bạn_trai/nsubj hay/cc ngải/obj đi/advmod sau/obl bỏ/conj nhã/obj đã/advmod vợ/obj chạy/xcomp đi/ccomp được/advmod
+bỏ_lửng	câu/obj bà/nsubj
+bố	viện/compound "/punct
+bố_mẹ	cho/case đào/compound đỡ/xcomp
+bốc	cao/xcomp lên/xcomp khu_vực/obl
+bồ	chồng/nmod
+bồ_bịch	quan_hệ/conj
+bồi_hồi	kể/xcomp lại/advmod anh/nsubj thời_khắc/nmod
+bộ	đt/conj gần/advmod nội_vụ/compound khđt/compound vn/conj ngoại_giao/compound &/punct men/xcomp ptnt/compound tài_nguyên/compound nn/compound gd/compound của/case
+bộ_máy	hành_chính/compound nhà_nước/compound khâu/nmod trong/case cả/det chúng_tôi/nmod lên/xcomp cấp/compound
+bộ_phận	hành_chính/compound làm/xcomp văn_phòng/nsubj tổ_chức/conj kỹ_thuật/compound phải/aux thanh_toán/xcomp ./punct không/advmod "/punct một/nummod là/cop
+bộ_trưởng	lê_huy_ngọ/compound thứ_trưởng/conj bộ/compound mai_ái_trực/compound -/punct ngọ/compound ông/compound
+bộ_đội	chú/compound qua_đời/conj là/cop lái/xcomp xe_tăng/compound đoàn/nmod nhiễm/aux mấy/det bố/nsubj ./punct
+bộc_bạch	thầy/nsubj đoàn/nsubj ,/punct
+bộc_lộ	:/punct căngxe/ccomp chủ/nsubj "/punct ./punct
+bờ	lên/case vực/compound trước/case trong/case phá_sản/xcomp vào/case
+bủng_beo	như/cc đàn_bà/nsubj nay/nmod mướp/obj ./punct
+bừng_bừng	lại/advmod không_khí/nsubj phấn_khích/amod sau/nmod khí_thế/obj là/cc ,/punct
+bữa	khuya/nmod nửa/det tiệc/compound
+ca	cái/compound
+cactông	quạt_điện/conj và/conj một_số/det màn_hình/conj máy_fax/conj hộp/compound
+cam	quả/compound mấy/det trái/compound ,/punct
+cam_kết	hai/nsubj ./punct chấm_dứt/xcomp
+canh	"/punct chồng/obj
+cao	./punct sụt_sùi/parataxis gấp/xcomp người/nsubj nhưng/cc giọng/obj vì/case huyết_áp/obj ,/punct bừng_bừng/parataxis
+cao_ráo	,/punct
+cao_su	cây/compound
+cha	cách_trở/xcomp nó/nmod với/case người/compound đoàn/nmod tôi/det về/case
+cha_anh	họ/det
+cha_mẹ	,/punct
+chen_chúc	sống/ccomp nhau/obj con_người/nsubj
+chen_lấn	,/punct nhau/obj
+chi_cục	phó/discourse ,/punct
+chi_nhánh	tđ/compound cấp_nước/compound thủ_đức/compound
+chi_tiết	một/nummod rõ_ràng/conj
+chia	hỏi/ccomp đội/nsubj thành/ccomp và/cc nhóm/obj ./punct ,/punct vào/advcl đèn_pin/nsubj nhau/obj thám_tử/nsubj mũi/obj đón/ccomp
+chia_sẻ	chuyện/obj hoạn_nạn/obj và/cc
+chia_tay	phụ_nữ/obj họ/nsubj ./punct ,/punct lại/advmod phong/nsubj cũng/advmod xong/advcl nhau/obj giữ/conj rồi/cc
+chiếc	bù_loong/compound cuối_cùng/amod
+chiếm	họ/nsubj kinh_tế/obj
+chiến_sĩ	trinh_sát/xcomp công_an/compound các/det của/case
+chiến_sĩ_thi_đua	tranh_thủ/parataxis là/cop năm/nmod ,/punct ./punct
+chiến_tranh	do/case để/xcomp đi/xcomp sau/case
+chiều	hai/nummod 31/nummod xe/compound của/case cuối/compound 3/conj và/cc ồn_ã/amod từ/case lên/xcomp
+chiều_dài	cm/compound
+cho	tuấn/obj người/nsubj chủ_nhật/ccomp phải/aux ?/punct hiểu/mark :/punct sẽ/advmod ốm/ccomp mặt_hàng/ccomp bò/obj bình/nsubj xem/ccomp toàn/obj nhận/ccomp vào/ccomp số/obj ý_kiến/nsubj gặp_mặt/ccomp tiền/obj về/ccomp thắng/obj chỉ/advmod nhi/nsubj đã/advmod cố_gắng/ccomp hơn_nữa/dep nguyễn_thế_khanh/nsubj con/obj thắng/nsubj vì_sao/dep thanh/nsubj giá_cả/nsubj cơ_quan/nsubj dân/obj phát_tán/xcomp dặn/conj ung_thư/ccomp đào/obj dũng/nsubj và/cc thứ_trưởng/obj ./punct lập_tức/advmod nghe/ccomp đồng/obj đề_nghị/ccomp ông/nsubj vay/xcomp nam/nsubj sôi_nổi/ccomp là/mark nguyễn_hữu_cầu/nsubj thì/cc bị_cáo/nsubj mẹ/nsubj người_ta/nsubj ông_bà/nsubj phép/obj james/nsubj đợi/csubj tôi/obj ,/punct trả/xcomp biết/mark bà/obj ngay/advmod làm/ccomp nguyên_nhân/ccomp điện_thoại/advcl mượn/xcomp lan/obj cũng/advmod "/punct lo/mark khói/mark thư/nsubj có/advmod chiều/obl tắm/xcomp ai/nsubj anh_trai/nsubj phân_tích/conj biết/xcomp cần_thiết/xcomp mở/xcomp ăn/xcomp mà/cc nhi/obj vì/case em/obj không/advmod thẩm_định/xcomp đêm/obl muốn/csubj đơn_phương/xcomp mượn/ccomp thống_nhất/ccomp núp_bóng/ccomp đu/obj lên/iobj được/aux ủy_ban/nsubj có/obl vậy/det cô/nsubj tôi/nsubj
+cho_phép	công_ty/obj luật/nsubj làm/ccomp ./punct không/advmod
+chu_cấp	mẹ_con/obl và/cc tháng/obj
+chui	tọt/advmod và/cc buồng/obl
+chung_thủy	mẫn_cán/conj chỉn_chu/conj nghiêm_túc/conj gia_đình/nmod
+chuyên	cho/xcomp trộm_cắp/xcomp vay/xcomp nặng_lãi/obj cô/nmod
+chuyên_môn	cao/amod
+chuyến	làm_ăn/xcomp cho/case này/det
+chuyển	họ/nsubj theo/advcl phải/aux sẽ/advmod mới/advmod tỉnh/obl nhà/obl phụ_thuộc/conj ./punct ,/punct tiền/nsubj lan/obl đây/obl thẩm_vấn/ccomp giao_lưu/conj hđxx/nsubj trang/obj sinh_sống/mark hôm_nay/obl sang/xcomp được/aux phần/obj
+chuyển_dời	cứ/advmod cuộc_sống/obj liên_tục/xcomp
+chuyển_giao	quyền/obj
+chuyện	đó/det tất_cả/det .../punct vô_vàn/det thư/nmod về/case đó/nsubj mới/amod còn/cc cầm/ccomp này/det trộm_cắp/conj vận_động/ccomp tình/compound chỉ/advmod trong/case chắt_chiu/ccomp nghiện_hút/conj ếm/ccomp ./punct đến/case con_người/compound trị_giá/csubj công_ty/nmod đua_chen/xcomp năm/nmod một/nummod là/cop thông_tin/nsubj riêng/amod xưởng/advcl địa_vị/nmod con/conj ,/punct "/punct bây_giờ/nmod cho/xcomp thái_mỹ/nmod nhỏ/amod như/cc chuyện/nsubj bấy_nhiêu/det mọi/det nhưng/cc cách_mạng/compound cờ_bạc/compound sinh/compound những/det bố/compound
+chuông	nam/nmod điện_thoại_di_động/compound lúc/nmod ./punct điện_thoại/compound
+chuẩn_bị	đang/advmod đứng_dậy/xcomp và/cc kế_hoạch/obj
+chàng	15/nummod rbkt/punct lbkt/punct yết_kiêu/compound "/punct đội/appos
+chào	đi/discourse dì/obj
+cháu	hai/nummod cô/compound và/cc ,/punct nội/compound đầu/compound nhiều/amod ba/nummod cho/case họ/compound thủ_lĩnh/compound tư/nummod thứ/compound
+cháy	hắt/conj một/nummod nhà/obj như/cc leo_lét/xcomp vụ/compound
+chân	và/cc vợ/compound
+chân_chất	nông_dân/nsubj họ/nsubj cần_cù/conj cũng/advmod
+châu_âu	của/case
+chèn	bên/obj
+chén	chè/compound mồ_hôi_nước_mắt/dep loãng/amod
+chép	số/obj nhi/nsubj đã/advmod đợi/advcl ,/punct ./punct được/advmod
+chìa_khóa	sim/nsubj có_thể/aux là/cop cầm/ccomp vấn_đề/compound ./punct chiếc/compound
+chìm	đã/advmod hội_trường/nsubj im_lặng/obl ./punct
+chìm_xuồng	chắc_chắn/conj nghi_vấn/ccomp ?/punct sẽ/advmod bị/aux ./punct ,/punct không/advmod hay/cc vụ_việc/nsubj "/punct cơ_quan/advcl vụ/nsubj có/advmod
+chính_phủ	cho/xcomp hoàn_thành/mark của/case
+chính_quyền	tp/compound sở_tại/amod
+chính_sách	với/case một_số/det tàn_bạo/amod nvơnn/nmod về/case ,/punct nhiều/amod đó/nsubj việt/nmod này/det ưu_đãi/amod những/det là/cop trước/nmod dự_án/nmod nhật/nmod chỉ/advmod trong/case các/det chủ_trương/conj
+chính_thức	kết_luận/xcomp ubnd/nsubj nam/obj lấy/xcomp đã/advmod ./punct
+chòi	tá_túc/ccomp mà/cc tạm_bợ/amod căn/compound
+chôn_vùi	do/case bị/aux lớp/advcl đường_ống/nsubj
+chùng	ông/nsubj tuyên_bố/conj xuống/xcomp
+chú_thích	tên_tuổi/obj
+chú_trọng	giải_pháp/nsubj điểm/obj ?/punct sẽ/advmod ./punct ,/punct cũng/advmod công_tác/nsubj việc/advcl đảm_bảo/xcomp vấn_đề/obl
+chú_ý	:/punct uống/ccomp
+chúng_ta	của/case
+chúng_tôi	:/punct với/case tất_cả/det đối_với/case trở_về/xcomp công_ty/appos của/case
+chăm_sóc	với/advcl ông/obj nhu/nsubj thường_xuyên/xcomp ./punct ,/punct khăn/obl
+chăn_nuôi	xóa_đói_giảm_nghèo/dep về/case gầy_dựng/conj
+chương_trình	tp/nmod thực_hiện/xcomp vào/case dạy/xcomp ./punct ,/punct đó/nmod cho/case 3/nummod đây/nmod suny_brockport_vietnam/compound hành_động/xcomp này/det một/nummod hội_nhập/xcomp trong/case của/case
+chạm_mặt	siêu_thị/obl thư/obj
+chạy	vào/advmod xuôi_ngược/xcomp nhà_nghỉ/obl .../punct trẻ/nsubj khắp/xcomp phải/aux để/case dài/xcomp pha/parataxis lập_tức/advmod là/cc ,/punct ./punct thẳng/xcomp vay/ccomp gọi/ccomp đang/advmod xóm/obl hướng/advcl tiền/obj vào/xcomp gia_đình/obj tung_tăng/xcomp xe/obj một_cách/obj con/nsubj thử/xcomp toàn/nsubj đăng_ký/ccomp
+chảy	đường_ống/obl vào/advmod mạnh/xcomp tế_bào/obj và/cc
+chấm	nước_mắt/obj bà/nsubj có/ccomp ./punct
+chấm_dứt	mối/obj thì/cc như/cc tuyệt_đối/xcomp khai_thác/xcomp lan/nsubj phải/aux cuộc/nsubj đổi/advcl ./punct ,/punct quan_hệ/xcomp chuyển/xcomp nam/obl đàm_thoại/nsubj cảnh_giác/ccomp
+chấp_hành	người/nsubj và/cc đều/advmod
+chấp_nhận	quá_khứ/obj và/cc ./punct thương_lượng/ccomp hết/advmod có_thể/aux kể_cả/conj nhỏ/obj công_ty/nsubj "/punct chị/nsubj cho/xcomp đã/advmod tôi/nsubj
+chất_lượng	chuyên_môn/compound
+chất_độc	da_cam/compound
+chậm	đều/advmod -/punct dẫn_chứng/parataxis "/punct tốc_độ/nsubj ./punct bộ_máy/nsubj không/advmod
+chắc	lớn/xcomp .../punct -/punct đĩ/nsubj cần/mark số/nsubj !/punct cháy/xcomp cũng/advmod "/punct nước/obj nghiến/parataxis có/xcomp chỉ/advmod của/case
+chắc_chắn	nhưng/cc tận_cùng/xcomp đến/ccomp là/xcomp "/punct u30/dep có/conj ,/punct
+chắt_chiu	dân/nsubj xây_dựng/xcomp tằn_tiện/conj lắm/advmod ./punct có/conj
+chặn	thám_tử/nsubj đầu/obj ./punct
+chế_biến	hàng/obj
+chết	cháu/obj thì/cc theo/advcl đột_ngột/xcomp nguyễn_ái_quốc/nsubj khi/obj ./punct ,/punct sinh/nsubj đi/conj cái/compound trông_cậy/csubj là/cop đến/obl đã/advmod
+chỉ	việc/obj nhất_thiết/conj cơ_quan/nsubj
+chỉ_số	tối_đa/amod
+chỉ_tiêu	mọi/det
+chỉ_đạo	hải/nsubj báo_cáo/ccomp cũng/advmod ./punct
+chỉn_chu	,/punct
+chỉnh_đốn	đảng/obj tinh_thần/advcl
+chị	con/conj ta/det với/case ạ/discourse viện/nmod ấy/det đến/case của/case
+chị_em	hai/nummod nó/det
+chịu	trách_nhiệm/obj thì/cc ai/nsubj phải/aux ?/punct màng/conj sẽ/advmod cực/xcomp cân_nhắc/advcl tại_sao/dep ./punct ,/punct khổ/xcomp không/advmod con/parataxis thân/nsubj h./nsubj chịu/conj quen/conj gặp/xcomp
+chịu_thua	hiểu/ccomp thì/cc cũng/advmod
+chọn	nhà_nước/nsubj csgt/nsubj thời_điểm/obj cuối_cùng/obl đấy/discourse phải/aux để/case phú/nsubj và/cc cách/obj phục_vụ/mark ./punct du_học/ccomp vì_vậy/cc tiến_hành/ccomp có/csubj nữa/advmod đứng/xcomp phương_pháp/nsubj nhưng/cc "/punct còn/advmod vẫn/advmod thám_tử/nsubj màu/obj đã/advmod được/aux đi/xcomp
+chống	pháp/obj tiêu_cực/obj lại/advmod khách_hàng/obj phát/xcomp và/cc bao_giờ/det không/advmod
+chồng	với/case người/compound tử_tế/amod thư/compound nhi/compound con/conj ông/compound và/cc ,/punct chị/compound đàng_hoàng/amod một/nummod có/xcomp đi/xcomp của/case
+chỗ	trọ/xcomp tránh/xcomp từ/case nào/det để/case vợ_chồng/nmod tôi/det cay_cực/amod hốt/xcomp nhất/advmod nhà/nmod đất/compound này/det một/nummod những/det lành_mạnh/amod chui_ra_chui_vào/dep gửi/ccomp ấy/det
+chỗ_đứng	một/nummod xã_hội/advcl tốt/amod
+chờ	mẹ/obj con/obj đổ/xcomp .../punct đoạn/nsubj lấy/xcomp phải/aux lớn/ccomp hôm_nay/obj ăn/xcomp và/cc ./punct ,/punct ngay/advmod không/advmod muốn/csubj trả_lời/ccomp nhưng/cc dễ/xcomp đang/advmod cũng/advmod hiện/obl đặt/conj phong/obj
+chở	ông_già/nsubj xe_máy/nsubj tàu/nsubj xe/obl sắt/obj về/xcomp bị/aux nhà/obl chạy/ccomp ./punct lâu_lâu/obl gấp/xcomp xe/nsubj g/obl thám_tử/obj nó/nsubj có/obl hàng/obj
+chợ	về/xcomp
+chụp	,/punct
+chủ	với/case nhỏ/amod ai/nsubj phóng_khoáng/xcomp chồng/nsubj đầu_tư/xcomp địa_ốc/compound ông/compound quán/compound ./punct cienco/compound mới/amod vất_vả/conj nhà/compound là/cop qua/case công_trường/compound cơ_sở/compound các/det
+chủ_hộ	,/punct
+chủ_nhân	ngôi/compound
+chủ_nhật	là/cop ở/parataxis ,/punct ngày_kia/nsubj
+chủ_quan	về/case ,/punct
+chủ_trương	xin/xcomp với/case nhà_nước/nmod cấm/xcomp tháo_gỡ/xcomp mạnh_dạn/amod ?/punct vừa/advmod và/cc ,/punct không/advmod đó/nsubj ký/mark chính_sách/conj "/punct đưa/xcomp ưu_đãi/amod những/det là/cop chúng_ta/nmod bộ/nmod gì/det cho/xcomp cả/discourse
+chủ_tịch	xã/compound mắt/compound mai_quốc_bình/compound kiêm/xcomp hội/compound ubnd/compound anh/compound lê_thanh_hải/compound nguyễn_thiện_nhân/compound bùi_văn_luyến/compound phó/discourse
+chứng_cứ	thu_thập/xcomp rõ_ràng/amod
+chứng_kiến	đi/advcl .../punct phản_ứng/conj tình_hình/obj đầu/obl ./punct ,/punct thế/discourse nhưng/cc chúng_tôi/nsubj thám_tử/nsubj phạm_tội/ccomp
+chứng_minh	để/case điều/obj sẽ/advmod một_cách/obj anh/nsubj lên/ccomp
+chứng_tỏ	câu_chuyện/nsubj càng/advmod điều/obj .../punct khi/obj ,/punct
+chữ	tuy_nhiên/cc đè/xcomp sau/case công_dung_ngôn_hạnh/dep đè/ccomp con/compound ./punct có/conj chữ/nsubj ba/nummod này/det những/det là/cop
+chữ_ký	điểm_chỉ/conj
+chữa_cháy	và/cc
+cienco	5/nummod
+cm	50/nummod
+coi	có_thể/aux hợp_đồng/ccomp công_việc/nsubj đã/advmod hoàn_tất/conj ./punct giờ/obl ,/punct
+con	.../punct hai/nummod :/punct cô/compound cháu/conj -/punct thép/nmod 12/nummod đợi/xcomp của/case gái/compound dâu/compound duy_nhất/amod mất_trí/xcomp và/cc bầy/compound ./punct năm/nummod mình/det đứa/compound một/nummod là/cop đấy/nsubj thương/csubj các/det riêng/amod mấy/det mình/nmod vào/case có_mặt/xcomp ,/punct trai/compound cho/case !/punct chị/compound "/punct bù_loong/compound từng/det chị/nmod bằng/case với/case nhỏ/amod ngủ/xcomp về/xcomp nguyễn_văn_tường/parataxis anh/compound mình/compound út/amod quê_hương/nmod những/det sinh/compound ăn_học/xcomp
+con_cái	giá/nsubj đến_nơi_đến_chốn/dep cho/case nhưng/cc học/xcomp cũng/advmod của/case phải/aux
+con_gái	phong/compound duy_nhất/amod cô/compound ông/compound hạnh/nsubj đó/nsubj mình/det út/amod du_học/xcomp là/cop của/case
+con_người	lạ_kỳ/amod những/det xã_hội/advcl một/nummod ấy/det 13/nummod xã/nmod về/case quên/xcomp
+con_nít	ông_bà/nmod từ/case
+con_số	những/det đong/xcomp
+con_trai	lớn/amod bà/nmod là/cop anh/compound nguyễn_cao_toản/nsubj thứ/compound ./punct lớn/conj
+cong	gập/xcomp xuống/advmod lưng/nsubj lát/obj nặng_nhọc/amod
+csgt	12/nummod hai/nummod cò/conj bảy/nummod của/case
+cty	số/nmod tiếp_thị/xcomp của/case
+cung_cấp	oxy/obj người/obl
+cuốc	cây/compound đất/obj ,/punct
+cuối	đến/case đời/compound năm/compound
+cuốn	lao/ccomp đà/obj chui/conj .../punct theo/advmod cứ_thế/advmod khăn/obj ,/punct ./punct nam/nsubj câu_chuyện/nsubj hoảng/advcl
+cuống_quýt	mời/xcomp người/nsubj ngồi/xcomp bối_rối/xcomp ,/punct bà/obj ./punct
+cuộc	trực_tuyến/amod xây_dựng/xcomp chiến_tranh/compound săn_lùng/xcomp bất_ngờ/amod điện_thoại/compound gọi/xcomp giây/nmod ghi/xcomp chạm_trán/xcomp vận_động/xcomp ./punct ,/punct đối_thoại/xcomp thương_thảo/xcomp đối_chất/xcomp này/det những/det nhất/compound trên/compound vn/nmod trong/case thứ/compound
+cuộc_chiến	"/punct thủy_thần/nmod
+cuộc_chơi	trong/case
+cuộc_sống	thái_mỹ/compound gia_đình/compound mới/amod vào/case của/case
+cuộc_đời	một/nummod vành/nmod ./punct thoát/xcomp non_trẻ/amod
+cài	số/obj xe_tải/nsubj say_sưa/parataxis ,/punct
+cài_đặt	phần_mềm/obj xóa/ccomp lại/advmod gửi/csubj đã/advmod ./punct
+cá	con/compound "/punct nào/det
+cá_nhân	một_số/det và/cc
+cá_tính	mạnh/amod
+cách	mua/xcomp nhà_hàng/nmod năm/obl làm/xcomp trả_thù/xcomp ít_lâu/obj nào/det tiếng/obj :/punct năm/obj mới/advmod đường/nsubj về/case ./punct trang_trí/xcomp lần/nsubj km/obj "/punct nhau/obj đổi/xcomp đây/obj hồn/obj trụ_sở/obj ngay/discourse con/nsubj nghĩ/xcomp xa/xcomp đã/advmod cả/det có/obl chỉ/advmod đi/ccomp riêng/amod
+cách_mạng	tháng_tám/compound của/case
+cái	kia/det nhu_mì/conj bà/nmod thay_da_đổi_thịt/dep đến/xcomp khó/amod hợp_đồng/nmod sinh/nmod chết/xcomp bên/compound ./punct thiện/amod này/det duyên_dáng/amod gì/det thái_mỹ/nmod trong/case
+cám_dỗ	vật_chất/compound những/det .../punct trước/case
+cán_bộ	lãnh_đạo/xcomp phòng/compound một_số/det đến/xcomp nhân_chứng/conj về/xcomp ta/det nhà_nước/compound ./punct vì/case có/conj ủy_ban/compound tháp_tùng/csubj cấp/compound chị/nsubj địa_phương/compound một/nummod là/cop bộ/nmod các/det của/case quản_lý/xcomp
+cánh_tay	hai/nummod một/nummod mắt/conj -/punct nguyên_vẹn/amod
+cát	m/compound chiếc/compound hút/xcomp và/cc 40_-_60/nummod khai_thác/xcomp danh_nghĩa/nmod
+cân_nhắc	phương_án/obj kỹ/xcomp và/cc hđnd/nsubj không/advmod cũng/advmod nếu/cc rất/advmod lựa_chọn/conj để/conj đơn_vị/nsubj
+câu	khẳng_định/xcomp :/punct buông_tha/ccomp nói/xcomp hỏi/xcomp này/det
+câu_chuyện	đó/det như/cc có/ccomp con_người/nmod ngày/nmod đây/nsubj sẽ/advmod và/cc ./punct đến/case đánh_ghen/xcomp đàng_hoàng/amod thế/det năm/nmod này/det một/nummod những/det là/cop cho/ccomp chị/nmod ngày_mai/nmod
+cây	vườn/compound trái/compound
+cây_số	từng/det
+cãi_vã	,/punct nhau/obj
+cò	xe/compound và/cc các/det
+còn	đáp_ứng/conj đu/nsubj :/punct đại/obj làm/conj cách/obl đất/nsubj còn/cc rằng/mark bà/nsubj vẫn/advmod đầy_rẫy/xcomp có/xcomp chỉ/advmod trẻ/xcomp hoàn_toàn/xcomp điểm/obj căng_thẳng/advcl ./punct ngoài/advcl lại/advmod chuyện/advcl sự/obj chừng_như/dep tui/nsubj đói/advcl biết/parataxis thì/cc ngày/obl ,/punct máu/obj chúng_tôi/nsubj chính_sách/nsubj "/punct giọt/obj bám_trụ/ccomp như/cc nét/nsubj lan/nsubj chuyện/nsubj y_nguyên/xcomp không/advmod bưu_điện/obj nhưng/cc người/obj lại/xcomp
+có	nhân_vật/nsubj người/nsubj họ/nsubj bao/obj .../punct đưa/parataxis mối/nsubj mà/mark ta/nsubj hậu/obj có_thể/aux tham_gia/xcomp gì/advmod nhà/nsubj vụ_việc/nsubj muốn/parataxis vẫn/advmod mồ_hôi/obj chìm_xuồng/obj công_an/nsubj công_trình/nsubj việc/obj việc_làm/obj quí/obl tay/advcl ung_thư/ccomp ban_đầu/obl cần/xcomp chen_chúc/ccomp trình_độ/obj con/obl hiện_nay/obl là/cc rồi/advmod nhà/obj nhận/csubj ở/case đến/ccomp điều/nsubj trái/ccomp nguyện_vọng/obj lúc/obl cổ_phần_hóa/ccomp khách/obj phòng/obj tham_gia/obj ước_tính/csubj đặc_biệt/advcl ,/punct kiềng/nsubj đang/advmod giữa/case có/parataxis gốc/obj tiếc/ccomp ở/parataxis vốn/obj cãi_vã/xcomp lớn/xcomp giấy_tờ/obj dấu_hiệu/obj phần/nsubj tp/nsubj gần/obl khả_năng/nsubj liên/nsubj đầu/nsubj biết/conj anh_ta/nsubj tuy/cc nếu/cc chị/nsubj lấy/parataxis chủ_trương/xcomp giúp/mark đồng_hành/ccomp sót/xcomp chiều_dài/obj quả_thật/advmod vậy/det chỉ/parataxis trách_nhiệm/obj chấp_nhận/xcomp mâu_thuẫn/xcomp tác_động/obj phẩm_chất/obj tình_trạng/obj tính/obj gia_đình/nsubj ?/punct :/punct khó_khăn/obj đó/nsubj đi/parataxis đây/advcl số/obj kim/obj để/advcl tiền/obj tài/obj chí/obj con/nsubj năm/dep nhi/nsubj đã/advmod dư_luận/obj quy_định/obj lấy/xcomp anh/nsubj điểm/obj ghi/xcomp khôn/xcomp nghĩa/obj liệu/ccomp đáng/conj khi/obj cô_giáo/ccomp đồng/obj ngoài/advcl nữa/discourse xôi/obj phong/nsubj trả/ccomp đơn/obj là/cop trị_giá/xcomp thiếu_sót/conj viện_kiểm_sát/nsubj hồ_văn_trương/nsubj uy_tín/obj bảo_lãnh/xcomp phù_hộ/ccomp báo_cáo/obj im_lặng/conj chỗ_đứng/obj mặt_khác/dep cái/obj nơi/advcl pakse/nsubj cơ_sở/obj qui_định/obj nghe/xcomp công_nhân/obj tầm_nhìn_xa/obj ta/obj hòa/nsubj ở/ccomp ngày/nsubj lan/obj cũng/advmod đơn_giản/xcomp hđxx/nsubj đóng/xcomp bảy/obj nói/ccomp trục_trặc/obj thêm/advmod gì/obj hàng/obj luân/nsubj xóm/obj vậy/obj m3/obj cán_bộ/nsubj mà/cc chẳng/advmod sà_lan/obl cách/obj việc/nsubj hiệu_quả/obj đời/obj tây_nguyên/nsubj chết/parataxis chỗ/obj nguồn_gốc/obj muốn/csubj tay/obl bên/nsubj tự_nguyện/conj suy_nghĩ/obj giấy/nsubj bồ_bịch/obj bản_thân/nsubj kết_quả/obj việt_kiều/nsubj tôi/nsubj mẹ/obj chị/obj tâm_can/nsubj bác_sĩ/obj thuê/xcomp phải/aux phụ_trách/parataxis tuổi_trẻ/obj lãnh/ccomp cô_ta/nsubj nghĩa_là/dep đảng_viên/obj khoán/nsubj phút/obl ào/parataxis lẽ_ra/dep đâu/advmod ai/obj nhà_xe/nsubj cảm_giác/obj âm_mưu/obj rằng/mark còn/cc hay/cc nay/obl quyền/obj số_lượng/obj do/cc non_trẻ/xcomp con/obj thắng/nsubj vì_sao/dep cơ_quan/nsubj ngày/obj thậm_chí/advmod mới/advmod chìm_xuồng/dep và/cc lại/advmod điều/obj đồng_bộ/parataxis sự/obj tham_gia/advcl còn/advmod nam/nsubj phần/obj đến/advmod lau/xcomp làm/parataxis thì/cc đồng_nghiệp/obj mình/nsubj xuống/ccomp khai_thác/aux cơm/obj luyến/nsubj kể/ccomp số_liệu/obj chia/ccomp !/punct chính_sách/nsubj khả_năng/obj công_ty/nsubj thư/nsubj thái_độ/obj vụ_án/advcl đi/ccomp văn_bản/obj lời/nsubj chiều/obl như/cc bản/obj hệ_thống/obj chất_lượng/obj tiếng/obj biết/ccomp nói/conj đặc_biệt/xcomp bộ/nsubj em/obj có/conj động_thái/obj người_nhà/obj người/obj cả/discourse giá/obj thứ/nsubj về/conj xã/nsubj biểu_hiện/obj tiếp_viên/obj sẽ/advmod nghi_vấn/obj chưa/advmod phản_hồi/xcomp nếu_như/cc tội/obj sang/obl lúc/obj song/cc giấy_thông_hành/obj thuê/csubj tổ/obj chỉ/advmod hành_vi/obj thanh_toán/ccomp cháu/obj nuôi/conj từng/advmod gồm/conj ./punct thật/xcomp lợi/obj vks/nsubj điện_thoại/obj ông/nsubj giấy/obj thiếu_sót/obj cứu/csubj chủ_quan/advcl lần/obj xuất_khẩu/obl bảo/parataxis nguồn/obj mời/conj xuất_hiện/ccomp khái_niệm/obj lù_lù/conj trước/obl thực_tế/advcl có_mặt/parataxis thiếu_sót/parataxis tinh_thần/nsubj ngày/obl đáng/xcomp "/punct giờ/obl rất/advmod cảm_tình/obj mục/obj kế_hoạch/obj quá/obl nhà_nước/nsubj lo/conj liệu/xcomp lan/nsubj ý_kiến/obj chủ_trương/obj ùn_tắc/xcomp vì/case trả_lời/nsubj không/advmod tình_cờ/ccomp tin/nsubj nhưng/cc bà_con/nsubj hồng/nsubj bây_giờ/obl nên/cc đều/advmod vòng_tròn/parataxis nhu_cầu/obj chị_ta/nsubj khi/obl bề_dày/obj được/advmod
+có_mặt	lúc/obl chàng/nsubj quốc_lộ/advcl anh/nsubj .../punct dưới/advcl sẽ/advmod đoàn/nsubj cửa/obl phú/nsubj liễu/nsubj ./punct ,/punct khảo_sát/ccomp khi/advcl phút/obl ngày/obl lập_tức/advmod chúng_tôi/nsubj đều/advmod kíp/nsubj cầu_thang/advcl tối/obl nghe/advcl thư/nsubj đã/advmod
+có_thể	nam/obj đây/nmod chỉ/advmod taxi/obj quen/xcomp đi/xcomp
+cói	mỹ_nghệ/compound
+cô	hai/nummod cho/case thành_niên/amod đối_với/case ấy/det các/det bán_dâm/xcomp gái/compound
+cô_dâu	chú_rể/compound của/case
+cô_giáo	người/nsubj là/cop dạy/xcomp đã/advmod
+công_an	bình_dương/compound thậm_chí/advmod nhân_dân/compound tp/compound cả/det ,/punct
+công_bố	công_khai/xcomp xã/nsubj sơ_đồ/obj ./punct ,/punct chính_quyền/obj phổ_cập/xcomp cũng/advmod theo_dõi/mark được/aux băng/obj dựng/aux
+công_chức	xứng_đôi_vừa_lứa/dep một/nummod chồng_chưa_cưới/nsubj là/cop trẻ/amod ./punct
+công_khai	phổ_biến/xcomp rộng_rãi/conj mạnh_mẽ/conj nghị_quyết/nsubj được/aux
+công_luận	của/case
+công_lý	vì/case
+công_nhân	tố_cáo/xcomp ngày_xưa/nmod với/case nhóm/nmod xây_dựng/xcomp một_số/det dũng_cảm/amod làm_việc/xcomp nhóm/conj và/cc đứng/xcomp nhóm/compound loại/nsubj những/det là/cop ấy/det trương_xuân_đại/compound các/det
+công_suất	hết/advmod
+công_trình	trung_tâm/compound ở/case hàng_bồ/compound mẫu/compound nhóm/compound cầu_đường/compound của/case này/det
+công_ty	ngoài/case đó/det h/dep châu_âu/nmod xây_dựng/xcomp bình_dương/compound thám_tử/compound chúng_tôi/det từ/case chúng_ta/det kinh_doanh/xcomp tương_lai/nmod theo_dõi/xcomp tp/compound điều_tra/xcomp nguyễn_công_trứ/appos ,/punct cấp/xcomp v/xcomp xây_lắp/xcomp vay/xcomp hồng_lĩnh/compound vật_tư/conj triều_phú/compound tại/case này/det những/det tnhh/compound đặt/xcomp sanofi/compound tiếp_thị/compound của/case
+công_tác	cán_bộ/compound đền_bù/xcomp thời_gian/nmod thanh_niên/compound tới/nmod về/case nvơnn/compound
+công_tử	đám/compound của/case này/det
+công_viên	lênin/compound
+công_việc	dọn_dẹp/xcomp đường_ống/compound này/det
+công_văn	xin/xcomp công_ty/compound vào/case ngày/nmod 327/nummod về/case ở/case 999/nummod trên/case chính_phủ/nmod các/det
+công_ăn_việc_làm	lao_động/iobj
+công_ước	,/punct
+cù_lao	bạch_đằng/compound .../punct di_tích/conj nhiều/amod
+cùi_tay	hai/nummod lạ_đời/amod với/case cụt/amod chỉ/advmod bằng/case
+cùng	nhà_nước/nsubj họ/nsubj dòng_họ/obj nhằm/xcomp trốn/xcomp chồng/obj trang_lứa/obj ngày/obj phải/aux ngành/obj về/xcomp đường/obj mua_dâm/xcomp và/cc câu_chuyện/obj ./punct ký/xcomp đắp/xcomp đang/advmod ăn/conj cơ_quan/obj bỏ/xcomp người/obj cả/nsubj trở/xcomp liễu/obj
+căn_bệnh	trước/case này/det
+căn_vặn	đủ/xcomp
+căng_thẳng	ngày/obj
+căngxe	ung_thư/appos bị/aux sống/conj
+cũ	chuyện/nsubj hết/advmod rồi/advmod à/discourse mà/cc .../punct "/punct ./punct ,/punct
+cũng	không/advmod
+cơ_bắp	hay/cc
+cơ_chế	này/det thỏa_thuận/xcomp
+cơ_cấu	đến/case
+cơ_hội	đây/nsubj phá_án/xcomp là/cop lấy/mark và/cc .../punct khai_thác/mark giải_phóng/xcomp tốt/amod
+cơ_ngơi	sản_xuất/xcomp mình/nmod
+cơ_quan	đại_diện/xcomp với/case đơn_vị/conj cảnh_sát/compound chức_năng/compound công_an/compound tôi/det nhu/compound điều_tra/xcomp riêng/discourse về/case ngân_hàng/conj theo/case ,/punct mỗi/nummod ở/case tại/case hoặc/cc một/nummod có/xcomp các/det của/case quản_lý/xcomp
+cơ_quan_chức_năng	đồng_nai/advcl các/det
+cơ_sở	nhiều/amod một/nummod ở/case chế_biến/xcomp vững_chắc/amod về/case sản_xuất/compound ,/punct đảng/compound
+cơm	bình_dân/amod miếng/compound "/punct chén/compound tối/compound đạm_bạc/amod
+cư_trú	có_thể/aux một_cách/obj bà_con/nsubj làm_ăn/conj
+cưa	bị/aux nổ/xcomp "/punct tay/obj
+cương_quyết	rút/ccomp để/ccomp lần/nmod vi_phạm/xcomp ,/punct ./punct phải/aux
+cước	bưu_điện/nmod
+cưới	không_thể/advmod như/cc lan/obj cũng/advmod nam/nsubj
+cướp	chính_quyền/obj
+cạm_bẫy	một/nummod
+cạnh	nhu/compound
+cạp	vừa/advmod lên/advmod
+cả	hai/nummod ba/nummod
+cải_tiến	sẽ/advmod được/aux nhằm/case toàn_diện/xcomp
+cải_tạo	khai_hoang/conj
+cảm	đột_ngột/xcomp
+cảm_giác	khi/nmod thế_nào/det mất_mát/xcomp
+cảm_thấy	?/punct chắc_chắn/advcl gánh/ccomp anh/nsubj buồn/xcomp có/obl ./punct có/advmod nam/nsubj
+cảm_tình	james/nmod phụ_nữ/nmod giám_đốc/nmod ưu_ái/conj
+cảm_động	đàn_ông/obl
+cảm_ơn	ông/obj
+cảnh	tù_túng/amod những/det với/case túng_quẫn/amod nghèo_khó/amod đi_lại/ccomp vào/case sống/compound
+cảnh_báo	báo_chí/nsubj với/case chúng_tôi/advcl đúng/xcomp ,/punct ./punct
+cảnh_giác	l/nsubj rất/advmod nói/conj hết_sức/advmod cũng/advmod bởi/case ./punct bà/nsubj
+cảnh_sát	công_an/compound giao_thông/compound anh/compound dư_luận/nmod điều_tra/xcomp bộ/compound trẻ/amod ,/punct của/case
+cảnh_tượng	một/nummod hỗn_loạn/amod chen_lấn/conj
+cấm	lưu_thông/ccomp không_thể/advmod hình_thức/obl xe_tải/obj nhập_khẩu/xcomp được/advmod
+cấp	phép/obj với/case lãnh_đạo/compound trên/amod mình/nmod vụ/compound "/punct nước/obj các/det ii/nummod
+cấp_ủy	của/case đảng/compound
+cất	máy_ảnh/obj ,/punct
+cất_giấu	cờ_đỏ_sao_vàng/obj say_mê/parataxis nhà/nsubj cũng/advmod ./punct ,/punct
+cấu_trúc	ngành/obj ,/punct tái/discourse
+cầm	theo/xcomp như/cc họ/nsubj hộ_chiếu/obj lấy/xcomp chén/obj cả/obj tay/advcl xẻng/obj gái/nsubj chính_trị/obj mà/cc ./punct cầm/conj cuốc/obj người_người/nsubj điện_thoại/obj chúng_tôi/nsubj nên/cc thư/nsubj đã/advmod ào/ccomp máy/obj tôi/nsubj
+cần	chúng_ta/nsubj hỏi/xcomp ta/nsubj anh/obj còn/cc rằng/mark kịch_bản/nsubj tìm_hiểu/xcomp có/xcomp chỉ/advmod đơn_vị/nsubj số_lượng/obj phương_án/obj tuyệt_đối/xcomp tấn_công/conj hiện_thời/obl và/cc ./punct điều/obj loại_bỏ/xcomp hôm_nay/obl muốn/advcl thêm/xcomp xem_xét/xcomp mình/nsubj ,/punct cân_nhắc/conj đang/advmod !/punct kiểm_tra/xcomp cũng/advmod "/punct đồng_quà_tấm_bánh/dep mưa/obj đồng_ý/parataxis nhà_nước/nsubj vì/case không/advmod hỗ_trợ/xcomp nhân_vật/obj hồng/nsubj bao_giờ/obj chữa/xcomp cô/nsubj tôi/nsubj
+cần_cù	nhưng/cc ,/punct
+cần_cẩu	sà_lan/nmod chiếc/compound
+cần_thiết	phù_hợp/conj là/cop tương_lai/nmod và/cc việc/nsubj "/punct ./punct đối_chất/xcomp không/advmod
+cầu	-/punct cầu/conj rạch_cát/compound 2/nummod sài_gòn/compound đến/case bình_triệu/compound
+cầu_cảng	toàn_bộ/det
+cầu_cứu	chúng_tôi/nsubj tuyệt_vọng/conj ./punct nơi/obj
+cầu_mong	chỉ/advmod có/ccomp ,/punct
+cầu_thang	khu_tập_thể/compound dưới/case nhà/compound trước/case
+cầu_xin	sự/compound
+cầu_đường	bt2/compound rbkt/punct lbkt/punct bt2/appos 2/nummod bình_triệu/compound
+cẩn_thận	đặt/conj ghi_chép/xcomp soi/conj anh/nsubj dùng/conj ./punct
+cẩu	này/det cạp/compound công_ty/nmod chiếc/compound
+cập_nhật	thông_tin/obj phục_vụ/ccomp liên_tục/xcomp
+cắn	thư/nsubj chặt/xcomp để/ccomp môi/obj .../punct
+cắt	có/mark thêm/xcomp trọng_thương/xcomp cắt/conj bị/aux ./punct có/conj ,/punct bình/nsubj nước/obj bỏ/xcomp nhắn_tin/conj còn/ccomp người/obj đã/advmod điện/obj
+cặp_bồ	và/cc
+cố	buông/advcl người/nsubj đến/xcomp quên/xcomp cầm/ccomp ,/punct mất_mát/obj ./punct
+cố_gắng	khởi_công/xcomp sẽ/advmod
+cố_nhân	xưởng/advcl
+cố_ý	gây/ccomp bị_cáo/obl làm/xcomp ai/nsubj và/cc cũng/advmod tránh/xcomp
+cổ_phần_hóa	doanh_nghiệp/nsubj
+cộng	xe/nsubj thêm/xcomp giải_tỏa/obl cảnh/obl ,/punct xe_cơ_giới/obj
+cộng_hòa	chủ_nghĩa/compound vn/compound xã_hội/compound
+cộng_đồng	đối_với/case nvơnn/compound của/case
+cụt	đợt/obl bị/aux thanh/nsubj tay/obj
+của	riêng/amod lỗi/nsubj kiểm_soát/conj rủi_ro/conj không/advmod
+của_cải	nhà/nmod
+cứu	chúng_tôi/nsubj người/obj tự/det chữa_cháy/conj mình/obj ta/obj ,/punct nhau/obj phải/aux
+cừ	tràm/compound bằng/case
+cử	hãng/nsubj sẽ/advmod đoàn/obj sự/advcl ./punct ,/punct
+cử_tọa	,/punct
+cửa	ra/case nhà/compound ở/case nhà_giam/compound nhà_nghỉ/compound lộ/xcomp trước/case
+cửa_hàng	đó/det xin/mark photo/dep điện_thoại/compound nào/det đến/case tuấn/nmod ở/case nhà/conj một/nummod trước/case các/det
+cửa_kính	các/det
+cửa_ngõ	ở/case ngay/discourse tp/compound thành_phố/compound hcm/compound ./punct
+cựu_chiến_binh	người/compound
+danh_bạ	qua/case điện_thoại/compound
+danh_dự	mình/nmod
+danh_hiệu	tập_thể/compound anh_hùng/compound
+danh_nghĩa	một/nummod dưới/case dự_án/compound nạo_vét/xcomp dòng/compound
+di_chuyển	bao/nsubj đường_ống/obj tối/obl khỏi/xcomp đã/advmod cũng/advmod ./punct ,/punct được/advmod
+di_tích	lịch_sử/amod ,/punct
+diễn	luân/obl cảnh_tượng/nsubj phương_án/nsubj bình_thường/xcomp việc/nsubj ./punct ,/punct "/punct vẫn/advmod ra/advmod khi/obl
+diễn_tiến	bệnh_lý/obj và/cc
+diện	nghi_vấn/xcomp người/nsubj là/cop làm/conj rộng/amod ./punct trên/case
+dn	vận_tải/xcomp các/det
+do	làm_ăn/csubj là/cop có/conj tương_đối/mark
+doanh_nghiệp	lbkt/punct người/conj nào/det nhà_nước/compound nhất_là/dep kinh_doanh/xcomp rbkt/punct và/cc ,/punct dn/appos 109/nummod các/det
+dung_nhan	thư/nmod
+duy_nhất	taxi/nsubj thì/cc có/xcomp hãng/obj chỉ/advmod ./punct
+duyệt	được/advmod
+dài	chuyện/nsubj hết/xcomp còn/advmod vẫn/advmod
+dàn	nơi/obj đều/xcomp thì/cc còn/cc ban_đêm/obl ./punct lực_lượng/nsubj
+dành	báo/nsubj chủ_trương/nsubj bà_con/iobj bà_con/obl
+dám	mong/conj ào/mark người/nsubj .../punct nhắc/xcomp hiện_nay/obl chống_cự/xcomp nhìn/xcomp mà/discourse ,/punct không/advmod có/csubj ./punct ông/nsubj dường_như/dep "/punct nam/nsubj giờ_đây/obl kêu/xcomp tôi/nsubj
+dáng_vẻ	nghiêm_trang/amod
+dáng_điệu	người/compound và/cc
+dân	tản_cư/xcomp thái_mỹ/compound người/compound tháo_gỡ/xcomp đắp/xcomp góp/xcomp trồng/xcomp vay/xcomp trở_về/xcomp hồi_sinh/conj sài_gòn/nmod của/case ra/xcomp
+dân_cư	khu/compound
+dân_số	gia_đình/compound &/punct kế_hoạch_hóa/xcomp
+dây	hai/nummod một/nummod để/case tay/nmod kẽm/compound cọng/compound bởi/case sợi/compound
+dòm_ngó	ai/nsubj ./punct công_ty/obj
+dòng	lạnh/amod đến/xcomp sông/compound nước/compound để/case nhật_ký/compound đến/case dưới/case xuống/case một/nummod đồng_nai/compound nước_máy/compound qua/xcomp
+dù	đi_nữa/conj cho/case như_thế_nào/conj nồng_thắm/conj nghĩa_tình/nmod
+dùng	làm/parataxis kiềng/obj gí/ccomp sim/obj sức_mạnh/obj .../punct phải/aux cưa/obj bày_tỏ/conj đưa/parataxis để/case mô_hình/obl khăn/obj ,/punct ./punct khoán/nsubj không/advmod cứ/advmod khói/advcl tiền/obj cắt/parataxis nên/cc công_ty/nsubj nếu/cc cầu_xin/obj nam/nsubj kêu/conj nguyên/nsubj chỉ/advmod đã/advmod quyền_lực/obj máy/obj tay/obj
+dúi	tay/advcl giấy/obj
+dũng	ông/compound
+dư_luận	tiếng_tăm/conj những/det liên_quan/xcomp pháp_luật/conj của/case
+dưới	lòng/nmod phía/case bên/case ở/case sông/compound sà_lan/nmod từ/case
+dạng	là/cop người/parataxis công_ty/nsubj vốn/compound ,/punct ./punct
+dạy	tiếng/obj nó/obl thcs/obj nvơnn/iobj nghề/obj nhi/obj
+dấu	đỏ_chót/amod xe/compound với/case quốc_huy/compound kèm/xcomp
+dấu_hiệu	nhất/amod khả_nghi/amod minh_bạch/amod
+dấy	phong_trào/obj lên/advmod
+dầu_giây	ở/case
+dẫn	đường/obj xóm/obl và/cc lên/ccomp họ/obj nhau/obj kinh_tế/obl
+dẫn_chứng	phó_chủ_tịch/nsubj -/punct có/ccomp
+dập	thì/cc người/nsubj mới/advmod và/cc máy/obj
+dắt	gái/nsubj xe/obj đi/ccomp
+dắt_díu	nhiều/csubj đã/advmod ./punct nhau/obj đi/ccomp rõ/conj
+dặn	và/cc nên/ccomp
+dễ	thành_công/xcomp thì/cc trớ_trêu/amod sinh/xcomp sẽ/advmod mủi_lòng/xcomp êm_đẹp/conj ./punct ,/punct không/advmod phương_pháp/nsubj cháy/xcomp ở/advcl rất/advmod thám_tử/nsubj lấy/csubj
+dễ_dàng	?/punct không/advmod sa_ngã/xcomp người/nsubj nhưng/cc công_việc/nsubj cám_dỗ/nmod ./punct ,/punct hoàn_cảnh/nmod
+dịch_vụ	phí/compound thám_tử/compound mình/nmod văn_hóa/compound hiện/xcomp số/compound ,/punct điện_thoại/compound
+dịp	mỗi/nummod giao_lưu/xcomp họp_mặt/conj
+dọc	sà_lan/nmod
+dọn_dẹp	,/punct
+dồn	cục/obj một/nummod đang/advmod hết_mình/dep suất/nsubj việc/obl
+dứt_điểm	năm/obl là/cop ./punct
+dừng	đó/advcl chuyện/nsubj ./punct kết_quả/nsubj không/advmod nhưng/cc nhu/nsubj bó_tay/conj đó/obl xe/obj chỉ/advmod
+dự_kiến	báo_điện_tử/nsubj nay/obl ./punct ,/punct cải_tiến/ccomp
+dự_thảo	đang/advmod nghị_định/compound bộ/nsubj chương_trình/obj ./punct
+dự_án	thủy_lợi/compound đầu_tư/xcomp đối_với/case cấp/xcomp qui_hoạch/xcomp "/punct này/det một/nummod những/det mất/xcomp có/xcomp trên/compound 4-jan/nummod các/det cầu_đường/compound
+dựa	cứ/advmod đó/obl để/case chúng_tôi/nsubj mà/cc chương_trình/obl mối/obl ./punct
+dựng	công_khai/xcomp hiện/obj lão_nông/nsubj -/punct ./punct lên/xcomp vẫn/advmod gia_đình/obj đã/advmod được/aux cách/ccomp
+em	thật_ra/advmod anh/nsubj nhi/compound về/case ,/punct vợ/conj đây/det họ/compound trở_về/xcomp học_sinh/compound là/cop các/det
+em_gái	người/compound xoan/compound của/case
+eo_hẹp	cơ_cực/amod
+fax	:/punct 84_._4/nummod bằng/case ./punct
+g	18/nummod 17/nummod khoảng/advmod 10/nummod 9/nummod từ/case sau/case 40/nummod ngày/compound về/xcomp -/punct trưa/compound đến/case 23/nummod phút/compound 12/nummod 1/nummod 30/nummod 22/nummod 15/nummod sáng/compound 20/nummod 7/nummod g/nmod 5/nummod cùng/amod 8/nummod đêm/compound
+gai	cái/compound mắt/nmod
+gang_tấc	trong/case
+ghe	dọc/csubj là/cop một_số/det chờ/xcomp ./punct trên/case đặc_dụng/amod chiếc/compound
+ghi	công_văn/nsubj lệ_phí/nsubj :/punct trong/advcl và/cc là/cc ./punct ,/punct không/advmod cho_phép/conj điện_thoại/obj đồng_ý/xcomp đôla/obj thành/obl cảm/ccomp giấy/nsubj rõ/xcomp hàng_hóa/obj chỉ/advmod được/aux số_lượng/obj có/advmod sổ/obl
+ghi_hình	,/punct
+ghi_nhận	gì/obj được/aux không/advmod
+ghi_âm	qua/case
+ghé	sang/conj giao/ccomp quán/obl ./punct ,/punct bên/obj vào/xcomp với/advcl bằng/nsubj thư/nsubj cửa_hàng/obj
+ghê	như/cc rắn/obj
+ghế	một/nummod băng/compound
+gia_đình	nguyễn_văn_thuật/compound xóm/advcl .../punct hai/nummod 40/nummod hạng/compound nạn_nhân/compound về/case đặng_văn_tình/compound họ/det đó/nsubj đại/compound trong/case gần/advmod ./punct khu_phố/conj mình/det địa_chỉ/nsubj họ_hàng/conj một/nummod là/cop nghèo/amod các/det cơ_quan/conj gương_mẫu/compound nhóm/conj bà/compound biết/mark cho/case chị/compound phần_lớn/det nhà/compound từng/det thoát/xcomp phường/nmod với/case hàng_xóm/conj hồng/compound việt_kiều/compound tôi/det ông/compound cô_dâu/nmod %/nummod công_chức/compound nguyễn_văn_minh/compound tuấn/compound sinh/compound
+giai_đoạn	từng/advmod trong/case
+gian	ba/nummod
+gian_truân	nhất/advmod
+giao	họ/obl việc/obj gia_đình/nsubj sổ_đỏ/nsubj ubnd/obl để/case đoàn/nsubj trọng_trách/obj và/cc ./punct ,/punct thưa/vocative ảnh/obj tháng/obl nên/cc nhiệm_vụ/obj thám_tử/nsubj người/obl đã/advmod được/aux
+giao_dịch	thương_mại/obj và/cc
+giao_lưu	không/advmod cuộc/compound với/case đi/conj và/cc bên/obl tìm_hiểu/conj học/conj
+giao_lộ	đây/nsubj là/cop đường/nmod
+giao_nhận	việc/compound
+giao_thông	"/punct
+già	nhiều/amod so/xcomp hay/cc đi/advmod ./punct chị/nsubj
+giàn	bắn/xcomp ná/compound
+giàu_có	nhờ/conj không/advmod
+giá	.../punct nào/det phải/aux giá/nsubj hồi/nmod ,/punct không/advmod chắc_chắn/parataxis cho/mark cao/amod là/cop bởi/cc
+giám_sát	sản_xuất/xcomp cơ_sở/advcl và/cc
+giám_định	xây_dựng/xcomp công_trình/obj tái/dep
+giám_đốc	công_ty/compound với/case :/punct mobile/list -/punct ./punct ,/punct james/compound tỉ_phú/compound nguyễn_hữu_vinh/compound chi_nhánh/compound cùng/case
+giáng	bất_hạnh/xcomp đàn_bà/nsubj đã/advmod xuống/ccomp rồi/cc ./punct lấy/parataxis
+giáo_dục	đào_tạo/ccomp cho/case để/case mình/nsubj -/punct khuyên_răn/conj chủ_yếu/advcl thôi/discourse thcs/compound
+giáo_viên	hai/nummod và/cc sang/xcomp 229/nummod
+giáp	mé/obl
+giây	39/nummod 20/nummod
+giúp	lấy/ccomp cuộc_đời/obj .../punct dân/obj để/case ./punct đưa/csubj tin_tưởng/parataxis chúng_tôi/nsubj tiền/obj cũng/advmod nên/cc điều/nsubj gia_đình/obj quang/obj bố_mẹ/nsubj người/obj là/cop thám_tử/nsubj đã/advmod chính/discourse tuấn/obj
+giúp_đỡ	chúng_tôi/obj một/nsubj
+giăng	điện/nsubj sáng_choang/xcomp thắp/advcl không_những/cc ngả/obj ban_đêm/obl ,/punct còn/advmod ./punct
+giơ_lên_giơ_xuống	đèn_pin/obj xe/advcl ,/punct
+giả_thiết	hai/nummod một/nummod :/punct gửi/ccomp
+giải	sống/parataxis chưa/advmod được/aux nên/cc nỗi/nsubj ./punct
+giải_cứu	"/punct
+giải_pháp	bốn/nummod đây/nsubj tạm/amod ./punct ,/punct đó/nmod nhưng/cc cũng/advmod nhóm/compound đoạn/advcl cuối_cùng/amod là/cop chỉ/advmod
+giải_phóng	thay_đổi/parataxis lầm_lũi/parataxis thành_phố/nsubj ./punct ,/punct
+giải_quyết	như_thế_nào/dep ?/punct hết/discourse không/advmod yêu_cầu/obj gì/advmod cũng/advmod gốc/obj vấn_đề/obj nhanh_chóng/xcomp được/aux được/advmod
+giải_thích	tên/ccomp chúng_tôi/nsubj mang/xcomp rồi/cc ,/punct ./punct
+giải_trình	dư_luận/obj tôi/nsubj có/conj đã/advmod bán/advcl công_ty/nsubj ,/punct ./punct phải/aux
+giải_tỏa	với/case chậm/xcomp ,/punct
+giảm	nghèo/xcomp đối_với/case
+giấu	không_thể/advmod nữa/advmod câu_chuyện/nsubj nam/obj .../punct cũng/advmod được/aux
+giấy	nhỏ/amod nhận/xcomp khác/amod thanh_toán/xcomp khai_tử/xcomp xác_nhận/xcomp -/punct ,/punct nhiều/amod tờ/compound loại/compound ghi_chép/xcomp "/punct vụn/amod mảnh/compound giấy/conj này/det một/nummod những/det rất/advmod tập/compound
+giấy_phép	kinh_doanh/xcomp
+giấy_thông_hành	về/xcomp
+giấy_tờ	hợp_pháp/amod mua_bán/xcomp các/det ,/punct tùy_thân/amod
+giật	nhà/obj sập/xcomp
+giật_mình	:/punct rẽ/ccomp hình_như/advmod anh/nsubj
+giết	người/obj
+giọng	bảo_vệ/compound trên/nmod cựu_chiến_binh/compound vâng_vâng_dạ_dạ/dep nữ/compound vợ/compound
+giọt	máu/compound
+giỏi	em/nsubj có/advmod không/advmod
+giống	nhà/obj rất/advmod khu/obj như/cc phương_án/obj
+giới_thiệu	wb/nsubj thắng/nsubj mô_hình/obj nước/iobj và/cc ./punct là/cc gia_đình/obl bạn/ccomp cán_bộ/obj nhà/obj ông/nsubj đi/conj tiền/obj
+giờ	gần/advmod 10/nummod 4/nummod tối/compound vào/case làm_việc/xcomp ?/punct đây/nsubj ngày/compound từng/advmod đến/case ./punct 2/nummod thế/discourse 21/nummod chia_tay/xcomp nhiều/amod nhưng/cc khắc_khoải/amod ngày/conj ăn/ccomp 6/nummod trực/xcomp ra_sao/advcl này/det là/cop 864/nummod 11/nummod hiệp_sĩ/nsubj 15/nummod sáng/compound 8/nummod đi/xcomp đêm/compound
+giờ_hành_chính	ngoài/case trong/case
+giữ	hồn/obj số/obj hạnh/obj lại/advmod nghề/obj ai/nsubj địa_chỉ/obj biện_pháp/advcl và/cc ./punct
+giữa	thành_phố/nmod
+gom_góp	bà_con/obj gửi/xcomp tức_tốc/advmod
+gàu	hốt/xcomp cát/compound
+gác	chuyện/obj lên_đường/ccomp và/cc tôi/nsubj
+gái	với/case khoảng/advmod cô/compound 20/nummod trẻ/amod hà_nội/compound mại_dâm/xcomp buồng/nmod
+gánh	trách_nhiệm/obj khó/amod theo/advcl phải/aux tiền_bạc/compound nặng/amod ./punct ,/punct đậu_hũ/compound đó/nsubj công_ty/nsubj "/punct là/cop trong/case
+gánh_chịu	không/advmod gì/obj người/nsubj sao/det hậu_quả/obj phải/aux
+gây	bất_ngờ/xcomp hậu_quả/obj dư_luận/obj xôn_xao/xcomp
+gây_lộn	hằng/nsubj
+gã	háo/conj một/nummod đốt/xcomp lạnh_lùng/amod nho_nhã/amod và/conj tâm_tư/conj
+gãy	như/cc sắp/advmod đôi/dep
+gì	?/punct mục_đích/nsubj đó/det với/case là/cop những/det nghe/xcomp nhiều/amod
+gí	người/obl
+góc	tối/amod phố/nmod ./punct
+gói	cam/obj tặng/xcomp
+góp	của/obj công/obj
+góp_phần	nhỏ/xcomp sẽ/advmod họ/nsubj và/cc đã/advmod cách/nsubj ./punct bình_yên/obl hạn_chế/obj
+góp_ý	:/punct dự_thảo/obj hạn_chế/ccomp ./punct
+gõ	cửa/obj tiến/ccomp xin_lỗi/conj
+gõ_cửa	ra/parataxis thắng/nsubj ./punct ,/punct
+gương_mặt	những/det tươi_cười/amod
+gấp	cất/conj lần/obj giấy/obj đôi/dep
+gầm	dưới/case
+gần	loại/nmod đó/det tuyệt_đối/conj khu/obj như/cc giống/xcomp thùng/nmod đó/obj năm/obj dễ/conj ./punct nhất/advmod g/obj số/obj nhà/obj km/obj đây/det công_viên/obj bao_giờ/obj thế/obj đã/advmod
+gầy_dựng	và/cc dần/advmod
+gập	lưng/obj ,/punct
+gắn_bó	hơn/xcomp càng/advmod mẹ_con/obl ./punct nam/nsubj
+gặng	hỏi/xcomp
+gặp	đi/advcl chồng/nsubj bề_trên/obj ai/obj nhu/nsubj con/obj năm/obl thắng/nsubj anh/nsubj tình_nhân/nsubj ./punct thư/obj lại/advmod ào_ạt/parataxis ông/nsubj v_._h_./obj tình_nhân/obj phong/obj khó/xcomp khách/obj gương_mặt/obj mừng_quýnh/parataxis quán/obl nam/obj kể/ccomp tôi/obj ngày/obl ,/punct căn_vặn/ccomp liên/obj chúng_tôi/nsubj theo/parataxis lan/obj cũng/advmod "/punct người_yêu/obj cố_nhân/obj khó_khăn/xcomp lan/nsubj dân/nsubj cuối_cùng/advcl hoàn_cảnh/obj không/advmod người_tình/obj nhưng/cc kêu/ccomp tuy/cc người/obj khi/obl liễu/obj
+gặp_mặt	h./obj nhé/discourse anh/nsubj
+gọi	thứ/nsubj bao/obj ông/obl bày_tỏ/ccomp ?/punct :/punct nhu/obl -/punct hãng/obl số/obj hồi/obl trước/advcl nhu/nsubj giây/obj về/ccomp ngọc_hà/appos tiếng/obl nhiều/xcomp toàn/nsubj đã/advmod chỉ/advmod điện/xcomp rồi/cc anh/nsubj xin/ccomp thư/obl và/cc là/cc ./punct hạnh/nsubj lại/advmod hai/nsubj số/obl tăng_trưởng/xcomp một/nsubj í_ới/xcomp bố_mẹ/obl ra/advmod cháu/obl sao/det điện/obj đến/advmod tháng/obj đóng/conj giờ_hành_chính/obl thì/cc giữ/parataxis ngày/obl ,/punct ngay/advmod đào/nsubj bạn_đọc/nsubj chúng_tôi/nsubj cũng/advmod "/punct sau/obl điện_thoại_di_động/obj nhau/obj cơ_quan/advcl vừa_vặn/conj sang/parataxis gái/obj ăn/parataxis thêm/advmod thiếu/parataxis nói/conj cùng/conj nhà/obl rủ/ccomp không/advmod nhưng/cc nếu/cc chị/nsubj số/conj người/obj tôi/nsubj
+gốc	cái/compound miền/advcl này/det
+gồm	khóa/obj mảnh/obj người/obj vậy_mà/cc nhóm/nsubj lang_bạt/parataxis ./punct ,/punct
+gỡ	nhưng/cc được/ccomp ./punct một_mình/nsubj
+gợi_ý	hàng_xóm/nsubj nhé/discourse bị_cáo/nsubj thúc_giục/conj cô/obl
+gửi	người/nsubj tặng/xcomp .../punct gia_đình/nsubj bưu_điện/obl sẽ/advmod tâm_nhang/obj đ/obj hay/cc đơn/nsubj bà/nsubj đã/advmod trong/case thư_điện_tử/obj anh/nsubj và/cc văn_phòng/obl ./punct thư/obj nơi/obl lại/advmod ông/nsubj giấy/obj nó/nsubj thám_tử/nsubj phần/obj bác/obj xã/obl vất_vả/obj nó/obj ,/punct viết/conj cháu/nsubj fax/obl "/punct nhật_ký/obl sau/obl liên/obl thư/nsubj học/obl về/xcomp gửi/conj nhờ/ccomp người/advcl www_._anangquangnamfund_._org/obl chị/nsubj hoặc/cc đồng_bào/obj người/obj khi/obl được/aux
+ha	hơn/advmod và/cc 2/nummod đất/compound
+hai	đen/amod lần/conj cả/det ,/punct
+hai_bà_trưng	,/punct
+ham	học/xcomp không/advmod
+hay	mới/advmod ./punct mua/ccomp
+hay_là	xấu_hổ/xcomp chị/nsubj
+heo	chú/compound con/amod con/compound ấy/det đi/xcomp
+hi_vọng	thoát/xcomp
+hiến	đường/iobj đất/obj ,/punct
+hiểu	nổi/advmod được/advmod vốn/ccomp ?/punct dân/nsubj sẽ/advmod bị/aux ./punct lầm/xcomp chợt/advmod không/advmod không_thể/advmod cho/case ông/nsubj điều/obj chân_chất/ccomp cũng/advmod "/punct bà/nsubj em/nsubj bố/nsubj hưởng_ứng/conj tôi/nsubj
+hiện	kiểm_tra/advcl nước_mắt/nsubj ./punct ,/punct bản/nsubj khuôn_mặt/advcl còn/advmod vẫn/advmod rõ/xcomp lên/advmod đã/advmod cước/obj
+hiệp_sĩ	những/det ấy/det
+hiệu	giặt/xcomp là/xcomp
+hiệu_quả	không/advmod
+hiệu_trưởng	trường/compound ,/punct
+hoa	,/punct
+hoa_quả	,/punct
+hoan_nghênh	bà_con/nsubj được/aux
+hoang_mang	thất_vọng/conj
+hoàn_cảnh	đó/det hiện_tại/compound từ/case phải/aux khác/amod lý_do/nsubj vì/case ./punct nhiều/amod là/cop khó_khăn/amod có/advmod
+hoàn_hảo	khá/advmod ./punct trình_độ/nsubj
+hoàn_hồn	ngày/obl
+hoàn_lương	,/punct
+hoàn_thiện	hệ_thống/obj
+hoàn_thành	khu/obj công_trình/nsubj mặc_dù/cc dự_kiến/advcl để/case cân_nhắc/parataxis sẽ/advmod chưa/advmod ./punct ,/punct nhưng/cc quyết_định/parataxis phổ_cập/xcomp
+hoàn_toàn	lòng/nmod có_thể/aux lấy/xcomp việc/nsubj ./punct dựa/xcomp tình_yêu/nmod chồng/obj
+hoàn_trả	vốn/obj
+hoàn_tất	như/cc mới/advmod mở/conj bắt_đầu/conj chủ/nsubj việc/nsubj giờ/obl ./punct thủ_tục/obj
+hoành_hành	đang/advmod ./punct nạn/nsubj dầu_giây/advcl vẫn/advmod
+hoãn	họp/xcomp
+hoạn_nạn	tuấn/nmod ,/punct
+hoạn_thư	một/nummod kế/compound
+hoạt_động	khá/advmod mạnh/xcomp đội/nsubj và/cc ./punct dịch_vụ/conj hội/nsubj cũng/advmod "/punct so/ccomp công_suất/obj mới/xcomp các/det
+hoảng	cháy/conj
+huy	anh/conj
+huy_động	vốn/obj
+huyện	củ_chi/compound định_quán/compound sông_cầu/compound bình_dương/appos tp._hcm/appos lbkt/punct rbkt/punct ,/punct tân_uyên/compound trực_ninh/compound
+hà_nội	ở/case ,/punct tại/case
+hàm_răng	hai/nummod nghiến/xcomp trong/case
+hàm_ếch	hàng/advmod chục/nummod
+hàng	rồi/conj hàng/conj nước_mắt/compound đầm_đìa/amod khác/amod hai/nummod trước_đây/nmod lậu/amod ,/punct đôi/nummod cói/compound hà_nội/advcl rau/compound các/det thủ_công/xcomp bán/xcomp
+hàng_bồ	79/nummod
+hàng_hành	ở/case
+hàng_hóa	vn/compound chở/xcomp
+hàng_ngũ	tề_chỉnh/amod
+hàng_xóm	người/compound mấy/det ,/punct
+hành_chính	nhà_nước/compound
+hành_vi	những/det đó/det sai_trái/amod vi_phạm/xcomp
+hành_động	thì/cc như/cc thư/nsubj vỡ_lở/parataxis kế_hoạch/obj ./punct nếu/cc
+hào_hoa	,/punct
+hào_hứng	,/punct không/advmod
+hào_phóng	rất/advmod
+háo	,/punct sắc/obj không/advmod
+hát	karaoke/obj
+hãng	mỹ_phẩm/compound cho/case bảo_hiểm/xcomp thành_hưng/compound bảo_hiểm/compound của/case từ/case
+hé	hơi/advmod cửa/obj tuy_nhiên/cc chỉ/advmod ghi_nhận/parataxis thanh_niên/nsubj nên/cc ./punct
+héo_mòn	thư/nsubj còn/cc ngày/obl ./punct vẫn/advmod phải/aux
+hên	thiệt/discourse !/punct
+hình_dạng	vết/compound bể/xcomp
+hình_thành	được/aux phương_án/nsubj ./punct
+hình_thức	dưới/case là/cop mọi/nummod xử_lý/xcomp nhưng/cc chỉ/advmod việc/nsubj ./punct cách_mạng/nmod vẫn/advmod
+hình_ảnh	nạn_nhân/nmod câu_chuyện/conj lái/ccomp
+hít	heroin/obj cùng/xcomp đỡ/mark
+hòa	chị/compound
+hòa_bình	cho/case vn/nmod
+hóa	người/nsubj hoạn_thư/obj thành/xcomp
+hóa_giải	để/case độc_kế/obj nguy_cơ/obj
+hôm	mất/ccomp một/nummod đó/det tiễn/xcomp trước/amod sau/compound bắt/xcomp tổ_chức/ccomp sau/amod
+hôm_nay	24-3/nummod
+hôm_qua	23-3/nummod
+hôn_nhân	gia_đình/compound
+hùng_dũng	vào/advmod tiến/xcomp
+hút	ghe/compound
+hăm_dọa	./punct thậm_chí/advmod xảy_ra/parataxis còn/advmod nên/cc đưa/xcomp lực_lượng/nsubj
+hđnd	tp/compound hcm/compound ./punct
+hđxx	cho/xcomp vẫn/advmod
+hơn	nữa/discourse thế/det nhiều/amod
+hư	xe/nsubj bị/aux
+hương_nhang	vàng_mã/conj hoa_quả/conj dáng_điệu/conj
+hương_ước	làng/nmod hội_tề/conj đám/compound
+hướng	lâm_đồng/compound mạnh/xcomp xử_lý/xcomp cơ_sở/obl về/case theo/case đi/xcomp nước/compound
+hướng_dẫn	thi_hành/xcomp vừa/advmod thi_hành/obj sinh_viên/obj
+hưởng	cán_bộ/ccomp thừa_kế/xcomp con/nsubj được/aux
+hưởng_ứng	,/punct không/advmod
+hạ	nhiệt/obj
+hại	cô_ta/obj
+hạn	chót/compound hoàn_trả/xcomp
+hạn_chế	thái_độ/obj
+hạng	nghèo/amod
+hạnh	thì/cc ./punct ,/punct tình_nhân/parataxis khi/nmod nó/nsubj bỏ/xcomp chồng/conj phong/conj 90/nsubj là/cop của/case
+hạnh_phúc	gia_đình/compound và/cc ấy/det
+hải	ông/compound ,/punct
+hấp_dẫn	nhà_đầu_tư/obj
+hậu	cái/compound
+hậu_quả	lớn/amod nghiêm_trọng/amod
+hắt	quầng/obj nhật_ký/obl ,/punct
+hằn	khóe/nsubj lên/advmod tia/obj ./punct
+hằng	ti/conj
+hẹn	tuấn/obj mình/nsubj chủ/nsubj ./punct ,/punct thư/obj quay/ccomp khuyên/parataxis đinh/obj nhưng/cc tư_cách/obl giờ/obj đồng_hồ_mặt_trời/obl với/conj toàn/nsubj gặp/xcomp
+hết	gần/advmod bao_nhiêu/obj việc/obj lòng_sông/nsubj việc/obl khổ/obj cát/obj cuộc/nsubj phút/obj vì/case ./punct vụ/obj cầm/ccomp giờ/obj gọi/conj đúng/obl
+hệ_thống	cừ/advcl một/nummod qui_trình/compound thoát/xcomp nước/compound trên/case móng/compound
+họ	nam/nmod cho/case giàu_có/amod của/case
+họ_hàng	,/punct
+học	được/advmod con_nít/obl lớp/obj văn_hóa/obj chương_trình/obl vào/conj tiết/obj tiếng/obj noi/parataxis tên/obj mà/cc ./punct ,/punct ngày/obl hết/advmod hiếu/discourse lớp/obl nên/cc em/nsubj còn/advmod rất/advmod con_gái/nsubj tiếp/xcomp chỉ/advmod truyền_thống/nsubj cấp/obj
+học_sinh	trường/nmod hiện_nay/nmod giáo_viên/conj đa_số/det 652/nummod
+họp_mặt	,/punct
+hỏa_hoạn	,/punct
+hỏi	thuê/ccomp thử/ccomp ?/punct :/punct -/punct cách/obl câu/obj bà/nsubj điều_kiện/obj đến/conj liền/advmod rồi/cc ngần_ngại/parataxis đúng/xcomp dập/conj gần/advmod thắng/nsubj gợi_ý/parataxis thấy/advcl anh/nsubj bạn/nsubj đời/obl gái/nsubj ai/ccomp ./punct lại/advmod ông/nsubj mãi/advmod thám_tử/nsubj hiểu/parataxis vết_thương/obl thì/cc giật_mình/advcl đại_diện/nsubj chồng/obj ngọ/obj ,/punct xem/xcomp thành_bỉ/nsubj cắc_cớ/xcomp làm/ccomp ai/det "/punct sau/obl tòa/nsubj trả_lời/parataxis thư/nsubj cho/ccomp hàng/obj gì/obj như/cc có/ccomp lan/nsubj mình/obl liễu/nsubj vì/case không/advmod bưu_điện/obj tiếp/advmod tôi/nsubj
+hỏi_dò	để/case
+hối_hả	ra/advmod cả/nsubj ngoại_ô/obj tiến/xcomp
+hốt	năm/obj cát/obj
+hồ_hởi	phe/obj tuổi/advcl để/case nhưng/cc khi/nmod mà/cc sáu_chí/nsubj vào/xcomp ra_mặt/xcomp ./punct
+hồ_sơ	với/case tập/compound tội_phạm/conj giấy_tờ/conj việc/compound trả/xcomp này/det
+hồi	một/nummod đó/det qua_lại/xcomp giờ/compound bé/amod sau/case
+hồi_hộp	người/nsubj theo_dõi/xcomp ./punct
+hồi_sinh	nghề/obj ,/punct
+hồn	việt/compound những/det ma/compound ấy/det gang_tấc/nmod
+hồn_ma	ghê_rợn/amod
+hồng	bà/compound
+hỗ_trợ	đồng/obj
+hộ	cơ_sở/conj 25_._000/nummod gia_đình/compound ha/conj !/punct 750/nummod dân/compound quận/advcl chính_sách/compound
+hộ_chiếu	tiền/conj mới_tinh/amod tay/advcl cộng_hòa/compound dấu/nmod quyển/compound
+hộ_khẩu	:/punct bắc_ninh/parataxis ./punct
+hội	việt_kiều/compound việt/compound tỉnh/compound cựu_chiến_binh/compound người/compound xã/compound với/case tỉnh/nmod
+hội_an	tại/case
+hội_chứng	bị/aux down/compound cháu/nsubj
+hội_nghị	truyền_hình/compound tại/case lần/compound có/xcomp thành_ủy/compound 20/nummod góp_ý/xcomp bch/compound cuộc/conj
+hội_nhập	kinh_tế/obj
+hội_trường	cả/det
+hội_tề	,/punct
+hội_đoàn	các/det
+hội_đồng	thẩm_định/xcomp một/nummod cơ_quan/conj ở/case xét_xử/xcomp chuyên_môn/amod giám_định/xcomp
+hờn	ghen/compound ,/punct
+hợp	rất/advmod và/cc mình/nmod
+hợp_tác	làm_việc/xcomp tin_cậy/conj đầu_tư/xcomp
+hợp_đồng	bảo_hiểm/compound sau/case đây/nsubj nhu/nmod thư/nmod lao_động/compound chủ/nmod một/nummod là/cop tín_dụng/compound có/xcomp vô_hiệu/amod bán/xcomp
+hụt	hơi/advmod giọng/obj
+hứa	đưa/ccomp ông/nsubj ./punct
+im_lặng	kinh_nghiệm/nsubj :/punct trả_lời/ccomp trong/case rồi/cc ./punct hãy/advmod
+in	đậm/xcomp nhan_đề/nsubj chạy/ccomp ./punct
+james	của/case
+johor	ngày/compound ./punct
+kg	trên/amod 500/nummod
+khai	:/punct bị_cáo/nsubj bảng_biểu/obl và/cc có/ccomp
+khai_hoang	,/punct
+khai_mạc	phiên_tòa/obj
+khai_sinh	?/punct hay/cc con/obl
+khai_thác	nguyên_nhân/nsubj đồng_nghiệp/obj do/case để/case cát/obj bị/aux ./punct có/conj ngân_sách/iobj bọn/compound lan/obj bừa_bãi/xcomp quanh/obl khiến/xcomp m3/nsubj là/cop nguồn/obj kế_hoạch/obj
+khang_trang	hơn/advmod
+khen_thưởng	tập_thể/obj kèm/conj
+khi	đó/det qua_đời/xcomp chuẩn_bị/ccomp lộ/ccomp sau/case điều_tra/xcomp chứng_kiến/xcomp cấp/xcomp vào/ccomp áp_lực/compound đóng_cửa/ccomp mất/xcomp có/xcomp quyết_định/ccomp trong/case trước/case xác_định/xcomp làm_việc/xcomp tìm/ccomp tìm/xcomp đến/case ./punct nhìn/xcomp đề_nghị/ccomp siết/xcomp tròn/amod thổi/xcomp ốp/xcomp trả/ccomp nhuốm/ccomp định_thần/ccomp thu_hồi/xcomp thưa/ccomp gặp/xcomp xảy/ccomp có_mặt/ccomp lớn/ccomp nghe/xcomp xác_nhận/ccomp gọi/ccomp cho/case làm/ccomp hết/ccomp trở_về/xcomp vỡ/ccomp đưa/xcomp cho/ccomp dồn/ccomp đi/ccomp kịp/ccomp hóa/ccomp lúc/conj biết/xcomp có/ccomp từ/case người/ccomp tổ_chức/ccomp về/xcomp bồi_hồi/ccomp mỗi/nummod trả_lời/xcomp cài/ccomp hoàn_tất/ccomp bắt/ccomp
+khiến	mệt_mỏi/iobj ngoan_ngoãn/xcomp nhận_thức/ccomp hương_ước/obj .../punct loan/csubj lâu/obl nhà_đầu_tư/obj ?/punct lễ_độ/ccomp không_khí/nsubj sông/obj mà/cc -/punct cuộc/nsubj sự_việc/nsubj việc/nsubj ./punct ,/punct có/csubj bên/obj kinh_hoảng/conj có/iobj tâm_sự/parataxis hoang_mang/ccomp nhu/obj "/punct nên/cc chùng/ccomp gặp/iobj đó/obl quý/nsubj mọi/obj đã/advmod
+khiếp_sợ	và/cc
+khiếu_nại	giải_quyết/ccomp tập_thể/obj ,/punct
+khoa	thí_nghiệm/xcomp trường/compound ,/punct tại/case
+khoanh	phải/aux đứng/conj khu/obj thám_tử/nsubj nhân_viên/nsubj được/aux ./punct hào/nsubj vùng/obj
+khoanh_vùng	để/case
+khoản	nh/nmod một/nummod những/det tiền/compound ở/case đền_bù/xcomp đối_với/case vay/xcomp cty/nmod
+khoảng	g/compound thời_gian/compound đến/case
+khu	tân_thuận/compound từng/advmod và/cc dân_cư/compound chế_xuất/xcomp ở/ccomp mới/amod số/nmod tuấn/compound xã/advcl nhà/compound xóm/compound vn/nmod triển_lãm/xcomp
+khu_phố	và/cc
+khu_tập_thể	mai_động/compound
+khu_vực	đó/det lbkt/punct tp/appos rbkt/punct trong/appos ./punct cù_lao/compound ở/case cháy/xcomp còn/cc cũng/advmod này/det phố/compound trong/case la_ngà/compound trường/compound của/case
+khuya	tới/case
+khuyên	ngăn/xcomp ./punct thắng/nsubj khi/obl anh/nsubj sau/obl ,/punct thư/obj nên/ccomp
+khuyên_can	vô_ích/xcomp thì/cc nhưng/cc ông_bà/nsubj ./punct yêu/parataxis
+khuyên_răn	,/punct
+khuyến_cáo	say_xỉn/xcomp "/punct các/det nuôi/xcomp
+khuôn	cứng/amod
+khuôn_khổ	vào/case
+khuôn_mặt	từng/det trên/case
+khuất_phục	sự/compound
+khuấy_động	,/punct bữa/obj
+khác	rất/advmod so/xcomp gì/advmod lạ/amod cũng/advmod nhà_hàng/obj cách/nsubj nhau/obj ./punct không/advmod
+khách	đến/xcomp đấy/discourse ông/compound ./punct nhà_quê/compound ban_đầu/nsubj cơ_quan/nmod làng_chơi/compound nọ/det một/nummod đoàn/compound là/cop đâu/nmod
+khách_hàng	một/nummod cho/case có/xcomp thư/conj như/conj nguyễn_thị_sinh/compound
+khách_quan	vô_tư/conj
+khách_sạn	ngay/discourse trong/case
+khái_niệm	năm/conj
+khám_xét	bị/aux trạm/nsubj ./punct
+khâm_phục	sức/obj làm/conj "/punct ./punct tôi/nsubj
+khâu	nhiều/amod kia/det khác/amod ở/case khâu/nmod quyết_toán/xcomp đến/case từ/case này/det
+khí_khái	,/punct
+khó	thì/cc quá/advmod lâu/nmod càng/advmod giọng/nsubj tránh/xcomp nhóm/nsubj phương_án/nsubj chuyện/nsubj như_vậy/cc thi_hành/xcomp sẽ/advmod nam/obj nói/xcomp ./punct đoán/xcomp !/punct trẻ/conj giải_quyết/xcomp xảy/xcomp rất/advmod
+khó_khăn	gì/det công_trình/nmod
+khóa	ix/nummod tán/conj vii/nummod ngày/compound mỏ_lết/conj -/punct ./punct bù_loong/conj dòng/nsubj đã/advmod được/aux
+khóc	mãi/advmod hiểu/conj khóc/conj .../punct đêm/obj ,/punct
+khóe	mép/compound thư/compound
+khói	mịt_mù/amod bốc/xcomp thoát/xcomp
+khôi_phục	cuộc_sống/obj
+khôn_khéo	vốn_dĩ/advmod như/cc thư/obj
+không	điện/compound phải/aux
+không_khí	một/nummod ấy/det ngày/nmod
+khăn	kẹo_cao_su/nmod cái/compound mềm/amod lau/xcomp cam/conj mặt/compound từ/case
+khăn_gói	lại/advmod mới/advmod đến/xcomp theo/parataxis lâu/obl ./punct ,/punct
+khả_năng	thiếu/xcomp bất_mãn/xcomp nvơnn/nmod việc/nmod lbkt/punct "/punct rbkt/punct viết/xcomp nhất/advmod
+khắc_phục	sơ_hở/obj
+khắc_tinh	những/det "/punct tội_phạm/nmod ./punct
+khắp	xóm/obj
+khẳng_định	thứ/nsubj bị_cáo/nsubj như/cc anh/nsubj có/ccomp :/punct để/case dành/ccomp ./punct ,/punct tái/discourse đóng/ccomp nh/nsubj vụ/obj %/obj "/punct thám_tử/nsubj một_cách/obj cho/ccomp tất_cả/ccomp nghị_quyết/nsubj đi/ccomp
+khỏe	rất/advmod nhưng/cc ,/punct không/advmod
+khỏi	vai/obj kế_hoạch/obj nhìn/advcl chúng_tôi/nsubj dự_thảo/obj chạnh_lòng/xcomp ,/punct ./punct không/advmod
+khối_lượng	công_trình/compound
+khổ	mẹ/obj giấy/compound quá/advmod lắm/advmod ./punct chị/nsubj
+khởi_công	đường/obj do/case sớm/xcomp
+khởi_nghĩa	nam_kỳ/compound
+khởi_tố	csgt/nsubj thì/cc cơ_quan/nsubj bị/aux lần_lượt/advmod ./punct truy_tố/conj ,/punct tháng/obl tội/obl đã/advmod cô/nsubj
+khủng_khiếp	thật/discourse !/punct là/cc
+kia	,/punct
+kim	đâm/xcomp muối/conj
+kinh_doanh	hoặc/cc dịch_vụ/obj vận_tải/xcomp ,/punct tổ_chức/conj
+kinh_hoảng	rất/advmod dám/ccomp
+kinh_nghiệm	dạy/xcomp theo/case
+kinh_ngạc	thảm_hại/ccomp :/punct vờ/advcl ,/punct ./punct !/punct phong/nsubj "/punct toàn/nsubj ô/discourse thấy/xcomp
+kinh_phí	tăng/xcomp cho/case đầu_tư/xcomp
+kinh_tế	khá/amod sống/parataxis tháng/nmod ?/punct :/punct sụt_giảm/xcomp tp/compound đến/case nguyên_nhân/conj ,/punct ./punct hội_nghị/nsubj gia_đình/appos ngân_sách/conj hđnd/conj
+kiêm	tổ_trưởng/obj
+kiên_cố	để/case bên/nmod hạnh_phúc/nsubj "/punct
+kiên_quyết	chấn_chỉnh/xcomp bộ_máy/obj nhanh_chóng/xcomp ./punct ,/punct
+kiếm	kiếm/conj tiền/obj sống/xcomp ,/punct
+kiến_nghị	tập_thể/xcomp người/nsubj thủ_tướng/obl đây/obl đã/advmod nhằm/ccomp ./punct
+kiến_thức	rượu/nmod
+kiềng	này/det ốp/xcomp ống/compound đoạn/compound
+kiểm_soát	chỉ/advmod phần/obj công_ty/nsubj ,/punct được/advmod
+kiểm_tra	làm/parataxis kiên_quyết/xcomp thắng/nsubj đóng/conj .../punct anh_em/nsubj kỹ/xcomp ron/obj ví/obj điểm/obj ./punct ,/punct phần_mềm/obj lại/advmod vụ/obj nhưng/cc sơ_sót/advcl xử_lý/conj hào/nsubj có_lẽ/dep gọi/conj hùng_dũng/xcomp báo_cáo/parataxis
+kiểm_điểm	trách_nhiệm/obj thực_hiện/ccomp việc/obl
+kiện	báo/obj công_nhân/nsubj ./punct
+kiện_toàn	./punct tăng_cường/conj
+kiệt_sức	người/nsubj cứu/parataxis ,/punct ./punct
+km	huyện/appos khoảng/advmod ở/case 95/nummod quốc_lộ/appos đồng_nai/conj 1,_5/nummod 2/nummod 91/nummod tại/case
+kuala_lumpur	ngày/compound ./punct
+kèm	theo/advmod chú_thích/ccomp tăng/xcomp phim/obj chữ_ký/obj khuyến_cáo/obj chứng_cứ/obj ,/punct hình_thức/obj theo/xcomp
+kém	không/advmod
+kéo	vào/advmod mép/obj tiếp_tục/ccomp ghế/obj dài/xcomp ngồi/ccomp ./punct ,/punct lực_lượng/nsubj thư/nsubj khi/obl
+kéo_dài	được/advmod như/cc cuộc_sống/nsubj mà/cc quá_trình/nsubj ./punct gần/obl không/advmod tuổi_thọ/obj giờ/obl cuộc_chiến/nsubj thế/obj liên_tục/xcomp
+kênh	tiêu_thụ/xcomp
+kêu	người/nsubj :/punct sẽ/advmod quay/advcl ./punct ,/punct ông/nsubj quá_trời/advmod !/punct nó/nsubj "/punct ngờ/advcl rối_rít/xcomp ra/ccomp
+kêu_gào	thấu/ccomp người/nsubj ./punct khiếu_nại/conj
+kêu_gọi	ông/nsubj gửi/ccomp ./punct nạn_nhân/obj
+kín_đáo	khá/advmod nơi/nsubj ./punct
+kíp	đầu_tiên/amod lặn/xcomp ngày/nmod
+ký	tháng/obj thay/xcomp bị_cáo/nsubj thì/cc thứ_trưởng/nsubj điểm_chỉ/conj vừa/advmod để/case xác_nhận/obj xác_nhận/xcomp và/cc hợp_đồng/obj công_văn/advcl ./punct không/advmod bản/obl đơn/obl qua_đời/parataxis cũng/advmod hợp_đồng/nsubj được/advmod
+kẹo_cao_su	phong/compound đến/case
+kẹt	đường_ray/advcl xe/obj lầu/obl thời_điểm/obl còn/advmod
+kẻ	là/cop cô_ta/nsubj có/xcomp mà/cc gian_dâm/xcomp gánh_chịu/xcomp ./punct
+kế	độc/amod mưu/conj
+kế_hoạch	trả_thù/xcomp nhảy/ccomp nhà_nước/compound thư/nmod và/cc tham_vọng/compound phương_án/conj theo/case mọi/det ./punct đáng/xcomp công_ty/nmod "/punct năm/nmod này/det một/nummod chính_phủ/nmod trên/compound chị/nmod đánh/xcomp của/case
+kết_luận	hoan_nghênh/xcomp biểu_dương/conj đã/advmod cơ_quan/nsubj việc_làm/obj
+kết_quả	toàn_bộ/det cái/compound gì/det nữ/nmod điều_tra/nmod nhãn_tiền/amod kèm/xcomp
+kết_thúc	ảnh_hưởng/conj câu_chuyện/nsubj thêm/advcl tốt/xcomp ./punct ,/punct nếu/cc
+kể	lúc/obl lần/obl về/obj việc/obj lan/nsubj gặp/ccomp :/punct và/cc chưa/advmod nợ/ccomp câu_chuyện/obj ./punct chuyện/obl bình_yên/ccomp đó/nsubj hết/advmod lại/advmod đào/nsubj nhu/nsubj chị/nsubj nguyên/nsubj là/cop nói_chuyện/ccomp đã/advmod mọi/obj anh/obl tình/obj
+kể_cả	,/punct
+kịch_bản	này/det gần/advmod sự/nmod bởi/case ./punct nhiều/amod
+kịp	thì/cc về/xcomp có_mặt/parataxis chưa/advmod ./punct bà/obj ,/punct phát_hiện/parataxis ông/nmod không/advmod nhưng/cc nhà/nsubj quay/xcomp mừng/xcomp hoàn_hồn/xcomp muốn/conj bàn/xcomp xe/obj toàn/nsubj thế_nhưng/cc
+kỷ_luật	và/cc
+kỷ_niệm	năm/obj ./punct
+kỹ	rất/advmod không/advmod
+la_cà	hỏi_dò/mark quán/obl và/cc bè_bạn/obj
+lam	,/punct
+lan	với/case với/cc lam/conj vào/case khôi_phục/xcomp ?/punct liên/conj đấy/det cô/compound và/cc bế_tắc/amod ./punct tên/nsubj có_thể/aux cho/case mình/det là/cop loan/conj tú/compound gái/obj lâm/conj của/case
+lang_bạt	hết/discourse đã/advmod nay/obl hầu_như/advmod
+lao	gái/nsubj trốn/ccomp vào/xcomp ./punct đón/ccomp ra/xcomp
+lao_công	,/punct
+lao_động	tám/nummod 17/nummod cho/case người/compound hợp_pháp/amod nước_ngoài/obl ./punct vậy/det từ/case nhiều/amod
+lau	mẹ/nsubj quần_áo/obj kỹ/xcomp đồ_vật/obj phải/aux cho/advmod chưa/advmod rửa/xcomp sạch_sẽ/xcomp cho/conj được/aux
+lau_chùi	thì/cc qua_loa/xcomp thôi/conj máy_fax/obl anh/nsubj ./punct
+len_lách	ngõ/obl như/cc ,/punct
+leo	để/case mình/nsubj lầu/obj lên/xcomp
+linh_tính	nghề_nghiệp/compound
+liên	,/punct đấy/det nhà_nghỉ/nmod và/cc nhu/conj của/case tới/case
+liên_hệ	đồng_nghiệp/obj thì/cc ?/punct lập_tức/advmod ./punct ,/punct gia_đình/obl lại/advmod nói/parataxis tòa_soạn/nsubj chúng_tôi/obl đó/obl đã/advmod
+liên_quan	cơ_cấu/obl gì/obj mình/obl người/parataxis việc/nsubj ./punct ,/punct liên/nsubj không/advmod nữa/advmod có/parataxis nay/obl "/punct khâu/obj chị/obl chỗ/nsubj vấn_đề/obl
+liên_quân	của/case
+liên_tục	xảy/xcomp
+liễu	với/case bà/compound sang/xcomp và/cc
+liệt_sĩ	thương_binh/compound gần/advmod !/punct hộ/compound 500/nummod của/case
+liệu	?/punct :/punct có/xcomp đường/nsubj có/ccomp
+lo	như/cc họ/nsubj sống/ccomp gia_đình/nsubj việc/obl bộc_bạch/ccomp hư/ccomp bé/obl để/case -/punct tự/det ./punct ,/punct ngoại_giao/obj chúng_tôi/nsubj "/punct đều/advmod rất/advmod cuộc_sống/obj chỉ/advmod mai_một/aux
+lo_lắng	rất/advmod
+lo_sợ	lưu/ccomp
+lo_âu	thấp_thỏm/xcomp trong/case
+loan	pháp/nsubj tin/obj ,/punct
+lon	bia/compound các/det
+long	nhân_viên/conj
+loại	với/case người/nsubj công_việc/compound mấy/nummod ./punct cung_cấp/xcomp đó/obl đầy_đủ/amod máy_móc/compound được/aux các/det ra/xcomp
+loại_bỏ	khỏi/ccomp nam/obj ra/ccomp "/punct điều_khoản/obj
+luyến	anh/compound
+luân	ông/compound theo/case
+luật	hôn_nhân/compound đất_đai/compound giang_hồ/compound theo/case
+luật_pháp	thông_lệ/conj công_ước/conj
+luật_sư	bảo_vệ/xcomp các/det cử_tọa/conj
+ly_dị	thuộc/parataxis là/cop thì/cc vấn_đề/nsubj chắc_chắn/advcl cô_ta/nsubj sẽ/advmod ./punct chính/discourse nếu/cc
+làm	thiết_lập/conj tôi/nsubj tiến_độ/obj họ/nsubj xã/nsubj vì/advcl phải/aux ?/punct :/punct để/case lán_trại/obj sẽ/advmod chú_ý/ccomp thất_thoát/xcomp sụt_giảm/xcomp thấy/conj nhân_chứng/obj song/cc đoạn/obj 37/obj giấy_thông_hành/obj thư_ký_riêng/obj hay/cc dưới/obl nhu/nsubj anh/obj vẫn/advmod này/det rõ/xcomp gây_lộn/parataxis mất/xcomp nuôi/mark có/xcomp đã/advmod cửa_hàng/obl đi_lại/ccomp rồi/cc năm/obl vì_sao/dep anh/nsubj cơ_quan/nsubj đường/obj phòng/obl và/cc đầu/obl ./punct mang/ccomp khổ/xcomp tất_cả/obj rồi/advmod lại/advmod điều/obj động_cơ/obj ông/nsubj giám_đốc/obj thám_tử/obj tôi/obl phú_yên/obj kinh_phí/obl hồ_sơ/nsubj sở/nsubj phần/obj sai/xcomp thủ_phạm/obj tháng/obj cầu_nối/obj trái/xcomp mình/nsubj thước_đo/obj tìm/mark thì/cc thay_đổi/advcl thủ_tục/obj nốt/advmod thay/csubj bình_thường/xcomp tự/det ngày/obl ,/punct tháo/ccomp số/nsubj !/punct công_trình/obj dịch_vụ/obj luôn/advmod nói/parataxis cũng/advmod "/punct tin/ccomp chi_tiết/nsubj xe_ôm/obj thợ_may/obj công_lý/obl tới_nơi_tới_chốn/dep lãnh/conj vừa/xcomp bảo_vệ/conj để/conj ảnh_hưởng/xcomp cách_mạng/obj gì/obj nổi/advmod bằng_chứng/obj thay/xcomp họ/obl hết_mình/dep giấy_tờ/obj bia/obj cán_bộ/nsubj nói/conj mà/cc cho/advmod hành_vi/nsubj việc/nsubj cách/obj giàn/obj có/conj không/advmod nhỏ/xcomp nhưng/cc biết/conj phu_nhân/nsubj sáng_tỏ/xcomp nên/cc nếu/cc thấy/ccomp nghề/obj gì/det người/obj được/aux chứng_minh/parataxis cùng/amod thay_đổi/xcomp được/advmod
+làm_giàu	và/cc
+làm_gương	đảng_viên/nsubj trước_nhất/advcl nên/cc ./punct phải/aux
+làm_sao	để/case ,/punct phải/aux
+làm_việc	kiếm/xcomp trí_thức/obl tối/obl tốt/xcomp nước_ngoài/obl thủy_điện/advcl
+làm_ăn	anh/nsubj con_cái/conj -/punct và/cc cha_mẹ/nsubj ./punct tâm_sự/parataxis vất_vả/xcomp "/punct xa/xcomp trong/case được/aux
+làng	trong/case
+lành	không/advmod
+lành_lặn	vòi_rồng/nsubj trở_lại/xcomp đã/advmod lần/nmod ./punct ,/punct
+lành_mạnh	không/advmod
+lác_đác	mới/advmod
+lái	anh/nsubj .../punct cùi_tay/advcl ,/punct xe_máy/obj chủ_tịch/nsubj
+lát	một/nummod
+lâm	,/punct
+lâu	rồi/advmod năm/obj càng/advmod đã/advmod và/cc nghề/nmod vậy/det ngày/obj đến/discourse
+lã_thị_kim_oanh	:/punct để/ccomp "/punct ./punct của/case
+lãi	và/cc ngân_hàng/compound
+lãng_phí	,/punct
+lãnh	dân/nsubj năm/obl họ/nsubj đã/advmod chịu/xcomp ,/punct đủ/xcomp
+lãnh_tụ	nguyễn_ái_quốc/compound gửi/xcomp của/case
+lãnh_đạo	hãng/compound quản_lý/conj với/case
+lão_nông	hai/nummod cánh_tay/conj
+lên	lâm_đồng/obj thì/cc cây/nsubj phòng/obj anh_em/nsubj hà_nội/obj xuống/xcomp trẻ/nsubj nhá/discourse ?/punct năm/obj nói/conj vậy_mà/cc làm_việc/ccomp sứ_quán/obj cầu_thang/obj tìm/ccomp ./punct không/advmod cứ/advmod nhà/obj xanh/xcomp "/punct em/nsubj lấy/parataxis v_._h_./nsubj gõ_cửa/ccomp thư/nsubj là/mark tp/advcl dầu_giây/obj đổi/ccomp có/advmod cấp/obj
+lên_tiếng	qua/advcl bị/aux đưa/conj dư_luận/nsubj ./punct ,/punct nỗi/nsubj không/advmod có_thể/aux không_thể/advmod độc_giả/nsubj phương/nsubj khi/obl tôi/nsubj
+lòng	hoạn_thư/compound tin/compound sự/conj thư/compound tin/xcomp trong/case lề_đường/compound rạch/compound vào/case đất/compound
+lòng_sông	bình_dương/nmod
+lót	đường/obj
+lôi_kéo	do/case bạn_bè/nsubj
+lù_lù	cứ/advmod quả_thật/advmod tiến/xcomp xe_lửa/nsubj
+lú_lẫn	đến/case
+lúc	đó/det xảy/ccomp g/compound từ/case nào/det vừa/advmod gói/ccomp nửa_đêm/nmod bên/compound ,/punct không/advmod tuyệt_vọng/xcomp này/det một/nummod những/det ngủ/ccomp đôi/det ấy/det
+lúng_túng	ngọ/nsubj :/punct đề_nghị/ccomp "/punct ./punct
+lý	về/case
+lý_do	:/punct cưới/ccomp thứ/compound ./punct
+lăn_xả	?/punct bạn/nsubj đã/advmod thế_nào/det khi/obj "/punct ./punct
+lĩnh_vực	kinh_doanh/xcomp các/det trên/case
+lơ_ngơ	ra_vào/xcomp
+lơi_lỏng	xử_phạt/obl chủ_quan/conj
+lưng	cái/compound đời/compound
+lưu	lại/advmod lau/xcomp vân/nsubj máy_fax/obl
+lưu_thông	ban_ngày/obl tuyến/advcl
+lưu_ý	ý_kiến/obj tôi/nsubj :/punct để/case giao_lộ/ccomp ubnd/nsubj cũng/advmod ./punct phải/aux
+lương	bánh/nmod thưởng/conj thu_nhập/conj ,/punct
+lương_tâm	và/cc
+lượm	để/case ,/punct lon/obj
+lượng	rò_rỉ/xcomp nước/compound
+lượt	đưa/ccomp
+lạ	khi/obj là/cc
+lạnh	xương_sống/obj người/obj đến/case
+lấn_chiếm	lòng/obj
+lấp	ngoài_ra/cc đường_ống/obj thì/cc đổ/advcl đơn_vị/nsubj đất/obj ./punct ,/punct
+lấy	tôi/nsubj .../punct thăng_bằng/obj phải/aux để/case cô_ta/nsubj số/obj địa_chỉ/obj đây/obl nay/obl ./punct lại/advmod nam/nsubj công/obj đạp/obj sắp/advmod chân/obj khách/obj thì/cc sim/obj lạ/xcomp chồng/obj nhất_là/dep ,/punct biết/mark không_thể/advmod ăn/conj hoàn_lương/conj cũng/advmod "/punct điện_thoại_di_động/obj nhau/obj rất/advmod cho/ccomp thư/nsubj hàng/obj dù/cc làm/xcomp hạ_tầng/obj học/conj đó/obj có/conj liên/nsubj không/advmod cứ/advmod nhưng/cc biết/conj chị/nsubj được/aux được/advmod
+lầm_lũi	khi/nmod sống/xcomp gia_đình/nsubj vẫn/advmod
+lần	trước_hết/advcl lbkt/punct sau/case hai/nummod đây/nsubj chưa/advmod về/case đầu_tiên/amod trọng_lượng/compound này/det mang_thai/xcomp cố/xcomp mỗi/det xác_định/ccomp cần_cẩu/nsubj vài/det từng/advmod ./punct năm/nummod mỗi/dep một/nummod là/cop mặt_nặng_mày_nhẹ/dep công_khai/ccomp mấy/det gọi/xcomp vá/xcomp rbkt/punct sau/compound ,/punct ba/nummod cũng/advmod cộng/appos chạy/xcomp cạp/xcomp bốn/nummod m3/obj đầu_tiên/compound 2/nummod nhiều/amod chết/parataxis nữa/advmod nghị_định/nmod 16/nummod điểm/nsubj thứ/compound la_cà/xcomp tháng/compound
+lầu	trên/case khu_vực/nmod
+lẩn	lại/advmod g/obl chúng_tôi/nsubj ./punct rừng/advcl
+lận_đận	bài/nmod ./punct
+lập	mặt_hàng/nsubj trang_trại/obj .../punct tủ/advcl thu_giữ/ccomp bị/aux đội/nsubj ./punct ,/punct biên_bản/obj lập_tức/advcl
+lập_kế	xem/ccomp "/punct ./punct rung/ccomp hào/nsubj
+lật	xem/ccomp bài/obj lại/advmod thắng/nsubj đến/obl mặt/obj ./punct án/obj
+lắp	sang/xcomp ron/obj ,/punct
+lắp_đặt	khi/obl cũng/advmod được/aux sử_dụng/xcomp ,/punct ống/nsubj ./punct
+lặn	để/case
+lặn_lội	thương_binh/nsubj cũng/advmod đi/xcomp
+lặn_ngụp	dòng/advcl
+lặng_lẽ	bà_cụ/nsubj thế/advcl chăm_sóc/conj phố_phường/advcl vò/xcomp khăn/obj ,/punct ./punct chìm/xcomp
+lễ	thành_hôn/xcomp
+lễ_phép	chào/xcomp liễu/obj ./punct ngồi/conj hạnh/nsubj
+lễ_tân	vào/case
+lễ_độ	giám_đốc/nsubj thế/discourse
+lệ_phí	bình_thường/amod thông_thường/amod đổi/xcomp
+lọt	đều/advmod máy/obl ./punct ,/punct tất_cả/nsubj tội/obj
+lối_thoát	bên/nmod ./punct
+lộ	lúc/obl hẳn/advmod //obj ra/advmod vòi_rồng/nsubj việc/obj đã/advmod ./punct
+lộn	vòng/obj ,/punct
+lớn	lúc/obl khá/advmod quá/advmod họ/nsubj .../punct chảy/conj cá_tính/obj xung_phong/ccomp heo/nsubj con_nước/nsubj vừa/advmod chọn/conj xinh_đẹp/xcomp và/cc khi/obj ./punct ,/punct lên/xcomp mầm/nsubj đào/nsubj lại/advmod nhưng/cc trước/obj bán/conj khỏe/conj ham/parataxis rất/advmod lên/advmod con/nsubj khi/obl dần/advmod
+lớn_khôn	cho/case con/nsubj
+lớp	dưới/case 11/nummod trường/nmod bùn/compound đến/case 5/nummod đất/compound
+lớp_học	bình_dân/compound các/det ,/punct
+lời	như/cc từ/case giới_thiệu/xcomp thủ_tướng/compound nhắc/ccomp khai/xcomp cuộc/compound và/cc ,/punct không/advmod hứa/xcomp những/det thoại/compound trên/compound
+lời_lẽ	./punct ý_nghĩa/compound mọi/det toàn/nmod
+lỡ	xảy/xcomp
+lợi	phía/nmod
+lợi_ích	chính_đáng/amod bà_con/nmod
+lửa	hận/xcomp ./punct ngọn/compound
+lựa_chọn	được/aux ,/punct
+lực	nước/compound
+lực_lượng	hùng_hậu/amod công_an/compound cát/compound khai_thác/xcomp
+m	40/nummod ít_nhất/dep hơn/advmod khoảng/advmod 20_-_25/nummod 10_-_15/nummod sâu/amod vào/case 30/nummod
+m3	40/nummod 70_._000_-_150_._000/nummod khoảng/advmod cát/compound 1/nummod người/conj
+ma	đuổi/xcomp
+ma_túy	vật_vờ/amod
+mai	kia/conj
+mai_một	tiếng/obj sẽ/advmod bị/aux là/mark lên/advcl em/nsubj
+mai_văn_khuê	đó/nsubj là/cop ông/compound
+malaysia	từ/case
+mang	mì/obj quảng_cáo/obj tính/obj biển/obj ca/obj phải/aux cưa/obj tên/obj tựa_đề/obj tắm/csubj cơm/obj đoàn/nsubj trường_hợp/nsubj và/cc bờ/advcl phải/ccomp ./punct ,/punct so_sánh/ccomp số/obj song_ngữ/xcomp ảnh/obj đang/advmod làm/ccomp theo/parataxis lượm/conj ăn/ccomp công_ty/nsubj chìa_khóa/nsubj thường/advmod điện_thoại_di_động/obj một/nsubj lòng/nsubj ra/advmod bom/obj nhã/nsubj phá_bỏ/conj đến/advmod sáng/obl biển_số/obj đi/ccomp thương_tích/obj
+mang_thai	sinh_nở/conj thời_bình/obl
+matxcơva	ở/case ./punct mùa/conj
+may	định/ccomp thật/discourse mà/cc chẳng/advmod ./punct không/advmod
+may_mắn	về/xcomp thật/discourse
+men	bìa/advcl tình/compound
+minh	cho/case xem/mark ,/punct
+minh_bạch	này/nmod không/advmod
+minh_chứng	?/punct sự/nsubj thì/cc vậy/discourse điều/obl
+miền	trung/compound bắc_trung_bộ/conj tại/case
+miệng	và/cc
+miệt_mài	dưới/nmod đang/advmod sà_lan/nsubj gàu/obj quăng/xcomp ./punct
+mobile	:/punct 903404554/nummod
+mong	tự_nguyện/xcomp điều/obj có/xcomp chỉ/advmod "/punct có/ccomp ./punct ,/punct tôi/nsubj
+mong_muốn	như/cc
+mong_mỏi	thực_hiện/ccomp ./punct tôi/nsubj
+mua	như/cc ông_bà/nsubj :/punct nỗi/obj ./punct ,/punct chu_cấp/conj lại/advmod nhà/obj chúng_tôi/nsubj mua/conj đất/obj đi/advmod bán/ccomp bồ/obj nam/nsubj ván/obj xe/obj người/obl đã/advmod được/aux món/obj
+mua_đi_bán_lại	nuôi/xcomp
+muối	xát/xcomp ,/punct
+muốn	sang/ccomp .../punct nhờ/xcomp về/advmod đi/parataxis song/cc hay/cc nay/obl bà/nsubj phá/xcomp con/obj lao_động/xcomp lấy/xcomp anh/nsubj làm_việc/xcomp hơn_nữa/cc và/cc ./punct thám_tử/obj giúp/ccomp muốn/conj đòi_hỏi/xcomp bù_đắp/parataxis chủ_trương/parataxis làm/parataxis vô/xcomp thì/cc ai_nấy/nsubj đào/nsubj ,/punct ký/xcomp giữ/xcomp !/punct chúng_tôi/nsubj nói/parataxis cũng/advmod "/punct hđxx/nsubj theo_dõi/iobj rất/advmod trả/conj thư/nsubj đánh/xcomp liệt_sĩ/obj chính_thức/xcomp làm/xcomp ai/nsubj biết/xcomp sòng_phẳng/xcomp ở/xcomp ép/parataxis lan/nsubj không/advmod nhưng/cc gây/xcomp nên/cc đều/advmod nếu/cc phá_bỏ/xcomp bố_mẹ/nsubj chậm/xcomp
+muộn	hơi/advmod hơn/advmod
+mà	thôi/discourse
+màn_hình	máy_tính/compound ,/punct trên/case
+màn_kịch	thắng/nmod ấy/det
+màng	nhưng/cc đến/discourse không/advmod
+màu	mận/compound công_an/compound áo/compound thù_hận/xcomp
+mách_bảo	chắc/xcomp phóng/parataxis tôi/obj "/punct nên/cc ./punct linh_tính/nsubj
+mát	lên/case
+máu	liệt_sĩ/nmod hạt/compound
+máu_xương	mồ_hôi/conj
+máy	thám_tử/nmod fax/compound đặc_chủng/amod vào/case sao/xcomp duy_nhất/amod xe/compound quay_phim/xcomp số/nmod này/det một/nummod lắp/xcomp soi/xcomp trong/case đường_dây/nmod của/case
+máy_fax	chiếc/compound một/nummod dùng/xcomp đến/case trên/case khác/amod này/det
+máy_móc	những/det đồ_vật/conj văn_phòng/compound kia/conj nóc/nmod đến/case
+mâu_thuẫn	công_nhân/obl cãi_vã/conj
+mây	lá/compound tre/compound
+mãi_lộ	tập_thể/compound có/xcomp mang/conj
+mé	với/case sông/compound
+mép	bờ/compound sông/compound
+mì	gói/compound
+mình	với/case cho/case khuôn_khổ/nmod cứu/mark đến/case chính/discourse của/case mức/nmod
+móc	lấy/ccomp .../punct ví/obj từ/obl xáng/nsubj ./punct ,/punct thay/ccomp g/obl bấm/conj sà_lan/obj đã/advmod được/aux
+món	hàng/compound những/det
+mô_hình	khuôn/compound với/case huy_động/xcomp xóa_đói_giảm_nghèo/dep các/det
+mô_tả	viện/nsubj là/xcomp "/punct nắng_mưa/obj
+môi_giới	?/punct :/punct người/compound người/obj có/parataxis mại_dâm/xcomp có/ccomp bình_dương/advcl
+môi_trường	làm_việc/xcomp một/nummod công_nghiệp/compound pháp_lý/compound
+mùa	,/punct xuân/compound năm/compound
+mùi	xú_uế/amod tiền_bạc/compound
+mũi	ba/nummod hai/nummod kia/det miệng/conj còn/xcomp xe/compound thứ/compound đua/xcomp rút_lui/xcomp
+mưa	nhỏ/amod .../punct xuống/xcomp trời/nmod mưa/nsubj ./punct "/punct đủ/xcomp một/nummod thế/obj cơn/compound đường/conj
+mưu	sâu/amod ,/punct
+mướp	quả/compound héo/amod
+mượn	heo/obj
+mạch_máu	những/det như/cc "/punct chảy/xcomp
+mạnh	rất/advmod nhưng/cc áp_lực/nsubj còn/advmod ,/punct vẫn/advmod
+mạnh_dạn	:/punct hơn/advmod thông_thoáng/conj chính_sách/nsubj ./punct toàn_diện/conj chính_sách/nmod
+mạnh_mẽ	và/cc
+mảnh	hai/nummod mỗi/nummod ghép/xcomp đoạn/nmod
+mất	bao_nhiêu/obj họ/nsubj phí/obj phải/aux ?/punct :/punct tuổi_trẻ/obj sẽ/advmod phút/obj hậu/obj có/advcl kể/advcl bà/nsubj quyền/obj chỉ/advmod năm/obl việc/obj hộ/nsubj khẳng_định/parataxis và/cc thần_trí/obj ./punct dấu/obj khi/advcl lại/advmod thời_gian/nsubj điều/nsubj là/cop đi/xcomp bình_tĩnh/xcomp năm/obj quyền/nsubj tiền/nsubj ,/punct chúng_tôi/nsubj cũng/advmod "/punct sống/conj đến/discourse tại_sao/dep không/advmod đổi/csubj cánh_tay/obj đi/advmod nước/obj giờ/obj
+mất_mát	tức_giận/conj những/det đây/obl
+mất_sức	phải/aux cũng/advmod lực_lượng/nsubj
+mất_tích	nữ_sinh/nsubj và/cc ./punct ngày/obj
+mầm	cái/compound để/case
+mẫn_cán	và/cc
+mắt	sáng/amod một/nummod mở/xcomp thư/compound nhân_viên/compound trước/case trong/case ,/punct cặp/nummod
+mặc	vào/advmod anh/nsubj từ_từ/conj làm/mark ./punct ,/punct áo_lặn/obj cái/compound đeo/conj quần/obj đi/discourse
+mặt	tím/amod cắt/xcomp trước/case sau/compound chúng_tôi/det nhau/compound
+mặt_hàng	điện_tử/compound đây/nsubj những/det là/cop có/xcomp trên/amod các/det cũ/amod
+mặt_mày	đỏ_gay/amod
+mặt_nặng_mày_nhẹ	nhau/nmod
+mặt_đất	trên/case
+mẹ	con/nmod con/conj về/xcomp bà/compound ./punct già/amod trẻ/amod một/nummod những/det cho/xcomp bà/conj
+mẹ_con	với/case cho/case cô/compound lan/compound
+mẻ	cạp/xcomp một/nummod
+mệt	quá/advmod !/punct "/punct ./punct
+mệt_mỏi	phía/nmod
+mọc	nhà_văn_hóa/obj vừa/advmod gần/csubj lên/advmod cũng/advmod ./punct
+mọi	người/nmod người/compound chuyện/compound quan_hệ/compound
+mỏ_lết	,/punct
+mỏng	làm_sao/conj chứng_cứ/nsubj nhưng/cc bắt/mark còn/advmod ./punct vẫn/advmod
+mối	này/det chui_lủi/xcomp lan/nmod tình/compound được_chăng_hay_chớ/conj bên/compound vào/case quan_hệ/compound đó/conj
+mồ_hôi	và/cc
+mổ	phẫu_thuật/conj trả/conj phát_hiện/conj ./punct bác_sĩ/nsubj
+một	ai/det không/advmod
+một_cách	thành_thạo/amod chính_đáng/amod triệt_để/amod công_khai/amod
+một_mình	tôi/det
+mới	cuộc_sống/nmod nhất/advmod không/advmod
+mời	đến/advcl .../punct xuống/ccomp xã/nsubj phải/aux mà/mark và/cc cán_bộ/obj ,/punct ./punct khách/nsubj được/advcl ban_ngành/obj vợ_chồng/obj phong/obj người/obj
+mở	cửa_hàng/obj tạo/conj trở_lại/xcomp sổ/obj cơ_sở/obj to/xcomp và/cc chạy/ccomp ./punct ,/punct bác_sĩ/nsubj nước/nsubj luôn/advmod lập/conj nước/obj giờ/obl minh/obl đã/advmod được/advmod
+mở_cửa	bà/nsubj ./punct khai/conj
+mở_mang	kiến_thức/obj
+mở_rộng	năm/obl đền/nsubj xây/conj và/cc được/aux
+mở_đầu	như/cc -/punct gửi/ccomp "/punct nguyễn_thị_viện/nsubj vậy/det ./punct
+mục	qui_định/xcomp
+mục_tiêu	như_vậy/cc thám_tử/nmod là/cop sẽ/advmod con/nsubj ./punct
+mục_đích	việc/nmod
+mức	tự_vẫn/xcomp gần/advmod lệ_phí/compound tệ_hại/amod các/det nộp/xcomp đến/case
+mừng	rất/advmod
+mừng_quýnh	bọn/nsubj
+mừng_tủi	bao_nhiêu/det oán_trách/conj nhớ_nhung/conj
+nam	với/case trong_sạch/xcomp lan/conj như/nsubj từ/case ./punct chồng/appos ,/punct tiêu_chí/advcl là/cop nữ/conj của/case
+nam_bộ	và/cc kháng_chiến/xcomp
+nay	đến/case năm/nmod từ/case
+neo	gần/obj
+nghe	được/advmod tai/nsubj thì/cc anh/nsubj lạ/xcomp lên/ccomp .../punct chạy/conj vậy/obj ?/punct tiếng/obj tên/obj lạnh/xcomp nhắc/xcomp tên/obl -/punct nói/xcomp câu_chuyện/obj ./punct ,/punct là/cc gom_góp/parataxis trò_chuyện/obj xem/conj quê_nhà/obj trả_lời/ccomp nhưng/cc lại/advmod nói/parataxis hễ/cc "/punct bà/nsubj nam/nsubj phân_cấp/xcomp tin/obj như/conj khi/obl toàn/nsubj thấy/xcomp băng/obj máy/obj tôi/nsubj
+nghi_vấn	cao/xcomp như/cc một_số/det dư_luận/nsubj gặp/ccomp
+nghiêm_trang	thật/discourse
+nghiêm_túc	,/punct
+nghiên_cứu	vn/obl
+nghiến	thư/nsubj quai_hàm/obj răng/obj bạnh/xcomp
+nghiện	:/punct ma_túy/obj người/nsubj học_sinh/nsubj hà_nội/obj ./punct tái/discourse
+nghiện_hút	,/punct
+nghèo	xã/obj đất/nsubj rất/advmod nông_thôn/obj ./punct ,/punct nhất/advmod vận_động/parataxis
+nghèo_khó	đớn_đau/conj chiến_tranh/nmod xã/obj từ/case nhất/advmod
+nghĩ	giải_quyết/ccomp thịnh_nộ/obl toàn/nsubj đảm_bảo/ccomp ./punct khuyên_can/conj tôi/nsubj
+nghĩa	lấy/ccomp ông/compound
+nghĩa_vụ	bà_con/nmod mình/nmod đóng_góp/xcomp
+nghẹn_ngào	:/punct chở/ccomp bà/nsubj "/punct ./punct
+nghề	với/case đan/xcomp .../punct bốc_vác/xcomp truyền_thống/compound cũ/amod giao_thông/compound mới/amod đan_lát/xcomp tuần_tra/xcomp trong/case
+nghỉ	nhà/obl chúng_tôi/obl rồi/cc buổi/obj
+nghỉ_tay	lúc/obl ăn/xcomp mới/advmod anh/nsubj ./punct
+nghị_quyết	một/nummod lần/compound công_tác/nmod trung_ương/compound ở/case đảng_bộ/nmod toàn_diện/amod của/case này/det
+nghị_định	một/nummod hướng_dẫn/xcomp trong/case
+nghịch	.../punct bỏ_lửng/parataxis ./punct ,/punct nhưng/cc hồi/obl thường/advmod cũng/advmod "/punct phá/xcomp ngồi/parataxis chúng/nsubj
+ngoan_ngoãn	ngày_một/nmod trong_sạch/conj "/punct ,/punct nam/nsubj
+ngoài	người/compound người/nmod giá_thú/compound ra/case bên/case trai/compound mức/nmod giờ/nmod chị/compound đứa/compound ý_muốn/compound
+ngoại_giao	vn/compound
+ngoại_ngữ	giao_dịch/conj
+ngoại_tình	ông_ta/nsubj
+nguy_cơ	xấu/amod
+nguy_hiểm	sẽ/advmod ngày_càng/amod
+nguyên	đồng_đội/conj
+nguyên_nhân	nguyên_nhân/nsubj làm/xcomp dẫn/xcomp khách_quan/amod nào/det ./punct ,/punct không/advmod đó/nsubj gốc/compound rằng/mark chính/amod mới/xcomp này/det những/det là/cop mười/nummod đâu/nmod
+nguyên_tắc	công_ty/nmod
+nguyên_văn	biên_bản/compound
+nguyên_vẹn	còn/advmod
+nguyễn_công_trứ	q.1/conj 93/nummod
+nguyễn_hữu_cầu	giám_đốc/conj ông/compound
+nguyễn_thiện_thuật	:/punct quen_thuộc/amod
+nguyễn_thành_phương	ông/compound
+nguyễn_thế_khanh	ông/compound chi_cục/conj
+nguyễn_thị_dậu	là/cop cháu/conj .../punct bà/nsubj thì_ra/dep
+nguyễn_văn_linh	ở/case rbkt/punct lbkt/punct đà_nẵng/appos 88/nummod
+nguyễn_văn_nhã	con_trai/appos ,/punct
+nguyễn_văn_tường	rbkt/punct lbkt/punct trùng/xcomp tuổi/appos
+nguyện_vọng	về/xcomp bà_con/nmod đầy_đủ/amod
+nguôi_ngoai	lúc/obl nhưng/cc thư/nsubj đau_đớn/xcomp ./punct thế/discourse
+nguồn	bù_đắp/xcomp các/det vốn/compound nào/det trữ_lượng/compound
+nguồn_gốc	tiếp_viên/xcomp
+ngài	của/case
+ngàn	hàng/advmod như_vậy/dep nạn_nhân/compound
+ngành	liên_quan/xcomp công_nghiệp/compound khi/nmod dịch_vụ/compound và/cc các/det
+ngày	lbkt/punct phục_kích/xcomp ngắn_ngủi/amod sau/case hai/nummod 10_-_8/nummod cũ/amod về/case nay/det 12/nummod hằng/advmod đoạn_tuyệt/xcomp ngày/appos mất/xcomp 8/conj ngay/discourse 26/nummod tức/case như_vậy/dep trong/case nhắm_mắt/xcomp liền/advmod trước/case của/case lớn_khôn/ccomp tuyệt_vời/amod mỗi/det đã/advmod 31_-_12_–_2004/nummod 11_-_8/nummod ủy_quyền/parataxis trôi/xcomp từng/advmod và/cc 2003/conj đến/case ./punct năm/nummod 10/conj nhã/nmod nam_bộ/compound là/cop tổ_chức/xcomp ấy/det tháng/conj 29/nummod hoạt_động/xcomp 10/nummod 2/conj 24/nummod rbkt/punct sau/compound ,/punct ba/nummod giờ/nmod 5/conj hạn/nsubj 1/conj 17_-_3_–_2004/nummod 1998/conj thành_lập/xcomp 30-4-1975/nummod từng/det tổng_khởi_nghĩa/xcomp tám/nummod bốn/nummod ở/xcomp 25/nummod khai_mạc/xcomp về/xcomp ăn/xcomp 2/nummod không/advmod mỗi/nummod nữa/advmod nhiều/amod 16/nummod –/dep những/det 2004/conj tết/nmod thứ/compound cùng/amod được/advmod
+ngày_giờ	cuộc/compound đúng/amod ,/punct
+ngày_tháng	những/det gian_truân/amod
+ngày_đêm	206/nummod bốn/nummod làm/xcomp khốn_khổ/amod ./punct
+ngách	ngõ/conj 115/nummod đường/compound 2/nummod ,/punct
+ngâm	"/punct lâu/obl
+ngân_hàng	như/cc .../punct các/det
+ngân_sách	cho/case -/punct
+ngã	ba/nummod tư/nummod vũng_tàu/compound đường/compound đến/case trên/case này/det
+ngòi_nổ	quả/nmod
+ngói	vững_chãi/amod đỏ/amod
+ngôi	đó/det nhà/compound
+ngõ	4d/nummod lbkt/punct vào/case phố/conj rbkt/punct đến/case ,/punct thanh_nhàn/appos quỳnh/compound tắt/amod đường/conj trong/case các/det
+ngõ_ngách	tất_cả/det phố/nmod vào/case
+ngăn_chặn	tình_trạng/obj ,/punct
+ngăn_cản	không/advmod ./punct lan/nsubj
+ngơ_ngác	chúng_tôi/nsubj khi/obj ./punct ngày/nmod ,/punct
+người	hẳn/advmod còn/xcomp mọi/nummod thành_niên/amod 12/nummod bất_cứ/advmod đầu_tiên/amod neo/xcomp thợ/compound vị_thành_niên/amod anh_trai/compound quản_lý/xcomp phủ_lý/nmod đội_trưởng/nsubj khác/amod xa/amod cơ_sở/compound nhóm/nmod tù/advcl bao_che/xcomp ,/punct gốc/compound quen/amod già/amod %/compound công_tác/compound khôn_khéo/amod tám/nummod với/case buôn/xcomp xung_quanh/compound thảo_hiền/amod từ/case kèm/xcomp chiến_sĩ/compound nhiều/amod mỗi/nummod nhà/nmod dân/compound hà_nội/advcl 20/nummod cùng/amod tố_cáo/xcomp giám_đốc/nsubj phụ_trách/xcomp nào/det rùa/compound hai/nummod tiếp_thị/xcomp vào/ccomp ngồi/xcomp thái_bình/advcl cùng/cc trước/case của/case anh/nsubj người/conj con/compound cha_mẹ/conj năm/nmod nước_ngoài/compound 672/nummod là/cop nghèo/amod ốm_đau/amod bất_hợp_pháp/amod viết/xcomp đtdđ/compound nghe/xcomp túc_trực/xcomp nói/xcomp khu_vực/compound sờ_mó/conj hải/compound sản_xuất/xcomp bốn/nummod một_số/det biết/xcomp đông/amod nhà/advcl khách/compound qua/csubj mỹ/compound phải/aux lạ/amod doanh_nghiệp/conj có/xcomp toàn/nsubj bùi_thị_lan/appos thẳng_thắn/amod đến/xcomp nửa/det mẹ/compound và/cc lên/xcomp năm/nummod bạn/compound đại/conj công_ty/nmod vi_phạm/xcomp một/nummod đi/xcomp việt/compound thì/cc đọc/xcomp tháo/xcomp bên/compound ba/nummod cho/case làm/xcomp may_mắn/amod lặn/xcomp mua_dâm/xcomp có/conj cù_lao/compound mai_văn_khuê/parataxis ghe/advcl vợ/compound đó/det bảo_hiểm/xcomp quý/amod sáu/nummod hẹn/ccomp đứng/xcomp khi/nmod cuộc/nmod ít/amod này/det tiếp_cận/xcomp theo/xcomp nghèo_khó/amod duy_nhất/amod dạy/xcomp ./punct theo/case đồng_ý/xcomp công_an/conj trên/case vn/nmod ấy/det bờ/nmod vào/case quen/xcomp trồi/xcomp vn/compound dưới/compound ngày_mai/nmod thái_mỹ/compound sau_cùng/compound chủ/compound mọi/det fax/xcomp vào/xcomp nghiện/xcomp những/det
+người_nhà	chuyển/xcomp đi/xcomp
+người_thân	với/case bạn_bè/conj đến/xcomp mấy/det
+người_tình	cũ/amod
+người_yêu	cũ/amod
+ngạc_nhiên	rất/advmod cố_ý/conj nhân_viên/nsubj ./punct
+ngại	đừng/advmod "/punct
+ngả	thôn/compound đường/compound khắp/amod
+ngần_ngại	mới/advmod cho/xcomp bà/nsubj
+ngẩn_ngơ	kể/conj gặp/advcl cô/nsubj cũng/advmod cười/xcomp ./punct
+ngẫm	!/punct sao/discourse thương/conj thế/discourse
+ngập_ngừng	dập/conj đầu/nsubj thì/cc thỏ_thẻ/xcomp rồi/cc
+ngặt_nghèo	đau_thương/amod
+ngọ	ông/compound
+ngọc_hà	cho/case chị/compound "/punct nhá/discourse
+ngồi	im/xcomp tuấn/nsubj lạnh/amod mẹ/nsubj bạn/nsubj anh/nsubj im_lặng/xcomp gần/obj cầm/parataxis ăn/xcomp chờ/xcomp và/cc xuống/advmod ./punct ,/punct ghé/xcomp xung_quanh/obj cứ/advmod vì/cc bên/obj người_thân/nsubj điềm_tĩnh/xcomp nhu/nsubj "/punct uống/ccomp em/nsubj đây/obj quán/advcl gần/xcomp bố_mẹ/nsubj trở_về/advcl xong/parataxis hiểu/parataxis rồi/cc thưa/ccomp đất/obl cạnh/obj
+ngồi_tù	đang/advmod anh_trai/nsubj tội/obl ./punct
+ngờ	vô_tình/xcomp gặp/ccomp biết/ccomp .../punct ./punct đến/discourse không/advmod
+ngờ_vực	họ/nmod những/det .../punct hờn/conj
+ngỡ	cứ/advmod đang/advmod con_số/nsubj chúng_tôi/nsubj để/ccomp vn/obl ./punct
+ngủ	vỉa_hè/obj gầm/obl nhờ/xcomp chồng/nsubj ,/punct không/advmod
+nh	của/case
+nhan_đề	"/punct trở_thành/ccomp
+nhanh	rất/advmod
+nhanh_chóng	phòng/nmod ./punct thông_số/nsubj thỏa_đáng/conj khắc_phục/xcomp tình_trạng/obj cung_cấp/xcomp được/advmod
+nhao_nhao	:/punct ai/ccomp "/punct ,/punct hỏi/xcomp
+nhau	với/case của/case
+nhi	thuận_lợi/nsubj thắng/conj là/cop chị/compound có/xcomp còn/advmod của/case
+nhiêu_khê	là/cop
+nhiều	gia_đình/obj rất/advmod ngày/advmod hơn/advmod số/nmod lắm/advmod lượng/nsubj mà/discourse
+nhiễm	chất_độc/obj hiv/dep bị/aux vn/advcl
+nhiệm_vụ	ngày_mai/nmod một/nummod phá/xcomp thắng/nmod khác/amod toàn/nmod
+nho_nhã	khí_khái/conj
+nhoáng	đưa/ccomp nhanh_nhẹn/xcomp biến/conj xuống/xcomp ./punct ,/punct tài_xế/nsubj
+nhu	đàn_ông/nsubj với/case sa_ngã/xcomp lbkt/punct liên/conj anh/compound rbkt/punct bà/compound và/cc ./punct có/appos tên/nsubj ,/punct cho/case nhân_vật/obj chồng/conj là/cop chính/discourse phú/conj
+nhu_cầu	lớn/amod bà_con/nmod thông_tin/compound nắm/nmod
+nhu_mì	,/punct
+nhuốm	không/advmod dù_sao/advmod bị/aux màu/obj cũng/advmod ./punct mùi/obj tình_yêu/nsubj cái/nsubj
+nhà	địa_điểm/nsubj vách/compound ngõ/nmod nào/det tháng/xcomp cô/compound về/case họ/det khi/nmod phải/amod này/det đầy/amod hạnh/compound có/xcomp lan/compound trong/case cúc/compound kia/det nói_chuyện/xcomp ngôi/compound mô_tả/ccomp dãy/compound và/cc ./punct đến/case ở/case mình/det thấp_thoáng/csubj tận/case một/nummod là/cop tiếp_tục/xcomp ấy/det đền/nmod lá/compound mấy/det đầu_tư/xcomp vào/case cơ_quan/conj hội/compound bà/compound nói/xcomp trang_trí/xcomp kia/nsubj ,/punct em_gái/nmod cho/case chị/compound khổng_lệ_hòa/compound có/advmod với/case nhỏ/amod như/cc ngói/compound ở/xcomp tôi/det anh/compound căn/compound không/advmod cứ/advmod dân/compound tuấn/compound hà_nội/advcl tại/case những/det sinh/compound gian/compound cả/det giống/amod
+nhà_bè	khu/conj ,/punct
+nhà_hàng	một/nummod những/det ketmany/compound karaoke/compound vn/nmod đường/nmod đến/case của/case
+nhà_khoa_học	một/nummod là/cop có/xcomp nổi_tiếng/amod nhu/nsubj ./punct ,/punct
+nhà_nghỉ	đó/det trong/case vào/case
+nhà_nước	nhân_dân/conj lào/compound cộng_đồng/nmod của/case
+nhà_tình_nghĩa	gần/advmod tình_thương/conj căn/compound 500/nummod
+nhà_văn_hóa	một/nummod trị_giá/xcomp
+nhà_xe	bất_cứ/advmod doanh_nghiệp/conj nào/det
+nhàn	thật/discourse toàn/nsubj ăn/ccomp ./punct
+nhân	rộng/xcomp mô_hình/obj
+nhân_chứng	đặc_biệt/amod bộ_trưởng/conj là/cop vụ_án/nmod cho/case vị/compound cũng/advmod ,/punct
+nhân_danh	người/obj
+nhân_dân	và/cc của/case
+nhân_hậu	và/cc
+nhân_viên	trực_tiếp/amod một_số/det bảy/nummod khác/amod ,/punct marketing/compound hãng/compound bưu_điện/compound có/xcomp 18/nummod các/det
+nhân_vật	một/nummod sự_kiện/nmod mới/amod bạn/xcomp
+nhã	thằng/compound của/case
+nhãn_tiền	"/punct
+nhét	túi/obj
+nhìn	tuấn/obj hạnh/obj ngoài/obl hôm/obl đồng_hồ/obj cảnh/obj đào/obj ngồi/ccomp liễu/nsubj ./punct thẳng/xcomp con_gái/obj ,/punct tranh/obj cứ/advmod chòi/obj hồng/nsubj nhau/obj trong/obl đứng_như_trời_trồng/dep mặt/obj thấy/xcomp tôi/nsubj
+nhìn_nhận	tuy_nhiên/cc còn/ccomp cũng/advmod ./punct ,/punct phải/aux
+nhóm	tố_cáo/xcomp đó/det người/compound như/cc công_nhân/compound chống/xcomp bảo_vệ/xcomp hai/nummod đại/nmod ba/nummod vai/nmod hiểm_họa/compound cùng/cc trong/case của/case
+nhô	mặt_nước/obj người/nsubj lên/advmod giờ/obl ,/punct báo/ccomp ./punct
+nhũng_nhiễu	,/punct
+như	thì/cc giọng/nsubj :/punct và/cc ,/punct nó/nsubj cũng/advmod "/punct thế/det đẹp_trai/xcomp có/parataxis số_phận/obj cả/discourse vậy/det gặp/xcomp
+như_thế_nào	thưa/xcomp ,/punct
+nhưng	!/punct .../punct không/advmod
+nhạt_phai	như_vậy/cc mối/nsubj nguy_hiểm/xcomp và/cc .../punct ngày_càng/dep
+nhảy	lại/advmod túi/obl thợ/nsubj sẽ/advmod nước/advcl cá/nsubj ./punct rung/ccomp
+nhấn_mạnh	như/cc hôm_qua/obl đã/advmod hội_nghị/advcl bộ_trưởng/nsubj ./punct vậy/obj
+nhấp_nháy	liên_hồi/xcomp chữ/nsubj
+nhất_quyết	như/cc chờ/xcomp nói/xcomp ./punct ,/punct bắt/advcl bình/nsubj
+nhất_thiết	việc/obj ,/punct không/advmod
+nhầm	họ/nsubj anh/nsubj có_lẽ/advcl hỏi/ccomp ./punct không/advmod rồi/advmod nhà/obj "/punct đã/advmod máy/obj
+nhận	họ/nsubj tuy_nhiên/cc nhân_viên/nsubj vào/conj lên/ccomp tính/obj .../punct đấy/discourse ?/punct tên/obj :/punct sẽ/advmod đại/obj nghi_vấn/obj cách/obl số/obj có_thể/aux vào/ccomp tội/obj trạm/advcl chỉ/advmod đã/advmod tuấn/nsubj csgt/nsubj chủ/nsubj hãng/nsubj ./punct trần_nhất_thiện/nsubj lại/advmod điện_thoại/obj giấy/obj ra/advmod thám_tử/nsubj sao/det giọng/obj james/nsubj mãi_lộ/obj ,/punct xuân_lộc/advcl làm/ccomp công_ty/nsubj "/punct nhiệm_vụ/obj trong/obl tuổi/obj rà/advcl có/advmod vốn/obj long/nsubj theo/advcl có/ccomp hết/advcl lan/nsubj không/advmod vợ_chồng/obj sứ_mạng/obj được/aux thấy/xcomp tôi/nsubj
+nhận_thức	tôi/nsubj thế_nào/obj ông/nsubj như/cc cần/ccomp tự/det "/punct ./punct ,/punct đặt/parataxis
+nhận_định	:/punct thỏa_thuận/ccomp họ/nsubj ./punct
+nhật	rồi/cc ,/punct của/case
+nhật_ký	xuống/case thám_tử/compound nắn_nót/ccomp trang/compound vào/case
+nhắc	câu_chuyện/obl chuyện/obj cái/obl người/nsubj thắng/nsubj tổ_tiên/obl nhắc/ccomp :/punct ./punct ,/punct không/advmod lại/advmod nhỏ/xcomp chúng_tôi/nsubj "/punct tổ/obl đi/advmod chủ_tịch/nsubj sau/obl lưu_ý/ccomp gì/obj
+nhắn_tin	hẹn/xcomp ,/punct đồng_thời/advmod
+nhằm	ép/xcomp cập_nhật/mark thu_hút/mark chấm_dứt/xcomp
+nhặt	nuôi/ccomp ve_chai/obj .../punct ./punct
+nhẹ_nhàng	trách/xcomp :/punct rất/advmod gọi/ccomp ông_bà/nsubj cũng/advmod "/punct ./punct
+nhẹ_tênh	giọng/nsubj -/punct "/punct ./punct
+nhỏ	không/advmod đường_đất/nsubj rất/advmod quan_trọng/conj đứa/compound coi_bộ/advmod ./punct ,/punct vận_động/parataxis
+nhớ	tôi/nsubj hôm/obl ngày/obj ./punct ,/punct không/advmod số/obj lại/advmod nhà/obj !/punct bà_con/nsubj thám_tử/obj ai/det còn/advmod lời/obj tuyết/nsubj mãi/advmod biết/parataxis ra/xcomp
+nhớ_nhung	,/punct
+nhờ	giúp_đỡ/ccomp giới_thiệu/conj .../punct anh/nsubj bác_sĩ/obj phải/aux hội_đồng/obj ông/obj cách/obj ./punct ,/punct dẫn/ccomp có_thể/aux tập_thể/nsubj hay/cc đầu_tàu/obj "/punct còn/advmod thấy/ccomp đưa/ccomp tòa/nsubj muốn/advcl
+niềm	cho/case tin/xcomp
+noi	cũng/advmod chị_em/nsubj theo/xcomp
+non_trẻ	rất/advmod
+nuôi	tính/conj con/obj ai/nsubj đu/nsubj làm_giàu/conj tự/nsubj chồng/obj nuôi/conj để/case sẽ/advmod nó/obj ./punct ,/punct bò/obj trẻ/obj bằng/advcl gia_đình/obj trả/conj khi/obl cá/obj lớn_khôn/amod rồi/cc
+nvơnn	cho/case đối_với/case của/case nhiều/amod
+nào	?/punct đó/det "/punct thế/det ./punct hùng/nsubj không/advmod
+này	chết/xcomp ,/punct từ/case
+nâng	cơ_quan/obl cao/xcomp và/cc nghĩa_vụ/obj khắc_phục/parataxis ./punct ,/punct công_tác/obj lĩnh_vực/advcl ;/punct việc/advcl năng_lực/obj
+ném	người/nsubj làm/conj đá/obj ./punct
+nét	những/det xanh_xao/amod mặt/compound
+nên	chuyện/obj chính_quyền/nsubj tuy_nhiên/cc văn_phòng/obj ngành/nsubj lan/nsubj ?/punct chuyện/nsubj :/punct chấm_dứt/xcomp chẳng/advmod và/cc nhắn_tin/xcomp dừng/xcomp ./punct xem/xcomp nhẹ_nhàng/xcomp không/advmod loại/obj tí/obj chỉ/advmod bởi/cc
+nêu	.../punct trước/obl phát_huy/xcomp vì_vậy/cc giải_pháp/obj ./punct ,/punct nguyên_nhân/obj chủ_tịch/nsubj rõ/xcomp ra/advmod nghị_quyết/nsubj đã/advmod chính/discourse
+nín	bà_cụ/nsubj thở/xcomp gập/conj bưng/conj vắt/parataxis vào/parataxis ./punct ,/punct
+nó	cho/case đấy/det đâu/det của/case
+nóc	tủ/compound trên/case
+nói	hạnh/obj tuy_nhiên/cc vào/advmod .../punct hàng_phố/nsubj thông_cảm/ccomp :/punct nhu/obl sẽ/advmod -/punct chạy/ccomp bình/nsubj cự/nsubj ăn_mặc/ccomp trực/nsubj của/obj may/advcl bao_giờ/obl bà/nsubj lên_tiếng/ccomp về/ccomp lên/advmod có/xcomp đã/advmod em/obl thắng/nsubj dùng/ccomp lấy/xcomp anh/nsubj xin/ccomp vọng/xcomp gặp/ccomp mới/advmod và/cc ./punct là/cc hết/advmod rồi/advmod khoa/nsubj ông/nsubj phong/nsubj đến/ccomp hậu/nsubj tuyết/nsubj điều_tra/ccomp lúc/obl phó_chủ_tịch/nsubj nghĩa/nsubj thêm/xcomp thì/cc bị_cáo/nsubj ông_bà/nsubj được/ccomp thiệt/xcomp james/nsubj tuấn_anh/nsubj ngồi/ccomp ,/punct ngay/advmod không_thể/advmod ở/ccomp cho/case !/punct thảo/nsubj nói/parataxis luôn/advmod cũng/advmod "/punct hđxx/nsubj trung_tâm/ccomp chủ_máy/nsubj cần/ccomp tiếp/xcomp bằng/nsubj ra/ccomp con_gái/ccomp có/ccomp vậy/obj mà/cc giáo_dục/ccomp thế_nào/det chấp_nhận/ccomp gọi/advcl thế/discourse cứ/advmod hiểu/ccomp biết/conj rành_rọt/xcomp xúc_động/aux vắn_tắt/xcomp hồng/nsubj vào/xcomp phát/conj nếu/cc ăn_hỏi/ccomp thương/ccomp nên/cc nguyễn_thành_phương/nsubj taxi/nsubj sự_thật/obj tự_phê/ccomp sợ/ccomp bệnh/obl tôi/nsubj
+nói_chuyện	nhau/obl để/case như/cc doanh_nghiệp/nsubj "/punct vậy/obj
+nói_nhỏ	khiến/ccomp giám_đốc/obl ,/punct gì/obj
+nóng_bỏng	còn/advmod vẫn/advmod
+nô_nức	lại/advmod càng/advmod và/cc từ/nmod cứ_thế/advmod ./punct đi/xcomp
+nông_dân	nơi/compound người/compound
+núp_bóng	"/punct khai_thác/ccomp cẩu/nsubj
+năm	trước/amod nào/det sau/case hai/nummod 2007/nummod nay/det xưa/amod 1990/nummod 1890/nummod 2003/nummod trễ_tràng/amod đã/advmod trong/case gần/advmod 1968/nummod làm_việc/xcomp hơn/advmod liền/amod đến/case là/cc năm/nummod 1998/nummod 1993/nummod một/nummod 59/nummod mấy/det vào/case đổi_mới/xcomp ba/nummod quốc_khánh/conj từ/case ngày/compound 23/nummod nhiều/amod nữa/advmod 70/compound đây/det cách_mạng/compound dẫu/case trước/nmod 15/nummod 20/nummod cả/det 1980/nummod 2004/nummod
+năn_nỉ	phải/aux sợ/conj bà_con/obj cho/ccomp .../punct "/punct ./punct tôi/nsubj
+năng_lực	quản_lý_nhà_nước/xcomp
+nơi	khắp/amod liên_quan/xcomp ./punct đến/case nhiều/amod dừng/ccomp đây/det ở/case đâu/det gửi/xcomp cư_trú/xcomp những/det rất/advmod phá/xcomp đặt/xcomp các/det rừng/compound
+nước	đêm/nmod với/case gần/advmod nơi/nsubj sở_tại/amod sôi/xcomp để/case quán/compound chết/xcomp ./punct phát_triển/xcomp dưới/case cho/case sinh_hoạt/compound tại/case xuống/case một/nummod là/cop trong/case các/det cả/det
+nước_hoa	và/cc
+nước_mắt	những/det sự/conj hạnh_phúc/conj nụ/nmod giọt/compound cảm_thông/xcomp
+nước_ngoài	ở/case
+nạn	mãi_lộ/compound
+nạn_nhân	những/det lên_tiếng/xcomp chất_độc/compound vn/nmod đối_với/case tận_mắt/mark các/det da_cam/compound từ/case của/case
+nấn_ná	khó/xcomp chần_chừ/xcomp ./punct ,/punct
+nấu	nước/obj
+nắm	thông_tin/obj họ/nsubj chiếm/parataxis phải/aux cầm/parataxis kế_hoạch/conj về/case cấu_tạo/obj ./punct ,/punct muốn/csubj lo/parataxis quân_đội/obj được/advmod
+nắn_nót	đang/advmod viết/xcomp chị/nsubj
+nắng_mưa	đất/nmod dột_nát/amod
+nằm	trường/nsubj biên_chế/obl đường/obl giờ_hành_chính/obl cái/nsubj khâu/obl ?/punct sẽ/advmod sà_lan/nsubj ./punct đường_ống/nsubj ,/punct không/advmod chỗ/obj thời_điểm/nsubj quan_hệ/obl "/punct hệ_thống/advcl nhân_lực/nsubj người/obl mâu_thuẫn/nsubj
+nặng_lời	chồng/nmod cũng/advmod không/advmod
+nặng_nhọc	mới/advmod uốn/xcomp
+nến	một/nummod là/cop đốm/nsubj cây/compound cháy/xcomp ./punct
+nền	nhà/compound trên/case đất/compound
+nối	người/nsubj quan_hệ/obj sử_dụng/csubj đường/obj nhất_định/advmod ./punct phải/aux
+nổ	đang/advmod bị/aux
+nổi_bật	so/xcomp mới/advmod thứ/obj nghị_quyết/advcl ,/punct nào/det thưa/vocative
+nổi_tiếng	chung_thủy/amod
+nỗ_lực	tôi/nmod chương_trình/nmod
+nỗi	da_cam/compound đau/amod để_lại/ccomp đau/xcomp bất_hạnh/amod và/cc oan/amod ngày/nmod hoài_nghi/xcomp này/det
+nội	cháu/compound
+nội_dung	cố_ý/xcomp
+nộp	thì/cc như/cc anh/nsubj phải/aux -/punct thành/ccomp ./punct ,/punct đổi/csubj !/punct "/punct đủ/xcomp phải/xcomp muốn/conj đơn/obj lên/advmod 150/parataxis thêm/advmod
+nợ	tuấn/nsubj những/det người/compound tiền/obj và/cc truy_lùng/aux khoản/compound
+nụ	những/det cười/xcomp bằng/case
+nứt	võng/xcomp đã/advmod đà/nsubj
+nửa	một/compound
+nữ	hai/nummod nghiệp_dư/amod thám_tử/compound hay/cc của/case
+nữ_sinh	một/nummod là/cop chỉ/advmod cô/nsubj ./punct trung_học/compound mất_tích/conj
+oán_trách	,/punct
+pakse	trước/nmod "/punct tại/case
+pha	lúc/obl tiếng/obj lại/advmod chúng/nsubj
+phan_văn_đu	phạm_văn_thanh/conj
+phe	thư/nmod
+phim	ảnh/conj thước/compound băng/conj các/det
+phiêu_bạt	như/advcl công_nhân/nsubj khắp_nơi/obj bây_giờ/obl ./punct ,/punct
+phong	ông/compound và/cc về/iobj của/case
+phong_trào	bảo_vệ/xcomp trong/case
+phá	hạnh_phúc/obj lòng_sông/obj vỡ/xcomp đường_dây/obj nát/xcomp
+phá_bỏ	là/cop nó/obj nhiệm_vụ/nsubj và/cc phải/aux
+phán_đoán	cho/ccomp toàn/nsubj ./punct
+pháp	hết/advmod nhật/conj
+pháp_luật	đảng/nmod kỷ_luật/conj và/cc theo/case
+pháp_lý	nạn_nhân/nmod lương_tâm/conj
+phát	cao_su/obj bệnh/obj người/nsubj phần/obj được/aux ngày/obl ,/punct ./punct rồi/cc
+phát_hiện	lần/obl bộ_phận/nsubj thì/cc anh/nsubj tổ_chức/ccomp bộ_đội/nsubj nghiện/ccomp ly_dị/parataxis :/punct chở/ccomp ung_thư/ccomp mới/advmod bị/aux trong/advcl ban/nsubj và/cc khi/obj ./punct ,/punct mang/ccomp kéo_dài/csubj khi/advcl không/advmod lại/advmod nhiều/ccomp bà/nsubj nếu/cc vợ/nsubj có/xcomp dòng/advcl con/nsubj khi/obl đã/advmod được/aux nằm/ccomp gì/obj
+phát_huy	khả_năng/obj phải/aux
+phát_triển	nhanh/xcomp cơ_sở_hạ_tầng/obj ngành/obj đang/advmod cấu_trúc/conj và/cc xã_hội/obj ./punct ,/punct của/case
+phát_tán	giấy/obj
+phân_công	nguyên/nsubj leo/parataxis người/obj nhà/nsubj còn/cc bạn/obj ./punct ,/punct
+phân_cấp	phân_cấp/parataxis trung_ương/nsubj để/case tp/nsubj tổng_công_ty/obl ./punct thực_hiện/xcomp tp/obl ,/punct
+phân_phối	hàng_hóa/obj
+phân_tích	thiệt_hơn/xcomp thắng/nsubj cuối_cùng/obl có/ccomp :/punct biết/ccomp tình_hình/obj và/cc ./punct âm_mưu/obj "/punct toàn/nsubj chấp_nhận/conj
+phép	kinh_doanh/xcomp thần_kỳ/amod
+phê_duyệt	thủ_tướng/nsubj ubnd/nsubj đã/advmod được/aux dự_án/nsubj ./punct chương_trình/obj giao/conj
+phí	dịch_vụ/compound "/punct
+phía	chuẩn_mực/compound từ/case hai/nummod tp/compound sang/case sau/compound về/case bên/compound sau/amod hạ_lưu/compound ./punct dưới/compound mình/det trước/compound thành/compound bình/compound bắc/compound ngay/discourse đường/compound lan/compound quầy/compound
+phòng	thuộc/xcomp bốn/nummod điều_phối/xcomp lãnh_sự/compound kỹ_thuật/compound khác/amod sực/xcomp trong/compound thị_trường/compound giám_đốc/compound căn/compound bên/compound ba/nummod cho/case ở/case công_ty/nmod 205/nummod xử/xcomp nhân_viên/conj kế_hoạch/compound
+phòng_chống	sạt_lở/xcomp tội_phạm/obj ai/nsubj ngăn_chặn/conj
+phòng_thường_trực	là/cop nhưng/cc chắc/amod ,/punct
+phó_chủ_tịch	mai_quốc_bình/compound :/punct nói/conj là/cop !/punct anh/nsubj "/punct ./punct bí_thư/nsubj
+phóng	xe/obj lên/advmod hối_hả/parataxis chúng_tôi/nsubj đến/ccomp nhu/nsubj rồi/cc ,/punct ./punct ngay/advmod
+phóng_khoáng	lại/advmod hào_hoa/conj nhân_hậu/conj
+phóng_viên	các/det của/case
+phù_hộ	ngoài/nsubj
+phù_hợp	,/punct
+phú	và/cc nhu/conj liễu/conj
+phúc_thẩm	:/punct ngày/obl vụ_án/obj ./punct
+phút	nửa/nummod 10/nummod mấy/det 25/nummod phải/aux hai/nummod hơn/advmod sau/compound ,/punct sau/amod 30/nummod mười/nummod trong/case 5/nummod
+phơi	trơ_trơ/xcomp bánh_tráng/obj mặt_đất/advcl đồn_bót/nsubj ./punct ,/punct
+phương	đối_tượng/conj ông/compound cơ_quan/advcl
+phương_châm	hướng/xcomp theo/case
+phương_pháp	tối_ưu/amod lựa_chọn/xcomp một_số/det chống/xcomp dùng/xcomp này/det
+phương_thức	lãnh_đạo/xcomp cấp_ủy/nmod theo/case chuyển_giao/xcomp phương_châm/advcl
+phương_tiện	giao_thông/compound các/det
+phương_án	hoạt_động/xcomp tối_ưu/amod khác/amod hai/nummod kinh_doanh/xcomp ./punct ,/punct mọi/det ba/nummod lựa_chọn/xcomp tốt/csubj công_ty/nmod an_toàn/amod khắc_phục/xcomp này/det một/nummod là/cop các/det cụ_thể/amod
+phường	k/compound thanh_nhàn/compound ở/case
+phạm_hồng_giang	-/punct ông/compound
+phạm_luật	là/cop trường_hợp/nsubj dám/parataxis ./punct ,/punct
+phạm_tội	người/nsubj
+phạm_văn_thanh	và/cc
+phạm_xuân_ái	ông/compound ban/conj
+phải	?/punct ./punct !/punct "/punct là/cc câu_chuyện/obj liên/nsubj không/advmod
+phản_bội	sự/compound
+phản_ứng	không_thể/advmod và/cc gì/obj
+phần	còn/xcomp giáp/xcomp mua_bán/xcomp lỗi/compound cuộc_sống/compound đề_cập/xcomp việc/compound ngày/nmod hai/nummod ngày/compound rùa/compound từng/advmod sự_việc/compound chết/xcomp ./punct ,/punct đó/nsubj cù_lao/compound //punct ở/case nguyên_nhân/compound điểm/nsubj chiến_sĩ/nmod "/punct cũng/advmod khiến/xcomp thay_đổi/conj đặt/ccomp một/nummod thân_thể/compound là/cop đất_liền/compound dồn/ccomp cơm/compound trong/case ăn/parataxis
+phần_mềm	máy_fax/compound
+phần_tử	là/cop anh_em/nsubj bất_hảo/amod đều/advmod ./punct
+phẩm_chất	đạo_đức/conj
+phẫu_thuật	nên/cc không/advmod
+phố	đặng_văn_ngữ/compound này/det con/compound hàng_mành/compound giữa/case đống_đa/conj đi/xcomp ,/punct của/case
+phố_phường	chiều/nmod vào/case
+phổ_biến	tình_hình/obj rộng_rãi/xcomp ,/punct bà_con/obl
+phổ_cập	thpt/obj giáo_dục/obj
+phụ_nữ	với/case người/compound xưởng/advcl này/det
+phụ_thuộc	tiến_độ/obl ,/punct
+phụ_trách	gia_đình/obj xây_dựng/xcomp tổ/nsubj nhưng/cc điều_tra/xcomp ,/punct
+phục_vụ	để/case bà_con/obj đất_nước/obj
+phủ_lý	hà_nam/appos ở/case rbkt/punct lbkt/punct
+phủi	trách_nhiệm/obj công_ty/nsubj bỏ/xcomp
+phức_tạp	rất/advmod hơn/advmod nhiều/amod
+q.1	,/punct tp_hcm/conj
+qua	đường_ống/obj tới/parataxis cơ_hội/nsubj mới/advmod sẽ/advmod khỏi/xcomp -/punct ./punct ,/punct ngày_tháng/nsubj không/advmod phút/obl rồi/advmod đó/nmod đang/advmod xe/nsubj nhưng/cc chúng_tôi/nsubj thắp/xcomp hình_ảnh/nmod cũng/advmod khu_vực/obj muốn/parataxis nay/obl xe_lửa/nsubj phân_tích/mark thời/obj mất/obl khâu/obj đã/advmod rồi/cc ô/obj đi/xcomp được/advmod
+qua_lại	"/punct
+qua_đời	người/nsubj ung_thư/obl và/cc đã/advmod ,/punct
+quan_hệ	vĩnh_viễn/xcomp làm_ăn/xcomp bất_chính/xcomp họ/nsubj vấn_đề/nsubj hoàn_toàn/xcomp bí_ẩn/amod khác/amod nào/det lan/nsubj như_thế_nào/dep năm/obj ?/punct nhau/nmod và/cc ./punct nhau/obl hay/cc nam/obl là/cop đã/advmod trong/case chính/discourse
+quan_trọng	lắm/discourse rất/advmod nhưng/cc
+quan_tâm	mạnh/xcomp vấn_đề/nsubj như_thế_nào/dep ?/punct sẽ/advmod ./punct ,/punct bà_con/nsubj thời_gian/obl đó/obl báo_điện_tử/nsubj được/aux
+quan_điểm	tôi/nmod
+quang	số/xcomp
+quanh	bảng/compound ở/case cù_lao/compound này/det
+quay	tuấn/nsubj khu/obj háp/nsubj trở_lại/xcomp theo/advcl có/ccomp cộng/advcl gặp/ccomp thông_cảm/ccomp về/advmod lan/nsubj để/case sẽ/advmod xưởng/obj dư_luận/nsubj và/cc lập_tức/advmod ./punct ,/punct lôi_kéo/advcl mai/obl có_thể/aux lại/advmod nhà/obj ông/nsubj ngoắt/xcomp để/advcl phong/nsubj rằng/mark ;/punct phía/obj đây/obj đó/obl trong/obl nghề/obj toàn/nsubj lại/xcomp khi/obl sang/xcomp đã/advmod
+quay_phim	ảnh/obj theo/conj chụp/conj
+quen	dân/nsubj hình_ảnh/obj sinh/obj lắm/advmod đã/advmod cũng/advmod ./punct
+quen_biết	người/obj phong/nsubj cũng/advmod ./punct có/advmod phải/aux
+quen_thuộc	thật/discourse
+qui_hoạch	phát_triển/xcomp khu/obj giao_thông/obj
+qui_mô	đó/det
+qui_trình	nhét/xcomp các/det thủ_tục/compound
+qui_định	cấm/xcomp bảng/advcl chi_tiết/xcomp hành_vi/nsubj ta/nsubj ./punct ,/punct không/advmod mức/obj này/det lần/obj đã/advmod được/aux
+quy_chế	làm_việc/xcomp theo/case
+quy_định	để/ccomp các/det rõ/amod
+quyết_toán	tài_chính/obj quyết_toán/conj và/cc thuế/obj
+quyết_tâm	có/csubj họ/nsubj dùng/xcomp "/punct còn/advmod ./punct đưa/xcomp
+quyết_định	tạo/xcomp bán/xcomp tuy_nhiên/cc họ/nsubj anh/nsubj tp/nmod đột_nhập/xcomp lan/nsubj vừa/advmod hãng/nsubj james/nsubj từ_bỏ/xcomp ban/nsubj và/cc khen_thưởng/xcomp tìm/xcomp ./punct ,/punct chính_sách/nmod vòng/xcomp đó/nsubj gửi/xcomp cũng/advmod đau/advcl đúng/amod hđxx/nsubj vẫn/advmod sau/obl một/nummod là/cop thám_tử/nsubj khi/obl đã/advmod đi/xcomp chủ_trương/conj công_bố/xcomp
+quyền	cơ_quan/nmod tự_do/amod xây_dựng/xcomp cả/discourse sử_dụng/xcomp hại/xcomp đất/compound
+quyền_lợi	chính_đáng/amod theo/advcl cộng_đồng/nmod báo/compound
+quyền_lực	hành_chính/compound
+quà	một/nummod món/compound tặng/ccomp bất_ngờ/amod
+quày_quả	ra/xcomp lại/advmod ăn/advcl ./punct chị/nsubj
+quá	tuần/obj
+quá_khứ	may/amod lan/nmod
+quá_trình	doanh_nghiệp/compound nhũng_nhiễu/conj việc/conj cổ_phần_hóa/xcomp tiêu_cực/amod
+quá_tải	vì/case
+quái_vật	sông/nmod ./punct
+quán	hát/xcomp gần/advmod ở/case hàng/conj hát/compound trong/case cà_phê/compound nước/compound vào/case
+quân	bãi_sậy/compound khởi_nghĩa/compound chống/xcomp năm/nmod
+quê	mãi/advmod ngoài/case tận/case
+quê_hương	này/det thái_mỹ/compound vinh_dự/amod chỗ/nmod huyện/conj của/case
+quê_nhà	bão_lũ/xcomp
+quên	thân/obj
+quí	2004/conj 1/nummod
+quý	cô/compound 1/nummod nào/det
+quăng	lại/advmod ./punct ,/punct cuốc/obj đeo/xcomp
+quơ_quào	túi/obl đàn_ông/obj tìm/ccomp ./punct tay/obj
+quạt_điện	,/punct
+quả	những/det ngọt/amod bom/compound của/case này/det
+quản_lý	văn_hóa/obj người/obl trong/case nhà_nước/obj hoạt_động/conj ,/punct
+quần_chúng	ba/nummod tiêu_biểu/amod
+quần_áo	tử_tế/amod
+quầng	sáng/amod thâm/amod vàng_vọt/amod
+quầy	tiếp/xcomp
+quận	nhà_bè/conj 7/nummod tại/case
+quẹo	đà_lạt/obj đi/xcomp
+quốc_gia	các/det của/case
+quốc_khánh	9/conj và/cc 2/nummod
+quốc_lộ	hướng/compound 51/nummod 20/nummod ,/punct tại/case
+ra	trình_diện/xcomp người/nsubj anh_em/nsubj .../punct bà_già/nsubj để/case khỏi/xcomp tòa/obj phố/obj chào/xcomp ăn/ccomp phía/obj làm_đồng/ccomp đã/advmod do/cc xe_đạp/obl con/obj hạnh/vocative đôi/dep sinh_sống/xcomp vừa/advmod ánh_sáng/obj đưa/conj ./punct lại/advmod đút/ccomp ruộng/obj đi/xcomp đọc/xcomp ngày/obl xem/xcomp ,/punct vậy/parataxis làm/ccomp có/parataxis đón/xcomp bộ_trưởng/nsubj ngoài/obj lan/nsubj về/xcomp thất_nghiệp/parataxis lâu_lâu/obl không/advmod cảnh_sát/nsubj buổi_sáng/obl
+ra_sao	hậu_quả/nsubj sẽ/advmod
+ra_đời	nghị_quyết/obj
+rau	cá/compound
+reo	điện_thoại/nsubj buổi/obl ./punct ,/punct chuông/nsubj gấp_gáp/xcomp
+riêng	ai/det
+ron	cái/compound con/conj từng/det
+rong_ruổi	ì_ạch/xcomp đó/obl chúng_tôi/nsubj .../punct sáng/obl ,/punct ./punct theo/xcomp
+root	phúc_thẩm/root xử_lý/root to/root trả/root chấm/root johor/root trên/root teo/root dừng/root phiêu_bạt/root ví/root cương_quyết/root lận_đận/root gõ_cửa/root héo_mòn/root cuốn/root đòi/root cần_thiết/root đúng/root loại/root thẩm_vấn/root thả/root đếm/root đụng/root giải_quyết/root sau/root rong_ruổi/root quơ_quào/root xoay/root xông/root đóng_góp/root làm_gương/root nhấn_mạnh/root độc_kế/root rẻ/root chắt_chiu/root than/root tập/root đừng/root xuôi/root tôn_vinh/root kiện/root điều_khiển/root lập/root vật_lộn/root kêu/root rửa/root gồm/root in/root phân_công/root móc/root cuộc_đời/root đổi/root giải_phóng/root chiến_sĩ_thi_đua/root lật/root thường/root gọi/root trở_lại/root chứng_kiến/root nhuốm/root con/root môi_giới/root tạo/root thực_hiện/root phải/root chìm/root chìa_khóa/root trấn_an/root nhưng/root triển_khai/root qua/root xuất_hiện/root nhờ/root lành_lặn/root lời_lẽ/root thi_công/root nguyễn_thị_dậu/root xảy/root fax/root lắp_đặt/root thể_hiện/root ai/root thoi_thóp/root im_lặng/root sợ/root sạt_lở/root phát_hiện/root lửa/root chép/root kéo_dài/root ký/root xưng/root hứa/root kể/root xôn_xao/root ngày_đêm/root bảo/root hỏi/root chính_thức/root sắp_xếp/root quen_biết/root sẵn_sàng/root sốt_ruột/root già/root kiên_quyết/root về/root đem/root tối_tối/root kinh_tế/root phân_cấp/root thấy/root đặt/root khuyên_can/root thất_bại/root giữ/root sắm_vai/root trở_mình/root tội/root thư/root phạm_luật/root tránh/root ủng_hộ/root cố/root có/root nhất_quyết/root lã_thị_kim_oanh/root nhìn_nhận/root tóm_tắt/root mang/root tay/root phán_đoán/root bắt_buộc/root đổ/root khoanh/root coi/root công_chức/root con_trai/root tỏ_vẻ/root lau_chùi/root đòi_hỏi/root khăn_gói/root trường/root xây_dựng/root thở_phào/root khủng_khiếp/root tập_trung/root dựng/root đồng/root quày_quả/root dùng/root thấp/root lập_kế/root chia/root tổ/root khẳng_định/root thưa/root chờ/root bì/root xé/root khâm_phục/root tiếp_lời/root bàn/root gửi/root bấm/root hành_động/root nối/root dựa/root đường/root báo/root cẩn_thận/root giới_thiệu/root ách_tắc/root mất/root sắc/root ổn/root mở/root nguyên_nhân/root thừa/root ghe/root uống/root tình_huống/root nến/root mặc/root kế_hoạch/root thành_quả/root mục_tiêu/root san/root cảnh_giác/root khách/root lúng_túng/root đi/root hoạt_động/root thêm/root giúp/root tính/root đấu_tranh/root quan_hệ/root địa_chỉ/root đội_nón_ra_đi/root đến/root vui/root năn_nỉ/root hình_thành/root tới/root khởi_tố/root nhảy/root lặng_lẽ/root yêu_cầu/root quái_vật/root phơi/root góp_ý/root bạn/root chứng_tỏ/root tâm_sự/root rà_soát/root phê_duyệt/root tha_thứ/root đấy/root săn_lùng/root chết/root người/root xóa_sổ/root thấm/root dự_kiến/root trình/root thiếu/root mệt/root cám_dỗ/root nhặt/root matxcơva/root lấy/root cơ_hội/root bộc_lộ/root nêu/root nín/root nhận_định/root nghèo/root tiến_hành/root thắc_mắc/root tiếp_diễn/root chọn/root kiểm_tra/root hình_thức/root tháo/root cán_bộ/root bán/root rơi/root lấp/root nhẹ_tênh/root đơn_độc/root dứt_điểm/root lối_thoát/root xác_định/root quen/root giải_thích/root ném/root đồn_bót/root toàn_quyền/root mách_bảo/root bỏ/root tràn_ngập/root ra/root hoàn_thành/root tiêu_tan/root tin/root tiếng/root đồng_ý/root nhoáng/root tiếp_cận/root quay/root ngồi/root khó/root thuê/root đi_đứng/root thay/root đi_tới_đi_lui/root tranh_thủ/root khu_vực/root đóng/root cầu_cứu/root kín_đáo/root tổng_kết/root thổi/root ảm_đạm/root còn/root sàng_lọc/root chạy/root bọn/root đầu_tàu/root chìm_xuồng/root lan/root đứng/root nhà/root khi/root vay/root tong_tả/root thu/root nhô/root bị/root lớn/root bước/root tự_do/root dám/root dễ_dàng/root góp_phần/root sự_thật/root kiệt_sức/root số_phận/root cần/root tạm/root xuống/root ngờ/root tập_họp/root vạch/root vấn_đề/root nam/root biến/root trở/root cái/root trại/root khác/root cách/root đáng/root kỷ_niệm/root đồng_thanh/root vơi/root ảnh_hưởng/root cũ/root tuân_thủ/root kéo/root trở_nên/root xây/root chuông/root việt_kiều/root tiếp_tục/root trằn_trọc/root tận_thu/root kinh_ngạc/root điện_thoại/root nhà_khoa_học/root tiết_lộ/root kêu_gọi/root nghỉ_tay/root lần/root tư_cách_pháp_nhân/root lưu_ý/root thành_thật/root hoành_hành/root nhỏ/root phần_tử/root xin_phép/root tốt/root tôi/root xem_lại/root nhu/root trót/root tổ_chức/root khóc/root theo_dõi/root đạt/root đề_nghị/root tưởng/root ngẩn_ngơ/root số/root học/root khuyên/root bám/root tình_nguyện/root tê/root biết/root thế_hệ/root kêu_gào/root đề_cập/root nước/root ngồi_tù/root điện/root làm/root đeo/root mong_mỏi/root vận_động/root cuộc/root tới_tấp/root tháo_gỡ/root khám_xét/root rút/root tự_ái/root sôi_nổi/root lên_tiếng/root mở_đầu/root thương_binh/root chỉ_đạo/root tăng/root hoàn_toàn/root mạnh_dạn/root chương_trình/root qui_định/root nghe/root bày/root nói/root lao/root giải_pháp/root êm_đẹp/root lái/root tươi_cười/root vụng/root đon_đả/root đắng/root lễ_phép/root đông/root vội_vã/root diễn/root gần/root nguôi_ngoai/root chăm_sóc/root :/root chịu/root ô/root bó/root nhớ/root định_cư/root xởi_lởi/root phát_triển/root yêu_quí/root viết/root sang/root nhạt_phai/root nghĩ/root giấu/root hoàn_cảnh/root giám_đốc/root cuống_quýt/root nắm/root xác_nhận/root tình_cờ/root nhắc/root gì/root trông_chờ/root trả_thù/root ở_vậy/root ôn_tồn/root giá/root yếu_tố/root nơi/root khiến/root liệu/root kết_thúc/root gánh/root nhẹ_nhàng/root xúc_động/root động_viên/root kẻ/root giải_trình/root ngỡ/root nên/root trà_trộn/root cầm/root nấn_ná/root lộ/root ngẫm/root cắt/root tuyệt_vời/root rủ/root quan_tâm/root rùng_mình/root hạnh/root liên_quan/root quyết_định/root thừa_nhận/root thật_sự/root gặp/root thành_công/root reo/root sinh_nhật/root thời_điểm/root di_chuyển/root câu_chuyện/root trình_bày/root lọt/root tích_cực/root tràn/root cam_kết/root mưa/root chữ/root đơn/root để/root quăng/root hoàn_tất/root ghé/root bại_liệt/root mất_tích/root chắc/root thân_thuộc/root đơn_giản/root giải/root vắng/root hé/root may/root thống_nhất/root gỡ/root lên/root thỏa_thuận/root ngăn_cản/root thoải_mái/root cài_đặt/root ngạc_nhiên/root có_mặt/root ngơ_ngác/root nhầm/root ở/root nào/root dễ/root đáp_ứng/root đội/root ghi/root đưa_đẩy/root an_toàn/root tồn_tại/root giờ/root vợ_chồng/root xem/root nhanh_chóng/root ngày/root nhận/root hết/root trả_lời/root nằm/root chủ/root đỡ/root hiểu/root chia_tay/root kuala_lumpur/root lao_động/root chú_trọng/root tập_huấn/root tất_cả/root thi_đua/root bắt_chuyện/root khổ/root lăn_xả/root tiếp/root khai_sinh/root lo/root phát/root mổ/root cắn/root giăng/root nghịch/root nhàn/root khai_thác/root bén/root mọc/root góc/root sử_dụng/root tiến/root bày_tỏ/root độ/root dắt_díu/root cất_giấu/root công_bố/root hăm_dọa/root minh_chứng/root thông_cảm/root tiệm/root điên/root hồ_hởi/root hay/root hên/root lẩn/root rò_rỉ/root đượm/root tín_dụng/root phó_chủ_tịch/root đánh/root trông/root khóa/root đoán/root phân_tích/root duy_nhất/root giao/root bộ_đội/root dòm_ngó/root té/root tỏ/root phía/root tìm/root thông_qua/root chấp_nhận/root lý_do/root khắc_tinh/root đảm_bảo/root mong/root bằng_không/root xóm/root từ/root mời/root xa/root định/root phóng/root nghẹn_ngào/root chở/root vào/root hiện/root yên_tâm/root dàn/root cảm_thấy/root vì_sao/root hồi_hộp/root chậm/root thế/root đủ/root giáng/root hoàn_hảo/root muốn/root âm_thầm/root miệt_mài/root liên_hệ/root bắt/root thỉnh/root cử/root phương_án/root thán_phục/root thành_lập/root nữ_sinh/root nô_nức/root bắt_đầu/root nâng/root bí_mật/root nuôi/root mua/root phần/root cho/root nộp/root theo/root gia_đình/root buộc/root ly_dị/root hẹn/root sửa/root mẹ/root tỉnh_ngộ/root ăn/root bất_ngờ/root đẩy_mạnh/root gắn_bó/root vui_mừng/root vọng/root thôi/root sống/root tấn_công/root khỏi/root nghiện/root "/root bủng_beo/root nhìn/root dạng/root diện/root đi_lại/root trường_hợp/root nhận_thức/root tan/root thông_báo/root hằn/root sinh/root ảnh/root làm_ăn/root hộ_khẩu/root kịch_bản/root cao/root bình/root bộ_phận/root mở_cửa/root tuyệt_đối/root thu_hẹp/root sâu/root trú_chân/root đối_diện/root ôm/root chuyện/root kiến_nghị/root cho_phép/root đưa/root thú_thật/root chuyển/root sốc/root xin/root tra/root tăng_cường/root quyết_tâm/root kiện_toàn/root thông_tin/root trồng/root cùng/root chặn/root chấm_dứt/root mỏng/root cảnh_báo/root kịp/root dự_thảo/root
+run	lúc/obl anh_em/nsubj mất/conj vì/case
+rung	chà/obj
+ruộng	nhọc_nhằn/amod vụ/compound
+ruột	núm/compound lần/compound với/case những/det khi/nmod mình/nmod
+rà	lại/advmod hồ_sơ/obj
+rà_soát	lại/advmod chương_trình/obj ./punct
+ràng_buộc	,/punct nhau/obj
+rào_cản	thủ_tục/nmod
+rách_nát	,/punct
+râu_tóc	bờm_xờm/amod
+rò_rỉ	ra/xcomp câu_chuyện/nsubj hề/discourse ./punct không/advmod
+rõ	nhất/amod bây_giờ/obj chứng_cứ/nsubj hơn/advmod chưa/advmod ,/punct nhất/advmod không/advmod cũng/advmod đại/nsubj đầy_đủ/conj
+rõ_ràng	,/punct
+rùng_mình	người/nsubj !/punct cách/parataxis ,/punct
+rút	về/xcomp ngã/obj khoảng/obl thành/xcomp toán/nsubj dự_án/nsubj ./punct ,/punct ngay/advmod giấy_phép/obj
+rút_lui	ngay/advmod
+rơi	?/punct để/cc họ/nsubj cảnh/obl bây_giờ/obl rồi/cc
+rượu	loại/compound nước_hoa/conj bổ/amod về/case các/det nhiều/amod
+rẻ	giá/nsubj hợp/conj ./punct
+rẽ	về/xcomp nhu/nsubj không/advmod
+rồi	,/punct
+rộn_ràng	tiếng/obj
+rộng_rãi	và/cc
+rủ	túng/advcl tuấn/nsubj rủ/conj như/cc .../punct đào/obj mà/cc là/cc ./punct ,/punct cứ/advmod "/punct nhau/obj lần/obj đã/advmod đi/ccomp ra/xcomp
+rủi_ro	đây/nsubj là/cop làm_ăn/nmod ,/punct
+rừng	một/nummod kế_tiếp/xcomp cao_su/compound bóng/conj chỉ/advmod và/cc cũng/advmod khu/compound rừng/conj vào/case
+rửa	trôi/xcomp đã/advmod ./punct nước_mắt/nsubj ngờ_vực/obj
+sai	lịch_trình/obj chính_quyền/nsubj hay/cc
+sai_phạm	đây/advcl thủ_tục/obl chính_quyền/nsubj trạm/advcl ,/punct
+san	phải/aux ra/xcomp cửa_hàng/obj thư/nsubj nên/cc ./punct chắc/advcl
+san_sẻ	được/advmod con/obj cùng/cc không/advmod
+sang	đời/nsubj vn/obj con/obj dạy/ccomp uống/xcomp báo/conj ngày/obj phải/aux ?/punct đường/obj đoàn/nsubj làm_việc/ccomp quyết_định/advcl ./punct ,/punct gấp/xcomp mua/ccomp không/advmod cũng/advmod "/punct trang/obj em/nsubj nên/cc đây/obj sao/det rồi/cc hàng/obj ủa/discourse
+sao	cho/case bị/aux cả/discourse mang/xcomp cũng/advmod được/advmod
+sau	đó/det lần/compound bản/nmod lần/nmod sea_games_22/compound ./punct nữa/advmod đó/nmod nữa/discourse khi/nmod sốc/nmod kết_quả/compound ngay/discourse sự_cố/nmod
+say_mê	ảnh/obj bà_con/nsubj cũng/advmod
+say_sưa	ngủ/xcomp đang/advmod nó/nsubj
+say_xỉn	được/aux không/advmod
+sim	này/det một/nummod điện_thoại/compound chiếc/compound
+sinh	con/obj ngoài/obj lan/nsubj bị/aux ông/compound bà/compound ./punct ,/punct nghi/xcomp đối_tượng/nsubj không_thể/advmod trai/conj đất/advcl tuổi/conj ra/advmod là/cop được/aux của/case
+sinh_nhật	cán_bộ/compound là/cop hôm/nsubj ./punct
+sinh_nở	và/cc
+sinh_sống	để/case hoàn_cảnh/advcl nước_ngoài/advcl
+sinh_viên	kẹt/xcomp những/det lao_công/conj đi/xcomp
+siêu_thị	ở/case
+siết	lại/advmod chặt/xcomp con/obl được/aux chiếc/nsubj đã/advmod và/cc
+so	chính_sách/obl thời_điểm/obl tuổi/obl hội/obl
+soi	kính_lúp/obj ,/punct
+song_ngữ	lào/amod việt/amod -/punct
+suy_nghĩ	tham_khảo/conj đồng_chí/conj
+suất	trưa/compound cả/det chiều/conj
+sà_lan	hai/nummod lên/case này/det cát/compound mang/xcomp theo/case trên/case chiếc/compound
+sài_gòn	ở/case từ/case
+sàng_lọc	./punct
+sáng	mỗi/det 28/nummod rạng/amod 9/nummod hôm/compound 3/conj sớm/compound sớm/amod xong/advmod nhà/advcl –/dep thứ_hai/compound 2004/conj 8/conj thứ_bảy/compound
+sát	lửa/obj
+sáu_chí	nguyễn_văn_chí/appos rbkt/punct lbkt/punct bác/compound
+sân	tỉnh/nmod vận_động/xcomp tại/case
+sâu	trũng/amod nay/nmod mắt/nsubj ./punct quầng/dep
+sòng_phẳng	phải/aux
+sót	người/obj lọt/conj
+sôi_nổi	khá/advmod phong_trào/nsubj khác_thường/amod cũng/advmod giám_đốc/nsubj ./punct
+sông	hai/nummod bờ/compound sạt_lở/xcomp này/det đồng_nai/compound trên/case đoạn/compound
+săn_lùng	đề_nghị/conj pv/obj điện_thoại/advcl "/punct ./punct
+sơ_hở	những/det tiêu_cực/conj quản_lý/advcl
+sơ_sót	do/case
+sơ_đồ	qui_hoạch/compound
+sạp	hàng/compound
+sạt_lở	thêm/ccomp bến/obl như_vậy/cc ăn/xcomp bị/aux phần/nsubj là/cc ,/punct ./punct đất/nsubj m/obj bên/nsubj đều/advmod tính/advcl trong/obl rộng/xcomp tương_tự/xcomp
+sản_xuất	cói/obj
+sắc	mặt/nsubj dao/obj như/cc buốt/amod mắt/nsubj ,/punct ./punct
+sắm_vai	người/obj liền/advmod tiếp_cận/mark bình/nsubj ./punct
+sắp_xếp	đêm/obl đã/advmod việc/nsubj được/aux .../punct ,/punct
+sắt	dài/amod cây/compound
+sẵn_sàng	đem/xcomp nhận/xcomp ./punct ,/punct tôi/nsubj
+số	lớn/amod đó/det còn/xcomp .../punct người/nmod máy/compound hạnh/nmod riêng/discourse ngách/conj họ/det đó/nsubj tư_trang/compound chắc/xcomp ít_ỏi/amod này/det qua/case có/xcomp trong/case 5/nummod của/case toàn_bộ/det kia/det gần/advmod khoảng/advmod duy_nhất/amod vướng/xcomp điện/compound và/cc ./punct bạn/compound tuấn/nmod 205/nummod một/nummod là/cop đồng/compound thì/cc người/compound 10/nummod bảo_hiểm/compound hãng/nmod điện_thoại/compound vào/case chính/advmod xử_phạt/xcomp di_động/compound số/nsubj cố_định/amod y/dep vững_vàng/amod nhà/compound lùi/xcomp với/case từ/case xe/compound nhiều/amod tiền/compound di_động/xcomp người/advcl nhiễm/xcomp x/dep số/conj những/det trên/compound cả/discourse đồng_nghiệp/compound trẻ/compound khoanh_vùng/mark
+số_liệu	trên/amod các/det
+số_lượng	lớn/amod một/nummod thiếu/xcomp người/compound chở/xcomp 35/nmod
+số_phận	người/nmod mỗi/det vợ_chồng/nmod ra_sao/dep ./punct của/case
+sốc	./punct ông/nsubj bị/aux gì/nmod biết/xcomp cú/compound qua/advcl ,/punct "/punct
+sống	lo_âu/advcl thì/cc họ/nsubj mình/nsubj sự/obl lbkt/punct hòa_thuận/xcomp làm_sao/dep có/ccomp đó/advcl phải/aux yên_tâm/xcomp :/punct sẽ/advmod sau_này/obl biết/advcl rbkt/punct nguyễn_ái_quốc/nsubj ./punct ,/punct cháu/nsubj vậy_là/cc cũng/advmod "/punct còn/advmod nam/nsubj hiện/obl chị/obl chúng/nsubj ra_sao/dep đã/advmod chị_em/nsubj người/obl bình_yên/obl được/advmod
+sốt_ruột	gặng/xcomp ./punct lan/nsubj
+sổ	theo_dõi/xcomp vào/case
+sờ_mó	tới/discourse được/discourse ,/punct không/advmod
+sở	tài_chính/compound các/det gtcc/compound tài_nguyên/compound từ/case
+sợ	dn/nsubj muốn/conj vô_cùng/advmod biết/ccomp nhưng/cc lỡ/xcomp ./punct ,/punct lót/ccomp nam/nsubj
+sụp_đổ	mức/obl có_thể/aux liên/nsubj
+sụt_giảm	kinh_tế/obj sự/compound
+sụt_sùi	dưới/nmod người/nsubj
+sứ_mạng	con_người/compound cải_hóa/xcomp
+sứ_quán	vn/compound đến/case
+sức	nạn_nhân/nmod chiến_đấu/xcomp chịu_đựng/xcomp tổ_chức/nmod
+sức_mạnh	thư/nmod cơ_bắp/conj pháp_luật/compound
+sức_sống	bởi/case mãnh_liệt/amod
+sử_dụng	tiếng/obj điện_thoại/obj phương_pháp/obj ốm/conj đất/obj và/cc ./punct vẫn/advmod fax/obj
+sửa	thì/cc ?/punct mà/cc ,/punct không/advmod chứ/cc lại/advmod sửa/conj chính_quyền/obj bên/obj điện_thoại/obj sao/det chỉ/advmod sai/xcomp
+sững	người/obj và/cc
+sự	nhóm/nmod thảng_thốt/xcomp công_bằng/amod ngoài/case lan_truyền/xcomp bạn_bè/nmod hãng/nmod ngày/nmod chia_sẻ/xcomp người/nmod lầm_than/amod hợp_tác/xcomp lẫn/conj ủng_hộ/conj và/cc lật_tẩy/xcomp vì/case bề_bộn/amod nhau/conj lựa_chọn/xcomp cho/case đoàn_kết/xcomp hôm_nay/nmod quốc_gia/nmod trở_về/xcomp thương_yêu/conj rách_nát/conj này/det thiếu/xcomp uy_tín/conj bền_vững/amod an_toàn/xcomp tươi_đẹp/amod trong/case ngờ_vực/xcomp
+sự_cố	đó/det
+sự_kiện	của/case ngày_mai/nmod
+sự_thật	vụ/compound ./punct
+sự_việc	liên_tục/amod
+sực	mùi/obj
+ta	thôi/discourse
+tai	nhi/compound
+tan	vẻ/nsubj biến/xcomp ./punct chợt/advmod
+taxi	đeo/conj đó/det matiz/compound trên/case
+tay	đập/conj vào/case chân/conj hai/nummod anh/compound ./punct đó/nsubj trái/amod am_hiểu/xcomp trên/case chân/compound lên/advmod là/cop trong/case đỡ/xcomp
+teo	cơ/obj phạm_ngọc_khang/obj tay/nsubj bị/aux rút/ccomp co/ccomp nằm/ccomp ,/punct ./punct chết/parataxis
+tha_thứ	?/punct trò/obj mẹ/nsubj luôn/advmod đợi/conj bà/conj ,/punct
+tham_gia	sự/xcomp vụ/obl tội_phạm/obj bắt/xcomp
+tham_khảo	người/obj và/cc
+tham_nhũng	lãng_phí/conj làm/conj
+tham_vọng	đầy/amod
+tham_ô	tài_sản/obj
+than	?/punct :/punct rút/ccomp "/punct chủ_tịch/nsubj
+thanh	cho/case anh/compound
+thanh_nhàn	hai_bà_trưng/conj
+thanh_niên	một/nummod ăn_chơi/xcomp xung_phong/xcomp gã/compound trí_thức/compound đàn_ông/conj
+thanh_toán	viện_phí/obj chi_phí/obj cước/obj tài_xế/obl
+thau	nước/compound
+thay	yết_kiêu/nsubj máy/obl ông/obj nước_mắt/obj lặn_ngụp/ccomp ./punct lại/advmod qui_mô/obj lần/advcl "/punct nhau/obj tiếng/obl
+thay_đổi	chủ/obj do/case thiết_kế/obj nhà/nsubj đã/advmod là/cc bản_chất/obj có/advmod được/advmod
+theo	hợp_đồng/nmod anh/obj ngã/obl toàn/nsubj tp/advcl tôi/nmod sau/obj và/cc ./punct ông/nsubj giật_mình/parataxis một/nsubj xe_hàng/obj sáng/obl tìm/conj bước/obj thì/cc bước_đi/obj quay/parataxis định/conj mát/advcl ,/punct sinh/obj luôn/advmod mũi/nsubj đứa/nsubj luật_pháp/obj nhờ/conj ông_già/obj trẻ_con/nsubj hồ_sơ/nmod báo/parataxis chọc_ghẹo/ccomp chúng_tôi/obj hải/obj phản_xạ/nmod nhu/obj nếu/cc sát/xcomp vợ_chồng/obj dự_kiến/obj xe/obj người/obj
+theo_dõi	thì/cc mình/nsubj kinh_nghiệm/advcl ông_ta/obj phương_án/nsubj ngày/obj bệnh_nhân/obj bước_đầu/advcl để/case :/punct nam/obj câu_chuyện/obj xem/xcomp ,/punct không/advmod ./punct cứ/advmod luật_sư/nsubj vụ/advcl thấy/ccomp thám_tử/nsubj khi/obl chặt/xcomp vợ/obj cửa_hàng/obj
+thi_công	công_trình/nsubj hoàn_thành/conj công_trình/obj .../punct bê_bối/xcomp ./punct
+thi_hành	luật/obj kịch_bản/nsubj
+thi_đua	trồng/xcomp đây/obl ruộng/nsubj ./punct ,/punct
+thiết_kế	ban_đầu/compound
+thiết_lập	kênh/obj mở_rộng/conj ,/punct
+thiếu	./punct giai_đoạn/obl giấy_tờ/obj nhưng/cc bền_vững/xcomp ưu_đãi/parataxis nước/obj vốn/nsubj diện/obl vẫn/advmod
+thiếu_niên	tiền_phong/amod
+thiếu_sót	hành_chính/compound bị_cáo/nmod thiếu_sót/conj .../punct hành_chính/amod đây/nsubj ,/punct nhưng/cc "/punct là/cop chỉ/advmod
+thiếu_úy	đỗ_quốc_việt/compound
+thoi_thóp	nghề/nsubj ./punct
+thoát	nghèo/xcomp ngoài/obj khỏi/xcomp cạm_bẫy/obj hiểm/xcomp ra/xcomp
+thoải_mái	rất/advmod vui_vẻ/conj hết_sức/advmod nói/parataxis ./punct bác_sĩ/nsubj ,/punct
+thu	thắng/nsubj phí/obj ./punct tạm_bợ/xcomp không/advmod nhưng/cc sau/obl bảo_đảm/conj kết_quả/obj tạm/xcomp được/advmod
+thu_hút	đầu_tư/ccomp bà_con/obj
+thu_hẹp	vườn/obj hiến/conj thậm_chí/advmod bị/aux nhưng/cc phòng_chống/parataxis cù_lao/nsubj ./punct dần/advmod
+thu_hồi	đất/obj
+thu_nhập	,/punct
+thu_thập	được/advmod
+thuê	phòng/obj thì/cc ông_ta/nsubj bác_sĩ/obj phải/aux trai_gái/nsubj mới/advmod ./punct công_ty/obj không/advmod nhà/obj thám_tử/obj nếu/cc vợ/nsubj đã/advmod có/advmod
+thuận_lợi	đây/nmod
+thuốc	giá/compound điếu/compound liều/compound ,/punct
+thuốc_lá	hai/nummod và/cc bao/compound
+thuộc	vợ/obl tài_sản/nsubj sẽ/advmod chi_nhánh/obj ,/punct dự_án/obj
+thuở	nào/det
+thành	mẹ/obj heo/nsubj xe/compound lên/case 200/nummod đã/advmod nhóm/obj giờ/obl ngày/obj
+thành_bỉ	anh/compound
+thành_công	lại/advmod g/obl thế_mà/dep nhi/nsubj việc/nsubj ./punct mỹ_mãn/xcomp
+thành_lập	công_an/obj hội_đồng/obj tập_luyện/conj bạn/nsubj ./punct đội/obj
+thành_niên	chưa/advmod
+thành_phố	này/det
+thành_quả	là/cop làm/xcomp đường/nsubj -/punct "/punct ./punct tự_hào/xcomp
+thành_thật	phải/aux nhưng/cc kể/ccomp ./punct lan/nsubj
+thành_viên	và/cc
+thành_ủy	tp/compound hcm/compound ./punct
+thái_bình	ở/case
+thái_mỹ	của/case
+thái_độ	với/case vô_cảm/conj thoải_mái/amod vô_cảm/amod lời/conj là/conj vui_vẻ/amod nhẹ_nhàng/amod ,/punct bất_thường/amod
+thám_tử	minh/compound bằng/compound phú/compound khoa/compound toàn/compound thắng/compound phòng/nmod khác/amod hào/compound duy_nhất/amod hai/nummod :/punct theo_dõi/xcomp đến/case chuyên_nghiệp/amod năm/nummod ba/nummod nhóm/compound bình/compound vn/nmod tư/amod các/det của/case
+thán_phục	người/nsubj nhưng/cc thừa_nhận/xcomp tài_nghệ/obj ./punct đều/advmod ,/punct
+tháng	mỗi/det nửa/nummod gần/advmod công_nhân/ccomp từ/case hai/nummod ngày/compound hơn/advmod vài/det 12_-_2003/compound ,/punct sau/amod đầu/compound ba/nummod đó/nsubj sáu/nummod hằng/advmod 8_–_2003/nummod 36/nummod trước/compound năm/compound một/nummod là/cop đã/advmod trong/case cả/det được/aux
+tháo	con/obj người/nsubj .../punct đoạn/nsubj độ/obl lắp/conj ?/punct ./punct ,/punct có_thể/aux g/obl sao/obj mang/conj ra/advmod ngòi_nổ/obj siết/conj đã/advmod được/aux máy/obj
+tháo_dỡ	cactông/obj xuống/advmod ,/punct
+tháo_gỡ	tới/obl bom/obj thì/cc nổ/parataxis khó_khăn/obj trái/obl sẽ/advmod ./punct ,/punct trở_ngại/obj
+tháp_tùng	bộ_trưởng/obj
+thân	mình/det
+thân_chủ	cho/case
+thân_thuộc	nhà/nmod đường/nsubj rất_đỗi/advmod ./punct
+thân_tình	rất/advmod chủ/nmod
+thân_xác	to_lớn/amod cả/det
+thép	"/punct của/case
+thêm	họ/obl quả/obj sẽ/advmod ./punct khác/xcomp ,/punct nữa/advmod năm/advcl hơn/advcl biện_pháp/nsubj là/cop con/nsubj
+thì	có/ccomp
+thích	đua/xcomp
+thôi	thì/cc được/aux ./punct rồi/cc
+thôn	liên/discourse
+thông_báo	người_thân/obl họ/nsubj anh/nsubj giám_đốc/nsubj có/ccomp phải/aux :/punct hãng/nsubj lập_tức/advmod ./punct siết/ccomp kết_quả/nsubj gia_đình/obl tức_thời/advmod ,/punct vụ/obl để/advcl địa_chỉ/obj vượt/ccomp thân_chủ/obl được/aux
+thông_cảm	độ_lượng/xcomp và/cc ./punct liên/obj hào_phóng/xcomp run/ccomp "/punct chị/nsubj hãy/advmod bênh_vực/conj cô/nsubj
+thông_lệ	và/cc quốc_tế/amod
+thông_qua	được/aux hội_nghị/obj kịch_bản/nsubj ./punct
+thông_số	những/det trên/compound này/det
+thông_thoáng	,/punct toàn_diện/conj
+thông_tin	thể_hiện/xcomp :/punct ./punct đến/case ông/nsubj đơn/nmod nước/advcl "/punct những/det cần/ccomp cho/ccomp các/det
+thông_tấn_xã	vn/compound
+thùng	các/det đến/case dễ/amod hóa_chất/compound
+thú_thật	trực_tiếp/ccomp james/nsubj :/punct trầm_ngâm/obl và/cc ./punct ,/punct nhận/ccomp
+thúc_giục	,/punct
+thăm	cơ_ngơi/obj quê/obj
+thăng	,/punct chức/obj
+thư	với/case bức/compound lá/compound mình/nmod hạnh_phúc/compound người/nmod xứng_đáng/amod ./punct cho/case chị/compound một/nummod kêu_gọi/xcomp lãnh_tụ/nmod của/case
+thư_ký	hoa/compound
+thưa	anh/nsubj .../punct ông/obj chủ_trương/obj ngập_ngừng/conj ./punct ,/punct câu_chuyện/obj khai/parataxis ông/vocative "/punct chị/nsubj tối/obl rồi/cc máy/obj
+thương	mà/cc nhất/xcomp bà/obj
+thương_binh	là/cop !/punct người/compound điểm/nsubj ít/amod ấy/det ./punct 176/nummod
+thương_lượng	nhau/obl chúng_ta/nsubj
+thương_thảo	từng/obl
+thương_yêu	,/punct
+thước	mỗi/nummod đất/compound
+thường	đi/parataxis tuấn/nsubj sử_dụng/xcomp ./punct đtdđ/obj ,/punct thích/parataxis
+thưởng	,/punct
+thạo	phần_mềm/obj và/cc sử_dụng/xcomp
+thả	lại/advmod dòng/obl thỉnh_thoảng/advmod cần_cẩu/nsubj ./punct mẻ/obj
+thảm_hại	ngờ/xcomp dung_nhan/nsubj
+thảo	đây/det chị/compound
+thảo_luận	và/cc
+thấm	máu_xương/obj thước/nsubj máu/obj dài/xcomp đất/obj nên/cc đều/advmod ./punct
+thấp	phải/aux dịch_vụ/nsubj là/cop cũng/advmod thất_thu/parataxis ./punct ,/punct không/advmod
+thấp_thoáng	phía/obj
+thất_bại	khởi_nghĩa/nsubj đàn_áp/conj ./punct lớn/conj
+thất_nghiệp	cứu/conj có/ccomp số/nsubj
+thất_thoát	tài_sản/obj
+thất_thu	có_thể/aux hơn/xcomp hồi/obl nghỉ/csubj còn/advmod
+thất_vọng	quá/advmod vì/case ,/punct ruột/obl
+thấu	không/advmod
+thấy	theo_dõi/advcl tuấn/obj hạnh/obj lành/xcomp .../punct thêm/ccomp bóng_dáng/obj ?/punct lật/advcl tên/obj xuất_hiện/xcomp tâm_sự/conj cầm/advcl đau_lòng/obj có_thể/aux nay/obl bà/nsubj gọi/conj nhi/nsubj xâu_chuỗi/advcl nhớ/parataxis do/cc bác/nsubj thắng/nsubj anh/nsubj sự/obl cơ_quan/nsubj mới/advmod cần/xcomp khi/obj ./punct lại/advmod ngày_đêm/obl ông/nsubj gì/discourse buồn/xcomp nguyễn_thiện_thuật/obj thám_tử/nsubj sao/det nứt/ccomp sáng/obl thì/cc rõ/ccomp hôm/obl bảo_vệ/ccomp dậy/advcl dắt/ccomp nhìn/advcl cảnh/nsubj ngày/obl ,/punct làm/ccomp cho/case đọc/advcl thời/obl buồn_cười/xcomp lương_bổng/obj "/punct giỏi/ccomp có_lẽ/dep ra/ccomp bỗng/advmod gì/obj màn_hình/obl qua/advcl dân/nsubj tiêu_cực/obj xứng_đáng/ccomp trong/advcl chúng_tôi/obj buồn/advcl mà/cc tố_cáo/parataxis không/advmod nhưng/cc thế_là/parataxis nhấp_nháy/ccomp mừng/xcomp nếu/cc anh_ta/obj máy/obj tôi/nsubj
+thầy	đặng_công_lân/compound hiệu_trưởng/conj
+thầy_cô	tất_cả/det bạn_bè/conj con/nmod
+thẩm_vấn	gợi_ý/parataxis ./punct ,/punct có_thể/aux bộ_trưởng/obj "/punct hđxx/nsubj nội_dung/obj nếu/cc rõ/advcl khoản/obj ngân_hàng/obj
+thẩm_định	hội_đồng/advcl
+thật	rất/advmod
+thật_sự	hoang_mang/xcomp anh_ta/nsubj hoảng_sợ/xcomp lúc/nmod ./punct lan/nsubj
+thắc_mắc	?/punct :/punct nói/ccomp "/punct hđxx/nsubj ./punct
+thắng	và/cc lan/conj .../punct của/case già_đời/amod
+thắp	nhà/obl sáng/xcomp hương/obj dọn_dẹp/conj
+thắt	lại/advmod ruột/obj bà/nsubj còn/advmod phải/aux
+thế	cứ/advmod à/discourse như/cc thắt/xcomp chỉ/advmod trai/nsubj ./punct ,/punct thôi/discourse này/det
+thế_hệ	là/cop học_sinh/nsubj thứ/compound ./punct
+thế_nào	công_văn/nmod
+thể_hiện	luân/nsubj :/punct mà/cc ngày_tháng/obj công_văn/advcl ./punct bản/nsubj không/advmod địa_chỉ/conj đơn/obl "/punct tìm/parataxis có/advmod
+thỉnh	tượng/nsubj vn/obl được/aux bà/nsubj ./punct
+thị_trấn	uyên_hưng/compound huyện/conj
+thịnh_nộ	người/nmod lú_lẫn/amod cơn/compound trước/case
+thỏ_thẻ	tiếng/obj
+thỏa_thuận	thỏa_thuận/conj ?/punct tuấn/nsubj cùng/xcomp hay/cc tự/det đã/advmod "/punct không/advmod
+thỏa_đáng	,/punct
+thống_nhất	sai_phạm/nsubj chuyển/xcomp vks/obl xử_lý/xcomp hướng/advcl đã/advmod được/aux sang/xcomp ./punct cơ_quan_chức_năng/nsubj
+thổi	được/advmod lại/advmod chôn_vùi/advcl bùn/obj anh/nsubj .../punct nên/cc ./punct phải/aux
+thờ_cúng	tổ_tiên/obj ,/punct
+thời	bây_giờ/det thức/xcomp
+thời_bình	trong/case
+thời_gian	tới/xcomp qua/advmod chuyển/xcomp xây_dựng/xcomp này/det
+thời_hạn	tháng/compound
+thời_khắc	án/nmod ấy/det
+thời_kỳ	đổi_mới/compound
+thời_điểm	biểu_hiện/xcomp với/case trước/amod gọi/xcomp cuộc/compound ./punct ban_hành/xcomp qua/ccomp "/punct là/cop quý/nsubj trong/case đi/ccomp
+thở_phào	lúc/obl người/nsubj mới/advmod khi/obj nhẹ_nhõm/xcomp ./punct
+thợ	hai/nummod huy/compound lặn/xcomp nhóm/compound
+thủ_lĩnh	quân/compound
+thủ_phạm	lo_sợ/xcomp
+thủ_tướng	lên/case chính_phủ/compound phan_văn_khải/compound
+thủ_tục	hết/xcomp kia/det mất/xcomp hành_chính/compound thủ_tục/conj về/case chủ_quyền/compound ,/punct quản_lý/compound này/det
+thủ_đức	biên_hòa/conj rbkt/punct lbkt/punct tđ/appos
+thủy_thần	với/case
+thủy_điện	ia_me/compound 3/nummod ở/case
+thứ	ba/nummod hai/nummod thứ/conj cuộc/compound tư/nummod 39/nummod nhất/nummod ,/punct năm/nummod
+thứ_trưởng	phụ_trách/xcomp phạm_hồng_giang/conj bộ/compound nguyên/discourse và/cc thường_trực/xcomp ở/xcomp võ/compound ký/xcomp
+thức	bưng/amod suốt/xcomp mua_đi_bán_lại/conj đội/conj
+thừa	nam/nsubj bỏ/xcomp hiểu/xcomp mặt_khác/parataxis và/cc nó/nsubj ./punct ,/punct quả/discourse không/advmod
+thừa_kế	nam/obl
+thừa_nhận	chở/ccomp điều/obj lãnh_đạo/obl long/nsubj đã/advmod cũng/advmod nhi/ccomp ./punct tài_xế/nsubj phải/aux
+thử	?/punct gợi_ý/xcomp mới/advmod lần/advcl anh/nsubj .../punct
+thực_hiện	quy_định/obj thời_hạn/obl sự/nsubj người/nsubj cơ_chế/obj cơ_quan/nsubj dựa/advcl sẽ/advmod ./punct ,/punct nếu_như/cc cổ_phần_hóa/xcomp nghị_quyết/obj trường_hợp/advcl tháng/obl tốt/xcomp vẫn/advmod dự_án/obj hợp_đồng/nsubj kiểm_điểm/xcomp trả/conj chính_sách/obj được/aux họ/obj
+thực_tế	hóa/discourse chính_sách/obj chính/discourse này/det
+ti	với/cc
+tia	một/nummod nanh_nọc/amod
+tin	chết/ccomp :/punct mới/advmod vui/xcomp tìm/xcomp ,/punct nhắn/xcomp làm/ccomp vá/ccomp vụ/obl !/punct tuấn/nmod "/punct tôi/nsubj
+tin_cậy	,/punct
+tin_tưởng	rất/advmod họ/nsubj
+tinh_thần	nhi/nmod nghị_quyết/nmod nghị_quyết/compound cảnh_giác/xcomp theo/case
+tiêu_biểu	phong_trào/nmod
+tiêu_chuẩn	xây_dựng/nmod theo/case
+tiêu_chí	thám_tử/nmod theo/case
+tiêu_cực	đường/nmod đường/advcl bộ_máy/advcl ,/punct
+tiêu_tan	thay/xcomp bỗng/advmod ./punct cái/nsubj
+tiêu_thụ	hàng_hóa/obj
+tiếc	thay/discourse
+tiến	tới/xcomp lấy/ccomp vào/advmod gặp/conj và/cc liễu/nsubj ./punct thẳng/xcomp lễ_tân/obl nhà/obj gọi/ccomp tầng/obj lên/advmod
+tiến_hành	có_thể/aux chủ_trương/nsubj là/cop sẽ/advmod giả_thiết/nsubj mới/advmod được/aux thương_thảo/xcomp ./punct trước/obj
+tiến_độ	kéo_dài/xcomp vào/case thực_hiện/xcomp
+tiếng	việt/compound với/case dạ/discourse rít/xcomp chắc_chắn/amod ghê/amod lào/compound nào/det đánh_vần/xcomp anh/compound 24/nummod con/xcomp rền/amod và/cc ./punct đứt_quãng/xcomp máy/nmod chừng_mực/compound "/punct một/nummod những/det ú_ớ/amod thôi/discourse bằng/case thì_ra/dep con_gái/compound anh/nmod
+tiếng_nói	sở/nmod
+tiếng_tăm	,/punct
+tiếp	lần/obl khách/obj khách_hàng/obj được/aux công_ty/nsubj ./punct dân/obj
+tiếp_cận	môi_trường/obj năm/obl họ/nsubj .../punct anh_trai/obj gái/obl phải/aux để/case nhiệm_vụ/nsubj vì_vậy/cc ./punct ,/punct phương_pháp/nsubj lan/obj trực_tiếp/xcomp còn/advmod gia_đình/obj xe/obj là/cop bên/advcl họ/obj
+tiếp_diễn	?/punct lại/advmod sai_phạm/nsubj đủ/parataxis màn_kịch/nsubj nên/cc ./punct vẫn/advmod
+tiếp_lời	:/punct áp_dụng/ccomp bộ_trưởng/nsubj ./punct
+tiếp_theo	thắng/obl
+tiếp_tục	.../punct lao_động/nsubj ?/punct :/punct hầu_hết/advmod sẽ/advmod cuộc/obj điều_tra/xcomp có_thể/aux gia_tăng/xcomp nỗ_lực/nsubj vụ_việc/nsubj nhu/nsubj bán/ccomp hiện/obl vẫn/advmod csgt/nsubj nâng/conj cơ_quan/nsubj khai_thác/xcomp làm_việc/xcomp liệu/ccomp ./punct thám_tử/nsubj hôm_nay/obl sống/xcomp đổi_mới/xcomp thi_công/xcomp điều_tra/obj ,/punct số/nsubj ngày/obl quay_phim/xcomp đang/advmod chúng_tôi/nsubj hội_nghị/nsubj "/punct mạnh_mẽ/xcomp chỉ_đạo/xcomp bên/advcl tập_trung/xcomp nhân/xcomp phát_hiện/conj học/xcomp đội/nsubj có/conj khảo_sát/xcomp xây_dựng/obl khi/obl được/aux
+tiếp_viên	là/cop mới/amod quán/compound
+tiết	một/nummod việt/compound tiếng/compound
+tiết_lộ	nhưng/cc biết/parataxis thư/nsubj chưa/advmod ./punct tuy/cc
+tiền	giúp/xcomp giao_nhận/xcomp dành_dụm/xcomp bánh_mì/compound trùm/nmod lời/conj bảo_hiểm/compound ăn/xcomp một_ít/nummod và/cc lãi/conj nợ/xcomp lã_thị_kim_oanh/nmod chút/det mặt_bằng/compound tiếp_tục/xcomp bằng/case
+tiền_bạc	tôi/nmod không/advmod
+tiễn	con_gái/obj
+tiệm	là/cop mang/xcomp cơm/compound ./punct phía/nsubj
+to	cao/amod "/punct ./punct thông_minh/amod khỏe/conj
+tong_tả	buông/advcl lại/advmod từ/advcl tìm/xcomp bà/nsubj ./punct ,/punct đi/xcomp
+toàn	với/case dân/compound của/case
+toàn_diện	và/cc
+toàn_quyền	chuyện/obj xử_lý/xcomp đã/advmod xét/advcl ./punct ,/punct chấp_hành/conj chị/nsubj
+toán	hai/nummod cả/det
+tp	này/det biên_hòa/compound cho/case pakse/compound hcm/compound đến/case vào/case ./punct của/case
+tp.	của/case
+tp_._hcm	-/punct
+tp_hcm	,/punct
+tra	lấy/ccomp :/punct đến/conj ba/nsubj chia/conj danh_bạ/obl ./punct
+trai	hai/nummod sinh/compound con/compound ,/punct của/case
+trai_gái	đôi/nummod
+trang	một/nummod fax/compound mới/amod
+trang_trí	giống/xcomp
+trang_trại	chúng_tôi/nmod
+tranh	bức/compound vẽ/xcomp
+tranh_thủ	được/advmod trở_thành/parataxis ngoài/obl .../punct và/cc quang/nsubj hoa/nsubj còn/advmod cảm_tình/obj đi/xcomp tốt_nghiệp/conj
+trau_dồi	kiến_thức/obj
+tre	trúc/compound
+trinh_sát	phòng_chống/xcomp
+triển_khai	công_trình/obj phức_tạp/xcomp quyết_định/obj ./punct gấp/xcomp dự_án/obj
+triệt_để	trong_sạch/obj
+triệu	20/compound 80/compound 10/compound 160/compound
+trong	đêm/nmod tuần/nmod vào/case thâm_tâm/nmod bên/case tình_trạng/compound khi/nmod ở/case công_ty/nmod cũng/advmod lúc/nmod năm/nmod hoặc/cc sạt_lở/xcomp xóm/compound ngay/discourse chỉ/advmod trường_học/nmod
+trong_sạch	đang/advmod mình/nmod và/cc sự/compound
+trung_tâm	là/cop phân_phối/xcomp đây/nmod tp/nsubj tiếp_thị/xcomp
+trung_ương	rbkt/punct lbkt/punct lần/appos khóa/conj 9/nummod 6/nummod
+truy_lùng	đang/advmod bị/aux
+truy_tố	và/cc
+truyền_thống	gia_đình/compound bên/compound
+trà	đá/compound
+trà_trộn	xe/obj vào/advmod tìm/ccomp ./punct
+tràn	ngõ_ngách/obl nhóm/nsubj lập_tức/advmod ./punct
+tràn_ngập	cảm_giác/nsubj đứng/csubj hi_vọng/obj tôi/obl ./punct chợt/advmod
+trách_cứ	hay/cc
+trách_nhiệm	nhà_nước/nmod mình/nmod bảo_vệ/xcomp vùng_đất/nmod tới/case để/case bà_con/nmod đất_nước/nmod mọi/det đó/nmod ràng_buộc/conj pháp_lý/compound trạm/nmod gì/det cả/det
+trái	223/nummod trường_hợp/nsubj đến/case còn/advmod chủ_trương/nmod
+tránh	ống_kính/obj thì/cc hậu_quả/obj để/case nóc/obj bom_đạn/obj ./punct nắng_mưa/obj thám_tử/nsubj thông_báo/xcomp xa/xcomp bình_thường/advcl
+trên	người/nmod khuôn_mặt/compound ở/case đất_nước/compound cây_số/compound ./punct
+trình	ông/nsubj kế_hoạch/obj ./punct
+trình_bày	thông_qua/conj được/advmod ấn_tượng/xcomp bị_cáo/nsubj .../punct để/case ý_muốn/obj sẽ/advmod trường_hợp/nsubj ./punct đào/nsubj xuất_trình/conj xuất_xứ/obl giấy/nsubj thảo_luận/conj được/aux lý_do/obj tôi/nsubj
+trình_diện	cơ_quan/advcl
+trình_độ	ngoại_ngữ/compound viết/xcomp
+trí_thức	kiều_bào/compound với/case ,/punct nhiều/amod
+trích	và/cc nguyên_văn/obj
+trò	những/det nghịch/xcomp
+trò_chuyện	ghi_âm/mark cuộc/compound các/det lan/nmod
+tròn	tuổi/obj chưa/advmod
+trót	hôm/obl để/xcomp kêu/parataxis ./punct ,/punct
+trôi	gánh/advcl đi/advmod
+trông	đang/advmod dù_sao/cc vào/advmod thứ/obj cũng/advmod trợ_cấp/ccomp ,/punct ./punct lan/nsubj
+trông_chờ	không_thể/advmod việc/obj cũng/advmod ./punct từ/case lan/nsubj
+trông_cậy	người/obl
+trông_đợi	không_thể/advmod con/obl được/advmod
+trùm	giữa/case các/det "/punct đường_dây/nmod
+trùng	thời_điểm/obj họ/obj ngày_giờ/obj
+trú	đâu/obl nó/nsubj đói/conj
+trú_chân	vậy_mà/cc ./punct ,/punct không/advmod ấy/discourse nhà/obj nữa/advmod nhưng/cc cũng/advmod chị/nsubj được/aux buồn/parataxis
+trơ	sắt/obj đã/advmod ngoài/nmod
+trưa	đó/det
+trương_xuân_đại	anh/compound
+trước	tuổi/compound đó/det đây/det khoảng/advmod về/case tình_thế/nmod từ/case năm/nummod
+trường	ngôi/compound đại_học/compound y_dược/compound trung_học/compound tiểu_học/compound ./punct đường/nmod nằm/csubj tại/case một/nummod hữu_nghị/compound là/cop tp_._hcm/compound xây_dựng/mark của/case
+trường_học	các/det
+trường_hợp	thiếu_úy/nsubj con_gái/ccomp như/cc làm/xcomp nghiên_cứu/xcomp nào/det phương/compound riêng/discourse ./punct cá_biệt/amod này/det một/nummod những/det qui_định/ccomp là/cop ngay/discourse cả/discourse các/det
+trại	kem_kjang/compound .../punct giờ/compound ./punct
+trạm	20/nummod về/case cả/det thu/xcomp tại/case
+trả	lặng_lẽ/xcomp thì/cc năm/obl khách/obj .../punct chuyến/obl chia_sẻ/conj khách_hàng/obl bệnh_viện/nsubj về/advmod về/xcomp cao/xcomp mới/advmod bị/aux mà/cc và/cc ./punct ,/punct vì/case có_thể/aux lại/advmod thanh/obl khoa/nsubj tiền/obj nợ/obj "/punct thám_tử/nsubj cháu/obl khoản/obj bởi/case heo/obj tôi/nsubj
+trả_lời	như/cc giọng/nsubj bất_ngờ/advcl có/ccomp phải/aux :/punct nhi/obj ./punct ,/punct không/advmod việt/nsubj thế_nào/obj đầu/nsubj ở/ccomp "/punct câu/compound ra/ccomp điềm_tĩnh/advcl được/aux bộ_trưởng/nsubj
+trả_thù	liên/obj cụ_thể/xcomp :/punct tình_địch/obj sẽ/advmod đòi/conj nhi/nsubj ./punct bêu_xấu/conj không/advmod
+trấn_an	nguyên/nsubj vừa/advmod thứ_trưởng/nsubj -/punct ./punct hướng_dẫn/ccomp ngại/parataxis
+trầm_mình	nước/advcl vì/case phải/aux
+trầm_ngâm	lúc/obj
+trần_nhất_thiện	giám_đốc/appos anh/compound rbkt/punct lbkt/punct
+trận	chiến/xcomp nhiều/amod
+trằn_trọc	ông/nsubj về/advcl biết/conj đêm/obj ./punct ,/punct
+trẻ	già/conj những/det đẹp/amod nhỏ/amod đẹp/conj đứa/compound lạc/xcomp tuổi/obj ,/punct gái/compound
+trẻ_con	một/nummod dãy/compound
+trị_giá	đồng/obj cao/xcomp ra_đời/ccomp dự_án/nsubj
+trọng_dụng	nhân_tài/obj
+trọng_lượng	kg/compound với/case cho_phép/xcomp
+trọng_trách	giữ/xcomp đền/compound
+trốn	buồng/obl
+trồi	mặt_nước/obj lên/advmod khỏi/advmod thông_báo/ccomp rồi/cc
+trồng	mời/parataxis vụ/obj cho/case tre/obj ai/nsubj lúa/obj cây/obj ./punct ,/punct
+trộm_cắp	,/punct
+trớ_trêu	những/det trước/case oan_nghiệt/nmod số_phận/nmod ,/punct đặt/ccomp
+trờ	tới/xcomp
+trời	trên/case từ/case
+trở	có/mark long/nsubj .../punct lao_động/nsubj về/advmod về/xcomp ./punct viết/conj phút/obl malaysia/advcl là/mark nhã/nsubj ra/xcomp
+trở_lại	con/nsubj ./punct
+trở_mình	đất/nsubj ./punct
+trở_ngại	toàn_bộ/det vướng_mắc/conj những/det việc/advcl
+trở_nên	thì/cc nhưng/cc câu_chuyện/nsubj khi/obl phức_tạp/xcomp ./punct
+trở_thành	cô_dâu/obj gai/obj cô/nsubj sắp/advmod kẻ/nsubj
+trở_về	cải_tạo/xcomp đời_thường/xcomp người/nsubj an_toàn/xcomp gia_đình/obl
+trợ_cấp	nam/obl
+trụ_sở	một/nummod ubnd/compound mới/amod xã/compound
+trục_trặc	việc/nmod
+trực	bên/obj ông/compound cửa_hàng/obl
+trực_tiếp	đã/advmod nhìn/xcomp bán/xcomp
+tuyên_bố	có_thể/aux ai/nsubj hoãn/xcomp và/cc tự/det cắt/xcomp
+tuyến	hầu_hết/advmod ống/compound ở/case qua/case các/det trung_tâm/amod
+tuyết	là/cc
+tuyệt_vọng	nhưng/cc nhất/xcomp đều/advmod
+tuyệt_vời	không_khí/nsubj lắm/advmod "/punct ui/discourse ,/punct ./punct
+tuyệt_đối	như/cc việc/obj bí_mật/obj chống/conj phải/aux chuyện/nsubj ./punct giữ/xcomp giấu/ccomp bí_mật/xcomp nguyên_tắc/nsubj đều/advmod là/cop khách_hàng/nmod
+tuân_thủ	?/punct người/nsubj sai_phạm/conj gánh_chịu/xcomp đúng/xcomp ,/punct
+tuấn	về/xcomp với/case cho/case lấy/mark hít/xcomp anh/compound đào/conj của/case
+tuấn_anh	ông/compound
+tuần	hai/nummod mỗi/nummod suy_nghĩ/xcomp
+tuổi	với/case 10/nummod 35/nummod mình/nmod 40/nummod hơn/advmod và/cc ,/punct nội/compound 23/nummod 3/nummod đứa/compound 30/nummod cái/compound 11/nummod 26/nummod đã/advmod 7/nummod 83/nummod
+tuổi_trẻ	online/compound mình/nmod
+tài_chính	kế_toán/compound dn/compound
+tài_nghệ	thám_tử/nmod
+tài_nguyên	&/punct môi_trường/compound
+tài_sản	xhcn/compound nhà_nước/compound nam/nmod thừa_kế/xcomp những/det tương_đương/conj cho/ccomp một_nửa/det
+tài_xế	cho/case các/det
+tàu	một/nummod người/compound
+tá_túc	đang/advmod gia_đình/nsubj
+tác_động	lớn/amod xen/xcomp giảm/nmod phát_triển/nmod nào/det
+tách	ra/advmod điều_tra/ccomp để/case bùn/obj
+tán	con/compound ,/punct
+tâm_nhang	một/nummod vong_hồn/nmod nén/compound
+tâm_sự	đồng_minh/obl :/punct bà_mẹ/nsubj ông/nsubj tự_nguyện/ccomp thư/nsubj và/cc ./punct
+tâm_trạng	lo_lắng/xcomp trong/case
+tâm_tư	đầy/amod
+tâmsự	những/det
+tây_nguyên	nam_bộ/conj
+té	hồ_văn_trương/nsubj bị/aux khi/obl lầu/obj ngày/obl ,/punct ./punct
+tê	trầm_mình/xcomp cóng/xcomp người/nsubj bị/aux cũng/advmod ./punct
+tên	hoa/compound công_ty/compound hồ_chí_minh/compound bác_sĩ/nmod tội_phạm/compound cô/compound đến/case địa_chỉ/conj chục/nummod đó/nsubj liên/compound đào/compound mới/amod thành/compound trẻ/amod tuấn/compound hàng/advmod một/nummod cái/compound bác_hồ/compound là/cop lãnh_tụ/nmod
+tên_tuổi	ngày_giờ/conj
+tìm	giám_đốc/nsubj ghế/obj bệnh/obj phải/aux để/case sẽ/advmod xây_dựng/conj bà/nsubj toàn/nsubj đã/advmod rồi/cc sứ_quán/advcl con/obj thắng/nsubj thám_tử/obl phương_án/obj đầu_tiên/obj dùng/ccomp điểm/obj gặp/ccomp mới/advmod ai/ccomp ./punct lan/obl lại/advmod nhà/obj trẻ/obj xem/advmod đường_ống/obl ra/advmod là/cop đến/advmod lúc/obl bị_cáo/nsubj được/ccomp theo_dõi/conj tôi/obj ,/punct ảnh/obj đang/advmod chúng_tôi/nsubj đó/obl thuốc_lá/obj tối/obl hàng/obj sống/conj cách/obj việc/nsubj gần/obl chỗ/obj chị/nsubj đặt/ccomp xe/obj công_việc/nsubj người/obj nghề/obj thấy/xcomp được/aux được/advmod
+tìm_hiểu	văn_hóa/obj ,/punct
+tình	về/case đầu/compound
+tình_cảm	đầy/amod những/det nỗi/conj đau/amod người/compound đó/nmod lá/compound đến/case vợ_chồng/compound
+tình_cờ	người/nsubj nhìn/ccomp khi/obj ./punct ,/punct gặp/xcomp
+tình_huống	kẹt/xcomp là/cop đặc_biệt/csubj ./punct
+tình_hình	cát/compound nóng_bỏng/amod khai_thác/xcomp cụ_thể/amod
+tình_nguyện	dân/nsubj ./punct thu_hẹp/xcomp
+tình_nhân	là/cop phong/nmod nếu/cc hạnh/nsubj
+tình_thương	,/punct
+tình_thế	đó/det
+tình_trạng	lơi_lỏng/xcomp bừa_bãi/amod quan_liêu/amod cát/compound cửa_quyền/amod ,/punct hách_dịch/amod khai_thác/xcomp
+tình_yêu	vì/case
+tí	nào/discourse
+tích_cực	môi_trường/obj thứ/nsubj sẽ/advmod đáp_ứng/xcomp ./punct ,/punct chúng_tôi/nsubj nhằm/case nhu_cầu/obj ngoài_ra/cc là/cop cải_thiện/xcomp
+tím	thâm/amod lại/advmod hàm_răng/nmod
+tín_dụng	là/cop kế_hoạch/nmod trả_lời/parataxis .../punct "/punct ./punct ,/punct ưu_đãi/xcomp
+tín_hiệu	gì/det
+tính	người_ta/nsubj như/cc năm/obl nhất/amod lời_lãi/obj ưu_việt/amod mất_mát/nsubj vũ_bão/obj ./punct ,/punct không/advmod không_thể/advmod kế_hoạch/nmod quan_trọng/amod còn/cc có/parataxis giờ/obl tập_thể/compound tiền/obl được/advmod
+tòa	"/punct
+tóm_tắt	:/punct cả/nsubj "/punct hỏi/advcl ,/punct cụt/aux ./punct
+tôi	người/nmod và/cc đối_với/case hùng/appos ./punct theo/case ,/punct đây/det "/punct trong/case sống/xcomp của/case
+tôn_vinh	trái_lại/parataxis thì/cc !/punct đáng_lẽ/advmod đẩy/ccomp được/aux phải/aux
+tù	trong/case
+tù_túng	buồn_tẻ/conj
+tú	anh/compound
+túc_trực	tách/mark luôn/advmod
+túi	csgt/nmod một/nummod với/case gồm/xcomp bà/nmod bà_ba/compound áo/compound vào/case đồ_nghề/compound
+túng	quá/advmod
+túng_quẫn	vậy_sao/nsubj đang/advmod rất/advmod dù/cc ,/punct gia_đình/nsubj bần_hàn/conj
+tăng	do/case lương/obj thăng/conj là/cc ,/punct ./punct cộng/conj tăng/ccomp kinh_phí/nsubj còn/cc khối_lượng/obj việc/advcl khối_lượng/nsubj khoản/advcl lên/advmod
+tăng_cường	sức/obj và/cc bộ/nsubj "/punct đã/advmod giáo_viên/obj ./punct
+tăng_trưởng	là/cop
+tđ	bh/conj
+tư_cách	với/case đồng_minh/xcomp
+tư_cách_pháp_nhân	để/case là/cop bà_con/nmod vấn_đề/nsubj ./punct ,/punct thưa/vocative
+tươi_cười	:/punct !/punct sẵn_sàng/conj đến/ccomp bà/nsubj "/punct em/obj nói/xcomp hào_hứng/conj
+tương_lai	với/case gần/advmod đứa/compound trong/case
+tương_đương	tỉ/obj ,/punct
+tương_đối	khả_quan/amod công_tác/nsubj
+tưởng	hợp_đồng/nsubj chấm_dứt/conj ập/parataxis ngày/obl ,/punct ./punct
+tượng	ngài/nmod
+tạm	cuộc_sống/nsubj .../punct kế_hoạch/nsubj gọi_là/dep triển_khai/xcomp hiện/nmod mới/advmod dừng/xcomp ./punct đến/case ,/punct là/cc đồng/obj giữ/xcomp nhưng/cc "/punct như_vậy/obj thôi/advcl ổn/xcomp bây_giờ/nmod nhi/nsubj cho/xcomp
+tạo	việc_làm/obj sẽ/advmod hết_sức/advmod ./punct ,/punct công_ăn_việc_làm/obj song/cc muốn/csubj bà_con/nsubj thành_phố/nsubj điều_kiện/obj ngoài_ra/cc nhà/iobj được/aux khiến/parataxis
+tấn	hàng/compound 52/nummod thường/advmod từ/case
+tấn_công	điện_thoại/obj vào/advmod cuối_cùng/advcl chỉ/advmod và/cc là/cc ./punct lan/obl
+tất_cả	vụ/nmod .../punct có/ccomp phải/aux biết/ccomp ./punct ,/punct không/advmod đó/nsubj tiền_bạc/nsubj túng_quẫn/conj những/det là/cop gì/det cùi_tay/nmod
+tầm_nhìn_xa	vấn_đề/advcl
+tầng	ba/nummod
+tận	khi/nmod
+tận_cùng	sẽ/advmod mong_muốn/conj không/advmod
+tận_mắt	phản_bội/obj để/case thư/nsubj chứng_kiến/ccomp chứng_kiến/xcomp nỗi/obj phải/aux
+tận_thu	cát/obj bị/aux sông/nsubj đã/advmod còn/cc sạt_lở/aux ./punct ,/punct hiện/obl
+tập	trước/obl đội/nsubj hàng_ngũ/nsubj đã/advmod được/aux nên/cc ./punct
+tập_huấn	nuôi/parataxis thì/cc được/aux ./punct chăn_nuôi/obl
+tập_họp	./punct lại/advmod buổi/obl đọc/ccomp thanh_niên/nsubj ,/punct dân_chúng/obj phổ_biến/conj
+tập_luyện	sân/obl thường_xuyên/xcomp ,/punct
+tập_thể	một/nummod cá_nhân/conj vững_mạnh/amod công_ty/nmod
+tập_trung	nguồn_lực/obj thám_tử/nsubj khi/obl chương_trình/iobj ./punct ,/punct khai_thác/xcomp
+tắm	nam/nsubj
+tằn_tiện	,/punct
+tặng	đồng/obj ông/obj công_nhân/iobj anh/obj làm/conj quà/obj
+tế_bào	từng/det
+tết	trước/case
+tề_chỉnh	rất/advmod
+tỉ	500/compound chục/nummod 5/compound cả/discourse 2,2/compound 85,354/compound 100/compound 10/compound đồng/compound 30/compound
+tỉa	đậu/obj
+tỉnh	khác/amod đến/case ,/punct champasak/compound ở/case phú_yên/compound một/nummod trên/compound nam_định/compound các/det của/case
+tỉnh_ngộ	thú_thật/conj ./punct cô_gái/obj dần/advmod
+tỏ	đi/parataxis chờ/conj thái_độ/obj liễu/nsubj ./punct ,/punct
+tỏ_vẻ	lan/nsubj hồ_hởi/conj ăn/conj thân_tình/xcomp toàn/nsubj can_ngăn/xcomp ./punct không/advmod
+tố_cáo	cứ/advmod tiêu_cực/obj tiêu_cực/xcomp ông/obj đã/advmod hãy/advmod
+tốc_độ	cổ_phần_hóa/xcomp
+tối	vào/case sáng/nmod ngày/compound 3/conj 4/conj ,/punct 21/nummod nay/det reo/ccomp 1/nummod thứ_sáu/compound một/nummod
+tối_tối	đi/parataxis lớp_học/conj ,/punct rộn_ràng/amod ./punct
+tối_ưu	thật/advmod cho/case sao/discourse
+tốt	thì/cc càng/advmod hơn/advmod ./punct nhất/advmod hơn/amod không/advmod bỏ/csubj nhưng/cc !/punct chủ_trương/nsubj cả/discourse chịu_thua/parataxis
+tốt_nghiệp	đại_học/obj và/cc đã/advmod
+tồn_tại	mối/nsubj dây/obl bây_giờ/obl ./punct
+tổ	đó/nsubj mỗi/nummod là/cop nhân_dân/compound có/xcomp "/punct đến/case ./punct 68/nummod
+tổ_chức	họ/nsubj nhận/xcomp cơ_quan/nsubj trạm/nsubj buổi/nsubj đọc/xcomp trang_trọng/xcomp sẽ/advmod mà/cc ./punct ,/punct đám_cưới/obj ngày/obl sự_nghiệp/compound chúng_tôi/nsubj phố/obj hội_an/obl một/nummod kiểm_điểm/xcomp là/cop cơ_sở/compound khi/obl đã/advmod được/aux đám_cưới/nsubj lễ/obj của/case
+tổ_tiên	đến/case
+tổ_trưởng	tổ/compound
+tổng_công_ty	cho/case
+tổng_kết	quá_trình/obj ./punct
+tội	người/nsubj tham_ô/xcomp vi_phạm/conj người/nmod cùng/advcl vô_can/conj bị/aux giết/xcomp về/case ./punct ,/punct vì/case quan_hệ/xcomp nhưng/cc ngoại_tình/xcomp
+tội_phạm	bọn/compound và/cc của/case ma_túy/compound
+tội_ác	với/case
+tới	hôm/obl .../punct ,/punct không/advmod phút/obl xe/nsubj lại/advmod gần/xcomp qua/parataxis sắp/advmod được/advmod
+tới_tấp	về/xcomp bay/xcomp đã/advmod tình_cảm/nsubj ./punct
+tụ_tập	phòng/nsubj đang/advmod người/obj
+tủ	csgt/nmod trong/case cá_nhân/amod
+tủi	vừa/advmod ,/punct
+tức_giận	và/cc
+từ	nguyên_nhân/nsubj người/nsubj chợ/nmod đổi_thay/nmod sáng/nmod ?/punct thị_trấn/nmod ./punct đấy/nmod vì/case đó/nmod giờ/nmod nay/nmod hiệu/nmod gia_đình/nmod ngay/discourse đâu/nmod chỗ/nmod g/nmod vậy/det
+từ_bỏ	nam/obj
+từ_từ	nước/nmod và/cc mình/obj buông/xcomp .../punct
+từng	với/case để/case địa_bàn/compound
+tự	nó/det
+tự_do	:/punct nghề_nghiệp/nsubj ./punct đi_lại/xcomp
+tự_hào	anh/nsubj
+tự_nguyện	xin/xcomp phải/aux ép/xcomp cắt/xcomp chồng/nsubj nay/obl ,/punct không/advmod
+tự_phê	là/cop cũng/advmod
+tự_vẫn	bỏ/conj
+tự_ái	đuổi/parataxis ra/ccomp mang/xcomp và/cc có/parataxis ./punct ,/punct khoán/nsubj
+tựa_đề	tác_động/compound "/punct
+ubnd	phường/compound tỉnh/compound cho/case xã/compound tp/compound tp_.hcm/compound ngành/conj thực_hiện/xcomp huyện/compound từ/case
+ui	chao/discourse
+ung_thư	sinh/nsubj người/nsubj người_nhà/nsubj bị/aux có/parataxis bà/nsubj vì/case ,/punct
+uy_tín	và/cc
+uốn	lên/advmod thẳng/xcomp được/advmod
+uống	mời/conj rượu/obj cà_phê/obj ./punct ,/punct khuấy_động/conj ông/nsubj g/obl nước/obj hàng_hành/obl trà/obj áo/obl
+vai	phát_hiện/ccomp thanh_niên/compound người/compound trong/case đi/ccomp
+vay	thanh/nsubj tp_._hcm/nsubj chăn_nuôi/ccomp :/punct từ/advcl ./punct ,/punct kế_hoạch/obl đồng/obj triển_khai/ccomp tiền/obj được/aux vốn/obj
+ve_chai	giấy/conj
+vi_phạm	giao_thông/obj luật/obj kèm/obj nếu/cc ,/punct
+vinh_dự	danh_hiệu/obj nhận/xcomp năm/nmod
+viết	người/nsubj thạo/conj dưới/advcl tiếng/obj như_vậy/cc :/punct ?/punct và/cc ./punct ,/punct là/cc thư/obj có_thể/aux vụ/obl giấy/obj tiếp/advmod gửi/conj bà/nsubj "/punct lời/obj trích/conj đặt/ccomp tiếng/obl đơn/obj thư/nsubj đã/advmod
+việc	tố_cáo/xcomp tất_cả/det đó/det giao_lưu/xcomp thuê/xcomp phổ_biến/xcomp điều_tra/xcomp về/case tiếp_theo/xcomp vận_dụng/xcomp lên_tiếng/ccomp này/det xảy/xcomp doanh_nghiệp/compound bảo_hộ/xcomp trong/case cướp/xcomp đảm_bảo/xcomp của/case tạo/xcomp con_cái/nmod báo_cáo/xcomp bất_khả_kháng/xcomp và/cc vụ/compound đến/case chung/amod lại/advmod một/nummod tổ_chức/xcomp giúp/xcomp ngoài/case thám_tử/compound vốn/compound em/compound nhi/nmod hợp_tác/xcomp canh/xcomp ký/xcomp tăng/xcomp gấp/amod cho/case tăng/ccomp phá_án/xcomp hiện/xcomp đi/ccomp anh/nmod đeo_đuổi/ccomp với/case làm/xcomp có/ccomp thực_hiện/xcomp sắp_xếp/xcomp học/compound xác_nhận/xcomp mọi/det không/advmod ra_đời/xcomp gì/det sụp_đổ/ccomp hưởng/ccomp thay_đổi/xcomp
+việc_làm	họ/nmod những/det đối_tượng/nmod tốt/amod
+viện	của/case
+viện_kiểm_sát	với/case vẫn/advmod cấp/compound
+viện_trưởng	nguyễn_thành_thượng/compound
+việt	người/compound làm/xcomp đối_với/case nước_ngoài/advcl
+việt_kiều	là/cop nhưng/cc chúng_tôi/nsubj đa_số/det trẻ/amod sử_dụng/parataxis ./punct trí_thức/conj nhiều/amod
+vks	với/case tỉnh/compound nhân_dân/compound
+vn	đây/nsubj tận/case là/cop khi/nmod đang/advmod ở/case rằng/mark sang/xcomp của/case tại/case
+vong_hồn	sinh/compound đến/case
+vui	rất/advmod thấy/nmod ./punct tôi/nsubj
+vui_mừng	thì/cc đu/nsubj .../punct có_lẽ/parataxis hộ/nsubj chính_sách/parataxis thành/ccomp ./punct ,/punct anh_chị_em/nsubj nhưng/cc đều/advmod rất/advmod thông_báo/xcomp đón/xcomp
+vui_vẻ	,/punct
+và	,/punct
+vàng	hơn/advmod 160/nummod chỉ/compound ,/punct
+vàng_mã	,/punct
+vành	dưới/case mũ/compound thám_tử/compound
+vào	được/advmod người/nsubj anh_em/nsubj .../punct phải/aux ?/punct đại_học/obj để/case cuộc/obj tâm_trạng/obl rừng/obj hồi/obl vẫn/advmod đã/advmod rồi/cc buổi/nmod đến/xcomp làm_việc/xcomp chợ/obj sững/conj ./punct nơi/obj nhà/obj bên/obj thắp/xcomp thám_tử/nsubj thì/cc phòng/obj hôm/obl cha/nsubj bệnh_viện/obj đoàn/nsubj ngày/obl ,/punct xem/xcomp làm/ccomp cũng/advmod "/punct vai/obj tp.hcm/obj làm_việc/ccomp liễu/nsubj đời/obj công_ty/obj đều/advmod đây/obj sát/xcomp khi/obl xác_minh/ccomp tôi/nsubj
+vá	vòi_rồng/obj đã/advmod đoạn/nsubj được/aux xong/advmod
+vách	đất/compound
+ván	êm_dịu/amod bài/compound
+vân	tay/compound mình/nmod
+vãn	việc/obj
+vì	có/mark việc/nmod nỗi/compound
+vì_sao	?/punct
+ví	đến/csubj tiền/compound như/cc được/aux ./punct khắc_tinh/obj
+vòi_hơi	kính_lặn/compound
+vòi_rồng	"/punct
+vòng	qua/advmod để/case ở/case tiếng/nmod cù_lao/obj ngoài/compound trong/case phía/advcl ,/punct nhiều/amod
+vòng_quanh	xóm/obj
+vòng_tròn	mảnh/nsubj nửa/nummod là/cop đường_ống/compound
+vô	phú_hữu/obj thẳng/xcomp
+vô_can	người/nsubj ,/punct
+vô_cảm	cán_bộ/obl với/cc "/punct dân/obj
+vô_tình	chạm_mặt/xcomp
+vô_tư	"/punct ,/punct
+võng	xuống/advmod gãy/conj
+vùng_đất	một/nummod với/case ngặt_nghèo/amod này/det
+văn_bản	đề_nghị/xcomp riêng/amod
+văn_hóa	xã_hội/conj truyền_thống/amod về/case ,/punct
+văn_phòng	thông_tấn_xã/compound đại_diện/xcomp chương_trình/nmod nguyễn_văn_linh/nmod washington/nmod đăng_ký/xcomp tới/case
+vũng_tàu	-/punct
+vơi	sức_khỏe/nsubj đánh_đổi/conj tiền_bạc/advcl đi/advmod ./punct
+vướng	ma_túy/obj vào/advmod
+vướng_mắc	,/punct
+vườn	nhà/compound anh/compound mảnh/compound
+vượt	chỉ_tiêu/nsubj kế_hoạch/obj đều/advmod
+vạch	ra/advmod chọn/conj đây/obl đã/advmod phương_án/nsubj được/aux ,/punct ./punct
+vấn_đề	liệu/xcomp theo/advcl có/ccomp tới/case đây/nsubj :/punct về/case bức_xúc/amod ,/punct ./punct trọng_dụng/xcomp xây_dựng/conj đến/case trách_nhiệm/xcomp nhân_đạo/compound qui_hoạch/xcomp này/det một/nummod băn_khoăn/xcomp là/cop ách_tắc/xcomp quốc_tịch/compound các/det tp./nmod
+vất_vả	những/det khá/advmod việc/nsubj nên/cc trông_đợi/xcomp đau/conj
+vận_dụng	hợp_lý/xcomp
+vận_tải	biển/obj
+vận_động	bom/obj tạo/conj .../punct anh/nsubj ,/punct xây/xcomp dân/obj
+vật_lộn	nước/obl thợ/nsubj ./punct phải/aux
+vật_tư	xây_dựng/xcomp &/punct
+vật_vờ	như/cc hồn_ma/obj
+vậy	cũng/advmod
+vậy_sao	đến/case
+vắng	thì/cc còn/parataxis nay/nmod bỗng/advmod bóng/obj ./punct
+vắt	vai/nsubj khăn/obj
+vẻ	trên/compound hân_hoan/amod
+vẽ	nghiện/ccomp
+vết_thương	về/case
+về	làm_chứng/xcomp vn/obj .../punct đấy/discourse g/obl tháng/obl nhu/nsubj phía/obj trước/xcomp phía/nmod cầu/nsubj năm/obl thăm/xcomp giám_sát/conj ngõ/obl hơn/advmod mới/advmod thăm/ccomp ./punct nhà/obj trồng/mark phong/nsubj khai_báo/ccomp ngược_lại/dep thì/cc tập_huấn/xcomp thái_bình/obj vụ/nmod ngách/obj ngày/obl ,/punct !/punct chúng_tôi/nsubj "/punct đó/obl tối/obl thế/obj bảo/xcomp thờ_cúng/conj liên_tục/xcomp hay/advmod làm_việc/ccomp liên/nsubj không/advmod đặt_hàng/conj khách/nsubj nước/obj em/nsubj trước/obj nếu/cc liễu/obl khi/obl được/aux quê/obj
+vị_trí	vào/case
+vọng	tiếng/obj phòng/nsubj lại/advmod ra/advmod ./punct
+vốn	100_%/nummod đổ/xcomp .../punct đầu_tư/xcomp gốc/amod mở/xcomp lãi/conj cấp/xcomp đây/advcl vay/xcomp chút/det vốn/nsubj nước_ngoài/compound là/cop tín_dụng/compound gì/det
+vội	giờ/nsubj thì/cc đến/xcomp
+vội_vã	tránh/mark dúi/xcomp đi/conj nhân_chứng/nsubj cầu_thang/obj xuống/advmod ./punct chạy/xcomp lên/xcomp tài_xế/nsubj
+với	hương_nhang/nmod bình/obl vợ/nmod
+vờ	vô_tình/xcomp như/cc
+vỡ	ống/nsubj
+vỡ_lở	chuyện/nsubj sẽ/advmod
+vợ	về/xcomp với/case đây/det người/compound mình/det anh/compound mình/compound về/case
+vợ_chồng	hai/nummod lần/compound chị/compound anh/compound nhi/compound ./punct người/conj của/case đại/compound
+vụ	lã_thị_kim_oanh/compound chống/xcomp cưa/ccomp vào/case việc/compound như_thế_này/dep mua_dâm/xcomp về/case ba/nummod khoa/nmod tham_nhũng/xcomp kiện/xcomp cháy/xcomp tài_chính/compound này/det một/nummod những/det ngoại_tình/xcomp trong/case trương_xuân_đại/compound các/det
+vụ_trưởng	phan_văn_quán/compound vụ/compound
+vụ_án	lã_thị_kim_oanh/compound xét_xử/xcomp trong/case của/case
+vụng	hơi/advmod màn_kịch/nsubj ./punct
+vừa_vặn	thời_gian/obj ,/punct
+vững_vàng	nghề/nmod vẫn/advmod
+washington	tại/case
+www_._anangquangnamfund_._org	qua/case
+xa	hơn_nữa/cc rất/advmod cơ_hội/nsubj ở/case dân_cư/obj ngày_một/amod ./punct dần/advmod
+xanh_ngắt	bóng/obj
+xe	đêm/nmod heo/compound 43h-016/compound đua/xcomp vào/case khác/amod ba_gác/compound màu/compound ông/compound fx/compound matiz/compound gỗ/compound đầu_tiên/amod trờ/xcomp mình/det là/cop các/det chở/xcomp bằng/case chiếc/compound
+xe_cơ_giới	một/nummod chiếc/compound
+xe_hơi	lên/case
+xe_lửa	thì/cc mà/cc
+xe_máy	băng_băng/amod lác_đác/amod cùi_tay/nmod đường/nmod vài/det chiếc/compound
+xe_tải	một/nummod 54n-7/compound nặng/amod ôtô/conj bằng/case chiếc/compound
+xe_ôm	trực/xcomp
+xe_đạp	với/case cọc_cạch/amod bao/conj chiếc/compound
+xem	ông_bà/nsubj nhảy/ccomp có/ccomp quay/parataxis sẽ/advmod ./punct ,/punct xác_nhận/conj bảng/obj điều_kiện/ccomp nhà/obj ảnh/obj chúng_tôi/nsubj đặc_biệt/conj bà/nsubj hồ_sơ/obj đây/obj đặt_cọc/conj trả/ccomp phim/obj thám_tử/nsubj kết_quả/obj diễn_tiến/conj
+xem_lại	thắng/nsubj khi/obl ./punct ,/punct nhật_ký/obj
+xem_xét	kỹ/xcomp
+xen	vào/xcomp
+xin	mua/xcomp ứng_cứu/xcomp thuê/xcomp cảm_ơn/xcomp hỏi/xcomp ?/punct về/advmod để/case nghỉ/xcomp ./punct ,/punct bình/nsubj số/obj chính_phủ/obj chịu/parataxis vay/xcomp "/punct trả/ccomp thuốc_lá/obj nghỉ_việc/xcomp vòng_quanh/ccomp gặp/xcomp
+xin_lỗi	nhầm/ccomp và/cc
+xin_phép	về/xcomp bữa/obl nhu/nsubj ./punct ,/punct
+xoan	chị/compound
+xoay	lo/conj mẹ/nsubj yết_kiêu/nsubj từ/obl quanh/obj phải/aux ./punct thế_là/cc làm/ccomp anh/obj ra/advmod
+xong	thôi/discourse là/cc hợp_đồng/obj tí/obl
+xui	bỏ/ccomp muốn/conj nam/obj
+xung_phong	đã/advmod đi/xcomp
+xuân_lộc	quốc_lộ/conj ngã/appos
+xuôi	chúng_tôi/nsubj dòng/obj từ/advcl ./punct vòng/conj
+xuất_hiện	thắng/nsubj cuộc_chơi/obl cùng/xcomp sẽ/advmod ./punct là/cc nữa/advmod gã/obj ông/nsubj nhu/nsubj giữ/ccomp khi/obl
+xuất_khẩu	riêng/discourse về/case lao_động/obj
+xuất_phát	ubnd/obl
+xuất_trình	rồi/cc ,/punct giấy_tờ/obj
+xuất_xứ	bút_tích/compound về/case "/punct
+xuống	chân/obj cán_bộ/nsubj mà/cc và/cc ./punct ,/punct đời/obj gấp/advcl lễ_tân/obj trả/ccomp tươi_cười/xcomp thư/nsubj điềm_nhiên/xcomp
+xuống_đá	tà_hín/list nhà_đèn/list và/conj bản_t_hung/list tân_phước/list tân_an/list sân_bay/list
+xác_minh	cái/obj
+xác_nhận	do/case ubnd/nsubj có/ccomp viện_trưởng/nsubj ký/conj vì_vậy/cc ./punct phần/obl không/advmod đến/ccomp cũng/advmod vụ_trưởng/nsubj toàn/nsubj đã/advmod đúng/xcomp
+xác_định	trách_nhiệm/obj sai_phạm/xcomp cơ_quan/nsubj có/ccomp phải/aux thanh_tra/nsubj chưa/advmod khi/obj ./punct ,/punct trường_hợp/advcl "/punct rõ/xcomp hướng/obj đã/advmod trước_mắt/obl được/advmod
+xáng	cạp/compound chiếc/compound
+xâu_chuỗi	câu_chuyện/obj
+xây	làm/parataxis chuyện/nsubj xong/xcomp từ/advcl chưa/advmod và/cc ./punct ,/punct nhà/obj đang/advmod khang_trang/xcomp nhà/nsubj nay/obl nền/obl trụ_sở/obj là/cop cầu/nsubj
+xây_dựng	do/case năm/obl đảng/obj hệ_thống/obj chỉnh_đốn/xcomp nhà_tình_nghĩa/obj sẽ/advmod cảng/obj và/cc về/case ./punct ,/punct nhà/obj đội_ngũ/obj phát_triển/conj nhớ/ccomp lòng/obj cơ_bản/xcomp hội/nsubj đền/nsubj tương_lai/obj hoàn_thiện/xcomp
+xã	dương_văn_nam/compound huyện/appos việt_hùng/compound xuân_hải/compound anh_hùng/compound tỉnh/conj trên/case từ/case tại/case
+xã_hội	-/punct học_tập/xcomp trong/case vì/case
+xé	áo/obj để/case sau/obl bịt/ccomp ./punct
+xét	tình/obl lý/obl
+xét_xử	phúc_thẩm/xcomp đang/advmod lã_thị_kim_oanh/obj được/aux
+xóa	thông_số/obj
+xóa_sổ	phương_án/nsubj ./punct
+xóa_đói_giảm_nghèo	vn/nmod
+xóm	nhỏ/amod người/compound bảy/nummod xuống_đá/compound vào/case nhà_đèn/compound con/compound ./punct đó/nsubj ở/case tân_phước/compound là/cop từng/det trong/case của/case
+xót_xa	vừa/advmod ,/punct
+xôi	gói/compound thuốc/conj
+xôn_xao	rất/advmod nghe/advcl người/nsubj ./punct ,/punct nhao_nhao/conj
+xông	vào/advmod anh/nsubj .../punct hết/obl tỉa/ccomp ống/obj ,/punct đồng/obj lại/advmod cho/conj cuốc/conj ra/xcomp
+xúc_động	kém/xcomp mạnh/amod đoàn/nsubj bị/aux khi/obl đã/advmod cũng/advmod ./punct tôi/nsubj
+xưng	đầu/nsubj nói/conj thám_tử/obj ./punct
+xưởng	vẽ/compound ở/case vẽ/xcomp ngay/discourse thuở/nmod tại/case
+xảy	chuyện/obj cháy/nsubj hậu_quả/obj tham_nhũng/ccomp sẽ/advmod công_ty/obl ngày/obl ,/punct ./punct không/advmod ngày_mai/obl vụ_việc/nsubj cơ_quan/advcl điều/nsubj ách_tắc/ccomp tiêu_cực/xcomp ra/advmod vụ_án/nsubj đã/advmod đến/advmod ra/xcomp
+xảy_ra	đã/advmod trận/obj
+xấp_xỉ	đã/advmod tuổi/obj
+xấu_hổ	tủi_nhục/xcomp ,/punct liên/nsubj
+xởi_lởi	tên/obj gái/nsubj cho/xcomp .../punct ngay/advmod
+xứng_đáng	hưởng/xcomp người/nsubj có/xcomp
+xử	tòa/nsubj đã/advmod em/obj luật/obl khách_quan/xcomp
+xử_lý	pháp_luật/advcl kỷ_luật/xcomp thì/cc vi_phạm/parataxis công_trình/obl đúng/parataxis phải/aux ?/punct tiêu_cực/obj lại_nữa/cc quan_điểm/obj nghiêm_minh/xcomp bị/aux -/punct về/case ./punct ,/punct không/advmod nội_bộ/obj trên/xcomp xác_định/obl sao/det để/conj người/obj đối_với/dep
+xử_phạt	năm/obl sau/obj vi_phạm/obj trong/case
+y_học	của/case
+yên_tâm	rồi/advmod thế_là/cc lại/advmod nghe/advcl người/nsubj bừng_bừng/conj .../punct ,/punct nô_nức/conj
+yêu	họ/nsubj nhau/obj vẫn/advmod
+yêu_cầu	do_vậy/cc viết/ccomp họ/nsubj cơ_quan/nsubj phải/aux động/ccomp công_tử/nmod liên_quan/xcomp sẽ/advmod báo_cáo/ccomp giám_định/ccomp ./punct ,/punct nhưng/cc có/parataxis "/punct người/obj thư/nsubj đã/advmod trước_mắt/obl các/det tôi/nsubj
+yêu_quí	cặp_bồ/conj người/nsubj ./punct
+yết_kiêu	những/det "/punct các/det
+yếu_tố	hạ_tầng_cơ_sở/nsubj là/cop quan_trọng/amod hấp_dẫn/xcomp ./punct
+ào	tới/advmod cứ/advmod cùng/xcomp người/nsubj liền/advmod phía/advcl bởi/case nỗi/nsubj ra/xcomp
+ào_ạt	về/advmod mừng_tủi/nsubj .../punct dội/xcomp
+ách_tắc	giao_thông/obj dồn/xcomp cửa_ngõ/advcl ./punct nếu/cc khó/conj
+án	vụ/compound của/case nhận/ccomp
+áo	đen/amod một/nummod the/compound với/case béo/amod dáng_vẻ/compound da/compound
+áp_dụng	nước/nsubj khi/obl cơ_chế/obj đều/advmod
+áp_lực	ống/advcl dòng_chảy/compound nước/compound chảy/xcomp
+âm_mưu	anh_em/nmod xui/xcomp
+âm_thầm	vợ/nsubj đang/advmod toàn/nsubj tìm/xcomp cách/obj ./punct thư/obj theo/xcomp
+ép	bố_mẹ/nsubj cho/xcomp mình/obj không/advmod
+êm_đẹp	:/punct đang/advmod tuyên_bố/conj thứ/obj và/cc tình_cảm/nsubj ./punct nhất/advmod
+ì_ạch	đường/advcl quá_tải/amod
+ít	quá_khứ/obj vào/advmod chạm/xcomp
+ít_lâu	đó/det
+ô	mặt/nsubj ./punct cửa_sổ/compound ,/punct ông/nmod có/parataxis một/nummod phòng_thường_trực/conj cái/compound là/cop tò_vò/compound
+ôm	nói/advcl anh/nsubj ./punct hồ_sơ/obj đi/ccomp
+ôn_tồn	nặng_lời/xcomp nhưng/cc thư/nsubj hứa/xcomp đến/xcomp và/cc hụt/xcomp ./punct vẫn/advmod toàn/nmod
+ông	to/amod với/case mình/nmod con/compound chủ/compound trai/compound thường_trực/compound đó/nsubj nội/compound cho/case xấp_xỉ/amod số/nmod "/punct bùi_văn_huấn/compound đeo/xcomp một/nummod là/cop bố/compound ấy/det các/det của/case
+ông_bà	hai/nummod già/amod đến/case tàu/compound hồng/compound
+ông_già	chạy/xcomp
+ôtô	và/cc
+ùn_tắc	ngã/advcl giao_thông/obj
+úc	ở/case
+ý_kiến	ban/nmod các/det công_luận/nmod nhiều/amod
+ý_muốn	chia_sẻ/xcomp
+ý_nghĩa	dường_như/advmod không/advmod
+ăn	m/obl .../punct đất_liền/obl cát/obj đây/obl nhu/nsubj uống/conj đã/advmod hàm_ếch/nsubj sâu/xcomp cầu_mong/conj vội/xcomp và/cc ./punct sáng/obj xong/advmod hạnh/nsubj đến/ccomp cái/compound vợ/obl bởi/case mình/nsubj cơm/obj mẹ_con/nsubj ngủ/conj ,/punct đi/conj có/parataxis "/punct bờ/obl tự_túc/xcomp đợi/conj ở/conj thư/nsubj trưa/obl ngủ/xcomp bánh_mì/obj nhà/obl vì/case không/advmod cứ/advmod m/obj sao/obj mặc/conj
+ăn_hỏi	vừa/advmod được/aux nhà_trai/nsubj liên/nsubj
+ăn_mặc	ngồi/conj chỉnh_tề/xcomp
+đ	500_._000/nummod
+đan	mây/obj
+đang	phải/aux đất/nmod đi/xcomp không/advmod
+đau	san_sẻ/xcomp những/det cũng/advmod vì/case chính/discourse ,/punct nỗi/compound
+đem	?/punct có_thể/aux thủ_phạm/nsubj tất_cả/obj đường_dây/obl máy_fax/obj
+đen	nóng/amod
+đeo	người/nsubj đèn/obj kính/obj vòi_hơi/obj gia_đình/nsubj phải/aux giỏ/obj tháo_dỡ/conj mà/cc ./punct ,/punct không/advmod ghi/conj găng_tay/obj đi/ccomp
+đeo_đuổi	vụ/obj đại/nsubj
+đi	xe_tải/advcl báo/obj người/nsubj vào/advmod rủ/conj xin/conj bất_ngờ/conj dọc/xcomp họ/nsubj lên/ccomp tháo_gỡ/xcomp xuống/xcomp thêm/ccomp phải/aux ?/punct để/case cùng/xcomp sông/obj một_mình/obj vận_động/xcomp thẳng/xcomp tham_quan/xcomp nạn_nhân/obj nhanh/xcomp buôn_lậu/xcomp chiến_tranh/obl hát/xcomp du_học_sinh/nsubj g/obl cuộc_sống/obl kiện/xcomp để/advcl la_cà/conj nhu/nsubj bà/nsubj uống/conj còn/cc về/ccomp giám_đốc/obl ngay/discourse đã/advmod rồi/cc xin/xcomp đàn_ông/nsubj tuấn/nsubj vòi_rồng/obj bất_ngờ/advcl ngày/obj làm_việc/xcomp vừa/advmod thanh_niên/obj ký/parataxis và/cc vắng/xcomp lang_thang/xcomp ./punct thăm/ccomp bước/advcl hạnh/nsubj tìm/xcomp úc/obl lại/advmod bên/obj sinh/nsubj nhà/obj nó/nsubj tiến/conj nam/nsubj đảng_viên/nsubj khoản/nsubj sao/det đến/obl qua/xcomp bảo/parataxis sáng/obl nguyễn_văn_nhã/nsubj hoan_nghênh/ccomp nước_ngoài/obj sắp/advmod tháng/obj lần/obl thì/cc bị_cáo/nsubj nhà_hàng/obl chở/parataxis hôm/obl với/cc taxi/obl đâu/obj bình_thường/conj tuần/obl viện/obj vá/xcomp cửa/obl xe_tải/nsubj xem_bói/xcomp đoàn/obl ngày/obl ,/punct đào/nsubj du_học/ccomp bộ/obj đang/advmod trở/conj chúng_tôi/nsubj luôn/advmod mượn/xcomp chính_sách/nsubj phá_án/xcomp "/punct giờ/obl tiếp/ccomp dự_án/obj thư_ký/nsubj bà_rịa/obj !/punct nhiệm_vụ/obj cũng/advmod trả/conj bộ_đội/obj cách_mạng/obj khởi_tố/ccomp nói_nhỏ/conj đâu/obl làm/xcomp nhặt/xcomp thứ_trưởng/nsubj ai/nsubj kèm/xcomp lan/nsubj lấy/conj về/xcomp trai_gái/nsubj ăn/xcomp học/xcomp mua_dâm/xcomp sinh_viên/nsubj phải/ccomp có/conj liên/nsubj không/advmod chỗ/obj theo/ccomp chiến_tranh/nsubj quy_chế/obl vào/obl kéo_dài/conj vào/xcomp đều/advmod nên/cc chị/nsubj nếu/cc nguyên/nsubj xe/obj xoan/nsubj hẹn/conj được/aux ra/xcomp
+đi_lại	đặt/conj nhau/obl cho/case người/nsubj phương_tiện/nsubj ngật_ngưỡng/xcomp mặt_mày/obj ./punct thanh_niên/nsubj ,/punct
+đi_tới_đi_lui	họ/nsubj giơ_lên_giơ_xuống/conj ./punct liên_tục/xcomp
+đi_đứng	teo/aux ./punct tuổi/obj vững/xcomp nay/obl "/punct ,/punct phạm_ngọc_khang/nsubj không/advmod
+đinh	như/cc đóng/xcomp cột/compound
+điên	?/punct mình/nsubj con/nsubj hay/cc điên/conj
+điềm_tĩnh	rất/advmod
+điều	đó/det đoàn_kết/ccomp khó/amod bất_ngờ/amod duy_nhất/amod :/punct hiểu/xcomp trở/ccomp đơm_đặt/xcomp đáng/xcomp cho/case quan_trọng/amod gây/xcomp xảy/xcomp này/det một/nummod những/det gì/det ấy/det
+điều_khiển	hội_chứng/aux được/aux mình/obj ./punct cháu/nsubj ,/punct không/advmod
+điều_khoản	này/det
+điều_kiện	địa_điểm/nsubj đó/det với/case một_số/det để/case bắt_buộc/xcomp giải_quyết/xcomp vay/xcomp tối_đa/amod một/nummod những/det là/cop gì/det trong/case đi/xcomp
+điều_tra	làm/xcomp làm/obj việc/obj cơ_quan/nsubj bảo_vệ/ccomp cuộc/compound &/punct vụ_án/obj đang/advmod mở_rộng/xcomp dân_số/obj của/case
+điểm	đen/amod một_số/det bể/xcomp họ_hàng/compound nào/det hạn_chế/amod thưa/xcomp nổi_bật/amod chung/amod đến/ccomp "/punct bán/ccomp quê_quán/compound một/nummod những/det đổi_mới/compound km/advcl thứ/compound các/det
+điểm_chỉ	và/cc ,/punct
+điện	về/xcomp nhà/obj cửa_hàng/advcl ngày/obl đào/nsubj ./punct
+điện_thoại	84_._4/nummod lbkt/punct :/punct -/punct di_động/compound rbkt/punct ./punct tuấn/nmod cố_định/amod đtdđ/appos này/det liên_hệ/xcomp qua/case
+điện_thoại_di_động	theo/xcomp
+đo_đạc	hình_dạng/obj xác_định/conj
+đon_đả	bấm/conj chị_ta/nsubj cầm/xcomp hộ_chiếu/obj ./punct
+đong	nước_mắt/obj đầy/xcomp
+đoàn	375/nummod kiểm_tra/xcomp đồng_đội/conj sang/xcomp cả/det hãng/nmod thanh_tra/xcomp cùng/case của/case
+đoàn_kết	toàn/nsubj
+đoán	:/punct lan/obj ./punct tuyết/nsubj
+đoạn	thuộc/xcomp nhỏ/amod sông/compound kiềng/compound ống/compound cũ/amod nhiều/amod bờ/compound ở/case một/nummod của/case
+đt	-/punct
+đu	anh/compound
+đua	xe/obj đám/compound
+đuổi	hải/nsubj theo/xcomp
+đà	cái/compound ngang/amod rủ/xcomp ấy/det "/punct
+đàm_thoại	cuộc/compound
+đàn_bà	kia/det người/compound đẫy_đà/amod
+đàn_áp	phong_trào/nsubj bị/aux ,/punct
+đàn_ông	đó/det người/compound gã/compound râu_tóc/compound phóng_khoáng/amod trăng_hoa/compound ,/punct không/advmod bản_lĩnh/compound này/conj phải/amod nhu/nsubj này/det một/nummod những/det là/cop trước/case
+đàng_hoàng	ai/obj như/cc
+đào	hít/xcomp và/cc
+đám_cưới	liên/compound
+đáng	ủng_hộ/xcomp cuộc/nsubj và/cc nói/xcomp là/cc nghi/xcomp ./punct không/advmod sợ/xcomp công_trình/obj rất/advmod
+đánh	pháp/obj lực/nsubj dạt/xcomp anh/nsubj bị/aux chạy/ccomp ./punct trồi/conj dẫn/conj ra/advmod lần/obj xe/obj bom/obj lộn/conj
+đánh_đổi	lấy/advmod đồ_dùng/obj cùng/cc cũng/advmod được/aux ngày/obl số/nsubj
+đáp_ứng	./punct chưa/advmod nguyện_vọng/obj liễu/nsubj ,/punct điều_kiện/obj được/advmod
+đáy	xuống/case cuộc_sống/nmod cùng/amod
+đâu	đấy/det ở/case đến/case vậy/discourse từ/case vào/case
+đây	đến/case như/cc ở/case mới/advmod trước/case đấu_tranh/nmod mà/discourse từ/case tại/case
+đè	bút/nsubj bị/aux lên/xcomp
+đèn_pin	ba/nummod csgt/nmod đến/discourse chiếc/compound
+đêm	mỗi/det đó/det tuần/compound cuối/amod hôm/compound 4/conj suốt/amod nhiều/amod giữa/case khuya/amod rất/advmod ấy/det 5/nummod
+đòi	anh/nsubj mẹ_con/nsubj và/cc ./punct không/advmod nhà/obj lại/advmod nhưng/cc "/punct tài_sản/obj điều_kiện/obj được/aux tức_là/cc cô/nsubj gặp/xcomp
+đòi_hỏi	chủ_trương/obj ông/obj trách_cứ/conj ./punct thực_tế/nsubj gì/obj
+đó	xác_định/xcomp vào/case từ/case đề_cập/xcomp sau/case đến/case ở/case trên/case có/xcomp trong/case trước/case
+đói	ăn/xcomp cho/ccomp ,/punct
+đón	điện_thoại/obj chiều/obj dòng/obj rình/xcomp
+đóng	lúc/obl khách/obj dù/cc trạm/nsubj cột/obj đinh/nsubj mạnh/conj đường/nsubj ./punct ,/punct dấu/obj lại/advmod nước/nsubj g/obl vai/obj thám_tử/nsubj km/advcl đã/advmod được/aux khi/obl
+đóng_cửa	nhà_hàng/nsubj
+đóng_góp	kinh_phí/obj bà_con/nsubj mở_rộng/parataxis ./punct ,/punct do/cc
+đôi	trẻ/amod một/compound
+đôla	50/nummod
+đông	dân/nsubj rất/advmod cũng/advmod ./punct
+đúng	băn_khoăn/nsubj ai/parataxis con/obj giọng/obj ngày/obj phải/aux :/punct để/case pháp_luật/obj phút/obj ./punct ,/punct đối_tượng/obj tội/obj tách/csubj rồi/discourse là/cc cần_thiết/conj phạm_xuân_ái/nsubj !/punct nhưng/cc đúng/conj băn_khoăn/csubj sai/conj thẩm_quyền/obj rất/advmod là/cop người/obj thôi/discourse cảnh_báo/advcl
+đút	túi/advcl giấy/obj
+đăng	tin/obj
+đăng_ký	quyền/obj dịch_vụ/obj thuê/xcomp gia_đình/nsubj
+đĩ	con/compound
+đơm_đặt	mình/obl
+đơn	xin/xcomp tố_cáo/xcomp lá/compound vu_khống/xcomp vào/case đây/nsubj nặc_danh/amod về/case ./punct này/det một/nummod những/det là/cop trên/compound chị/nmod trong/case tự_nguyện/xcomp
+đơn_giản	:/punct rất/advmod gõ/ccomp ./punct
+đơn_phương	theo_dõi/xcomp hóa_giải/mark thư/obj
+đơn_vị	những/det kinh_doanh/xcomp thi_công/xcomp đầu_tư/xcomp ,/punct
+đơn_độc	nạn_nhân/nsubj ./punct không/advmod
+đưa	ra/xcomp vào/advmod họ/nsubj anh_em/nsubj về/conj giật/ccomp gia_đình/nsubj tên/obj sẽ/advmod đó/nsubj trở_về/ccomp tiền/obj có/advcl kịch_bản/nsubj chọn/parataxis về/ccomp khuyến_cáo/obj đã/advmod đơn_vị/nsubj ví_dụ/cc tay/obj vị_trí/obl con/obj việt/obj anh/nsubj đào/obj biện_pháp/obj mới/advmod biết/advcl và/cc ./punct cần_cẩu/obj giả_thiết/obj lại/advmod thám_tử/obj đến/ccomp ra/advmod là/cop đến/advmod đi/xcomp giúp/xcomp trọng_lượng/obl bệnh_viện/obj xuống/advmod bệnh_viện/obl số/nsubj ,/punct kiềng/nsubj bà/obj làm/ccomp chúng_tôi/nsubj lan/obj cũng/advmod giờ/obl hào/nsubj hải/nsubj đó/obl xét_xử/ccomp tới/obl mảnh/obj ra/ccomp ra_sao/dep đi/ccomp lao_động/obj lương/obj về/xcomp chúng_tôi/obj nhà/obl chúng_ta/obj không/advmod nhưng/cc vụ_án/nsubj người/obj được/aux vợ/obj máy/obj toản/nsubj
+đưa_đẩy	:/punct bằng/nsubj "/punct ./punct đi/ccomp
+đường	tất_cả/det cảng/compound dẫn/xcomp .../punct lbkt/punct sau/case hai_bà_trưng/compound :/punct liên/dep a5/compound tạm/amod bưởi/compound dưới/case pháo_đài_láng/compound đoạn/compound này/det sau/nsubj điểm/compound phẳng_lì/amod con/compound dây_điện/compound tp/compound ./punct là/cc lên/xcomp chung/amod xanh_ngắt/amod ông/nmod ở/case chọn/ccomp trên/case điều/nsubj ngang/amod là/cop khu_vực/advcl biến/xcomp nội_đồng/compound nước/compound điện_thoại/compound trường_chinh/compound rbkt/punct ,/punct cho/case 13/nummod bêtông/compound chạy/xcomp với/case từ/case b/compound quẹo/xcomp những/det tuyến/advcl liên_cảng_a5/compound xe_lửa/compound liên/discourse
+đường_dây	chuyên/amod một/nummod ở/case trong/case đến/case điện_thoại/compound khác/amod này/det
+đường_ray	ngay/discourse trên/case
+đường_ống	gần/advmod qua/case của/case
+được	như/cc người_ta/obj nếu/cc không/advmod
+được_chăng_hay_chớ	,/punct
+đượm	đang/advmod men/obj vội/conj ./punct
+đại	như/cc anh/compound công_nhân/conj chính/discourse người/conj của/case
+đại_diện	ngoại_giao/obj viện_kiểm_sát/compound nước_ngoài/advcl
+đại_học	kinh_tế/compound
+đạn	bom/compound của/case
+đạo_đức	,/punct
+đạp	nền/advcl
+đạt	mức/obl sự/nsubj ./punct
+đảm_bảo	xảy/ccomp mọi/nsubj bí_mật/obj phải/aux hiện_nay/obl việc/nsubj chưa/advmod ./punct đều/advmod tối_mật/xcomp nhu_cầu/obj là/cop
+đảng	của/case
+đảng_bộ	tp/compound của/case
+đảng_viên	hội_đoàn/conj người/compound thành_viên/conj "/punct mạch_máu/conj
+đất	xây_dựng/xcomp lào/compound đầy/conj ngỡ/ccomp thấm/xcomp bạn/compound cù_lao/compound trồng/xcomp "/punct mảnh/compound trên/case thép/compound đạn/nmod nghèo/amod ấy/det eo_hẹp/amod
+đất_liền	vào/case
+đất_nước	đối_với/case lào/compound
+đấu_tranh	một/nummod vụ/xcomp họ/nsubj hòa_bình/obl chống/xcomp đã/advmod ./punct
+đấy	?/punct nhà/obj à/discourse nhỉ/discourse ai/det "/punct ./punct
+đầu	người/compound dây/compound từ/case hai/nummod ngõ/compound bên/compound cuối/nmod nhà/conj phơi/conj phố/compound đón/xcomp
+đầu_tiên	vấn_đề/xcomp việc/compound
+đầu_tàu	báo/nsubj có_thể/aux là/cop "/punct ./punct ,/punct lên_tiếng/parataxis
+đầu_tư	cụ_thể/xcomp kinh_doanh/conj cầu_cảng/obj được/aux dự_án/nsubj nước/advcl phương_thức/obl ngân_sách/obj giáo_dục/obl
+đầy	người/obj thư/compound và/cc bom_đạn/obj rồi/cc
+đầy_đủ	chưa/advmod ,/punct
+đẩy	nhanh/xcomp đáy/advcl hơn/advmod bị/aux tốc_độ/obj đã/advmod con_người/nsubj
+đẩy_mạnh	:/punct ưu_tiên/conj phát_triển/conj xã_hội_hóa/xcomp văn_hóa/obl ./punct
+đẫy_đà	xuân_sắc/obj
+đập	cho/case bể/xcomp cửa_kính/obj
+đậu	xe/obj
+đắng	:/punct thật/discourse làm/ccomp tâmsự/nsubj lòng/obj "/punct ./punct
+đắp	đường/obj
+đặc_biệt	và/cc chú_ý/xcomp thông_tin/nmod này/det
+đặt	kể_cả/dep như/cc đại_diện/nsubj nặng/xcomp dùng/parataxis có/ccomp ?/punct nhân_chứng/obl cũ/xcomp mà/mark cửa/obl mà/cc trong/advcl và/cc nghĩa_vụ/obj bày/xcomp ./punct ,/punct số/nsubj không/advmod tự/det lại/advmod câu/obj tiền/obj câu_hỏi/obj đều/advmod vấn_đề/obj hải/nsubj tuy_vậy/cc tạo_hóa/nsubj cùng/advmod lên/advmod trước/xcomp đã/advmod rồi/cc hà_nội/obl máy/obj tôi/nsubj
+đặt_cược	người/nsubj niềm/obl
+đặt_cọc	tiền/obj và/cc
+đặt_hàng	,/punct
+đẹp	,/punct
+đẹp_trai	cao_ráo/conj
+đếm	họ/nsubj ./punct ngày/obj
+đến	chăm_sóc/xcomp người/nsubj trang_trại/obj quần_chúng/nsubj .../punct nhờ/xcomp nhân_viên/nsubj kế_hoạch/nsubj thuê/xcomp ?/punct :/punct để/case sẽ/advmod điều_tra/xcomp chưa/advmod thẳng/xcomp hát/xcomp có_thể/aux qui_trình/nsubj khi/nmod đơn/nsubj giao_lưu/obl giây/obj chúng_tôi/obl nhu/nsubj khu_vực/obj đòi/parataxis thắng/obj đã/advmod cùng/cc rồi/cc muộn/obl đàn_ông/nsubj đường_ống/obj sau/obj thắng/nsubj nhân_danh/advcl dường_như/advmod nhà_nghỉ/obj trường/obj mới/advmod hỏi/ccomp và/cc khi/obj ./punct là/cc sáng/obj nguyên_nhân/obj rồi/advmod lại/advmod ông/nsubj đến/ccomp nó/nsubj lúc/nmod hiện_trường/obj thám_tử/nsubj là/mark quán/obj lần/obl thì/cc sửa/xcomp lượt/obj tuổi/nmod ngày/obl ,/punct đào/nsubj cửa_quan/obj đang/advmod !/punct mũi/nsubj "/punct đưa/xcomp tìm/parataxis trưa/nmod thư/nsubj nộp/xcomp trạm/obj đường/obl nói/conj cơ_hội/nsubj y_tá/nsubj nhà/obl bạn/obj công_ty/obj không/advmod khách/nsubj cơ_quan/obj em/nsubj giải_cứu/ccomp chị/nsubj đứng/conj vợ/nsubj gần/xcomp tham_quan/mark kèm/conj được/advmod
+đề_cập	trách_nhiệm/obl đầu_tiên/xcomp được/aux rào_cản/nsubj cũng/advmod ./punct
+đề_nghị	ubnd/obj thắng/nsubj gọi/parataxis thành_lập/ccomp hđxx/obj cái/nsubj thông_cảm/ccomp bịn_rịn/advcl hòa_giải/xcomp sẽ/advmod và/cc ./punct ,/punct phân_cấp/ccomp anh/obj luật_sư/nsubj "/punct liên_hệ/ccomp phân_cấp/xcomp tới/obl đưa/aux bộ/nmod trước_mắt/obl đăng_ký/ccomp tôi/nsubj
+đền	gần/advmod ngôi/compound ở/case
+đền_bù	giải_tỏa/conj giải_tỏa/xcomp
+để	ngồi/mark chắc_chắn/amod .../punct hiểu/mark hộ/obj quê_hương/obj hoang/xcomp thực_tế/mark tận_mắt/ccomp đăng/mark xảy/xcomp mặc/xcomp theo_dõi/mark chỉ/advmod đơn_vị/nsubj đưa/mark đã/advmod tiếp_cận/mark chứng_minh/mark khôi_phục/mark anh/nsubj làm/mark trả/mark xông/mark chìm_xuồng/dep khai_thác/mark ./punct danh_dự/obj lại/advmod hạ/mark ông/nsubj bảo_đảm/mark vào/mark lau/ccomp kiểm_tra/mark tìm/mark ngoài/obl triển_khai/obj giải_quyết/mark đối_với/case nấu/mark lấn_chiếm/ccomp ,/punct nào/cc vùng_đất/obj "/punct mở_mang/mark hàng/obj tránh/mark có/mark cư_trú/mark dấy/mark cán_bộ/nsubj nói/conj mà/cc ngâm/ccomp công_văn/advcl có/conj không/advmod phủi/mark về/mark chiến_tranh/nsubj thủ_tục/nsubj đòi/mark xe/obj bảo_vệ/mark ruộng/nsubj mặc/conj đẩy/mark
+để_lại	mà/cc đã/advmod cha_anh/nsubj
+địa_chỉ	nơi/compound nơi/nsubj :/punct cần/xcomp nhau/nmod và/cc ./punct ,/punct phòng_khám/compound đầu_tiên/amod này/det nhà/compound là/cop đối_tượng/nmod số/compound các/det
+địa_vị	thu_nhập/conj về/case
+địa_điểm	đậu/xcomp khai_thác/xcomp tốt/amod
+địa_ốc	lớn/amod hà_nội/nmod
+định	thì/cc làm/xcomp tặng/xcomp cuối_cùng/obl thử/ccomp trước/obl đào/obj và/cc ta/nsubj ./punct ,/punct ngày/obl ông/nsubj nhưng/cc nói/parataxis còn/cc bỏ/xcomp xử/xcomp về/parataxis chị/nsubj cho/ccomp
+định_cư	pakse/advcl ./punct việt_kiều/nsubj
+đọc	làm_sao/advmod báo/obj qui_định/obj đi/advcl được/aux thư/obj
+đỏ	mới/amod
+đối_chất	cấp/obl
+đối_diện	hỏi/parataxis công_việc/nsubj luôn/advmod chỉ/advmod hồ_sơ/obl cảm_thấy/parataxis "/punct ./punct ,/punct
+đối_tượng	chuyên/amod ba/nummod những/det cho/case mua_dâm/xcomp cùng/cc khai_thác/xcomp của/case
+đốm	sáng/amod duy_nhất/amod
+đống_đa	hà_nội/conj ,/punct
+đốt	như/cc giấy/obj tiền/obj
+đồ_vật	đó/det các/det ,/punct
+đồn_bót	nè/discourse xưa/nmod là/cop "/punct @/punct chỗ/nsubj
+đồng	vàng/conj điều_kiện/nmod tiền/compound khoảng/advmod là/cop tỉ/nummod thì/cc triệu/nummod ./punct số/nsubj
+đồng_bào	nước/compound
+đồng_bộ	chưa/advmod
+đồng_chí	như/cc
+đồng_hành	đã/advmod tội_ác/obl tôi/nsubj
+đồng_hồ	hết/xcomp
+đồng_hồ_mặt_trời	bằng/case
+đồng_minh	tuyết/conj một/nummod với/case là/cop
+đồng_nai	ở/case -/punct ,/punct
+đồng_nghiệp	biếu/xcomp một/nummod lâu/conj đồng_nai/advcl thân_tình/amod bà/nmod tên/compound đến/xcomp của/case
+đồng_thanh	loại_bỏ/ccomp lại/advmod nhưng/cc hôm_qua/obl hội_nghị/advcl ./punct ,/punct tiếng_nói/nsubj đều/advmod
+đồng_ý	dn/nsubj lan/nsubj cho/conj hợp_tác/xcomp chia_tay/conj như/cc ./punct đề_nghị/obj không/advmod
+đồng_đội	một/nummod cùng/cc
+đổ	thì/cc .../punct xuống/xcomp xuống/ccomp cát/obj xuống/advmod ./punct gục/xcomp thân_xác/obj chuông/obj đáng_lẽ/advmod nhà/nsubj lấp/advcl tiêu_chuẩn/obl nhu/nsubj ăn/ccomp ở/parataxis ập/xcomp mặt/obj
+đổi	lấy/ccomp hộ_chiếu/obj thực_chất/nsubj ?/punct :/punct matxcơva/advcl lời/obl làm/conj ./punct ,/punct hả/discourse nhanh/xcomp lại/advmod chúng_tôi/nsubj vòng/obl lòng/obj đất/obj là/cop hóa_giải/ccomp
+đổi_mới	phương_thức/obj
+đổi_thay	biết_bao/advmod biến_cố/conj
+đỗ_quốc_việt	đối_với/case
+độ	lớn/amod cao/amod nguyên_nhân/nsubj phá/xcomp là/cop do/case với/case chuẩn_xác/amod ./punct nước/compound
+độ_lượng	rất/advmod
+độc_giả	doanh_nghiệp/conj rộng_rãi/amod
+độc_kế	./punct hoạn_thư/compound
+đội	thiếu_niên/compound người/nsubj thúng/obj thám_tử/compound lặn/xcomp mít/obj dịp/compound ./punct ,/punct thợ/compound công_ty/nmod khăn_xếp/obj bóng/compound xóm/nmod áo/obj đó/obl đặc_nhiệm/compound bảo/parataxis văn_nghệ/compound
+đội_ngũ	có/xcomp cb/compound cc/cc
+đội_nón_ra_đi	./punct của_cải/nsubj lần_lượt/advmod rồi/cc ,/punct hết/advcl thế/discourse
+đội_trưởng	nguyễn_sơn_nam/compound
+động	ai/nsubj máy_móc/obl được/aux
+động_cơ	cán_bộ/nmod
+động_thái	khi/nmod nào/det
+động_viên	cha/nsubj bộc_bạch/parataxis tuy_nhiên/cc đã/advmod "/punct gác/conj ,/punct ./punct
+đớn_đau	và/cc
+đời	con/conj tôi/det về/case lan/nmod chị/compound mình/det một/nummod quang_gánh/compound tư/amod cả/det vợ/compound
+đỡ	lo/xcomp người/nsubj như/cc thì/cc .../punct căng_thẳng/xcomp vậy/obj mà/mark mất_sức/ccomp ./punct ,/punct khổ/xcomp cho/case có/parataxis đỡ/mark ở/advcl nhớ/xcomp
+đợi	mẹ/obj bộ_phận/obj ngày/obj và/cc ,/punct có_thể/aux lúc/obj đang/advmod chờ/conj thư/nsubj đúng/xcomp
+đợt	trong/case mùa/compound tổng_tấn_công/xcomp
+đụng	nhiêu_khê/ccomp vô/advmod "/punct ./punct
+đủ	phải_chăng/dep thuốc/nsubj đường/obj chưa/advmod ./punct không/advmod thấm/xcomp đất/nsubj rồi/advmod nhưng/cc ăn/obj đô/obj
+đứa	tuổi/compound lớn/amod hai/nummod nhỏ/amod
+đứng	ngoài/obl chủ/nsubj dậy/xcomp xã/nsubj quanh/obj cửa/obl sẽ/advmod mới/advmod và/cc ./punct ,/punct đang/advmod bấm/ccomp chúng_tôi/nsubj tận/obl bờ/obl bà/nsubj cong/xcomp ra/advmod cầu_thang/advcl lên/advmod tố_cáo/ccomp quả_thật/advmod bảo_lãnh/ccomp vận_động/conj đi/ccomp
+đừng	đặt_cược/ccomp !/punct để/xcomp
+ưu_tiên	đầu_tư/xcomp ,/punct
+ưu_ái	những/det cùng/cc
+ưu_đãi	dù/cc được/aux công_ty/nsubj
+ước_tính	ngày/obj
+ảm_đạm	thật/advmod giúp_đỡ/parataxis chuyển_dời/parataxis cuộc_sống/nsubj ./punct ,/punct
+ảnh	tấm/compound anh/conj mấy/det chân_dung/compound loạt/compound ./punct ,/punct địa_chỉ/conj liên/compound ố/amod ảnh/conj liên/nmod một/nummod là/cop kèm/conj lãnh_tụ/nmod phía/nsubj
+ảnh_hưởng	tình_cảm/obl thì/cc thám_tử/obl việc/obl khoảng/obl mà/cc ./punct không/advmod cũng/advmod nếu/cc con/nsubj
+ấm	trà/compound
+ấn_tượng	rất/advmod
+ập	đến/xcomp buổi/nsubj
+ếm	bỏ/conj bùa/obj bị/aux nhà/nsubj
+ố	vàng/amod
+ốm	sinh/nsubj nhưng/cc bị/aux nặng/xcomp cách/ccomp bà/nsubj vẫn/advmod
+ốm_đau	bệnh_hoạn/conj
+ống	đoạn/compound cống/compound bể/xcomp trong/case bêtông/compound trơ/amod nhiều/amod
+ống_kính	phóng_viên/nmod máy_ảnh/compound
+ốp	bó/ccomp vào/advmod "/punct điểm/obj
+ổn	dùng/csubj cũng/advmod ./punct không/advmod
+ở	vn/obj người/nsubj sử_dụng/conj hà_nội/obj .../punct phụ_trách/conj ?/punct như_vậy/cc :/punct sẽ/advmod chỉ_số/obj nơi/nmod g/obl nhà/nsubj may/advcl nhu/nsubj vẫn/advmod qua/parataxis chỉ/advmod đây/discourse tuấn/nsubj phường/obj ngàn/nsubj anh/nsubj tù/obj ./punct hạnh/nsubj nhà/obj lại/advmod dù_vậy/cc cửa_hàng/obj l/nsubj đà_nẵng/obj thì/cc mình/nsubj đâu/obj tinh_thần/nsubj ,/punct cháu/nsubj cha/obl đang/advmod trường_hợp/advcl đi/conj cũng/advmod "/punct đứa/nsubj một_mình/dep ở/conj mà/cc theo_dõi/parataxis có/conj liên/nsubj không/advmod hoàn_cảnh/nmod nhà/nmod cơ_quan/obj chứng_minh/ccomp em/nsubj đây/obj nếu/cc đứng/conj đều/advmod 90/nsubj lại/xcomp quê/advcl cấp/obj
+ở_vậy	dựa/conj không_thể/advmod cuối/obl và/cc ./punct lan/nsubj
+ủng_hộ	bệnh_nhân/obj đồng/nsubj ./punct ,/punct
+ủy_ban	dân_số/compound tỉnh/compound phường/compound
+ủy_quyền	được/aux công_ty/nsubj ký/xcomp nhận/ccomp
