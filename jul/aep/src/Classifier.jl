@@ -171,10 +171,10 @@ function train(options)
     mlp = Chain(
         Join(
             EmbeddingWSP(vocabSize, options[:wordSize], length(shapeIndex), options[:shapeSize], length(posIndex), options[:posSize]),
-            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:hiddenSize])
-            # GRU(options[:hiddenSize], options[:hiddenSize])
+            GRU(options[:wordSize] + options[:shapeSize] + options[:posSize], options[:embeddingSize])
+            # GRU(options[:embeddingSize], options[:embeddingSize])
         ),
-        Dense(options[:featuresPerContext] * options[:hiddenSize], options[:hiddenSize], tanh),
+        Dense(options[:featuresPerContext] * options[:embeddingSize], options[:hiddenSize], tanh),
         Dense(options[:hiddenSize], length(labelIndex))
     )
     # save an index to an external file
@@ -296,6 +296,3 @@ function load(options::Dict{Symbol,Any})::Tuple{Chain,Dict{String,Int},Dict{Stri
     labelIndex = dict(options[:labelPath])
     (mlp, wordIndex, shapeIndex, posIndex, labelIndex)
 end
-
-# sentences = readCorpus(options[:devCorpus], options[:maxSequenceLength])
-# eval(sentences)

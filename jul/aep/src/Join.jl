@@ -13,14 +13,14 @@ end
 Join(fs...) = Join(fs)
 
 """
-    x: token id matrix of size (3 x sentenceLength), each column contains 3 ids for (word, shape, tag)
-    y: token position vector which corresponds to a parsing configuration
+    a: token id matrix of size (3 x sentenceLength), each column contains 3 ids for (word, shape, tag)
+    b: token position vector which corresponds to a parsing configuration (4-element vector)
 """
 function (g::Join)(x::Tuple{Array{Int,2},Array{Int,1}})
     a, b = x
-    as = g.fs[1](a)
-    u = g.fs[2](as) # if `fs[2]` is a RNN and `as` is an index array, this gives a sequence
-    vec(u[:, b])  # if `b` is an index array, this gives a concatenated vector 
+    as = g.fs[1](a) # matrix of size (e_w + e_s + e_p) x sentenceLength
+    u = g.fs[2](as) # if `fs[2]` is a RNN and `as` is an index array, this gives a matrix of size out x sentenceLength
+    vec(u[:, b])  # if `b` is an index array, this gives a concatenated vector of length |b| x out
 end
 
 function (g::Join)(x::SubArray)
@@ -28,8 +28,8 @@ function (g::Join)(x::SubArray)
 end
 
 """
-    x: token id matrix of size (3 x sentenceLength), each column contains 3 ids for (word, shape, tag)
-    y: token position matrix in which each column corresponds to a parsing configuration
+    a: token id matrix of size (3 x sentenceLength), each column contains 3 ids for (word, shape, tag)
+    b: token position matrix of size 4 x k, in which each column corresponds to a parsing configuration
 """
 function (g::Join)(x::Tuple{Array{Int,2},Array{Int,2}})
     a, b = x
