@@ -252,11 +252,12 @@ function train(options)
     @info "Total weight of final word embeddings = $(sum(mlp[1].fs[1].word.W))"
 
     # evaluate the model on the training set
-    @info "Evaluating the model..."
-    accuracy = evaluate(mlp, Xs, Ys)
-    @info "Training accuracy = $accuracy"
-    accuracyDev = evaluate(mlp, XsDev, YsDev)
-    @info "Development accuracy = $(accuracyDev)"
+    # @info "Evaluating the model..."
+    # accuracy = evaluate(mlp, Xs, Ys)
+    # @info "Training accuracy = $accuracy"
+    # accuracyDev = evaluate(mlp, XsDev, YsDev)
+    # @info "Development accuracy = $(accuracyDev)"
+    
     # save the model to a BSON file
     if (options[:gpu])
         mlp = mlp |> cpu
