@@ -3,6 +3,10 @@
 # to JSON file
 
 using JSON3
+using JSONTables
+using DataFrames
+using Statistics
+
 
 include("Parser.jl")
 
@@ -61,3 +65,33 @@ function experiment(options, times=3)
     close(file)
 end
 
+"""
+    toDF(options)
+
+    Load experimental results into a data frame for analysis.
+"""
+function toDF(options)
+    # read lines from the score path, concatenate them into an json array object
+    lines = readlines(options[:scorePath])
+    s = string("[", join(lines, ","), "]")
+    # convert to a json table
+    jt = jsontable(s)
+    # convert to a data frame
+    DataFrame(jt)
+end
+
+
+"""
+    analyse(options)
+
+    Analyse the experimental results.
+"""
+function analyse(options)
+    df = toDF(options)
+    # select test scores and hidden size to see the effect of varying hidden size
+    testScores = select(df, [:hiddenSize, :testAccuracy, :testUAS, :testLAS])
+    # group test scores by hidden size
+    gdf = groupby(testScores, :hiddenSize)
+    # compute mean scores for each group
+    combine(gdf, names(gdf) .=> mean)
+end
