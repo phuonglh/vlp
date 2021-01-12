@@ -4,7 +4,6 @@ using Base.Iterators: partition
 using Flux: @epochs
 using Statistics: mean
 using BSON: @save, @load
-using Tracker
 
 using Random
 Random.seed!(220712)
@@ -18,18 +17,20 @@ include("Options.jl")
 # 0. load mutated sentences from a data file which was previously generated
 # and build an array of sequences. Each sequence is an array of pairs: [(label_1, word_1), (label_2, word_2)...].
 # This will be used as labeled sequences for learning.
-
-lines = readlines(inputPath)
-mutatedSentences = Array{Array{Tuple{Symbol,String}},1}()
-i = 1
-while i < length(lines)
-    global i
-    y = map(a -> Symbol(a), split(lines[i], " "))
-    x = string.(split(lines[i+1], " "))
-    push!(mutatedSentences, collect(zip(y, x)))
-    i = i + 2
+function readData(options)
+  lines = readlines(options[:inputPath])
+  mutatedSentences = Array{Array{Tuple{Symbol,String}},1}()
+  i = 1
+  while i < length(lines)
+      y = map(a -> Symbol(a), split(lines[i], " "))
+      x = string.(split(lines[i+1], " "))
+      push!(mutatedSentences, collect(zip(y, x)))
+      i = i + 2
+  end
+  return mutatedSentences
 end
 
+mutatedSentences = readData(options)
 input = map(a -> map(p -> p[2], a), mutatedSentences)
 output = map(a -> map(p -> p[1], a), mutatedSentences)
 
@@ -39,7 +40,7 @@ frequency = vocab(sentences, options[:minFrequency])
 lexicon = collect(frequency)
 # sort the word by frequency in decreasing order
 sort!(lexicon, by = p -> p.second, rev = true)
-foreach(println, lexicon[1:10])
+@info "First 10 tokens: $(join(lexicon[1:10], ", "))"
 alphabet = Set{Char}()
 for syllable in keys(frequency)
   for c in syllable
@@ -47,14 +48,13 @@ for syllable in keys(frequency)
   end
 end
 alphabet = collect(alphabet)
-println("#(alphabet) = ", length(alphabet))
-println(join(alphabet, " "))
+@info "#(alphabet) = $(length(alphabet))"
+@info join(alphabet, " ")
 
 # 2. featurize the data set.
 
 """
   boc(s, alphabet)
-
 
   Compute bag-of-character vectors for middle characters of a string, that is s[2:end-1].
 """
@@ -92,32 +92,21 @@ function vectorize(x::Array{String}, y::Array{Symbol} = Array{Symbol,1}(), train
   end
 end
 
-# 3. build a sequence model of multiple layers.
-model = Chain(
-  Dense(3*length(alphabet), options[:hiddenSize]), 
-  GRU(options[:hiddenSize], options[:hiddenSize]), 
-  Dense(options[:hiddenSize], length(options[:labels])), 
-  softmax
-)
+# """
+#   f(x)
 
-# the full model which takes as input a 2-d matrix representing an input 
-# sequence; each column corresponds to a token of the sequence.
-function f(x)
-  reset!(model)
-  prediction = model(x)
-  return prediction
-end
-
-# Loss function on a batch. For each sequence in the batch, 
-# we apply the model and compute the cross-entropy element-wise.
-# The total loss of the batch is returned.
-loss(xb, yb) = sum(crossentropy.(f.(xb), yb))
+#   Apply the model on an input sentence in the form of a 2-d matrix, each column corresponds to a token of the sequence.
+# """
+# function f(x)
+#     reset!(model)
+#     prediction = model(x)
+#     return prediction
+# end
 
 # 4. vectorize the data set and create mini-batches of data
-batchSize = 32
 println("Vectorizing the dataset... Please wait.")
 # XYs is an array of samples  [(x_1, y_1), (x_2, y_2,),... ]
-data = collect(zip(input, output))[1:N]
+data = collect(zip(input, output))
 @time XYs = map(s -> vectorize(s[1], s[2], true), data)
 
 # convert a 2-d array to an array of column vectors
@@ -127,11 +116,11 @@ Xs = map(pair -> flatten(pair[1]), XYs)
 Ys = map(pair -> flatten(pair[2]), XYs)
 
 # batch a sequence with padding p
-batches(xs, p) = [batchseq(b, p) for b in partition(xs, batchSize)]
-# batch Xs with a zero vector
-Xb = batches(Xs, Float32.(zeros(inp)))
-# batch Ys with a zero vector
-Yb = batches(Ys, Float32.(zeros(out)))
+batches(xs, p) = [batchseq(b, p) for b in partition(xs, options[:batchSize])]
+# batch Xs, pad with zero vectors
+Xb = batches(Xs, Float32.(zeros(3*length(alphabet))))
+# batch Ys, pad with zero vectors
+Yb = batches(Ys, Float32.(zeros(length(options[:labels]))))
 
 if options[:gpu] 
   println("Bringing data to GPU...")
@@ -141,27 +130,26 @@ end
 
 # create a data set for training, each training point is a pair of batch
 dataset = collect(zip(Xb, Yb))
-println("#(batches) = ", length(dataset))
+@info "#(batches) = $(length(dataset))"
 
 X1 = Xb[1]
 Y1 = Yb[1]
-println("typeof(X1) = ", typeof(X1)) # this should be Array{Array{Float32,2},1}
-println("typeof(Y1) = ", typeof(Y1)) # this should be Array{Array{Float32,2},1}
+@info "typeof(X1) = $(typeof(X1))" # this should be Array{Array{Float32,2},1}
+@info "typeof(Y1) = $(typeof(Y1))" # this should be Array{Array{Float32,2},1}
 
-# 5. train the model
-# 
-function train(options)
-  optimizer = ADAM(.001)
-  evalcb = () -> @show(loss(X1, Y1)) # or use loss(dataset[1]...)
-  @epochs options[:numEpochs] Flux.train!(loss, params(model), dataset, optimizer, cb = throttle(evalcb, 60))
-  theta = Tracker.data.(params(model)) |> cpu    
-  @save options[:modelPath] theta
-end
+model = Chain(
+  Dense(3*length(alphabet), options[:embeddingSize]), 
+  GRU(options[:embeddingSize], options[:hiddenSize]), 
+  Dense(options[:hiddenSize], length(options[:labels])),
+  softmax
+)
+@info model  
 
-# 6. evaluate the model.
+"""
+  predict(sentence)
 
-# Predicts the correct sentence of a mutated sentence
-# This is always done on CPU
+  Predict the correct sentence of a mutated sentence. This is always done on CPU 
+"""
 function predict(sentence::Array{String})::Array{Symbol}
   reset!(model)
   x = vectorize(sentence)
@@ -169,9 +157,12 @@ function predict(sentence::Array{String})::Array{Symbol}
   map(e -> options[:labels][e], y)
 end
 
+"""
+  evaluate(xs, ys)
 
-# Predicts a list of sentences, collect prediction result and report prediction accuracy
-# xs: mutated sentences; ys: correct mutation labels
+  Predict a list of sentences, collect prediction result and report prediction accuracy
+  xs: mutated sentences; ys: correct mutation labels
+"""
 function evaluate(xs::Array{Array{String,1}}, ys::Array{Array{Symbol,1}})::Tuple{Dict{Symbol,Float64},Array{String}}
   zs = map(s -> predict(s), xs)
   good = Dict{Symbol,Int}() # number of correct predictions for each label
@@ -194,32 +185,54 @@ function evaluate(xs::Array{Array{String,1}}, ys::Array{Array{Symbol,1}})::Tuple
   for k in options[:labels]
     accuracy[k] = good[k]/(good[k] + bad[k])
   end
-  println("good dictionary = $(good)")
-  println(" bad dictionary = $(bad)")
+  @info "\tgood dictionary = $(good)"
+  @info "\t bad dictionary = $(bad)"
   # prediction/correct pairs
   ts = map(p -> string(p[1], "/", p[2]), zip(zs, xs))
   (accuracy, ts)
 end
 
-# Some constants
-prefix = string(homedir(), "/vlp/")
+function train(options)  
+  loss(xb, yb) = sum(crossentropy.(model.(xb), yb))
 
-hidden = [100, 500, 550, 600, 700, 800, 900, 1024]
-outputFile = open(string(prefix, inputPath, ".scRNN"), append=true)
-for i=1:length(hidden)
-  global hid = hidden[i]
-  global model = Chain(Dense(inp, hid), LSTM(hid, hid), Dense(hid, out), softmax)
-  if options[:gpu] model = gpu(model) end
-  write(outputFile, string(model))
-  write(outputFile, "\n")
-  train(options)
-  if (options[:gpu])
-    global model = cpu(model)
+  optimizer = ADAM()
+
+  function evalcb() 
+    @info "loss = $(loss(X1, Y1))" # or use loss(dataset[1]...)
+    a, _ = evaluate(input, output)
+    @info "\ttraining accuracy = $a"
   end
-  (trainScore, trainPrediction) = evaluate(input[1:N], output[1:N])
-  write(outputFile, string(trainScore))
-  write(outputFile, "\n\n")
-  flush(outputFile)
+  global model
+  @epochs options[:numEpochs] Flux.train!(loss, params(model), dataset, optimizer, cb = throttle(evalcb, 60))
+  # save the model to a BSON file
+  if (options[:gpu])
+      model = model |> cpu
+  end
+  @save options[:modelPath] model
+  return model
 end
-close(outputFile)
 
+
+# hidden = [100, 500, 550, 600, 700, 800, 900, 1024]
+# outputFile = open(options[:outputPath], append=true)
+# for i=1:length(hidden)
+#   global hid = hidden[i]
+#   global model = Chain(Dense(inp, hid), LSTM(hid, hid), Dense(hid, out), softmax)
+#   if options[:gpu] model = gpu(model) end
+#   write(outputFile, string(model))
+#   write(outputFile, "\n")
+#   train(options)
+#   if (options[:gpu])
+#     global model = cpu(model)
+#   end
+#   (trainScore, trainPrediction) = evaluate(input[1:N], output[1:N])
+#   write(outputFile, string(trainScore))
+#   write(outputFile, "\n\n")
+#   flush(outputFile)
+# end
+# close(outputFile)
+
+train(options)
+@info "Evaluating the model..."
+a, _ = evaluate(input, output)
+@info a

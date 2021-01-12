@@ -2,12 +2,15 @@
 # Options used for ScRNN model.
 
 options = Dict{Symbol,Any}(
-    :minFreq => 1,
+    :minFrequency => 1,
+    :embeddingSize => 16,
     :hiddenSize => 64,
     :numEpochs => 20,
+    :batchSize => 32,
     :labels => [:n, :s, :r, :i, :d],
-    :dataPath = string(pwd(), "dat/vsc/013.txt.inp"),
-    :modelPath => string(pwd(), "/jul/vsc/dat/scr.bson"),
+    :inputPath => string(pwd(), "/dat/vsc/vtb.txt.inp"),
+    :outputPath => string(pwd(), "/dat/vsc/vtb.txt.out"),
+    :modelPath => string(pwd(), "/jul/vsc/dat/vtb.bson"),
     :gpu => false,
     :verbose => false
 )
