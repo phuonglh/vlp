@@ -8,7 +8,12 @@
 
 using Random
 
+delimiters = r"[\s,.:;!*+?)()\"“”’‘\u0022\u200b\ufeff\u200e\uf0b7\x7f\b]+"
+
+
 """
+    validIndices(s)
+
     Gets valid indices of a Vietnamese string. For example, 
     "đường phố" => [1, 3, 5, 8, 9, 10, 11, 12, 13]
 """
@@ -23,6 +28,8 @@ function validIndices(s::String)::Array{Int}
 end
 
 """
+    mutate(s, alphabet, mutation)
+
     Mutate a word according to an allowed mutation types.
     INP: a string to mutate and an alphabet
     OUT: a pair of mutation type and the mutated string
@@ -67,6 +74,8 @@ function mutate(s::String, alphabet::Array{Char}, mutation::Array{Symbol}=[:swap
 end
 
 """
+    mutate(tokens, alphabet, mutation, β)
+
     Mutates a sentence in the form of an array of tokens (syllables). Each token is randomly 
     mutated with a probability of β. Returns the mutated sentence.
 
@@ -78,9 +87,9 @@ function mutateSentence(tokens::Array{String}, alphabet::Array{Char}, mutation::
     map(token -> f(token), tokens)
 end
 
-delimiters = r"[\s,.:;!*+?)()\"“”’‘\u0022\u200b\ufeff\u200e\uf0b7\x7f\b]+"
-
 """
+    mutateSentence(s, alphabet, mutation, β)
+
     Mutates a sentence in the form of a string. First, we segment the sentence into 
     an array of syllables using whitespace characters. Next, we mutate that array. 
 """
@@ -94,8 +103,13 @@ function removeDelimiters(s::String)::String
     strip(join(xs, ' '))
 end
 
+"""
+    generate(sentences, outputPath, alphabet, mutation, β)
 
-function generate(sentences::Array{String}, outputPath::String, alphabet::Array{Char}, mutation::Array{Symbol} = [:swap, :replace], β::Float64 = 0.15)
+    Generate mutated versions of given sentences and write results to an output file. The default `mutation` operation is either swap 
+    or replace which keep the length of the sentences the same before and after mutation.
+"""
+function generate(sentences::Array{String}, outputPath::String, alphabet::Array{Char}, mutation::Array{Symbol} = [:swap, :replace], β::Float64 = 0.1)
     # generate mutated data set and save to an external file for latter use
     ms = map(s -> mutateSentence(s, alphabet, mutation, β), sentences)
     file = open(outputPath, "w")
@@ -125,9 +139,9 @@ function test()
     println(ys)
 end
 
-function generateVLP()
-    sentences = lowercase.(readlines("dat/vsc/013.txt"))
+function generate(path::String)
+    sentences = lowercase.(readlines(path))
     mutation = [:swap, :replace, :insert, :delete]
     alphabet = ['%', '&', '-', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'à', 'á', 'â', 'ã', 'è', 'é', 'ê', 'ì', 'í', 'ò', 'ó', 'ô', 'õ', 'ù', 'ú', 'ý', 'ă', 'đ', 'ĩ', 'ũ', 'ơ', 'ư', 'ạ', 'ả', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ', 'ẹ', 'ẻ', 'ế', 'ề', 'ể', 'ễ', 'ệ', 'ỉ', 'ị', 'ọ', 'ỏ', 'ố', 'ồ', 'ổ', 'ỗ', 'ộ', 'ớ', 'ờ', 'ở', 'ỡ', 'ợ', 'ụ', 'ủ', 'ứ', 'ừ', 'ử', 'ữ', 'ự', 'ỳ', 'ỵ', 'ỷ', 'ỹ', '–']
-    generate(sentences, "dat/vsc/013-mutated.txt", alphabet, mutation)
+    generate(sentences, string(path, ".inp"), alphabet, mutation)
 end

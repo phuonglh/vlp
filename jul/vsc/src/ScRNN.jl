@@ -6,24 +6,19 @@ using Statistics: mean
 using BSON: @save, @load
 using Tracker
 
-# Implementation of the sermi-character RNN model 
-# for spelling check.
-# phuonglh
+using Random
+Random.seed!(220712)
+
+# Implementation of the sermi-character RNN model for spelling check.
+# phuonglh@gmail.com
 
 include("Vocab.jl")
-
-hid = 64
-numEpochs = 20
-minFrequency = 1
-top = 10
-N = 58000
-inputPath = "dat/vsc/vlsp.txt.mutated-4"
-labels = [:n, :s, :r, :i, :d]
-g = false
+include("Options.jl")
 
 # 0. load mutated sentences from a data file which was previously generated
 # and build an array of sequences. Each sequence is an array of pairs: [(label_1, word_1), (label_2, word_2)...].
 # This will be used as labeled sequences for learning.
+
 lines = readlines(inputPath)
 mutatedSentences = Array{Array{Tuple{Symbol,String}},1}()
 i = 1
@@ -34,18 +29,17 @@ while i < length(lines)
     push!(mutatedSentences, collect(zip(y, x)))
     i = i + 2
 end
-#foreach(println, mutatedSentences[1:top])
 
 input = map(a -> map(p -> p[2], a), mutatedSentences)
 output = map(a -> map(p -> p[1], a), mutatedSentences)
 
 # 1. build syllable frequency and an alphabet
 sentences = map(s -> join(s, " "), input)
-frequency = vocab(sentences, minFrequency)
+frequency = vocab(sentences, options[:minFrequency])
 lexicon = collect(frequency)
 # sort the word by frequency in decreasing order
 sort!(lexicon, by = p -> p.second, rev = true)
-foreach(println, lexicon[1:top])
+foreach(println, lexicon[1:10])
 alphabet = Set{Char}()
 for syllable in keys(frequency)
   for c in syllable
@@ -59,23 +53,22 @@ println(join(alphabet, " "))
 # 2. featurize the data set.
 
 """
-    Bag-of-character vectors for s[2:end-1]
+  boc(s, alphabet)
+
+
+  Compute bag-of-character vectors for middle characters of a string, that is s[2:end-1].
 """
 function boc(s::String, alphabet::Array{Char})
     a = onehotbatch(collect(s[nextind(s, 1):prevind(s, lastindex(s))]), alphabet)
-    # sum the columns
-    b = zeros(length(alphabet))
-    for j = 1:size(a, 2)
-        b = b + a[:,j]
-    end
-    b
+    sum(a, dims=2)
 end
 
 """
-    Transforms a sentence into an array of vectors based on an alphabet and 
-    a label set.
-    Return a pair of (x, y) in the training mode or a single x in the test mode, where
-    x and y are matrices of size length(lexicon) x length(sentence).
+  vectorize(x, y, training=false)
+
+  Transforms a sentence into an array of vectors based on an alphabet and 
+  a label set. Return a pair of (x, y) in the training mode or a single x in the test mode, where
+  x and y are matrices of size length(lexicon) x length(sentence).
 """
 function vectorize(x::Array{String}, y::Array{Symbol} = Array{Symbol,1}(), training::Bool = false)
   # one-hot first char vector
@@ -92,7 +85,7 @@ function vectorize(x::Array{String}, y::Array{Symbol} = Array{Symbol,1}(), train
   # combine all vectors into xs and convert xs to Float32 to speed up computation
   xs = Float32.(vcat(us, vs, cs))
   if (training)
-      ys = onehotbatch(y, labels)
+      ys = onehotbatch(y, options[:labels])
       (Float32.(xs), Float32.(ys))
   else 
       Float32.(xs)
@@ -100,9 +93,12 @@ function vectorize(x::Array{String}, y::Array{Symbol} = Array{Symbol,1}(), train
 end
 
 # 3. build a sequence model of multiple layers.
-inp = 3*length(alphabet)
-out = length(labels)
-model = Chain(Dense(inp, hid), GRU(hid, hid), Dense(hid, out), softmax)
+model = Chain(
+  Dense(3*length(alphabet), options[:hiddenSize]), 
+  GRU(options[:hiddenSize], options[:hiddenSize]), 
+  Dense(options[:hiddenSize], length(options[:labels])), 
+  softmax
+)
 
 # the full model which takes as input a 2-d matrix representing an input 
 # sequence; each column corresponds to a token of the sequence.
@@ -137,8 +133,7 @@ Xb = batches(Xs, Float32.(zeros(inp)))
 # batch Ys with a zero vector
 Yb = batches(Ys, Float32.(zeros(out)))
 
-# bring data to GPU if g is true
-if g 
+if options[:gpu] 
   println("Bringing data to GPU...")
   Xb = map(t -> gpu.(t), Xb)
   Yb = map(t -> gpu.(t), Yb)
@@ -154,16 +149,16 @@ println("typeof(X1) = ", typeof(X1)) # this should be Array{Array{Float32,2},1}
 println("typeof(Y1) = ", typeof(Y1)) # this should be Array{Array{Float32,2},1}
 
 # 5. train the model
-# train the model with some number of epochs and save the parameters to a BSON file
-function train(numEpochs::Int, modelPath::String)
+# 
+function train(options)
   optimizer = ADAM(.001)
   evalcb = () -> @show(loss(X1, Y1)) # or use loss(dataset[1]...)
-  @epochs numEpochs Flux.train!(loss, params(model), dataset, optimizer, cb = throttle(evalcb, 60))
+  @epochs options[:numEpochs] Flux.train!(loss, params(model), dataset, optimizer, cb = throttle(evalcb, 60))
   theta = Tracker.data.(params(model)) |> cpu    
-  @save modelPath theta
+  @save options[:modelPath] theta
 end
 
-# 6. evaluate the trained model.
+# 6. evaluate the model.
 
 # Predicts the correct sentence of a mutated sentence
 # This is always done on CPU
@@ -171,7 +166,7 @@ function predict(sentence::Array{String})::Array{Symbol}
   reset!(model)
   x = vectorize(sentence)
   y = onecold(model(x))
-  map(e -> labels[e], y)
+  map(e -> options[:labels][e], y)
 end
 
 
@@ -181,8 +176,8 @@ function evaluate(xs::Array{Array{String,1}}, ys::Array{Array{Symbol,1}})::Tuple
   zs = map(s -> predict(s), xs)
   good = Dict{Symbol,Int}() # number of correct predictions for each label
   bad = Dict{Symbol,Int}() # number of incorrect predictions for each label
-  foreach(k -> good[k] = 0, labels)
-  foreach(k -> bad[k] = 0, labels)
+  foreach(k -> good[k] = 0, options[:labels])
+  foreach(k -> bad[k] = 0, options[:labels])
   for i = 1:length(ys)    
     y, z = ys[i], zs[i]
     zyDiff = z .== y
@@ -196,7 +191,7 @@ function evaluate(xs::Array{Array{String,1}}, ys::Array{Array{Symbol,1}})::Tuple
     end
   end
   accuracy = Dict{Symbol,Float64}()
-  for k in labels
+  for k in options[:labels]
     accuracy[k] = good[k]/(good[k] + bad[k])
   end
   println("good dictionary = $(good)")
@@ -214,12 +209,11 @@ outputFile = open(string(prefix, inputPath, ".scRNN"), append=true)
 for i=1:length(hidden)
   global hid = hidden[i]
   global model = Chain(Dense(inp, hid), LSTM(hid, hid), Dense(hid, out), softmax)
-  # use GPU if g is true
-  if g model = gpu(model) end
+  if options[:gpu] model = gpu(model) end
   write(outputFile, string(model))
   write(outputFile, "\n")
-  train(numEpochs, string(prefix, inputPath, ".scRNN.bson"))
-  if (g)
+  train(options)
+  if (options[:gpu])
     global model = cpu(model)
   end
   (trainScore, trainPrediction) = evaluate(input[1:N], output[1:N])
