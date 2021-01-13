@@ -8,9 +8,10 @@ options = Dict{Symbol,Any}(
     :numEpochs => 20,
     :batchSize => 32,
     :labels => [:n, :s, :r, :i, :d],
-    :inputPath => string(pwd(), "/dat/vsc/vtb.txt.inp"),
-    :outputPath => string(pwd(), "/dat/vsc/vtb.txt.out"),
-    :modelPath => string(pwd(), "/jul/vsc/dat/vtb.bson"),
+    :inputPath => string(pwd(), "/dat/vsc/200.txt.inp"),
+    :outputPath => string(pwd(), "/dat/vsc/200.txt.out"),
+    :modelPath => string(pwd(), "/jul/vsc/dat/200.bson"),
     :gpu => false,
     :verbose => false
 )
+

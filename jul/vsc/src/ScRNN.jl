@@ -110,7 +110,7 @@ data = collect(zip(input, output))
 @time XYs = map(s -> vectorize(s[1], s[2], true), data)
 
 # convert a 2-d array to an array of column vectors
-flatten(xs) = [xs[:, i] for i = 1:size(xs,2)]
+flatten(xs) = [xs[:, j] for j = 1:size(xs,2)]
 # extracts Xs and Ys
 Xs = map(pair -> flatten(pair[1]), XYs)
 Ys = map(pair -> flatten(pair[2]), XYs)
@@ -192,8 +192,14 @@ function evaluate(xs::Array{Array{String,1}}, ys::Array{Array{Symbol,1}})::Tuple
   (accuracy, ts)
 end
 
-function train(options)  
-  loss(xb, yb) = sum(crossentropy.(model.(xb), yb))
+function train(options)
+  function cost(x, y) # cost on a sample sequence
+    c = crossentropy(model(x), y)
+    reset!(model)
+    return c
+  end
+  # loss on a batch
+  loss(xb, yb) = sum(cost(xb[i], yb[i]) for i=1:length(xb))
 
   optimizer = ADAM()
 
