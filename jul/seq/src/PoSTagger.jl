@@ -158,7 +158,9 @@ function train(options::Dict{Symbol,Any})
         b = size(X,3)
         predictions = [encoder(X[:,:,i]) for i=1:b]
         truths = [Y[:,:,i] for i=1:b]
-        sum(Flux.logitcrossentropy(predictions[i], truths[i]) for i=1:b)
+        value = sum(Flux.logitcrossentropy(predictions[i], truths[i]) for i=1:b)
+        Flux.reset!(encoder)
+        return value
     end
 
     Us, Vs = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)

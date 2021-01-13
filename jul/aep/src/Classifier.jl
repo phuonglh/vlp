@@ -216,7 +216,11 @@ function train(options)
     @info "numBatchesDev  = $(length(datasetDev))"
 
     # define a loss function, an optimizer and train the model
-    loss(X, Y) = sum(Flux.logitcrossentropy(mlp(X[i]), Y[i]) for i=1:length(Y))
+    function loss(X, Y)
+        value = sum(Flux.logitcrossentropy(mlp(X[i]), Y[i]) for i=1:length(Y))
+        Flux.reset!(mlp)
+        return value
+    end
     optimizer = ADAM()
     file = open(options[:logPath], "w")
     write(file, "dev. loss,trainingAcc,devAcc\n")
