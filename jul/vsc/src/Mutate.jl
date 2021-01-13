@@ -7,6 +7,8 @@
 """
 
 using Random
+Random.seed!(220712)
+
 
 delimiters = r"[\s,.:;!*+?)()\"“”’‘\u0022\u200b\ufeff\u200e\uf0b7\x7f\b]+"
 
