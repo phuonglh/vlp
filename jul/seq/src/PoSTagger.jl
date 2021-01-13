@@ -10,10 +10,10 @@ using BSON: @save, @load
 
 using FLoops
 
-include("Embedding.jl")
-include("Options.jl")
 include("../../tdp/src/Sentence.jl")
 include("../../tok/src/Brick.jl")
+include("Embedding.jl")
+include("Options.jl")
 
 
 struct Vocabularies
@@ -117,27 +117,20 @@ function train(options::Dict{Symbol,Any})
     @info size(Xs[1])
     @info size(Ys[1])
 
+    # save an index to an external file
+    function saveIndex(index, path)
+        file = open(path, "w")
+        for f in keys(index)
+            write(file, string(f, " ", index[f]), "\n")
+        end
+        close(file)
+    end
+
     # save the vocabulary, shape, part-of-speech and label information to external files
-    file = open(options[:vocabPath], "w")
-    for f in vocabularies.words
-        write(file, string(f, " ", wordIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:shapePath], "w")
-    for f in vocabularies.shapes
-        write(file, string(f, " ", shapeIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:posPath], "w")
-    for f in vocabularies.partsOfSpeech
-        write(file, string(f, " ", posIndex[f]), "\n")
-    end
-    close(file)
-    file = open(options[:labelPath], "w")
-    for f in vocabularies.labels
-        write(file, string(f, " ", labelIndex[f]), "\n")
-    end
-    close(file)
+    saveIndex(wordIndex, options[:wordPath])
+    saveIndex(shapeIndex, options[:shapePath])
+    saveIndex(posIndex, options[:posPath])
+    saveIndex(labelIndex, options[:labelPath])
 
     # define a model for sentence encoding
     encoder = Chain(
