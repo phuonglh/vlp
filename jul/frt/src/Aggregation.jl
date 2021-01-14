@@ -25,7 +25,7 @@ end
 #    (grouping of demand for different products, server loads, requests for web pages)
 
 # Target: allows missing values
-# Features: price, weekeday, weekend, holidays, promotion. Not allow missing values.
+# Features: price, weekday, weekend, holidays, promotion. Not allow missing values.
 # CSV: (item SKU, timestamp, target values)
 # CSV: (item SKU, timestamp, features)
 # Categorical related data: static information: color of items, binary indicator (e.g., smart or not smart)
