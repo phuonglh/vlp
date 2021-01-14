@@ -6,6 +6,8 @@ using JSON3
 using Dates
 using StatsPlots
 
+fields = Set([:docstatus, :u_buslin, :type_returnso, :u_tmonpr, :u_exdate, :doctype, :u_tmonbi, :docdate, :docentry, :u_tmontx, :u_shpcod, :u_desc])
+
 """
     readDF(path, numRecords)
 
@@ -22,14 +24,12 @@ function readDF(path::String, numRecords::Int=-1)::DataFrame
     # collect all objects and fields
     @info "Reading objects..."
     objects = map(line -> JSON3.read(line), xs)
-    @info "Find keys..."
-    ka = union([keys(object) for object in objects]...)
     @info "Joining strings"
     s = string("[", join(xs, ","), "]")
-    # convert to a json table
+    @info "Converting to a json table..."
     jt = jsontable(s)
     @info "Preparing data..."
-    data = Dict(Symbol(k) => get.(jt, k, missing) for k in ka)
+    data = Dict(Symbol(k) => get.(jt, k, missing) for k in fields)
     # convert to a data frame, if a field is not present then it is marked as `missing`
     @info "Preparing df..."
     DataFrame(data)
@@ -43,9 +43,11 @@ end
     analyse(df)
 
     Analyse the sale by date of the top shop. `df` is a monthly ORDR data frame as provided by FRT, 
-    for example January 2018.
+    for example January 2018. Return a data frame and top shop code.
 """
 function analyse(df)
+    @info "Analysing the df..."
+    order = selectFields(df)
     # select the orders with status "F" (complete); there are 347,258 complete records in January 2018
     # filter out 2 warehouses (11000 and 11001)
     complete = order[(order.status .== "F") .& (order.shop .!= "11000") .& (order.shop .!= "11001"), :]
@@ -71,16 +73,15 @@ function analyse(df)
     sale = combine(efByDate, :amount => sum => :sale)
     sort!(sale, :date)
     sdf = select(sale, :date => (x -> Dates.day.(x)) => :day, :date => (x -> Dates.dayname.(x)) => :dayname, :sale)
-    return sdf
+    return (sdf, topShop[1,1])
 end
 
-function run(path)
-    df = readDF(string(pwd(), path), -1)
-    order = selectFields(df)
-    analyse(order)
+function analyse(path::String)
+    df = readDF(string(pwd(), path), -1)    
+    analyse(df)
 end
 
-# sdf = run("/dat/frt/ordr012018.json")
+# (sdf, bestShop) = analyse("/dat/frt/ordr012018.json")
 # @df sdf plot(:day, :sale, title="Sale", label=false, xlabel="day of month", ylabel="VND [million]", xticks=1:31)
 
 
