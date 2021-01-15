@@ -63,3 +63,34 @@ optionsEWT = Dict{Symbol,Any}(
     :padding => "[pad]"
 )
 
+# Bahasa Indonesia GSD corpus
+optionsGSD = Dict{Symbol,Any}(
+    :mode => :train,
+    :minFreq => 2,
+    :lowercase => true,
+    :maxSequenceLength => 40,
+    :featuresPerContext => 4,
+    :vocabSize => 2^16,
+    :wordSize => 100,
+    :shapeSize => 4,
+    :posSize => 25, 
+    :embeddingSize => 64,
+    :hiddenSize => 128,
+    :batchSize => 32,
+    :numEpochs => 30,
+    :trainCorpus => string(pwd(), "/dat/dep/ind/id_gsd-ud-train.conllu"),
+    :devCorpus => string(pwd(), "/dat/dep/ind/id_gsd-ud-dev.conllu"),
+    :testCorpus => string(pwd(), "/dat/dep/ind/id_gsd-ud-test.conllu"),
+    :modelPath => string(pwd(), "/jul/aep/dat/ind/mlp.bson"),
+    :wordPath => string(pwd(), "/jul/aep/dat/ind/word.txt"),
+    :shapePath => string(pwd(), "/jul/aep/dat/ind/shape.txt"),
+    :posPath => string(pwd(), "/jul/aep/dat/ind/partOfSpeech.txt"),
+    :labelPath => string(pwd(), "/jul/aep/dat/ind/label.txt"),
+    :numCores => 4,
+    :verbose => false,
+    :gpu => false,
+    :logPath => string(pwd(), "/jul/aep/dat/ind/loss.txt"),
+    :scorePath => string(pwd(), "/jul/aep/dat/ind/score.jsonl"),
+    :unknown => "[unk]",
+    :padding => "[pad]"
+)

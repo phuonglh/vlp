@@ -54,7 +54,7 @@ end
 function vectorizeSentence(sentence::Sentence, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int})
     function featurize(token)
         w = get(wordIndex, lowercase(token.word), wordIndex[options[:unknown]])
-        s = shapeIndex[shape(token.word)]
+        s = get(shapeIndex, shape(token.word), shapeIndex[options[:padding]])
         t = get(posIndex, token.annotation[:pos], posIndex[options[:padding]])
         return [w, s, t]
     end
