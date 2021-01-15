@@ -4,6 +4,9 @@ using DataFrames
 using JSONTables
 using JSON3
 using Dates
+using FLoops
+using BangBang
+using MicroCollections
 using StatsPlots
 
 fields = Set([:docstatus, :u_buslin, :type_returnso, :u_tmonpr, :u_exdate, :doctype, :u_tmonbi, :docdate, :docentry, :u_tmontx, :u_shpcod, :u_desc])
@@ -28,8 +31,14 @@ function readDF(path::String, numRecords::Int=-1)::DataFrame
     s = string("[", join(xs, ","), "]")
     @info "Converting to a json table..."
     jt = jsontable(s)
-    @info "Preparing data..."
-    data = Dict(Symbol(k) => get.(jt, k, missing) for k in fields)
+    @info "Preparing columns. Create dict for every fields in parallel..."
+    @floop for field in fields
+        xs = SingletonDict(field => [get.(jt, field, missing)])
+        @reduce(dict = append!!(EmptyDict(), xs))
+        dict
+    end
+    #data = Dict(k => get.(jt, k, missing) for k in fields)
+    # data = Dict(k => )
     # convert to a data frame, if a field is not present then it is marked as `missing`
     @info "Preparing df..."
     DataFrame(data)
@@ -81,8 +90,9 @@ function analyse(path::String)
     analyse(df)
 end
 
-# (sdf, bestShop) = analyse("/dat/frt/ordr012018.json")
-# @df sdf plot(:day, :sale, title="Sale", label=false, xlabel="day of month", ylabel="VND [million]", xticks=1:31)
+(sdf, bestShop) = analyse("/dat/frt/ordr012018.json")
+daynames = map(x -> x[1:3], sdf[:,:dayname])
+# @df sdf plot(:day, :sale, title="Daily Sale", label=false, xlabel="day of month", ylabel="VND [million]", xticks=(1:length(daynames), daynames), xrotation=90, tickfontsize=6)
 
 
 #  (78, 2673) => 30220 ==> best-performing shop 
