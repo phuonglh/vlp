@@ -46,3 +46,14 @@ end
 # - u_tmonbi: tong tien phai thu
 # - type_returnso: kieu don hang
 # - docdate: ngay ban
+
+
+# RDR1
+
+# - itemcode: ma san pham
+# - dscription: ten san pham
+# - quantity: so luong
+# - discprcnt: chiet khau
+# - U_TMoney: gia ban
+# - Whscode: ma kho (shop+local department)
+# - docentry: so don hang ==> to link with ORDR df
