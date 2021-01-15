@@ -28,17 +28,16 @@ function readDF(path::String, numRecords::Int=-1)::DataFrame
     @info "Reading objects..."
     objects = map(line -> JSON3.read(line), xs)
     @info "Joining strings"
-    s = string("[", join(xs, ","), "]")
+    s = string("[", join(xs, ","), "]");
     @info "Converting to a json table..."
     jt = jsontable(s)
-    @info "Preparing columns. Create dict for every fields in parallel..."
-    @floop for field in fields
-        xs = SingletonDict(field => [get.(jt, field, missing)])
-        @reduce(dict = append!!(EmptyDict(), xs))
-        dict
+    @info "Preparing columns. Create entries for all fields in parallel, using 4 CPU cores.."
+    executor = ThreadedEx(basesize = length(fields)÷4)
+    @time @floop executor for field in fields
+        @reduce(entries = append!!(EmptyVector(), [field => get.(jt, field, missing)]))
+        entries
     end
-    #data = Dict(k => get.(jt, k, missing) for k in fields)
-    # data = Dict(k => )
+    data = Dict(entries)
     # convert to a data frame, if a field is not present then it is marked as `missing`
     @info "Preparing df..."
     DataFrame(data)
@@ -66,6 +65,7 @@ function analyse(df)
     cs = [(i, size(gdf[i], 1)) for i = 1:length(gdf)]
     # sort by number of orders in descending order
     sort!(cs, by = p -> p[2], rev = true)
+    @assert length(cs) >= 10
     # take the top 10 indices
     topTen = map(p -> p[1], cs[1:10])
 
@@ -86,11 +86,11 @@ function analyse(df)
 end
 
 function analyse(path::String)
-    df = readDF(string(pwd(), path), -1)    
+    df = readDF(string(pwd(), path), -1)  
     analyse(df)
 end
 
-(sdf, bestShop) = analyse("/dat/frt/ordr012018.json")
+(sdf, bestShop) = analyse("/dat/frt/ordr052018.json")
 daynames = map(x -> x[1:3], sdf[:,:dayname])
 # @df sdf plot(:day, :sale, title="Daily Sale", label=false, xlabel="day of month", ylabel="VND [million]", xticks=(1:length(daynames), daynames), xrotation=90, tickfontsize=6)
 
