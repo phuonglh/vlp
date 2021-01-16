@@ -26,7 +26,7 @@ function readOrderDF(path::String, numRecords::Int=-1)::DataFrame
         lines
     end
     # collect all objects and fields
-    @info "Reading objects..."
+    @info "Reading order objects..."
     objects = map(line -> JSON3.read(line), xs)
     @info "Joining strings"
     s = string("[", join(xs, ","), "]");
@@ -46,7 +46,7 @@ end
 
 # Selected fields of an order detail data frame.
 orderDetailFields = Dict(:itemcode => :item, :dscription => :desc, :quantity => :quantity, :discprcnt => :discount, 
-    :u_tmoney => :amount, :whscode => :shop, :docentry => :entry)
+    :u_tmoney => :price, :whscode => :shop, :docentry => :entry)
 
 """
     readOrderDetailDF(path, numRecords)
@@ -62,7 +62,7 @@ function readOrderDetailDF(path::String, numRecords::Int=-1)::DataFrame
         lines
     end
     # collect all objects and fields
-    @info "Reading objects..."
+    @info "Reading order detail objects..."
     objects = map(line -> JSON3.read(line), xs)
     @info "Joining strings"
     s = string("[", join(xs, ","), "]");
