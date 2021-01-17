@@ -1,6 +1,46 @@
 # phuonglh@gmail.com
 
 using Statistics
+using DataFrame
+using CSV
+
+include("Options.jl")
+
+"""
+    aggregateSale(options, u, v, year)
+
+    Aggregate sale information of an SKU (item) at a given shop from month `u` to month `v` of a year.
+"""
+function aggregateSale(options, u=1, v=12, year="2018")
+	monthSt(month) = if month < 10 string("0", month); else string(month); end
+	folder = options[:folder]
+	oPaths = [string(folder, "o", year, monthSt(m), ".csv") for m in u:v]
+	rPaths = [string(folder, "r", year, monthSt(m), ".csv") for m in u:v]
+	sales = []
+	for m = u:v
+		# load and process order df, extract transactions of the interested shop
+		odf = CSV.File(oPaths[m]) |> DataFrame 
+		df = odf[(odf.status .== "F") .& (odf.shop .!= 11000) .& (odf.shop .!= 11001), :]
+		gdf = groupby(df, :shop)
+		of = gdf[(options[:shop],)]
+		order = select(of, [:doc, :date, :status])
+		# load and process order detail df
+		rdf = CSV.File(rPaths[m]) |> DataFrame
+	    ef = rdf[rdf.price .> options[:minPrice], :]
+	    gef = groupby(ef, :item) 
+		rf = gef[(options[:item],)]
+		detail = select(rf, [:doc, :disc, :price, :qty])
+		# join two data frames
+		jdf = innerjoin(order, detail, on = :doc)
+		# group by date and compute the total quantity for each date
+		byDate = groupby(jdf, :date)
+		sale = combine(byDate, :price => mean => :price, :disc => mean => :disc, :qty => sum => :quantity)
+	    sort!(sale, :date)
+		push!(sales, sale)
+	end
+	# stack the data frame together 
+	return vcat(sales...)
+end
 
 """
     aggregate(xs, width,=1 agg=sum)

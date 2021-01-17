@@ -72,7 +72,7 @@ function analyse(month::String="01", year::String="2018")
     # compute the total quantity for each date
     sale = combine(byDate, :price => mean => :price, :disc => mean => :disc, :qty => sum => :quantity)
     sort!(sale, :date)
-    return (topShop, topItem[1,1], sale)
+    return (topShop, top5[3][1,1], sale)
 end
 
 # (sdf, bestShop) = analyseOrder("/dat/frt/ordr052018.json")
