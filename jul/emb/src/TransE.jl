@@ -3,6 +3,10 @@
 
 using Flux
 using Flux: @epochs
+using Random
+
+# fix a random seed for reproducibility
+Random.seed!(220712)
 
 include("Sampling.jl")
 include("EmbeddingWL.jl")
@@ -11,24 +15,55 @@ opts = Dict{Symbol,Any}(
     :vocabSize => 2^16,
     :embeddingSize => 16,
     :unknown => "[unk]",
-    :numEpochs => 20,
+    :numEpochs => 30,
     :wordPath => string(pwd(), "/jul/emb/dat/vie/wv.txt"),
     :labelPath => string(pwd(), "/jul/emb/dat/vie/lv.txt"),
 )
 
-words, triplets = extractTriplets(options)
-push!(words, opts[:unknown])
+optsEWT = Dict{Symbol,Any}(
+    :vocabSize => 2^16,
+    :embeddingSize => 16,
+    :unknown => "[unk]",
+    :numEpochs => 40,
+    :wordPath => string(pwd(), "/jul/emb/dat/eng/wv.txt"),
+    :labelPath => string(pwd(), "/jul/emb/dat/eng/lv.txt"),
+)
+
+optsGSD = Dict{Symbol,Any}(
+    :vocabSize => 2^16,
+    :embeddingSize => 16,
+    :unknown => "[unk]",
+    :numEpochs => 40,
+    :wordPath => string(pwd(), "/jul/emb/dat/ind/wv.txt"),
+    :labelPath => string(pwd(), "/jul/emb/dat/ind/lv.txt"),
+)
+
+# change this line for different language
+language = "vie"
+
+(optsTransE, optionsUD) = if language == "vie"
+    (opts, options)
+elseif language == "eng"
+    (optsEWT, optionsEWT)
+elseif language == "ind"
+    (optsGSD, optionsGSD)
+end
+
+words, triplets = extractTriplets(optionsUD)
+push!(words, optsTransE[:unknown])
 labels = unique(map(t -> t.label, collect(triplets)))
-vocabSize = min(opts[:vocabSize], length(words))
+vocabSize = min(optsTransE[:vocabSize], length(words))
 labelSize = length(labels)
 
-model = EmbeddingWL(vocabSize, labelSize, opts[:embeddingSize])
+# define the embedding model
+model = EmbeddingWL(vocabSize, labelSize, optsTransE[:embeddingSize])
 
-
+# build word index and label index
 wordIndex = Dict{String,Int}(element => i for (i, element) in enumerate(words))
 labelIndex = Dict{String,Int}(element => i for (i, element) in enumerate(labels))
 
-index(t::Triplet) = [get(wordIndex, t.head, wordIndex[opts[:unknown]]), get(wordIndex, t.tail, wordIndex[opts[:unknown]]), labelIndex[t.label]]
+# indexing a triple: turn it into a vector of 3 integers [h, t, l]
+index(t::Triplet) = [get(wordIndex, t.head, wordIndex[optsTransE[:unknown]]), get(wordIndex, t.tail, wordIndex[optsTransE[:unknown]]), labelIndex[t.label]]
 
 
 """
@@ -70,7 +105,7 @@ end
     good and corrupted samples.
 """
 function batch(xs::Array{Triplet})::Tuple{Array{Array{Int,2}},Array{Array{Int,2}}}
-    Xs = Iterators.partition(xs, options[:batchSize])
+    Xs = Iterators.partition(xs, optionsUD[:batchSize])
     Xb = map(xs -> Flux.batch([index(t) for t ∈ xs]), Xs)
     Yb = map(X -> corruptBatch(collect(X)), Xs)
     (collect(Xb), collect(Yb))
@@ -100,17 +135,17 @@ evalcb = function()
 end
 
 # train the embedding model
-@epochs opts[:numEpochs] Flux.train!(loss, params(model), dataset, ADAM(), cb = Flux.throttle(evalcb, 30))
+@epochs optsTransE[:numEpochs] Flux.train!(loss, params(model), dataset, ADAM(), cb = Flux.throttle(evalcb, 60))
 
 # save the words embeddings and label embeddings to external files
-file = open(opts[:wordPath], "w")
+file = open(optsTransE[:wordPath], "w")
 for word in words
     v = model.word.W[:, wordIndex[word]]
     write(file, string(word, " ", join(v, " "), "\n"))
 end
 close(file)
 
-file = open(opts[:labelPath], "w")
+file = open(optsTransE[:labelPath], "w")
 for label in labels
     v = model.label.W[:, labelIndex[label]]
     write(file, string(label, " ", join(v, " "), "\n"))

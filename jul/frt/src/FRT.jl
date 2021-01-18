@@ -106,10 +106,39 @@ output = string(options[:folder], options[:shop], "-", options[:item], "-2018.cs
 CSV.write(output, yearSale)
 
 # ╔═╡ 4e665c30-58bf-11eb-3672-c5a787e430f5
-@df yearSale plot(:date, :quantity, legend=false)
+@df yearSale plot(:date, :quantity, xlabel="date", ylabel="sale", label=options[:item])
 
 # ╔═╡ 7a755718-58bf-11eb-01ec-13e99d5dc9f8
 sum(yearSale[!,:quantity])
+
+# ╔═╡ 6c0edd90-58cc-11eb-03b3-e9e83da41dc6
+as = transform(yearSale, :date => (x -> Dates.dayname.(x)) => :dayname, :date => (x -> Dates.week.(x)) => :week, :quantity)
+
+# ╔═╡ c03ed92e-58cc-11eb-07e9-01e3d611ac2b
+# group the xs data frame by week
+byWeek = groupby(as, :week)
+
+# ╔═╡ 6e7519bc-58ce-11eb-39ee-dbfd95bf13c0
+weeklySale = combine(byWeek, :price => mean => :price, :disc => mean => :disc, :quantity => sum => :quantity)
+
+
+# ╔═╡ c4eb6a8a-58ce-11eb-17d6-7741ca557014
+@df weeklySale plot(:week, :quantity, xlabel="week", ylabel="weekly quantity", label="SKU: "*options[:item], ytick=1:2:30)
+
+# ╔═╡ 1cf4b02a-5946-11eb-1a1e-7f763228e499
+ys = weeklySale[:, :quantity]
+
+# ╔═╡ ab36f946-594a-11eb-0a9a-9fcd529057bc
+# simple prediction method
+us = ys[1:end-1]
+
+# ╔═╡ e127aa70-594a-11eb-18c2-75bc021ea2ff
+simpleError = mean(abs.(us - ys[2:end]))
+
+# ╔═╡ 075bcd02-594b-11eb-1499-37c967014b35
+md"""
+## Statistics of top 10 SKU 
+"""
 
 # ╔═╡ Cell order:
 # ╠═12800616-58b1-11eb-0765-8755fbbec375
@@ -133,3 +162,11 @@ sum(yearSale[!,:quantity])
 # ╠═c71ebec8-58bb-11eb-073d-87f72e585897
 # ╠═4e665c30-58bf-11eb-3672-c5a787e430f5
 # ╠═7a755718-58bf-11eb-01ec-13e99d5dc9f8
+# ╠═6c0edd90-58cc-11eb-03b3-e9e83da41dc6
+# ╠═c03ed92e-58cc-11eb-07e9-01e3d611ac2b
+# ╠═6e7519bc-58ce-11eb-39ee-dbfd95bf13c0
+# ╠═c4eb6a8a-58ce-11eb-17d6-7741ca557014
+# ╠═1cf4b02a-5946-11eb-1a1e-7f763228e499
+# ╠═ab36f946-594a-11eb-0a9a-9fcd529057bc
+# ╠═e127aa70-594a-11eb-18c2-75bc021ea2ff
+# ╠═075bcd02-594b-11eb-1499-37c967014b35

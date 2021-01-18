@@ -11,7 +11,7 @@ using CSV
 
 # All fields of orderDF are Set([:docstatus, :u_buslin, :type_returnso, :u_tmonpr, :u_exdate, :doctype, :u_tmonbi, :docdate, :docentry, :u_tmontx, :u_shpcod, :u_desc])
 # We are interested in 5 selected orders.
-orderFields = Dict(:u_shpcod => :shop, :u_tmonbi => :amount, :docstatus => :status, :docdate => :date, :docentry => :doc)
+orderFields = Dict(:u_shpcod => :shop, :u_tmonbi => :amount, :docstatus => :status, :docdate => :date, :docentry => :doc, :doctype => :type)
 
 """
     readOrderDF(path, numRecords)
@@ -50,7 +50,8 @@ function readOrderDF(path::String, numRecords::Int=-1)::DataFrame
         :amount => (x -> parse.(Float32, x) ./ 10^6) => :amount, 
         :status => :status,
         :date => (x -> parse.(Date, map(d -> d[1:10], x))) => :date,
-        :doc => :doc
+        :doc => :doc,
+        :type => :type
     )
     return ef
 end

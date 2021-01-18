@@ -16,7 +16,9 @@ function analyseOrder(df)
     @info "Analysing the order df..."
     # select the orders with status "F" (complete); there are 347,258 complete records in January 2018
     # filter out 2 warehouses (11000 and 11001)
-    complete = df[(df.status .== "F") .& (df.shop .!= 11000) .& (df.shop .!= 11001), :]
+    # complete = df[(df.status .== "F") .& (df.shop .!= 11000) .& (df.shop .!= 11001), :]
+    # replace with filtering doctype 4, which includes shop of 11000 and 11001.
+    complete = df[(df.status .== "F") .& (df.type .!= 4), :]
     # group the complete df by shop, there are 516 shops in January 2018
     gdf = groupby(complete, :shop)
     # count the number of orders for each shop 
@@ -75,6 +77,6 @@ function analyse(month::String="01", year::String="2018")
     return (topShop, top5[3][1,1], sale)
 end
 
-# (sdf, bestShop) = analyseOrder("/dat/frt/ordr052018.json")
+# (ef, sdf, bestShop) = analyseOrder("/dat/frt/ordr052018.json")
 # daynames = map(x -> x[1:3], sdf[:,:dayname])
 # @df sdf plot(:day, :sale, title="Daily Sale", label=false, xlabel="day of month", ylabel="VND [million]", xticks=(1:length(daynames), daynames), xrotation=90, tickfontsize=6)
