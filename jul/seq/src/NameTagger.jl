@@ -1,19 +1,24 @@
 # phuonglh@gmail.com
 # Sentence encoder which encodes a sequence of tokens into a sequence of 
-# dense vectors and perform sequence tagging. This programme performs part-of-speech 
-# tagging on a Universal Dependencies treebank data. Here, we use (word, shape, universal PoS) to 
-# infer language-specific part-of-speech.
+# dense vectors and perform sequence tagging. This programme performs named entity 
+# tagging on a CoNLL-2003 NE format data set. Here, we use (word, shape, part-of-speech) to 
+# infer named entity labels.
+
+# This program is deliberately very similar to `PoSTagger`. We simply use :e annotation for labels.
 
 using Flux
 using Flux: @epochs
 using BSON: @save, @load
-
 using FLoops
+using BangBang
+using MicroCollections
+
 
 include("Sentence.jl")
 include("Brick.jl")
 include("Embedding.jl")
 include("Options.jl")
+
 
 
 struct Vocabularies
@@ -39,8 +44,8 @@ function vocab(sentences::Array{Sentence}, minFreq::Int = 2)::Vocabularies
         word = lowercase(strip(token.word))
         haskey(wordFrequency, word) ? wordFrequency[word] += 1 : wordFrequency[word] = 1
         shapes[shape(token.word)] = 0
-        partsOfSpeech[token.annotation[:upos]] = 0
-        labels[token.annotation[:pos]] = 0
+        partsOfSpeech[token.annotation[:p]] = 0
+        labels[token.annotation[:e]] = 0
     end
     # filter out infrequent words
     filter!(p -> p.second >= minFreq, wordFrequency)
@@ -60,8 +65,8 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     paddingX = [wordIndex[options[:paddingX]]; 1; 1]
     paddingY = Flux.onehot(labelIndex[options[:paddingY]], 1:length(labelIndex))
     for sentence in sentences
-        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:upos]]], sentence.tokens)
-        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:pos]], 1:length(labelIndex), 1), sentence.tokens)
+        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:p]]], sentence.tokens)
+        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:e]], 1:length(labelIndex), 1), sentence.tokens)
         # pad the columns of xs and ys to maxSequenceLength
         if length(xs) > options[:maxSequenceLength]
             xs = xs[1:options[:maxSequenceLength]]
@@ -90,8 +95,8 @@ end
     Train an encoder.
 """
 function train(options::Dict{Symbol,Any})
-    sentences = readCorpusUD(options[:trainCorpus])
-    sentencesValidation = readCorpusUD(options[:validCorpus])
+    sentences = readCorpusCoNLL(options[:trainCorpus])
+    sentencesValidation = readCorpusCoNLL(options[:validCorpus])
     @info "Number of training sentences = $(length(sentences))"
     @info "Number of validation sentences = $(length(sentencesValidation))"
     vocabularies = vocab(sentences)
@@ -210,4 +215,31 @@ function evaluate(encoder, Xs, Ys, paddingY::Int=1)
     end
     @info "Total matched tokens = $(numTokens)/$(numMatches)"
     return numMatches/numTokens
+end
+
+"""
+    predict(encoder, Xs, Ys, labelIndex, paddingY)
+
+    Predict the labels for some inputs. `Xs` is a list of 3-d input matrices. We use the addition ground-truth 
+    `Ys` for evaluation using the `conlleval` script.
+"""
+function predict(encoder, Xs, Ys, labelIndex::Dict{Int,String}, paddingY::Int=1)
+    numBatches = length(Xs)
+    # normally, size(X,3) is the batch size except the last batch
+    @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
+        b = size(Xs[i],3)
+        Ŷb = Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:b)
+        Yb = Flux.onecold.(Ys[i][:,:,t] for t=1:b)
+        zy = []
+        for t=1:b
+            n = options[:maxSequenceLength]
+            # find the last position of non-padded element
+            while Yb[t][n] == paddingY
+                n = n - 1
+            end
+            push!(zy, collect(zip(Ŷb[t][1:n], Yb[t][1:n])))
+        end
+        @reduce(zys = append!!(EmptyVector(), zy))
+    end
+    return result
 end

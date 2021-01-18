@@ -1,3 +1,4 @@
+# For Vietnamese PoS tagging
 options = Dict{Symbol,Any}(
     :mode => :train,
     :minFreq => 2,
@@ -13,19 +14,20 @@ options = Dict{Symbol,Any}(
     :trainCorpus => string(pwd(), "/dat/dep/vie/vi_vtb-ud-train.conllu"),
     :validCorpus => string(pwd(), "/dat/dep/vie/vi_vtb-ud-dev.conllu"),
     :testCorpus => string(pwd(), "/dat/dep/vie/vi_vtb-ud-test.conllu"),
-    :modelPath => string(pwd(), "/jul/seq/dat/vie/encoder.bson"),
-    :wordPath => string(pwd(), "/jul/seq/dat/vie/words.txt"),
-    :shapePath => string(pwd(), "/jul/seq/dat/vie/shapes.txt"),
-    :posPath => string(pwd(), "/jul/seq/dat/vie/partOfSpeech.txt"),
-    :labelPath => string(pwd(), "/jul/seq/dat/vie/label.txt"),
+    :modelPath => string(pwd(), "/jul/seq/dat/vie/pos/encoder.bson"),
+    :wordPath => string(pwd(), "/jul/seq/dat/vie/pos/words.txt"),
+    :shapePath => string(pwd(), "/jul/seq/dat/vie/pos/shapes.txt"),
+    :posPath => string(pwd(), "/jul/seq/dat/vie/pos/partOfSpeech.txt"),
+    :labelPath => string(pwd(), "/jul/seq/dat/vie/pos/label.txt"),
     :numCores => 4,
     :verbose => false,
-    :logPath => string(pwd(), "/jul/seq/dat/vie/loss.txt"),
+    :logPath => string(pwd(), "/jul/seq/dat/vie/pos/loss.txt"),
     :unknown => "[UNK]",
     :paddingX => "[PAD_X]",
     :paddingY => "[PAD_Y]"
 )
 
+# For English PoS tagging
 optionsEWT = Dict{Symbol,Any}(
     :mode => :train,
     :minFreq => 2,
@@ -41,14 +43,43 @@ optionsEWT = Dict{Symbol,Any}(
     :trainCorpus => string(pwd(), "/dat/dep/eng/2.7/en_ewt-ud-train.conllu"),
     :validCorpus => string(pwd(), "/dat/dep/eng/2.7/en_ewt-ud-dev.conllu"),
     :testCorpus => string(pwd(), "/dat/dep/eng/2.7/en_ewt-ud-test.conllu"),
-    :modelPath => string(pwd(), "/jul/seq/dat/eng/encoder.bson"),
-    :wordPath => string(pwd(), "/jul/seq/dat/eng/words.txt"),
-    :shapePath => string(pwd(), "/jul/seq/dat/eng/shapes.txt"),
-    :posPath => string(pwd(), "/jul/seq/dat/eng/partOfSpeech.txt"),
-    :labelPath => string(pwd(), "/jul/seq/dat/eng/label.txt"),
+    :modelPath => string(pwd(), "/jul/seq/dat/eng/pos/encoder.bson"),
+    :wordPath => string(pwd(), "/jul/seq/dat/eng/pos/words.txt"),
+    :shapePath => string(pwd(), "/jul/seq/dat/eng/pos/shapes.txt"),
+    :posPath => string(pwd(), "/jul/seq/dat/eng/pos/partOfSpeech.txt"),
+    :labelPath => string(pwd(), "/jul/seq/dat/eng/pos/label.txt"),
     :numCores => 4,
     :verbose => false,
-    :logPath => string(pwd(), "/jul/seq/dat/eng/loss.txt"),
+    :logPath => string(pwd(), "/jul/seq/dat/eng/pos/loss.txt"),
+    :unknown => "[UNK]",
+    :paddingX => "[PAD_X]",
+    :paddingY => "[PAD_Y]"
+)
+
+# For Vietnamese NER
+optionsVLSP2016 = Dict{Symbol,Any}(
+    :mode => :train,
+    :minFreq => 2,
+    :lowercase => true,
+    :vocabSize => 2^16,
+    :wordSize => 16,
+    :shapeSize => 4,
+    :posSize => 8,
+    :hiddenSize => 32,
+    :maxSequenceLength => 40,
+    :batchSize => 32,
+    :numEpochs => 40,
+    :trainCorpus => string(pwd(), "/dat/ner/vie/vie.train"),
+    :validCorpus => string(pwd(), "/dat/ner/vie/vie.test"),
+    :testCorpus => string(pwd(), "/dat/ner/vie/vie.test"),
+    :modelPath => string(pwd(), "/jul/seq/dat/vie/ner/encoder.bson"),
+    :wordPath => string(pwd(), "/jul/seq/dat/vie/ner/words.txt"),
+    :shapePath => string(pwd(), "/jul/seq/dat/vie/ner/shapes.txt"),
+    :posPath => string(pwd(), "/jul/seq/dat/vie/ner/partOfSpeech.txt"),
+    :labelPath => string(pwd(), "/jul/seq/dat/vie/ner/label.txt"),
+    :numCores => 4,
+    :verbose => false,
+    :logPath => string(pwd(), "/jul/seq/dat/vie/ner/loss.txt"),
     :unknown => "[UNK]",
     :paddingX => "[PAD_X]",
     :paddingY => "[PAD_Y]"
