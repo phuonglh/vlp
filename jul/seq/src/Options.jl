@@ -84,3 +84,32 @@ optionsVLSP2016 = Dict{Symbol,Any}(
     :paddingX => "[PAD_X]",
     :paddingY => "[PAD_Y]"
 )
+
+# For English CoNLL-2003 NER
+optionsCoNLL2003 = Dict{Symbol,Any}(
+    :mode => :train,
+    :minFreq => 2,
+    :lowercase => true,
+    :vocabSize => 2^16,
+    :wordSize => 16,
+    :shapeSize => 4,
+    :posSize => 8,
+    :hiddenSize => 32,
+    :maxSequenceLength => 40,
+    :batchSize => 32,
+    :numEpochs => 40,
+    :trainCorpus => string(pwd(), "/dat/ner/eng/eng.train"),
+    :validCorpus => string(pwd(), "/dat/ner/eng/eng.testa"),
+    :testCorpus => string(pwd(), "/dat/ner/eng/eng.testb"),
+    :modelPath => string(pwd(), "/jul/seq/dat/eng/ner/encoder.bson"),
+    :wordPath => string(pwd(), "/jul/seq/dat/eng/ner/words.txt"),
+    :shapePath => string(pwd(), "/jul/seq/dat/eng/ner/shapes.txt"),
+    :posPath => string(pwd(), "/jul/seq/dat/eng/ner/partOfSpeech.txt"),
+    :labelPath => string(pwd(), "/jul/seq/dat/eng/ner/label.txt"),
+    :numCores => 4,
+    :verbose => false,
+    :logPath => string(pwd(), "/jul/seq/dat/eng/ner/loss.txt"),
+    :unknown => "[UNK]",
+    :paddingX => "[PAD_X]",
+    :paddingY => "[PAD_Y]"
+)

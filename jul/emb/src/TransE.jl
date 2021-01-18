@@ -39,7 +39,7 @@ optsGSD = Dict{Symbol,Any}(
 )
 
 # change this line for different language
-language = "vie"
+language = "ind"
 
 (optsTransE, optionsUD) = if language == "vie"
     (opts, options)
