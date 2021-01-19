@@ -85,34 +85,34 @@ function batch(sentences::Array{Array{String,1}}, alphabet::Array{Char,1}, mutat
 end
 
 """
-  predict(sentence)
+  predict(model, sentence, alphabet)
 
-  Predict the correct sentence of a mutated sentence.
+  Predict a mutated sentence.
 """
-function predict(sentence::Array{String}, alphabet::Array{Char})::Array{Symbol}
+function predict(model, sentence::Array{String}, alphabet::Array{Char})::Array{Symbol}
+    # reset the state of the model before applying on an input sample
+    reset!(model) 
     # vectorize the input sentence using a dummy label sequence (not used)
     x = vectorize(sentence, alphabet, fill(:P, length(sentence)))
-    y = onecold(model(x))
-    # reset the state of the model after applying on an input sample
-    reset!(model) 
+    y = onecold(model(x[1]))
     map(e -> options[:labels][e], y)
 end
 
 """
-  evaluate(xs, ys)
+  evaluate(model, xs, ys)
 
   Predict a list of sentences, collect prediction result and report prediction accuracy
   xs: mutated sentences; ys: correct mutation labels
 """
-function evaluate(xs::Array{Array{String,1}}, alphabet::Array{Char}, ys::Array{Array{Symbol,1}})
-    zs = map(s -> predict(s, alphabet), xs)
+function evaluate(model, xs::Array{Array{String,1}}, alphabet::Array{Char}, ys::Array{Array{Symbol,1}})
+    zs = map(s -> predict(model, s, alphabet), xs)
     oui = Dict{Symbol,Int}() # number of correct predictions for each label
     non = Dict{Symbol,Int}() # number of incorrect predictions for each label
     foreach(k -> oui[k] = 0, options[:labels])
     foreach(k -> non[k] = 0, options[:labels])
     for i = 1:length(ys)    
         y, z = ys[i], zs[i]
-        zyDiff = z .== y
+        zyDiff = (z .== y)
         for i = 1:length(y)
         k = y[i]
         if (zyDiff[i])
@@ -124,7 +124,7 @@ function evaluate(xs::Array{Array{String,1}}, alphabet::Array{Char}, ys::Array{A
     end
     accuracy = Dict{Symbol,Float64}()
     for k in options[:labels]
-        accuracy[k] = good[k]/(good[k] + bad[k])
+        accuracy[k] = oui[k]/(oui[k] + non[k])
     end
     @info "\toui = $(oui)"
     @info "\tnon = $(non)"
@@ -135,6 +135,7 @@ end
     evaluate(model, xs, ys)
 
     Evaluates the accuracy of a mini-batch, return the total labels in the batch and the number of correct predicted labels.
+    This function is used in traiing for performance update.
 """
 function evaluate(model, xs::Array{Array{Float32,2}}, ys::Array{Array{Float32,2}})::Tuple{Int,Int}
     as = map(x -> onecold(model(x)), xs)
@@ -155,10 +156,18 @@ function evaluate(model, xs::Array{Array{Float32,2}}, ys::Array{Array{Float32,2}
     return (total, correct)
 end
 
+"""
+    train(options)
+
+    Trains a model and save to an external file; the alphabet is also saved.
+"""
 function train(options)
     sentences, mutations = readData(options)
     xs = replace.(sentences, " " => "")
     alphabet = unique(join(xs))
+    file = open(options[:alphabetPath], "w")
+    write(file, join(alphabet))
+    close(file)
     Xb, Yb = batch(sentences, alphabet, mutations)
     if options[:gpu] 
         @info "Bringing data to GPU..."
@@ -199,5 +208,23 @@ function train(options)
     result = reduce(((a, b), (c, d)) -> (a + c, b + d), pairs)
     @info "training accuracy = $(result[2]/result[1]) [$(result[2])/$(result[1])]."
     return model
+end
+
+"""
+    eval(options)
+
+    Loads a trained model and evaluate the accuracy on training set and test set. 
+"""
+function eval(options)
+    @load options[:modelPath] model
+    sentences, mutations = readData(options)
+    alphabet = collect(readline(options[:alphabetPath]))
+    Xb, Yb = batch(sentences, alphabet, mutations)
+    # evaluate the training accuracy of the model
+    pairs = [evaluate(model, collect(Xb[i]), collect(Yb[i])) for i=1:length(Xb)]
+    result = reduce(((a, b), (c, d)) -> (a + c, b + d), pairs)
+    reset!(model)
+    @info "training accuracy = $(result[2]/result[1]) [$(result[2])/$(result[1])]."
+    evaluate(model, sentences, alphabet, mutations)
 end
 
