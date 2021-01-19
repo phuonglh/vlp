@@ -2,7 +2,7 @@
 # Options used for ScRNN model.
 
 options = Dict{Symbol,Any}(
-    :hiddenSize => 64,
+    :hiddenSize => 32,
     :maxSequenceLength => 80,
     :numEpochs => 40,
     :batchSize => 32, 

@@ -163,8 +163,8 @@ end
 """
 function train(options)
     sentences, mutations = readData(options)
-    xs = replace.(sentences, " " => "")
-    alphabet = unique(join(xs))
+    xs = replace!.(sentences, r"\s+" => "")
+    alphabet = unique(join(join.(xs)))
     file = open(options[:alphabetPath], "w")
     write(file, join(alphabet))
     close(file)
