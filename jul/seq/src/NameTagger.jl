@@ -58,14 +58,15 @@ end
 
     Create batches of data for training or evaluating. Each batch contains a pair (Xb, Yb) where 
     Xb is an array of matrices of size (featuresPerToken x maxSequenceLength). Each column of Xb is a vector representing a token.
-    If a sentence is shorter than maxSequenceLength, it is padded with vectors of ones.
+    If a sentence is shorter than maxSequenceLength, it is padded with vectors of ones. To speed up the computation, Xb and Yb 
+    are stacked as 3-d matrices where the 3-rd dimention is the batch one.
 """
 function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     X, Y = Array{Array{Int,2},1}(), Array{Array{Int,2},1}()
     paddingX = [wordIndex[options[:paddingX]]; 1; 1]
     paddingY = Flux.onehot(labelIndex[options[:paddingY]], 1:length(labelIndex))
     for sentence in sentences
-        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:p]]], sentence.tokens)
+        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), get(shapeIndex, shape(token.word), 1), get(posIndex, token.annotation[:p], 1)], sentence.tokens)
         ys = map(token -> Flux.onehot(labelIndex[token.annotation[:e]], 1:length(labelIndex), 1), sentence.tokens)
         # pad the columns of xs and ys to maxSequenceLength
         if length(xs) > options[:maxSequenceLength]
@@ -82,9 +83,9 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     # build batches of data for training
     Xb = Iterators.partition(X, options[:batchSize])
     Yb = Iterators.partition(Y, options[:batchSize])
-    # stack each input batch to a 3-d matrix
+    # stack each input batch as a 3-d matrix
     Xs = map(b -> Int.(Flux.batch(b)), Xb)
-    # stack each output batch to a 3-d matrix
+    # stack each output batch as a 3-d matrix
     Ys = map(b -> Int.(Flux.batch(b)), Yb)
     (Xs, Ys)
 end
@@ -191,13 +192,14 @@ end
     evaluate(encoder, Xs, Ys, paddingY)
 
     Evaluate the accuracy of the encoder on a dataset. `Xs` is a list of 3-d input matrices and `Ys` is a list of 
-    3-d ground-truth output matrices. 
+    3-d ground-truth output matrices. The third dimension is the batch one.
 """
 function evaluate(encoder, Xs, Ys, paddingY::Int=1)
     numBatches = length(Xs)
     # normally, size(X,3) is the batch size except the last batch
     @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
         b = size(Xs[i],3)
+        Flux.reset!(encoder)
         Ŷb = Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:b)
         Yb = Flux.onecold.(Ys[i][:,:,t] for t=1:b)
         # number of tokens and number of matches in this batch
@@ -218,19 +220,20 @@ function evaluate(encoder, Xs, Ys, paddingY::Int=1)
 end
 
 """
-    predict(encoder, Xs, Ys, labelIndex, paddingY)
+    predict(encoder, Xs, Ys, labelIndex, outputPath, paddingY)
 
     Predict the labels for some inputs. `Xs` is a list of 3-d input matrices. We use the addition ground-truth 
     `Ys` for evaluation using the `conlleval` script.
 """
-function predict(encoder, Xs, Ys, labelIndex::Dict{Int,String}, paddingY::Int=1)
+function predict(encoder, Xs, Ys, labelIndex::Dict{String,Int}, outputPath::String, paddingY::Int=1)
     numBatches = length(Xs)
     # normally, size(X,3) is the batch size except the last batch
     @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
         b = size(Xs[i],3)
+        Flux.reset!(encoder)
         Ŷb = Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:b)
         Yb = Flux.onecold.(Ys[i][:,:,t] for t=1:b)
-        zy = []
+        zy = Array{Array{Tuple{Int,Int},1},1}()
         for t=1:b
             n = options[:maxSequenceLength]
             # find the last position of non-padded element
@@ -241,5 +244,60 @@ function predict(encoder, Xs, Ys, labelIndex::Dict{Int,String}, paddingY::Int=1)
         end
         @reduce(zys = append!!(EmptyVector(), zy))
     end
-    return result
+    # convert zys to CoNLL-2003 output file format for evaluation with an external script.
+    labels = fill("", length(labelIndex))
+    for key in keys(labelIndex)
+        labels[labelIndex[key]] = key
+    end
+    xs = map(zy -> join(map(pair -> string(labels[pair[2]], " ", labels[pair[1]]), zy), "\n"), zys)
+    file = open(outputPath, "w")
+    write(file, join(xs, "\n\n"))
+    write(file, "\n")
+    close(file)
+end
+
+"""
+    loadIndex(path)
+
+    Load an index from a file which is previously saved by `saveIndex()` function.
+"""
+function loadIndex(path)::Dict{String,Int}
+    lines = readlines(path)
+    pairs = Array{Tuple{String,Int},1}()
+    for line in lines
+        parts = split(line, " ")
+        push!(pairs, (string(parts[1]), parse(Int, parts[2])))
+    end
+    return Dict(pair[1] => pair[2] for pair in pairs)
+end
+
+"""
+    eval(options)
+
+    Run the prediction on all train/dev./test corpus and save the results to corresponding output files.
+"""
+function eval(options)
+    sentences = readCorpusCoNLL(options[:trainCorpus])
+    sentencesValidation = readCorpusCoNLL(options[:validCorpus])
+    sentencesTest = readCorpusCoNLL(options[:testCorpus])
+    @info "Number of training sentences = $(length(sentences))"
+    @info "Number of validation sentences = $(length(sentencesValidation))"
+    @info "Number of test sentences = $(length(sentencesTest))"
+    wordIndex = loadIndex(options[:wordPath])
+    shapeIndex = loadIndex(options[:shapePath])
+    posIndex = loadIndex(options[:posPath])
+    labelIndex = loadIndex(options[:labelPath])
+    # create batches of data, each batch is a 3-d matrix of size 3 x maxSequenceLength x batchSize
+    Xs, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
+    datasetTrain = collect(zip(Xs, Ys))
+    XsV, YsV = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
+    datasetValidation = collect(zip(XsV, YsV))
+    XsT, YsT = batch(sentencesTest, wordIndex, shapeIndex, posIndex, labelIndex)
+    datasetTest = collect(zip(XsT, YsT))
+    @info "Predicting training set..."
+    predict(encoder, Xs, Ys, labelIndex, options[:trainOutput])
+    @info "Predicting validation set..."
+    predict(encoder, XsV, YsV, labelIndex, options[:validOutput])
+    @info "Predicting test set..."
+    predict(encoder, XsT, YsT, labelIndex, options[:testOutput])
 end

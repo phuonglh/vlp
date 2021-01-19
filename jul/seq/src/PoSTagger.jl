@@ -53,14 +53,15 @@ end
 
     Create batches of data for training or evaluating. Each batch contains a pair (Xb, Yb) where 
     Xb is an array of matrices of size (featuresPerToken x maxSequenceLength). Each column of Xb is a vector representing a token.
-    If a sentence is shorter than maxSequenceLength, it is padded with vectors of ones.
+    If a sentence is shorter than maxSequenceLength, it is padded with vectors of ones. To speed up the computation, Xb and Yb 
+    are stacked as 3-d matrices where the 3-rd dimention is the batch one.
 """
 function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeIndex::Dict{String,Int}, posIndex::Dict{String,Int}, labelIndex::Dict{String,Int})
     X, Y = Array{Array{Int,2},1}(), Array{Array{Int,2},1}()
     paddingX = [wordIndex[options[:paddingX]]; 1; 1]
     paddingY = Flux.onehot(labelIndex[options[:paddingY]], 1:length(labelIndex))
     for sentence in sentences
-        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), shapeIndex[shape(token.word)], posIndex[token.annotation[:upos]]], sentence.tokens)
+        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), get(shapeIndex, shape(token.word), 1), get(posIndex, token.annotation[:upos], 1)], sentence.tokens)
         ys = map(token -> Flux.onehot(labelIndex[token.annotation[:pos]], 1:length(labelIndex), 1), sentence.tokens)
         # pad the columns of xs and ys to maxSequenceLength
         if length(xs) > options[:maxSequenceLength]
@@ -77,9 +78,9 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     # build batches of data for training
     Xb = Iterators.partition(X, options[:batchSize])
     Yb = Iterators.partition(Y, options[:batchSize])
-    # stack each input batch to a 3-d matrix
+    # stack each input batch as a 3-d matrix
     Xs = map(b -> Int.(Flux.batch(b)), Xb)
-    # stack each output batch to a 3-d matrix
+    # stack each output batch as a 3-d matrix
     Ys = map(b -> Int.(Flux.batch(b)), Yb)
     (Xs, Ys)
 end
@@ -186,13 +187,14 @@ end
     evaluate(encoder, Xs, Ys, paddingY)
 
     Evaluate the accuracy of the encoder on a dataset. `Xs` is a list of 3-d input matrices and `Ys` is a list of 
-    3-d ground-truth output matrices. 
+    3-d ground-truth output matrices. The third dimension is the batch one.
 """
 function evaluate(encoder, Xs, Ys, paddingY::Int=1)
     numBatches = length(Xs)
     # normally, size(X,3) is the batch size except the last batch
     @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
         b = size(Xs[i],3)
+        Flux.reset!(encoder)
         Ŷb = Flux.onecold.(encoder(Xs[i][:,:,t]) for t=1:b)
         Yb = Flux.onecold.(Ys[i][:,:,t] for t=1:b)
         # number of tokens and number of matches in this batch
