@@ -17,7 +17,7 @@ Embedding(vocabSize::Int, outputSize::Int) = Embedding(rand(outputSize, vocabSiz
 
 # overload call, so the object can be used as a function
 # x is a word index or an array of word indices (1 <= x < vocabSize)
-(f::Embedding)(x) = (f.W[1])[:, x]
+(f::Embedding)(x) = (f.W)[:, x]
 
 # make the embedding layer trainable
 # updated on December 10, 2020

@@ -12,7 +12,6 @@ using Flux: @epochs
 using Statistics: mean
 using BSON: @save, @load
 using StatsBase: wsample
-using Distributed
 using Dates
 using Random
 
@@ -25,13 +24,12 @@ include("Embedding.jl")
 prefix = string(homedir(), "/vlp/")
 minFreq = 2
 maxSequenceLength = 30
-numEpochs = 30
+numEpochs = 20
 # word vector dimension
 wd = 50
 makeLowercase = true
-batchSize = 32
 # hidden dimension of the RNN
-hid = 128
+hid = 64
 # use GPU or not
 g = false
 
@@ -54,7 +52,7 @@ push!(wordList, "UNK")
 println("#(vocab) = ", length(wordList))
 
 # build word vectors
-@time wordVectors = load("/opt/data/emb/skip.vie.50d.txt")
+#@time wordVectors = load("/opt/data/emb/vi/skip.vie.50d.txt")
 
 # prepare the word embedding table
 N = length(wordList)
@@ -67,6 +65,8 @@ for i = 1:N
 end
 
 embed = Embedding(W)
+
+@info "initial total weight of word embedding = $(sum(embed.W))"
 
 # build a word index (word => index)
 wordIndex = Dict{String, Int}(word => i for (i, word) in enumerate(wordList))
@@ -141,7 +141,14 @@ encode(tokens) = vcat.(forward.(tokens), flip(backward, tokens))
 # create an alignment model
 alignNet = Dense(2*hid, 1)
 # s is an output of the decoder, h is a hidden state of input at a position j.
-align(s, h) = alignNet(vcat(h, s .* trues(1, size(h, 2))))
+function align(s, h)
+    a = if length(size(s)) == 1 # if recur is reset
+        repeat(s, 1, size(h, 2))
+    else
+        s
+    end
+    alignNet(vcat(h, a))
+end
 
 # Decoder: a recurrent model which takes a sequence of annotations, attends, and returns
 # a predicted output token.
@@ -168,9 +175,9 @@ decode(tokens, labels) = [decode1(tokens, label) for label in labels]
 state = (forward, backward, alignNet, recur, toAlpha)
 
 function model(x, y)
-  prediction = decode(encode(x), y)
-  reset!(state)
-  return prediction
+    prediction = decode(encode(x), y)
+    reset!(state)
+    return prediction
 end
 
 # Loss function on a batch. For each sequence in the batch, 
@@ -189,25 +196,25 @@ Ys0 = map(pair -> flatten(pair[2]), XYs)
 Ys = map(pair -> flatten(pair[3]), XYs)
 
 # batch a sequence with padding p
-batches(xs, p) = [batchseq(b, p) for b in partition(xs, batchSize)]
-# batch Xs with a zero vector
+batches(xs, p) = [batchseq(b, p) for b in partition(xs, maxSequenceLength)]
+# batch Xs with a padding vector of zeros
 Xb = batches(Xs, Float32.(zeros(inp)))
-# batch Ys with a zero vector
+# batch Ys with a pading vector of one-hot EOS
 Yb0 = batches(Ys0, onehot("EOS", entities))
-# batch Ys with a zero vector
+# batch Ys with a padding vector one one-hot EOS
 Yb = batches(Ys, onehot("EOS", entities))
 # create a data set for training, each training point is a tuple of batches
 dataset = collect(zip(Xb, Yb0, Yb))
 println("#(batches) = ", length(dataset))
 
-println("typeof(Xb50) = ", typeof(Xb[50])) # this should be Array{Array{Float32,2},1}
+println("typeof(Xb10) = ", typeof(Xb[10])) # this should be Array{Array{Float32,2},1}
 
 # train the model with some number of epochs and save the parameters to a BSON file
 function train(numEpochs::Int, modelPath::String)
-    evalcb = throttle(600) do
-        J = loss(dataset[50]...)
+    evalcb = throttle(60) do
+        J = loss(dataset[10]...)
         @show(J)
-        @save "$(modelPath)/vie-$(now()).bson" state loss = Tracker.data(J)
+        @save "$(modelPath)/vie-$(now()).bson" state loss = J
     end
     optimizer = ADAM(1E-4)
     @epochs numEpochs Flux.train!(loss, params(state), dataset, optimizer, cb = evalcb)
@@ -223,7 +230,7 @@ function predict(sentence::Sentence)::Array{String}
     ps = ["BOS"]
     for i = 1:length(ts)
         dist = decode1(ts, onehot(ps[end], entities))
-        next = wsample(entities, vec(Tracker.data(dist)))
+        next = wsample(entities, vec(dist))
         push!(ps, next)
     end
     return ps[2:end]
@@ -233,7 +240,7 @@ end
 # result to an output file in the CoNLL evaluation format
 function predict(sentences::Array{Sentence}, outputPath::String)
     println("Predicting sentences. Please wait...")
-    zs = pmap(s -> predict(s), sentences)
+    zs = map(s -> predict(s), sentences)
     ys = map(s -> map(token -> token.properties['e'], s.tokens), sentences)
     file = open(outputPath, "w")
     for i = 1:length(ys)
@@ -249,6 +256,8 @@ end
 
 @time train(numEpochs, string(prefix, "dat/ner/vie"))
 
-@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.", hid))
+@info "final total weight of word embedding = $(sum(embed.W))"
+
+#@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.", hid))
 @time predict(sentences, string(prefix, "dat/ner/vie/vie.train.jul.nerA.", hid))
 
