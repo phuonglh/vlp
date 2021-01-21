@@ -106,7 +106,7 @@ end
 
 
 function train(options::Dict{Symbol,Any})
-    sentences = readCorpusCoNLL(options[:validCorpus])
+    sentences = readCorpusCoNLL(options[:trainCorpus])
     sentencesValidation = readCorpusCoNLL(options[:validCorpus])
     @info "Number of training sentences = $(length(sentences))"
     @info "Number of validation sentences = $(length(sentencesValidation))"
@@ -249,8 +249,8 @@ function train(options::Dict{Symbol,Any})
     evalcb = Flux.throttle(30) do
         ℓ = loss(Xbs[1], Y0bs[1], Ybs[1])
         @info "loss = $ℓ"
-        trainingAccuracy = evaluate(machine, Xbs, Y0bs, Ybs)
-        validationAccuracy = evaluate(machine, Ubs, Vbs, Wbs)
+        trainingAccuracy = evaluate(model, Xbs, Y0bs, Ybs)
+        validationAccuracy = evaluate(model, Ubs, Vbs, Wbs)
         @info string("loss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
         write(file, string(ℓ, ',', trainingAccuracy, ',', validationAccuracy, "\n"))
     end
@@ -263,23 +263,22 @@ function train(options::Dict{Symbol,Any})
 
     @info "Total weight of final word embeddings = $(sum(embedding.word.W))"
     @info "Evaluating the model on the training set..."
-    accuracy = evaluate(machine, Xbs, Y0bs, Ybs)
+    accuracy = evaluate(model, Xbs, Y0bs, Ybs)
     @info "Training accuracy = $accuracy"
-    accuracyValidation = evaluate(machine, Us, Vs, Ws)
+    accuracyValidation = evaluate(model, Us, Vs, Ws)
     @info "Validation accuracy = $accuracyValidation"
     machine
 end
 
 """
-    evaluate(machine, Xbs, Y0bs, Ybs, paddingY)
+    evaluate(model, Xbs, Y0bs, Ybs, paddingY)
 
-    Evaluate the accuracy of the machine on a dataset. 
+    Evaluate the accuracy of the model on a dataset. 
 """
-function evaluate(machine, Xbs, Y0bs, Ybs, paddingY::Int=1)
+function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
     numBatches = length(Xbs)
     # normally, size(X,3) is the batch size except the last batch
     @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
-        Flux.reset!(machine)
         Ŷb = Flux.onecold.(model(Xbs[i], Y0bs[i]))
         Yb = Flux.onecold.(Ybs[i])
         # number of tokens and number of matches in this batch
