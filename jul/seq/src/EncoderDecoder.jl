@@ -286,7 +286,7 @@ function train(options::Dict{Symbol,Any})
     @info "Evaluating the model on the training set..."
     accuracy = evaluate(model, Xbs, Y0bs, Ybs)
     @info "Training accuracy = $accuracy"
-    accuracyValidation = evaluate(model, Us, Vs, Ws)
+    accuracyValidation = evaluate(model, Ubs, Vbs, Wbs)
     @info "Validation accuracy = $accuracyValidation"
     machine
 end
@@ -333,7 +333,7 @@ function predict(sentence, labelIndex::Dict{String,Int})
     numLabels = length(labels)
     Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)  
     Xb = collect(first(Xs))
-    m = size(Hb[1], 2)
+    m = size(Xb[1], 2)
     Y = repeat(Flux.onehotbatch(ps, 1:numLabels), 1, m)
     Yb = [Y]
     for t=1:m
