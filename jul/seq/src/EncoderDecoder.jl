@@ -92,7 +92,7 @@ end
 options = optionsVLSP2016
 
 # Read training data and create indices
-sentences = readCorpusCoNLL(options[:validCorpus])
+sentences = readCorpusCoNLL(options[:trainCorpus])
 sentencesValidation = readCorpusCoNLL(options[:validCorpus])
 @info "Number of training sentences = $(length(sentences))"
 @info "Number of validation sentences = $(length(sentencesValidation))"
@@ -270,10 +270,9 @@ function train(options::Dict{Symbol,Any})
     write(file, "loss,trainingAccuracy,validationAccuracy\n")
     evalcb = Flux.throttle(30) do
         ℓ = loss(Xbs[1], Y0bs[1], Ybs[1])
-        @info "loss = $ℓ"
         trainingAccuracy = evaluate(model, Xbs, Y0bs, Ybs)
         validationAccuracy = evaluate(model, Ubs, Vbs, Wbs)
-        @info string("loss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
+        @info string("\tloss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
         write(file, string(ℓ, ',', trainingAccuracy, ',', validationAccuracy, "\n"))
     end
     
@@ -316,10 +315,15 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
         end
         @reduce(numTokens += tokens, numMatches += matches)
     end
-    @info "Total matched tokens = $(numMatches)/$(numTokens)"
+    @info "\tTotal matched tokens = $(numMatches)/$(numTokens)"
     return numMatches/numTokens
 end
 
+"""
+    predict(sentence, labelIndex)
+
+    Find the label sequence for a given sentence.
+"""
 function predict(sentence, labelIndex::Dict{String,Int})
     labels = fill("", length(labelIndex))
     for key in keys(labelIndex)
