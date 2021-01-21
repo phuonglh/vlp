@@ -91,6 +91,19 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
 end
 
 """
+    saveIndex(index, path)
+    
+    Save an index to an external file.
+"""
+function saveIndex(index, path)
+    file = open(path, "w")
+    for f in keys(index)
+        write(file, string(f, " ", index[f]), "\n")
+    end
+    close(file)
+end
+
+"""
     train(options)
 
     Train an encoder.
@@ -120,15 +133,6 @@ function train(options::Dict{Symbol,Any})
     @info "numBatches  = ", length(dataset)
     @info size(Xs[1])
     @info size(Ys[1])
-
-    # save an index to an external file
-    function saveIndex(index, path)
-        file = open(path, "w")
-        for f in keys(index)
-            write(file, string(f, " ", index[f]), "\n")
-        end
-        close(file)
-    end
 
     # save the vocabulary, shape, part-of-speech and label information to external files
     saveIndex(wordIndex, options[:wordPath])
@@ -215,7 +219,7 @@ function evaluate(encoder, Xs, Ys, paddingY::Int=1)
         end
         @reduce(numTokens += tokens, numMatches += matches)
     end
-    @info "Total matched tokens = $(numTokens)/$(numMatches)"
+    @info "Total matched tokens = $(numMatches)/$(numTokens)"
     return numMatches/numTokens
 end
 
@@ -301,3 +305,4 @@ function eval(options)
     @info "Predicting test set..."
     predict(encoder, XsT, YsT, labelIndex, options[:testOutput])
 end
+

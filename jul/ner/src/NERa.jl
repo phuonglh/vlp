@@ -24,7 +24,7 @@ include("Embedding.jl")
 prefix = string(homedir(), "/vlp/")
 minFreq = 2
 maxSequenceLength = 30
-numEpochs = 20
+numEpochs = 10
 # word vector dimension
 wd = 50
 makeLowercase = true
@@ -38,10 +38,6 @@ corpus = readCoNLL(string(prefix, "dat/ner/vie/vie.train"))
 # filter sentences of length not greater than maxSequenceLength
 sentences = filter(s -> length(s.tokens) <= maxSequenceLength, corpus)
 println("#(sentences of length <= $(maxSequenceLength)) = ", length(sentences))
-# Read test sentences
-corpus_test = readCoNLL(string(prefix, "dat/ner/vie/vie.test"))
-sentences_test = filter(s -> length(s.tokens) <= maxSequenceLength, corpus_test)
-println("#(sentences_test) = ", length(sentences_test))
 
 # 2. Featurize the dataset
 
@@ -51,20 +47,21 @@ push!(wordList, "<number>")
 push!(wordList, "UNK")
 println("#(vocab) = ", length(wordList))
 
-# build word vectors
-#@time wordVectors = load("/opt/data/emb/vi/skip.vie.50d.txt")
+# # build word vectors
+# @time wordVectors = load("/opt/data/emb/vi/skip.vie.50d.txt")
 
-# prepare the word embedding table
+# # prepare the word embedding table
 N = length(wordList)
-W = randn(wd, N) * 0.01
-for i = 1:N
-    word = wordList[i]
-    if (haskey(wordVectors, word))
-        W[:, i] = wordVectors[word]
-    end
-end
+# W = randn(wd, N) * 0.01
+# for i = 1:N
+#     word = wordList[i]
+#     if (haskey(wordVectors, word))
+#         W[:, i] = wordVectors[word]
+#     end
+# end
+# embed = Embedding(W)
 
-embed = Embedding(W)
+embed = Embedding(N, wd)
 
 @info "initial total weight of word embedding = $(sum(embed.W))"
 
@@ -78,6 +75,8 @@ println("Entity types = ", entities)
 partsOfSpeech = labels(sentences, 'p')
 chunkTypes = labels(sentences, 'c')
 wordShapes = labels(sentences, 's')
+
+# NOTE: should make word embedding learnable by not encoding vectors into Xs!
 
 """
 Creates a matrix representation of a sentence. Each sequence of N tokens 
@@ -172,7 +171,7 @@ end
 decode(tokens, labels) = [decode1(tokens, label) for label in labels]
 
 # The full model
-state = (forward, backward, alignNet, recur, toAlpha)
+state = (embed, forward, backward, alignNet, recur, toAlpha)
 
 function model(x, y)
     prediction = decode(encode(x), y)
@@ -211,7 +210,7 @@ println("typeof(Xb10) = ", typeof(Xb[10])) # this should be Array{Array{Float32,
 
 # train the model with some number of epochs and save the parameters to a BSON file
 function train(numEpochs::Int, modelPath::String)
-    evalcb = throttle(60) do
+    evalcb = throttle(600) do
         J = loss(dataset[10]...)
         @show(J)
         @save "$(modelPath)/vie-$(now()).bson" state loss = J
@@ -258,6 +257,11 @@ end
 
 @info "final total weight of word embedding = $(sum(embed.W))"
 
-#@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.", hid))
 @time predict(sentences, string(prefix, "dat/ner/vie/vie.train.jul.nerA.", hid))
+
+# Read test sentences
+# corpus_test = readCoNLL(string(prefix, "dat/ner/vie/vie.test"))
+# sentences_test = filter(s -> length(s.tokens) <= maxSequenceLength, corpus_test)
+# println("#(sentences_test) = ", length(sentences_test))
+#@time predict(sentences_test, string(prefix, "dat/ner/vie/vie.test.jul.nerA.", hid))
 
