@@ -1,5 +1,5 @@
 # For Vietnamese PoS tagging
-options = Dict{Symbol,Any}(
+optionsVUD = Dict{Symbol,Any}(
     :mode => :train,
     :minFreq => 2,
     :lowercase => true,
