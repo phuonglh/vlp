@@ -9,6 +9,7 @@ using BSON: @save, @load
 using FLoops
 using BangBang
 using MicroCollections
+using StatsBase
 
 include("Sentence.jl")
 include("Brick.jl")
@@ -65,13 +66,13 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
         ys = map(token -> Flux.onehot(labelIndex[token.annotation[:e]], 1:numLabels, 1), sentence.tokens)
         ys0 = copy(ys); prepend!(ys0, [Flux.onehot(labelIndex["BOS"], 1:length(labelIndex), 1)])
         ys1 = copy(ys); append!(ys1, [Flux.onehot(labelIndex["EOS"], 1:length(labelIndex), 1)])
-        # pad the columns of xs and ys to maxSequenceLength
+        # crop the columns of xs and ys to maxSequenceLength
         if length(xs) > options[:maxSequenceLength]
             xs = xs[1:options[:maxSequenceLength]]
             ys0 = ys0[1:options[:maxSequenceLength]]
             ys1 = ys1[1:options[:maxSequenceLength]]
         end
-        # pad the sequences to the same maximal length
+        # pad the sequences to the same maximal length if necessary 
         for t=length(xs)+1:options[:maxSequenceLength]
             push!(xs, paddingX) 
             push!(ys0, paddingY)
@@ -92,7 +93,7 @@ end
 options = optionsVLSP2016
 
 # Read training data and create indices
-sentences = readCorpusCoNLL(options[:trainCorpus])
+sentences = readCorpusCoNLL(options[:validCorpus])
 sentencesValidation = readCorpusCoNLL(options[:validCorpus])
 @info "Number of training sentences = $(length(sentences))"
 @info "Number of validation sentences = $(length(sentencesValidation))"
@@ -225,14 +226,7 @@ end
 # The full machinary
 machine = Chain(embedding, forwardEncoder, backwardEncoder, attention, decoder, linearLayer)
 
-"""
-    model(Xb, Yb)
-"""
-function model(Xb, Yb)
-    prediction = decode(encode(Xb), Yb)
-    Flux.reset!(machine)
-    return prediction
-end
+model(Xb, Yb) = decode(encode(Xb), Yb)
 
 """
     train(options)
@@ -258,9 +252,8 @@ function train(options::Dict{Symbol,Any})
 
     @info "Total weight of inial word embeddings = $(sum(embedding.word.W))"
 
-    function loss(Xb, Y0b, Yb)
-        sum(Flux.crossentropy.(model(Xb, Y0b), Yb))
-    end
+    # define the loss function
+    loss(Xb, Y0b, Yb) = sum(Flux.crossentropy.(model(Xb, Y0b), Yb))
 
     Us, Vs, Ws = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
     Ubs, Vbs, Wbs = collect(Us), collect(Vs), collect(Ws)
@@ -298,7 +291,6 @@ end
 """
 function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
     numBatches = length(Xbs)
-    # normally, size(X,3) is the batch size except the last batch
     @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
         Ŷb = Flux.onecold.(model(Xbs[i], Y0bs[i]))
         Yb = Flux.onecold.(Ybs[i])
@@ -320,32 +312,68 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
 end
 
 """
+    predict(model, Xbs, Y0bs, Ybs,  split, paddingY)
+
+    Predict a (training) data set, save result to a CoNLL-2003 evaluation script.
+"""
+function predict(model, Xbs, Y0bs, Ybs, split::Symbol, paddingY::Int=1)
+    numBatches = length(Xbs)
+    @floop ThreadedEx(basesize=numBatches÷options[:numCores]) for i=1:numBatches
+        Ŷb = Flux.onecold.(model(Xbs[i], Y0bs[i]))
+        Yb = Flux.onecold.(Ybs[i])
+        truth, pred = Array{Array{String,1},1}(), Array{Array{String,1},1}()
+        for t=1:length(Yb)
+            n = options[:maxSequenceLength]
+            # find the last position of non-padded element
+            while Yb[t][n] == paddingY
+                n = n - 1
+            end
+            push!(truth, vocabularies.labels[Yb[t][1:n]])
+            push!(pred, vocabularies.labels[Ŷb[t][1:n]])
+        end
+        @reduce(ss = append!!(EmptyVector(), [(truth, pred)]))
+    end
+    file = open(options[split], "w")
+    result = Array{String,1}()
+    for b=1:numBatches
+        truths = ss[b][1]
+        preds = ss[b][2]
+        for i = 1:length(truths)
+            x = map((a, b) -> string(a, ' ', b), truths[i], preds[i])
+            s = join(x, "\n")
+            push!(result, s * "\n")
+        end
+    end
+    write(file, join(result, "\n"))
+    close(file)
+end
+
+
+"""
     predict(sentence, labelIndex)
 
     Find the label sequence for a given sentence.
 """
 function predict(sentence, labelIndex::Dict{String,Int})
-    labels = fill("", length(labelIndex))
-    for key in keys(labelIndex)
-        labels[labelIndex[key]] = key
-    end
+    Flux.reset!(machine)
     ps = [labelIndex["BOS"]]
-    numLabels = length(labels)
+    numLabels = length(vocabularies.labels)
     Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
     Xb = collect(first(Xs))
+    Hb = encode(Xb)
     Y = repeat(Flux.onehotbatch(ps, 1:numLabels), 1,size(Xb[1], 2))
-    Yb = [Y]
     m = min(length(sentence.tokens), size(Xb[1], 2))
     for t=1:m
         currentY = Flux.onehot(ps[end], 1:numLabels)
         Y[:,t] = currentY
         Yb = [ Y ]
-        output = decode(encode(Xb), Yb)
+        output = decode(Hb, Yb)
         Ŷ = output[1][:,t]
-        nextY = Flux.onecold(Ŷ)
+        # nextY = Flux.onecold(Ŷ)     # use a hard selection approach, always choose the label with the best probability
+        nextY = wsample(1:numLabels, Ŷ) # use a soft selection approach to sample a label from the softmax distribution
         push!(ps, nextY)
     end
-    return labels[ps[2:end]]
+    return vocabularies.labels[ps[2:end]]
 end
 
 """
