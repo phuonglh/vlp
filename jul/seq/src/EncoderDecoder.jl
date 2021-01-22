@@ -331,19 +331,34 @@ function predict(sentence, labelIndex::Dict{String,Int})
     end
     ps = [labelIndex["BOS"]]
     numLabels = length(labels)
-    Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)  
+    Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
     Xb = collect(first(Xs))
-    m = size(Xb[1], 2)
-    Y = repeat(Flux.onehotbatch(ps, 1:numLabels), 1, m)
+    Y = repeat(Flux.onehotbatch(ps, 1:numLabels), 1,size(Xb[1], 2))
     Yb = [Y]
+    m = min(length(sentence.tokens), size(Xb[1], 2))
     for t=1:m
-        nextY = Flux.onehot(ps[end], 1:numLabels)
-        Y[:,t] = nextY
+        currentY = Flux.onehot(ps[end], 1:numLabels)
+        Y[:,t] = currentY
         Yb = [ Y ]
-        output = model(Xb, Yb)
+        output = decode(encode(Xb), Yb)
         Ŷ = output[1][:,t]
-        next = Flux.onecold(Ŷ)
-        push!(ps, next)
+        nextY = Flux.onecold(Ŷ)
+        push!(ps, nextY)
     end
     return labels[ps[2:end]]
 end
+
+"""
+    predict(sentences, labelIndex)
+"""
+function predict(sentences::Array{Sentence}, labelIndex::Dict{String,Int})
+    map(sentence -> predict(sentence, labelIndex), sentences)
+end
+
+function diagnose(sentence)
+    Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
+    Xb = collect(first(Xs))
+    h = first(encode(Xb))
+    βs = β(decoder.state[2], h)
+end
+
