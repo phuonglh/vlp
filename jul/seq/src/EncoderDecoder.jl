@@ -220,13 +220,17 @@ function decode(Hb, Yb)
     contexts = map(cs -> hcat(cs...), Cb) 
     Ub = map((y, context) -> vcat(Float32.(y), context), Yb, contexts)
     Vb = linearLayer.(decoder.(Ub))
-    return softmax.(Vb)
+    return Vb
 end
 
 # The full machinary
 machine = Chain(embedding, forwardEncoder, backwardEncoder, attention, decoder, linearLayer)
 
-model(Xb, Yb) = decode(encode(Xb), Yb)
+function model(Xb, Yb)
+    Ŷb = decode(encode(Xb), Yb)
+    Flux.reset!(machine)
+    return Ŷb
+end
 
 """
     train(options)
@@ -253,7 +257,7 @@ function train(options::Dict{Symbol,Any})
     @info "Total weight of inial word embeddings = $(sum(embedding.word.W))"
 
     # define the loss function
-    loss(Xb, Y0b, Yb) = sum(Flux.crossentropy.(model(Xb, Y0b), Yb))
+    loss(Xb, Y0b, Yb) = sum(Flux.logitcrossentropy.(model(Xb, Y0b), Yb))
 
     Us, Vs, Ws = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
     Ubs, Vbs, Wbs = collect(Us), collect(Vs), collect(Ws)
@@ -296,6 +300,7 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
         Yb = Flux.onecold.(Ybs[i])
         # number of tokens and number of matches in this batch
         tokens, matches = 0, 0
+        u, v = 0, 0
         for t=1:length(Yb)
             n = options[:maxSequenceLength]
             # find the last position of non-padded element
@@ -304,10 +309,13 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
             end
             tokens += n
             matches += sum(Ŷb[t][1:n] .== Yb[t][1:n])
+            js = (Yb[t][1:n] .!= labelIndex["O"])
+            u += sum(js)
+            v += sum(Ŷb[t][1:n][js] .== Yb[t][1:n][js])
         end
-        @reduce(numTokens += tokens, numMatches += matches)
+        @reduce(numTokens += tokens, numMatches += matches, numNonOs += u, numNonOMatches += v)
     end
-    @info "\tTotal matched tokens = $(numMatches)/$(numTokens)"
+    @info "\tTotal matched tokens = $(numMatches)/$(numTokens), where total non-O matched tokens = $(numNonOMatches)/$(numNonOs)"
     return numMatches/numTokens
 end
 
@@ -357,7 +365,6 @@ end
 function predict(sentence, labelIndex::Dict{String,Int})
     Flux.reset!(machine)
     ps = [labelIndex["BOS"]]
-    numLabels = length(vocabularies.labels)
     Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
     Xb = collect(first(Xs))
     Hb = encode(Xb)
@@ -368,9 +375,9 @@ function predict(sentence, labelIndex::Dict{String,Int})
         Y[:,t] = currentY
         Yb = [ Y ]
         output = decode(Hb, Yb)
-        Ŷ = output[1][:,t]
+        Ŷ = softmax(output[1][:,t])
         # nextY = Flux.onecold(Ŷ)     # use a hard selection approach, always choose the label with the best probability
-        nextY = wsample(1:numLabels, Ŷ) # use a soft selection approach to sample a label from the softmax distribution
+        nextY = wsample(1:numLabels, Ŷ) # use a soft selection approach to sample a label from the distribution
         push!(ps, nextY)
     end
     return vocabularies.labels[ps[2:end]]
@@ -387,6 +394,10 @@ function diagnose(sentence)
     Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
     Xb = collect(first(Xs))
     h = first(encode(Xb))
-    βs = β(decoder.state[2], h)
+    score = β(decoder.state[2], h)
+    n = length(sentence.tokens)
+    weight = exp.(score[1:n,1:n])
+    s = sum(weight, dims=2)
+    weight ./ s
 end
 
