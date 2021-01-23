@@ -15,6 +15,7 @@ include("Sentence.jl")
 include("Brick.jl")
 include("Embedding.jl")
 include("Options.jl")
+include("BiRNN.jl")
 
 struct Vocabularies
     words::Array{String}
@@ -83,9 +84,9 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
         push!(Y1, Flux.batch(ys1))
     end
     # build batches of data for training
-    Xb = Iterators.partition(X, options[:batchSize])
-    Yb0 = Iterators.partition(Y0, options[:batchSize])
-    Yb1 = Iterators.partition(Y1, options[:batchSize])
+    Xb = collect(map(A -> collect(A), Iterators.partition(X, options[:batchSize])))
+    Yb0 = collect(map(A -> collect(A), Iterators.partition(Y0, options[:batchSize])))
+    Yb1 = collect(map(A -> collect(A), Iterators.partition(Y1, options[:batchSize])))
     (Xb, Yb0, Yb1)
 end
 
@@ -145,59 +146,53 @@ embedding = EmbeddingWSP(
 inputSize = options[:wordSize] + options[:shapeSize] + options[:posSize]
 
 # 1. Create an encoder
-forwardEncoder = GRU(inputSize, options[:hiddenSize]÷2)
-backwardEncoder = GRU(inputSize, options[:hiddenSize]÷2)
+encoder = BiGRU(inputSize, options[:hiddenSize])
+
+"""
+    encode(X)
+
+    Encode an index matrix of size (3 x maxSequenceLength) using the embedding and the encoder layers.
+"""
+encode(X::Array{Int,2}) = encoder(embedding(X))
 
 """
     encode(Xb)
 
     Encode a batch, each element in the batch is a matrix representing a sequence, where each column corresponds to 
-    a vector representation of a token in the sequence. We use a bi-directional GRU for to encode each input matrix
-    of the batch. Xb is of type Array{Array{Int,2},1}.
+    a vector representation of a token in the sequence. 
 """
-function encode(Xb)
-    Hb = embedding.(collect(Xb))
-    vcat.(forwardEncoder.(Hb), Flux.flip(backwardEncoder, Hb))
-end
+encode(Xb::Array{Array{Int,2},1}) = encode.(Xb)
 
 # 2. Create an attention model which scores the degree of match between 
 #  an output position and an input position. The attention model that we use here is simply a linear model.
 attention = Dense(2*options[:hiddenSize], 1)
 
 """
-    β(s, h)
+    β(S, H)
 
     Align a decoder output `s` with hidden states of inputs `h` of size (hiddenSize x m). 
     In the first run, the decoder output only a column vector `s` of length hiddenSize, it should be repeated to create 
     the same number of columns as `h`, that is of size (hiddenSize x m). In subsequent runs, the decoder output should 
-    be a matrix of size (hidden x m) and there is no need to repeat columns.
+    be a matrix of size (hiddenSize x m) and there is no need to repeat columns. We use a broadcast multiplication 
+    to combine the two cases into one.
 
-    We then take each decoder output vector at position s_t 
-    and concatenate it with hidden states s_j of the encoder, for all j = 1,2,...,m, and compute attention scores for position t. 
-
-    Since there are n positions, this function returns a score matrix of size n x m.
+    This function computes attention scores matrix of size (1 x maxSequenceLength) for a decoder position.
 """
-function β(s, h::Array{Float32,2})
-    vv = if length(size(s)) == 1
-        repeat(s, 1, size(h, 2))
-    else 
-        s
-    end
-    vs = [vcat(h, repeat(vv[:, t], 1, size(h,2))) for t = 1:size(vv, 2)]
-    bs = attention.(vs)
-    vcat(bs...)
+function β(S, H::Array{Float32,2})
+    V = S .* Float32.(ones(1, size(H,2)))
+    attention(vcat(H, V))
 end
 
 """
-    α(βb)
+    α(β)
 
-    Compute the weights α for a batch of samples, each sample is a 2-d matrix of size (n x m)
-    representing attention score matrices.
+    Compute the probabilities (weights) vector by using the softmax function. Return a matrix of the same 
+    size as β, that is (1 x maxSequenceLength).
 """
-function α(βb::Array{Array{Float32,2},1})
-    βs = map(β -> exp.(β), βb)
-    ss = map(β -> sum(β, dims=2), βs)
-    map((β, s) -> β./s, βs, ss)
+function α(β::Array{Float32,2})
+    score = exp.(β)
+    s = sum(score, dims=2)
+    score ./ s
 end
 
 # 3. Create a decoder
@@ -206,25 +201,26 @@ decoder = LSTM(options[:hiddenSize] + numLabels, options[:hiddenSize])
 linearLayer = Dense(options[:hiddenSize], numLabels)
 
 """
-    decode(Hb, Yb)
+    decode(H, Y)
 
-    Decode a batch.
+    Decode a sample (H, Y). H is the hidden states of the encoder, which is a matrix of size (hiddenSize x maxSequenceLength)
+    and Y is the one-hot label sequences.
 """
-function decode(Hb, Yb)
-    Wb = α([β(decoder.state[2], h) for h in Hb])
-    # compute a weighted sum; note that we need to transform a vector to a row vector before multiplying to a matrix 
-    # for a correct broadcast of dimension
-    weightedSum(w, h) = [sum(w[t,:]' .* h, dims=2) for t=1:size(w,1)]
-    Cb = map((w, h) -> weightedSum(w, h), Wb, Hb) 
-    # each element in Cb is an array of matrices of size (hiddenState x 1), using hcat, we create a matrix of size (hiddenState x n)
-    contexts = map(cs -> hcat(cs...), Cb) 
-    Ub = map((y, context) -> vcat(Float32.(y), context), Yb, contexts)
-    Vb = linearLayer.(decoder.(Ub))
-    return Vb
+function decode(H::Array{Float32,2}, Y::Array{Int,2})
+    n = size(Y, 2)
+    B = [β(decoder.state[2], H) for t=1:n]
+    W = α.(B)
+    C = [sum(w .* H, dims=2) for w in W]
+    V = vcat(Y, hcat(C...))
+    linearLayer(decoder(V))
+end
+
+function decode(Hb::Array{Array{Float32,2},1}, Yb::Array{Array{Int,2},1})
+    decode.(Hb, Yb)
 end
 
 # The full machinary
-machine = Chain(embedding, forwardEncoder, backwardEncoder, attention, decoder, linearLayer)
+machine = (embedding, encoder, attention, decoder, linearLayer)
 
 function model(Xb, Yb)
     Ŷb = decode(encode(Xb), Yb)
@@ -238,8 +234,7 @@ end
 """
 function train(options::Dict{Symbol,Any})    
     # create batches of data, each batch is a 3-d matrix of size 3 x maxSequenceLength x batchSize
-    Xs, Ys0, Ys = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
-    Xbs, Y0bs, Ybs = collect(Xs), collect(Ys0), collect(Ys)
+    Xbs, Y0bs, Ybs = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     dataset = collect(zip(Xbs, Y0bs, Ybs))
 
     @info "vocabSize = ", length(wordIndex)
@@ -259,8 +254,7 @@ function train(options::Dict{Symbol,Any})
     # define the loss function
     loss(Xb, Y0b, Yb) = sum(Flux.logitcrossentropy.(model(Xb, Y0b), Yb))
 
-    Us, Vs, Ws = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
-    Ubs, Vbs, Wbs = collect(Us), collect(Vs), collect(Ws)
+    Ubs, Vbs, Wbs = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
 
     optimizer = ADAM()
     file = open(options[:logPath], "w")
@@ -366,7 +360,7 @@ function predict(sentence, labelIndex::Dict{String,Int})
     Flux.reset!(machine)
     ps = [labelIndex["BOS"]]
     Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
-    Xb = collect(first(Xs))
+    Xb = first(Xs)
     Hb = encode(Xb)
     Y = repeat(Flux.onehotbatch(ps, 1:numLabels), 1,size(Xb[1], 2))
     m = min(length(sentence.tokens), size(Xb[1], 2))
@@ -392,7 +386,7 @@ end
 
 function diagnose(sentence)
     Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
-    Xb = collect(first(Xs))
+    Xb = first(Xs)
     h = first(encode(Xb))
     score = β(decoder.state[2], h)
     n = length(sentence.tokens)
