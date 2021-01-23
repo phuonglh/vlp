@@ -201,29 +201,27 @@ decoder = LSTM(options[:hiddenSize] + numLabels, options[:hiddenSize])
 linearLayer = Dense(options[:hiddenSize], numLabels)
 
 """
-    decode(H, Y)
+    decode(H, Y0)
 
-    Decode a sample (H, Y). H is the hidden states of the encoder, which is a matrix of size (hiddenSize x maxSequenceLength)
-    and Y is the one-hot label sequences.
+    Decode a sample (H, Y0). H is the hidden states of the encoder, which is a matrix of size (hiddenSize x maxSequenceLength)
+    and Y0 is the one-hot label sequences.
 """
-function decode(H::Array{Float32,2}, Y::Array{Int,2})
-    n = size(Y, 2)
+function decode(H::Array{Float32,2}, Y0::Array{Int,2})
+    n = size(Y0, 2)
     B = [β(decoder.state[2], H) for t=1:n]
     W = α.(B)
     C = [sum(w .* H, dims=2) for w in W]
-    V = vcat(Y, hcat(C...))
+    V = vcat(Y0, hcat(C...))
     linearLayer(decoder(V))
 end
 
-function decode(Hb::Array{Array{Float32,2},1}, Yb::Array{Array{Int,2},1})
-    decode.(Hb, Yb)
-end
+decode(Hb::Array{Array{Float32,2},1}, Y0b::Array{Array{Int,2},1}) = decode.(Hb, Y0b)
 
 # The full machinary
 machine = (embedding, encoder, attention, decoder, linearLayer)
 
-function model(Xb, Yb)
-    Ŷb = decode(encode(Xb), Yb)
+function model(Xb, Y0b)
+    Ŷb = decode(encode(Xb), Y0b)
     Flux.reset!(machine)
     return Ŷb
 end
@@ -359,16 +357,16 @@ end
 function predict(sentence, labelIndex::Dict{String,Int})
     Flux.reset!(machine)
     ps = [labelIndex["BOS"]]
-    Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
+    Xs, Y0s, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
     Xb = first(Xs)
     Hb = encode(Xb)
-    Y = repeat(Flux.onehotbatch(ps, 1:numLabels), 1,size(Xb[1], 2))
+    Y0 = repeat(Flux.onehotbatch(ps, 1:numLabels), 1,size(Xb[1], 2))
     m = min(length(sentence.tokens), size(Xb[1], 2))
     for t=1:m
         currentY = Flux.onehot(ps[end], 1:numLabels)
-        Y[:,t] = currentY
-        Yb = [ Y ]
-        output = decode(Hb, Yb)
+        Y0[:,t] = currentY
+        Y0b = [ Y0 ]
+        output = decode(Hb, Y0b)
         Ŷ = softmax(output[1][:,t])
         # nextY = Flux.onecold(Ŷ)     # use a hard selection approach, always choose the label with the best probability
         nextY = wsample(1:numLabels, Ŷ) # use a soft selection approach to sample a label from the distribution
@@ -385,13 +383,11 @@ function predict(sentences::Array{Sentence}, labelIndex::Dict{String,Int})
 end
 
 function diagnose(sentence)
-    Xs, Ys0, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
+    Xs, Y0s, Ys = batch([sentence], wordIndex, shapeIndex, posIndex, labelIndex)
     Xb = first(Xs)
-    h = first(encode(Xb))
-    score = β(decoder.state[2], h)
-    n = length(sentence.tokens)
-    weight = exp.(score[1:n,1:n])
-    s = sum(weight, dims=2)
-    weight ./ s
+    H = encode(first(Xb))
+    Y0b = first(Y0s)
+    Y0 = first(Y0b)
+    vocabularies.labels[Flux.onecold(decode(H, Y0))]
 end
 
