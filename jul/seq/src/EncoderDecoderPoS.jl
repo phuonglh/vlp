@@ -309,7 +309,7 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
             tokens += n
             matches += sum(Ŷb[t][1:n] .== Yb[t][1:n])
         end
-        @reduce(numTokens += tokens, numMatches += matches, numNonOs += u, numNonOMatches += v)
+        @reduce(numTokens += tokens, numMatches += matches)
     end
     @info "\tTotal matched tokens = $(numMatches)/$(numTokens)"
     return numMatches/numTokens
