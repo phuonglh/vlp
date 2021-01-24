@@ -24,7 +24,10 @@ optionsVUD = Dict{Symbol,Any}(
     :logPath => string(pwd(), "/jul/seq/dat/vie/pos/loss.txt"),
     :unknown => "[UNK]",
     :paddingX => "[PAD_X]",
-    :paddingY => "[PAD_Y]"
+    :paddingY => "[PAD_Y]",
+    :trainOutput => string(pwd(), "/jul/seq/dat/vie/pos/train.out"),
+    :validOutput => string(pwd(), "/jul/seq/dat/vie/pos/test.out"),
+    :testOutput => string(pwd(), "/jul/seq/dat/vie/pos/test.out")
 )
 
 # For English PoS tagging
@@ -53,7 +56,10 @@ optionsEWT = Dict{Symbol,Any}(
     :logPath => string(pwd(), "/jul/seq/dat/eng/pos/loss.txt"),
     :unknown => "[UNK]",
     :paddingX => "[PAD_X]",
-    :paddingY => "[PAD_Y]"
+    :paddingY => "[PAD_Y]",
+    :trainOutput => string(pwd(), "/jul/seq/dat/eng/pos/train.out"),
+    :validOutput => string(pwd(), "/jul/seq/dat/eng/pos/test.out"),
+    :testOutput => string(pwd(), "/jul/seq/dat/eng/pos/test.out")
 )
 
 # For Vietnamese NER

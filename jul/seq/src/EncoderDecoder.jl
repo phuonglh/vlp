@@ -94,7 +94,7 @@ end
 options = optionsVUD
 
 # Read training data and create indices
-sentences = readCorpusUD(options[:validCorpus])
+sentences = readCorpusUD(options[:trainCorpus])
 sentencesValidation = readCorpusUD(options[:validCorpus])
 @info "Number of training sentences = $(length(sentences))"
 @info "Number of validation sentences = $(length(sentencesValidation))"
@@ -197,7 +197,7 @@ end
 
 # 3. Create a decoder
 numLabels = length(labelIndex)
-decoder = LSTM(options[:hiddenSize] + numLabels, options[:hiddenSize])
+decoder = GRU(options[:hiddenSize] + numLabels, options[:hiddenSize])
 linearLayer = Dense(options[:hiddenSize], numLabels)
 
 """
@@ -207,9 +207,9 @@ linearLayer = Dense(options[:hiddenSize], numLabels)
     and Y0 is an one-hot vector representing a label at position t.
 """
 function decode(H::Array{Float32,2}, y0::Array{Int,1})
-    w = α(β(decoder.state[2], H))
+    w = α(β(decoder.state, H))
     c = sum(w .* H, dims=2)
-    v = vcat(y0, vec(c))
+    v = vcat(y0, c)
     linearLayer(decoder(v))
 end
 
@@ -235,7 +235,7 @@ end
 
 """
 function train(options::Dict{Symbol,Any})    
-    # create batches of data, each batch is a 3-d matrix of size 3 x maxSequenceLength x batchSize
+    # create batches of data, each batch
     Xbs, Y0bs, Ybs = batch(sentences, wordIndex, shapeIndex, posIndex, labelIndex)
     dataset = collect(zip(Xbs, Y0bs, Ybs))
 
@@ -263,10 +263,11 @@ function train(options::Dict{Symbol,Any})
     write(file, "loss,trainingAccuracy,validationAccuracy\n")
     evalcb = Flux.throttle(30) do
         ℓ = loss(Xbs[1], Y0bs[1], Ybs[1])
-        trainingAccuracy = evaluate(model, Xbs, Y0bs, Ybs)
-        validationAccuracy = evaluate(model, Ubs, Vbs, Wbs)
-        @info string("\tloss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
-        write(file, string(ℓ, ',', trainingAccuracy, ',', validationAccuracy, "\n"))
+        @info string("\tloss = ", ℓ)
+        # trainingAccuracy = evaluate(model, Xbs, Y0bs, Ybs)
+        # validationAccuracy = evaluate(model, Ubs, Vbs, Wbs)
+        # @info string("\tloss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
+        # write(file, string(ℓ, ',', trainingAccuracy, ',', validationAccuracy, "\n"))
     end
     
     # train the model
