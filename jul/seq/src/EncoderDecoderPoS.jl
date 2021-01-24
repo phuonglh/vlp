@@ -262,8 +262,11 @@ function train(options::Dict{Symbol,Any})
     file = open(options[:logPath], "w")
     write(file, "loss,trainingAccuracy,validationAccuracy\n")
     evalcb = Flux.throttle(30) do
-        ℓ = loss(Xbs[1], Y0bs[1], Ybs[1])
+        ℓ = loss(Xbs[1], Y0bs[1], Ybs[1]) 
         @info string("\tloss = ", ℓ)
+        gs = gradient(() -> loss(Xbs[1], Y0bs[1], Ybs[1]), params(machine))
+        dg = sum(gs[decoder.cell.Wh])
+        @info "\tsum of decoder gradient = $(dg)"
         # trainingAccuracy = evaluate(model, Xbs, Y0bs, Ybs)
         # validationAccuracy = evaluate(model, Ubs, Vbs, Wbs)
         # @info string("\tloss = ", ℓ, ", training accuracy = ", trainingAccuracy, ", validation accuracy = ", validationAccuracy)
