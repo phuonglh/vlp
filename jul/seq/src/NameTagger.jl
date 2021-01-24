@@ -34,7 +34,7 @@ end
     Builds vocabularies of words, shapes, parts-of-speech, and labels. The word vocabulary is sorted by frequency.
     Only words whose count is greater than `minFreq` are kept.
 """    
-function vocab(sentences::Array{Sentence}, minFreq::Int = 2)::Vocabularies
+function vocab(sentences::Array{Sentence}, minFreq::Int = 1)::Vocabularies
     tokens = Iterators.flatten(map(sentence -> sentence.tokens, sentences))
     wordFrequency = Dict{String, Int}()
     shapes = Dict{String,Int}()

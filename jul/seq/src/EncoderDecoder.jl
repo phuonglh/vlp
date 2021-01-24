@@ -30,7 +30,7 @@ end
     Builds vocabularies of words, shapes, parts-of-speech, and labels. The word vocabulary is sorted by frequency.
     Only words whose count is greater than `minFreq` are kept.
 """    
-function vocab(sentences::Array{Sentence}, minFreq::Int = 2)::Vocabularies
+function vocab(sentences::Array{Sentence}, minFreq::Int = 1)::Vocabularies
     tokens = Iterators.flatten(map(sentence -> sentence.tokens, sentences))
     wordFrequency = Dict{String, Int}()
     shapes = Dict{String,Int}()
@@ -40,8 +40,8 @@ function vocab(sentences::Array{Sentence}, minFreq::Int = 2)::Vocabularies
         word = lowercase(strip(token.word))
         haskey(wordFrequency, word) ? wordFrequency[word] += 1 : wordFrequency[word] = 1
         shapes[shape(token.word)] = 0
-        partsOfSpeech[token.annotation[:p]] = 0
-        labels[token.annotation[:e]] = 0
+        partsOfSpeech[token.annotation[:upos]] = 0
+        labels[token.annotation[:pos]] = 0
     end
     # filter out infrequent words
     filter!(p -> p.second >= minFreq, wordFrequency)
@@ -62,9 +62,9 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     numLabels = length(labelIndex)
     paddingY = Flux.onehot(labelIndex[options[:paddingY]], 1:numLabels)
     for sentence in sentences
-        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), get(shapeIndex, shape(token.word), 1), get(posIndex, token.annotation[:p], 1)], sentence.tokens)
+        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), get(shapeIndex, shape(token.word), 1), get(posIndex, token.annotation[:upos], 1)], sentence.tokens)
         push!(xs, paddingX)
-        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:e]], 1:numLabels, 1), sentence.tokens)
+        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:pos]], 1:numLabels, 1), sentence.tokens)
         ys0 = copy(ys); prepend!(ys0, [Flux.onehot(labelIndex["BOS"], 1:length(labelIndex), 1)])
         ys1 = copy(ys); append!(ys1, [Flux.onehot(labelIndex["EOS"], 1:length(labelIndex), 1)])
         # crop the columns of xs and ys to maxSequenceLength
@@ -91,11 +91,11 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
 end
 
 # For named entity recognition
-options = optionsVLSP2016
+options = optionsVUD
 
 # Read training data and create indices
-sentences = readCorpusCoNLL(options[:validCorpus])
-sentencesValidation = readCorpusCoNLL(options[:validCorpus])
+sentences = readCorpusUD(options[:validCorpus])
+sentencesValidation = readCorpusUD(options[:validCorpus])
 @info "Number of training sentences = $(length(sentences))"
 @info "Number of validation sentences = $(length(sentencesValidation))"
 vocabularies = vocab(sentences)
@@ -203,16 +203,20 @@ linearLayer = Dense(options[:hiddenSize], numLabels)
 """
     decode(H, Y0)
 
-    Decode a sample (H, Y0). H is the hidden states of the encoder, which is a matrix of size (hiddenSize x maxSequenceLength)
-    and Y0 is the one-hot label sequences.
+    H is the hidden states of the encoder, which is a matrix of size (hiddenSize x maxSequenceLength)
+    and Y0 is an one-hot vector representing a label at position t.
 """
+function decode(H::Array{Float32,2}, y0::Array{Int,1})
+    w = α(β(decoder.state[2], H))
+    c = sum(w .* H, dims=2)
+    v = vcat(y0, vec(c))
+    linearLayer(decoder(v))
+end
+
 function decode(H::Array{Float32,2}, Y0::Array{Int,2})
-    n = size(Y0, 2)
-    B = [β(decoder.state[2], H) for t=1:n]
-    W = α.(B)
-    C = [sum(w .* H, dims=2) for w in W]
-    V = vcat(Y0, hcat(C...))
-    linearLayer(decoder(V))
+    y0s = [Y0[:, t] for t=1:size(Y0,2)]
+    ŷs = [decode(H, y0) for y0 in y0s]
+    hcat(ŷs...)
 end
 
 decode(Hb::Array{Array{Float32,2},1}, Y0b::Array{Array{Int,2},1}) = decode.(Hb, Y0b)
@@ -254,7 +258,7 @@ function train(options::Dict{Symbol,Any})
 
     Ubs, Vbs, Wbs = batch(sentencesValidation, wordIndex, shapeIndex, posIndex, labelIndex)
 
-    optimizer = ADAM()
+    optimizer = ADAM(1E-4)
     file = open(options[:logPath], "w")
     write(file, "loss,trainingAccuracy,validationAccuracy\n")
     evalcb = Flux.throttle(30) do
@@ -301,13 +305,14 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
             end
             tokens += n
             matches += sum(Ŷb[t][1:n] .== Yb[t][1:n])
-            js = (Yb[t][1:n] .!= labelIndex["O"])
-            u += sum(js)
-            v += sum(Ŷb[t][1:n][js] .== Yb[t][1:n][js])
+            # js = (Yb[t][1:n] .!= labelIndex["O"])
+            # u += sum(js)
+            # v += sum(Ŷb[t][1:n][js] .== Yb[t][1:n][js])
         end
         @reduce(numTokens += tokens, numMatches += matches, numNonOs += u, numNonOMatches += v)
     end
-    @info "\tTotal matched tokens = $(numMatches)/$(numTokens), where total non-O matched tokens = $(numNonOMatches)/$(numNonOs)"
+    @info "\tTotal matched tokens = $(numMatches)/$(numTokens)"
+    # @info "\tTotal non-O matched tokens = $(numNonOMatches)/$(numNonOs)"
     return numMatches/numTokens
 end
 
@@ -365,7 +370,7 @@ function predict(sentence, labelIndex::Dict{String,Int})
     for t=1:m
         currentY = Flux.onehot(ps[end], 1:numLabels)
         Y0[:,t] = currentY
-        Y0b = [ Y0 ]
+        Y0b = [ Int.(Y0) ]
         output = decode(Hb, Y0b)
         Ŷ = softmax(output[1][:,t])
         # nextY = Flux.onecold(Ŷ)     # use a hard selection approach, always choose the label with the best probability

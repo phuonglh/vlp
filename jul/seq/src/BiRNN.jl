@@ -20,3 +20,4 @@ apply(f, x) = vcat(f.left(x), reverse(f.right(reverse(x, dims=2)), dims=2))
 # overload call, so the object can be used as a function
 (f::BiGRU)(x) = apply(f, x)
 
+Flux.@functor BiGRU
