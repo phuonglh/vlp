@@ -40,8 +40,8 @@ function vocab(sentences::Array{Sentence}, minFreq::Int = 1)::Vocabularies
         word = lowercase(strip(token.word))
         haskey(wordFrequency, word) ? wordFrequency[word] += 1 : wordFrequency[word] = 1
         shapes[shape(token.word)] = 0
-        partsOfSpeech[token.annotation[:upos]] = 0
-        labels[token.annotation[:pos]] = 0
+        partsOfSpeech[token.annotation[:p]] = 0
+        labels[token.annotation[:e]] = 0
     end
     # filter out infrequent words
     filter!(p -> p.second >= minFreq, wordFrequency)
@@ -62,9 +62,9 @@ function batch(sentences::Array{Sentence}, wordIndex::Dict{String,Int}, shapeInd
     numLabels = length(labelIndex)
     paddingY = Flux.onehot(labelIndex[options[:paddingY]], 1:numLabels)
     for sentence in sentences
-        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), get(shapeIndex, shape(token.word), 1), get(posIndex, token.annotation[:upos], 1)], sentence.tokens)
+        xs = map(token -> [get(wordIndex, lowercase(token.word), 1), get(shapeIndex, shape(token.word), 1), get(posIndex, token.annotation[:p], 1)], sentence.tokens)
         push!(xs, paddingX)
-        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:pos]], 1:numLabels, 1), sentence.tokens)
+        ys = map(token -> Flux.onehot(labelIndex[token.annotation[:e]], 1:numLabels, 1), sentence.tokens)
         ys0 = copy(ys); prepend!(ys0, [Flux.onehot(labelIndex["BOS"], 1:length(labelIndex), 1)])
         ys1 = copy(ys); append!(ys1, [Flux.onehot(labelIndex["EOS"], 1:length(labelIndex), 1)])
         # crop the columns of xs and ys to maxSequenceLength
@@ -94,8 +94,8 @@ end
 options = optionsVUD
 
 # Read training data and create indices
-sentences = readCorpusUD(options[:trainCorpus])
-sentencesValidation = readCorpusUD(options[:validCorpus])
+sentences = readCorpusCoNLL(options[:trainCorpus])
+sentencesValidation = readCorpusCoNLL(options[:validCorpus])
 @info "Number of training sentences = $(length(sentences))"
 @info "Number of validation sentences = $(length(sentencesValidation))"
 vocabularies = vocab(sentences)
@@ -306,14 +306,14 @@ function evaluate(model, Xbs, Y0bs, Ybs, paddingY::Int=1)
             end
             tokens += n
             matches += sum(Ŷb[t][1:n] .== Yb[t][1:n])
-            # js = (Yb[t][1:n] .!= labelIndex["O"])
-            # u += sum(js)
-            # v += sum(Ŷb[t][1:n][js] .== Yb[t][1:n][js])
+            js = (Yb[t][1:n] .!= labelIndex["O"])
+            u += sum(js)
+            v += sum(Ŷb[t][1:n][js] .== Yb[t][1:n][js])
         end
         @reduce(numTokens += tokens, numMatches += matches, numNonOs += u, numNonOMatches += v)
     end
     @info "\tTotal matched tokens = $(numMatches)/$(numTokens)"
-    # @info "\tTotal non-O matched tokens = $(numNonOMatches)/$(numNonOs)"
+    @info "\tTotal non-O matched tokens = $(numNonOMatches)/$(numNonOs)"
     return numMatches/numTokens
 end
 
