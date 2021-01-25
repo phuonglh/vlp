@@ -1,9 +1,0 @@
-Common params
-
-    - 2.7/en_ewt-ud-dev.conllu
-    - Number of sentences = 2003
-    - Number of contexts  = 43916
-    - numLabels = 58
-    - minFreq = 2, featuresPerContext = 20, batchSize = 32, numEpochs = 50
-    - feature embeddings are trained together with model parameters
-
