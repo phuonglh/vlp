@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
 
 // root project
 lazy val root = (project in file("."))
-  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, vio, nli, sjs)
+  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, vio, nli, sjs, tmi)
 
 // tokenization module
 lazy val tok = (project in file("tok"))
@@ -243,4 +243,21 @@ lazy val sjs = (project in file("sjs"))
       "spark.jobserver" % "job-server-api_2.11" % jobServerVersion % "provided",
       "spark.jobserver" % "job-server-extras_2.11" % jobServerVersion % "provided"
     )
+  )
+
+// Text Mining Insights for Vietnam's Post-Pandemic Green Recovery module
+lazy val tmi = (project in file("tmi"))
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.tmi.NewsIndexer"),
+    assemblyJarName in assembly := "tmi.jar",
+    libraryDependencies ++= Seq(
+      "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
+      "xerces" % "xercesImpl" % "2.11.0",
+      "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22" % "provided",
+      "org.glassfish" % "javax.json" % "1.1.4",
+      "org.apache.kafka" % "kafka-clients" % "2.6.0"
+    ),
+    run / fork := true,
+    run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
   )
