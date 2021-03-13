@@ -12,6 +12,7 @@ import java.time.Duration
   */
 object Kafka {
 
+  val SERVERS: String = "http://vlp.group:9092"
   val GROUP_ID: String = "media"
 
   def createProducer(bootstrapServers: String): KafkaProducer[String, String] = {
@@ -34,15 +35,18 @@ object Kafka {
     val consumer = new KafkaConsumer[String, String](props)
     consumer.subscribe(ju.Arrays.asList(GROUP_ID))
     import scala.collection.JavaConversions._
+    var numRecords = 0
     while (true) {
       val records = consumer.poll(Duration.ofMillis(100))
       for (record <- records) {
         println(s"ofsset = ${record.offset}, key = ${record.key}")
       }
+      numRecords += records.count()
     }
+    println(s"Number of records consumed = ${numRecords}")
   }
 
   def main(args: Array[String]): Unit = {
-    consume("http://vlp.group:9092")
+    consume(Kafka.SERVERS)
   }
 }

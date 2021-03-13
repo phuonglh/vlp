@@ -33,7 +33,8 @@ import org.apache.kafka.clients.producer.ProducerRecord
 case class Page(url: String, content: String, date: Date)
 
 /**
-  * Indexer of financial news content for a given day from some websites.
+  * Extractor of health news content for a given day from some large online newswire. 
+  * The news are sent to a Apache Kafka server.
   *
   */
 object NewsIndexer {
@@ -116,7 +117,7 @@ object NewsIndexer {
   
   def sggp: Set[String] = {
     val urls = mutable.Set[String]()
-    urls ++= extractURLs("https://www.sggp.org.vn/ytesuckhoe/", "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
+    urls ++= extractURLs("https://www.sggp.org.vn/ytesuckhoe", "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
     logger.info("sggp.org.vn => " + urls.size)
     urls.toSet
   }
@@ -157,21 +158,22 @@ object NewsIndexer {
 
     logger.info(s"#(totalURLs) = ${urls.size}")
 
-    val kafkaProducer = Kafka.createProducer("vlp.group:9092")
+    val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
     val news = urls.par.map(url => {
       logger.info(url)
-      val content = runWithTimeout(5000)(extract(url))
-      kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content.get))
-      Page(url, content.get, new Date())
+      val content = runWithTimeout(5000)(extract(url)).get
+      if (content.size >= 500 && !content.contains("<div") && !content.contains("<table") && !content.contains("</p>")) {
+        kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content))
+        Page(url, content, new Date())
+      } else {
+        Page(url, "", new Date())
+      }
     }).toList
     kafkaProducer.close()
 
     if (news.nonEmpty) {
-      val accept = (s: String) => (s.size >= 500 && !s.contains("<div") && !s.contains("<table") && !s.contains("</p>"))
-      // write News elements to a JSON file of today
-      val xs = news.filter(x => accept(x.content))
       implicit val formats = Serialization.formats(NoTypeHints)
-      val content = Serialization.writePretty(xs)
+      val content = Serialization.writePretty(news)
       Files.write(Paths.get(System.getProperty("user.dir"), "dat", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
     }
   }
