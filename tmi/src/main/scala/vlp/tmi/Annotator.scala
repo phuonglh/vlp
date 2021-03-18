@@ -6,6 +6,8 @@ import org.apache.kafka.clients.consumer.KafkaConsumer
 import java.time.Duration
 import scala.util.parsing.json.JSONObject
 import java.nio.file.{Paths, Files, StandardOpenOption}
+import java.text.SimpleDateFormat
+import java.util.Date
 
 /**
   * phuonglh@gmail.com
@@ -86,6 +88,8 @@ object Annotator {
     }
 
   def main(args: Array[String]): Unit = {
-      run(Kafka.SERVERS, "20210317")
+      val dateFormat = new SimpleDateFormat("yyyyMMdd")
+      val currentDate = dateFormat.format(new Date())
+      run(Kafka.SERVERS, currentDate)
   }
 }
