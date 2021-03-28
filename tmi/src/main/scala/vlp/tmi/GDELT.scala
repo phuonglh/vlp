@@ -25,7 +25,7 @@ object GDELT {
       * @param keyword
       * @return a list of articles.
       */
-    def runService(keyword: String): List[Article] = {
+    def query(keyword: String): List[Article] = {
         val summaryApi = summaryApiPrefix + keyword + summaryApiSuffix
         val response: HttpResponse[String] = Http(summaryApi).asString
         implicit val formats = DefaultFormats
@@ -38,9 +38,21 @@ object GDELT {
         result.toList
     }
 
+    /**
+      * Extracts the contents from a list of articles.
+      *
+      * @param articles
+      */
+    def extract(articles: List[Article]): List[Document] = {
+        articles.map(a => Document(a.url, NewsIndexer.extract(a.url)))
+    }
+    
+
     def main(args: Array[String]): Unit = {
-        val result = runService("environment")
-        println(result.size)
-        result.foreach(println)
+        val articles = query("environment")
+        println(articles.size)
+        articles.foreach(println)
+        val documents = extract(articles)
+        documents.foreach(println)
     }
 }

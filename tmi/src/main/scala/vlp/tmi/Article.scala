@@ -24,3 +24,5 @@ case class Article(
     language: String,
     sourcecountry: String
 )
+
+case class Document(url: String, content: String)
