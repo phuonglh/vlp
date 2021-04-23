@@ -3,11 +3,16 @@ package vlp.tmi
 import org.json4s.DefaultFormats
 import org.json4s._
 import org.json4s.jackson.JsonMethods.parse
+import org.json4s.jackson.Serialization
+import java.nio.file.{Paths, Files, StandardOpenOption}
+
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 import scalaj.http._
+import java.text.SimpleDateFormat
+import java.util.Date
 
 /**
  * An utility to query news from the GDELT Project through its Summary API.
@@ -49,10 +54,17 @@ object GDELT {
     
 
     def main(args: Array[String]): Unit = {
-        val articles = query("environment")
+        val keyword = "pollution"
+        val articles = query(keyword)
         println(articles.size)
         articles.foreach(println)
         val documents = extract(articles)
-        documents.foreach(println)
+        if (documents.nonEmpty) {
+            implicit val formats = Serialization.formats(NoTypeHints)
+            val content = Serialization.writePretty(documents)
+            val dateFormat = new SimpleDateFormat("yyyyMMdd")
+            val date = dateFormat.format(new Date())
+            Files.write(Paths.get(System.getProperty("user.dir"), "dat", date + "-" + keyword + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+        }
     }
 }

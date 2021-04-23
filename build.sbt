@@ -247,6 +247,7 @@ lazy val sjs = (project in file("sjs"))
 
 // Text Mining Insights for Vietnam's Post-Pandemic Green Recovery module
 lazy val tmi = (project in file("tmi"))
+  .dependsOn(tpm)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.tmi.NewsIndexer"),
@@ -256,7 +257,9 @@ lazy val tmi = (project in file("tmi"))
       "xerces" % "xercesImpl" % "2.11.0",
       "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22" % "provided",
       "org.glassfish" % "javax.json" % "1.1.4",
-      "org.apache.kafka" % "kafka-clients" % "2.6.0"
+      "org.apache.kafka" % "kafka-clients" % "2.6.0",
+      // "org.slf4j" % "slf4j-simple" % "1.7.30",
+      "org.scalaj" %% "scalaj-http" % "2.4.2"
     ),
     run / fork := true,
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")

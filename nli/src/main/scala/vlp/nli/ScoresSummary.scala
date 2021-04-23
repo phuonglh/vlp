@@ -68,7 +68,7 @@ object ScoresSummary {
     val mean = Map[Int, Double]()
     val std = Map[Int, Double]()
     for (encoderSize <- encoderSizes) {
-      val elements = result.filter(e => e.arch == "trs" && e.maxSequenceLength == n && e.encoderSize == encoderSize)
+      val elements = result.filter(e => e.arch == "trs" && e.maxSequenceLength == n && e.encoderSize == encoderSize).sortBy(_.testScore).takeRight(3)
       val k = elements.size
       val testAvg = elements.map { e => e.testScore }.sum/k
       val testVar = elements.map(e => (e.testScore - testAvg)*(e.testScore - testAvg)).sum/k
@@ -85,7 +85,9 @@ object ScoresSummary {
     // val path = "dat/nli/scores.par.json"
     // val path = "dat/nli/scores.trs.x2.syllable.json"
     // val path = "dat/nli/scores.sem.gru.json"
-    val path = "dat/nli/scores.en.json"
+
+    // val path = "dat/nli/scores.en.json"
+    val path = "dat/nli/scores.trs.x1.en.json"
 
     val content = Source.fromFile(path).getLines().toList.mkString(" ")
     implicit val formats = DefaultFormats
@@ -95,8 +97,8 @@ object ScoresSummary {
       result += js.extract[Scores]
     result.take(3).foreach(println)
 
-    // transformers(n, result)
-    firstThreeArch(40, "seq", result)
-    firstThreeArch(40, "par", result)
+    transformers(40, result)
+    // firstThreeArch(40, "seq", result)
+    // firstThreeArch(40, "par", result)
   }
 }
