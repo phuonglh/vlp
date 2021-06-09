@@ -1,7 +1,7 @@
 // phuonglh, May 3, 2020
 // 
-val sparkVersion = "2.4.5"
-val jobServerVersion = "0.10.0"
+val sparkVersion = "2.4.8"
+val jobServerVersion = "0.11.1"
 
 javacOptions ++= Seq("-encoding", "UTF-8", "-XDignore.symbol.file", "true")
 
@@ -17,7 +17,7 @@ scalacOptions ++= Seq(
 )
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.12.12",
   name := "vlp",
   organization := "phuonglh.com",
   version := "1.0",
@@ -73,7 +73,7 @@ lazy val ner = (project in file("ner"))
     assemblyJarName in assembly := "ner.jar",
     libraryDependencies ++= Seq(
       "com.github.scopt" %% "scopt" % "3.7.1",
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
     )
@@ -136,7 +136,7 @@ lazy val vdg = (project in file("vdg"))
     assemblyJarName in assembly := "vdg.jar",
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
       "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.8.1" % "provided",
       "com.intel.analytics.zoo" % "zoo-core-torchnet-java-mac" % "0.8.1" % "provided"
@@ -153,7 +153,7 @@ lazy val nli = (project in file("nli"))
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
       "org.scalaj" %% "scalaj-http" % "2.4.2",
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
       "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.8.1" % "provided",
       "com.intel.analytics.zoo" % "zoo-core-torchnet-java-mac" % "0.8.1" % "provided"
@@ -178,8 +178,8 @@ lazy val zoo = (project in file("zoo"))
     assemblyJarName in assembly := "zoo.jar",
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-dist-all" % "0.8.1" % "provided"
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
+      "com.intel.analytics.zoo" % "zoo-core-dist-all" % "0.10.0" % "provided"
     ),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("log4j.properties") => MergeStrategy.first
@@ -196,7 +196,7 @@ lazy val biz = (project in file("biz"))
     assemblyJarName in assembly := "biz.jar",
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
+      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
       "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
     ),
@@ -206,25 +206,6 @@ lazy val biz = (project in file("biz"))
       case x if x.contains("org/tensorflow/") => MergeStrategy.first
       case x if x.contains("google/protobuf") => MergeStrategy.first
       case x if x.contains("org/apache/spark/unused") => MergeStrategy.first
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    }
-  )
-
-// VioEdu project
-lazy val vio = (project in file("vio"))
-  .dependsOn(tok)
-  .settings(
-    commonSettings,
-    assemblyJarName in assembly := "vio.jar",
-    resolvers += Resolver.mavenLocal,
-    libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.10.0-spark_2.4.3" % "0.8.1" % "provided",
-      "org.jsoup" % "jsoup" % "1.13.1"
-    ),
-    assemblyMergeStrategy in assembly := {
-      case x if x.contains("log4j.properties") => MergeStrategy.first
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
@@ -259,7 +240,10 @@ lazy val tmi = (project in file("tmi"))
       "org.glassfish" % "javax.json" % "1.1.4",
       "org.apache.kafka" % "kafka-clients" % "2.6.0",
       // "org.slf4j" % "slf4j-simple" % "1.7.30",
-      "org.scalaj" %% "scalaj-http" % "2.4.2"
+      "org.scalaj" %% "scalaj-http" % "2.4.2",
+      "org.twitter4j" % "twitter4j-core" % "4.0.6",
+      "org.twitter4j" % "twitter4j-stream" % "4.0.6",
+      "org.apache.bahir" %% "spark-streaming-twitter" % "2.4.0" // depends on twitter4j-* version 4.0.6
     ),
     run / fork := true,
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
