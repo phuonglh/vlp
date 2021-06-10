@@ -17,7 +17,7 @@ scalacOptions ++= Seq(
 )
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.12.12", // upgrade from 2.11.12
   name := "vlp",
   organization := "phuonglh.com",
   version := "1.0",
