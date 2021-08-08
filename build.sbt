@@ -17,7 +17,7 @@ scalacOptions ++= Seq(
 )
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.12.12", // upgrade from 2.11.12
+  scalaVersion := "2.11.12", // upgrade from 2.11.12 to 2.12.12
   name := "vlp",
   organization := "phuonglh.com",
   version := "1.0",
@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
 
 // root project
 lazy val root = (project in file("."))
-  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, vio, nli, sjs, tmi)
+  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, nli, sjs, qas)
 
 // tokenization module
 lazy val tok = (project in file("tok"))
@@ -244,6 +244,21 @@ lazy val tmi = (project in file("tmi"))
       "org.twitter4j" % "twitter4j-core" % "4.0.6",
       "org.twitter4j" % "twitter4j-stream" % "4.0.6",
       "org.apache.bahir" %% "spark-streaming-twitter" % "2.4.0" // depends on twitter4j-* version 4.0.6
+    ),
+    run / fork := true,
+    run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
+  )
+
+
+// QAS module
+lazy val qas = (project in file("qas"))
+  .dependsOn(tok)
+  .settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.qas.Indexer"),
+    assemblyJarName in assembly := "qas.jar",
+    libraryDependencies ++= Seq(
+      "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.1.1"
     ),
     run / fork := true,
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
