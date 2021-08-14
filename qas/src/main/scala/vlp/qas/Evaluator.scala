@@ -22,13 +22,14 @@ import java.util.regex.Pattern
 /**
   * phuonglh, August 10, 2021.
   * 
+  * Search evaluation on a test set.
   * 
   */
 
 class Evaluator(host: String, port: Int, index: String = "qas") {
 
   val client: RestHighLevelClient = new RestHighLevelClient(RestClient.builder(new HttpHost(host, port, "http")))
-  
+  final val FIELD = "answer"
   final val PUNCTS = Pattern.compile("""[.,?!;:\"…/”“″=^▪•<>&«\])(\[\u0022\u200b\ufeff+-]+""")
   final val Q_WORDS = Pattern.compile("(hay|không|là|gì|nào|và|hoặc)+")
 
@@ -43,7 +44,7 @@ class Evaluator(host: String, port: Int, index: String = "qas") {
     var matcher = PUNCTS.matcher(query)
     val x = matcher.replaceAll("")
     matcher = Q_WORDS.matcher(x)
-    val y = matcher.replaceAll("")
+    val y = matcher.replaceAll("").toLowerCase()
     return y.split("""\s+""").toList
   }
 
@@ -56,7 +57,7 @@ class Evaluator(host: String, port: Int, index: String = "qas") {
     val tokens = processQuery(query)
     println(tokens)
     for (token <- tokens) 
-      bqb.must(QueryBuilders.termQuery("question", token))
+      bqb.must(QueryBuilders.termQuery(FIELD, token))
 
     println(bqb.toString)
     searchQuery.query(bqb)
@@ -94,7 +95,7 @@ class Evaluator(host: String, port: Int, index: String = "qas") {
     val tokens = processQuery(query)
     println(tokens)
     for (token <- tokens) 
-      bqb.must(QueryBuilders.termQuery("question", token))
+      bqb.must(QueryBuilders.termQuery(FIELD, token))
     println(bqb.toString)
     searchQuery.query(bqb)
 
@@ -113,16 +114,54 @@ class Evaluator(host: String, port: Int, index: String = "qas") {
 
     val partialResults = response.getPartialResults()
     val rqQuality = partialResults.get(correctId)
-    println(s"rqQuality id = ${rqQuality.getId()}")
+    println(s"rqQuality = ${rqQuality.getId()}")
     println(s"rqQualityLevel = ${rqQuality.metricScore}")
 
     val hitsAndRatings = rqQuality.getHitsAndRatings()
     for (ratedSearchHit <- hitsAndRatings) {
-      println("ratedSearchHit id = " + ratedSearchHit.getSearchHit().getId() + ", is present? " + ratedSearchHit.getRating().isPresent())
+      println("ratedSearchHit = " + ratedSearchHit.getSearchHit().getId() + ", is present? " + ratedSearchHit.getRating().isPresent())
     }
     val metricDetails = rqQuality.getMetricDetails()
     val detail = metricDetails.asInstanceOf[MeanReciprocalRank.Detail]
     println(detail.getFirstRelevantRank())
+  }
+
+  def eval(queries: List[String], correctIds: List[String]) = {
+    import scala.collection.JavaConversions._
+    val ratedDocs = new ListBuffer[RatedDocument]()
+    val ratedRequests = new ListBuffer[RatedRequest]()
+
+    for ((query, correctId) <- queries.zip(correctIds)) {
+      ratedDocs += (new RatedDocument(index, correctId, 1))
+      val searchQuery = new SearchSourceBuilder()
+      val bqb = QueryBuilders.boolQuery()
+      val tokens = processQuery(query)
+      for (token <- tokens) 
+        bqb.must(QueryBuilders.termQuery(FIELD, token))
+      searchQuery.query(bqb)
+      val ratedRequest = new RatedRequest(correctId, ratedDocs.toList, searchQuery)
+      ratedRequests += ratedRequest
+    }
+    val specification = new RankEvalSpec(ratedRequests, new MeanReciprocalRank(1, 5))
+    val request = new RankEvalRequest(specification, Array(index))
+
+    val response = client.rankEval(request, RequestOptions.DEFAULT)
+    val partialResults = response.getPartialResults()
+    for (correctId <- correctIds) {
+      val rqQuality = partialResults.get(correctId)
+      println(s"rqQuality = ${rqQuality.getId()}")
+      println(s"rqQualityLevel = ${rqQuality.metricScore}")
+
+      val hitsAndRatings = rqQuality.getHitsAndRatings()
+      for (ratedSearchHit <- hitsAndRatings) {
+        println("ratedSearchHit = " + ratedSearchHit.getSearchHit().getId() + ", is present? " + ratedSearchHit.getRating().isPresent())
+      }
+      val metricDetails = rqQuality.getMetricDetails()
+      val detail = metricDetails.asInstanceOf[MeanReciprocalRank.Detail]
+      println(detail.getFirstRelevantRank())
+    }
+    val score = response.getMetricScore()
+    println(s"average score = ${score}")
   }
 }
 
@@ -136,19 +175,40 @@ object Evaluator {
    
     val evaluator = new Evaluator(host, port, index)
 
-    // val query = "quy trình cấp lại sổ đỏ"
-    // val query = "cấp lại sổ đỏ"
-    // val query = "chính sách bồi thường đất"
-    val query = "ô nhiễm môi trường biển là gì?" // correctId = ["7172", "7220"]
-    val correctId = "7172"
+    val query = "ô nhiễm môi trường biển là gì?"
 
     // search for the query and print the top answers
-    val qs = evaluator.call(index, query, 5)
-    println("Number of answers = " + qs.size)
-    qs.foreach(println)
+    // val qs = evaluator.call(index, query, 5)
+    // println("Number of answers = " + qs.size)
+    // qs.foreach(println)
 
-    // evaluate the answers
-    evaluator.eval(query, correctId)
+    // evaluate the answer of one request
+    // val correctId = "7172"
+    // evaluator.eval(query, correctId)
+
+    // evaluate the answers of multiple requests
+    // val queries = List("ô nhiễm môi trường biển là gì?", "quy trình cấp lại sổ đỏ")
+    // val correctIds = List("7172", "7769")
+    // evaluator.eval(queries, correctIds)
+
+    // read test samples and evaluate the search system
+    val samples = EvalCorpus.read(s"${System.getProperty("user.home")}" + "/vlp/dat/qas/result.json")
+    // filter samples with negative results
+    val negativeSamples = samples.filter(s => s.rankedIds.isEmpty)
+    println(s"Number of negative samples = ${negativeSamples.size}." )
+
+    // filter samples with positive results
+    val positiveSamples = samples.filter(s => s.rankedIds.nonEmpty)
+    println(s"Number of positive samples = ${positiveSamples.size}." )
+
+    val queries = positiveSamples.map(s => s.question)
+    val correctIds = positiveSamples.map(s => s.rankedIds.head)
+    evaluator.eval(queries, correctIds)
+
+    // val queries = negativeSamples.map(s => s.question)
+    // val correctIds = (1 to queries.size).toList.map(_.toString())
+    // evaluator.eval(queries, correctIds)
+
     println("Done.")
     evaluator.client.close()
   }
