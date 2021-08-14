@@ -26,16 +26,7 @@ import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.SortOrder
 import org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder
-
-case class QA(
-  id: Option[Any],
-  question: String, 
-  answer: String, 
-  questionKeywords: Option[Any],
-  questionType: String,
-  area: String,
-  source: String
-)
+import java.util.regex.Pattern
 
 /** 
 * Read q/a samples and index into a ES server. 
@@ -46,13 +37,20 @@ object Indexer {
   val HOST = "localhost"
   val client: RestHighLevelClient = new RestHighLevelClient(RestClient.builder(new HttpHost(HOST, 9200, "http")));
 
+    final val HTML_PATTERN = Pattern.compile("<.+?>")
+
+    def removeTags(text: String): String = {
+        val matcher = HTML_PATTERN.matcher(text)
+        return matcher.replaceAll("")
+    }
+
   /**
     * Index a list of QA samples. Each element has an ID that matches the given ID to facilitate 
     * ranking evaluation.
     *
     * @param samples
     */
-  def index(samples: List[QA]) {
+  def index(samples: List[QA], indexName: String = "qas") {
     val request = new BulkRequest()
     samples.foreach { sample => 
       val builder: XContentBuilder = jsonBuilder().startObject()
@@ -60,13 +58,14 @@ object Indexer {
       val keywords = sample.questionKeywords.get.toString
       builder.field("id", id)
         .field("question", sample.question)
+        .field("questionDetail", sample.questionDetail)
         .field("answer", sample.answer)
         .field("questionKeywords", keywords)
         .field("questionType", sample.questionType)
         .field("area", sample.area)
         .field("source", sample.source)
       builder.endObject()
-      request.add(new IndexRequest("qas").id(String.valueOf(id)).source(builder))
+      request.add(new IndexRequest(indexName).id(String.valueOf(id)).source(builder))
     }
     client.bulkAsync(request, RequestOptions.DEFAULT, new ActionListener[BulkResponse]() {
       def onResponse(bulkItemResponses: BulkResponse) {
@@ -88,8 +87,9 @@ object Indexer {
       val obj = JSON.parseFull(line).get.asInstanceOf[Map[String, Any]]
       if (obj.get("question") != None && obj.get("idSqlManage") != None) {
           val qa = QA(obj.get("idSqlManage"),
-              obj.get("question").get.toString().replaceAll("""\n""", ""), 
-              obj.get("answer").get.toString().replaceAll("""\n""", ""), 
+              obj.get("question").get.toString().replaceAll("""[\s\r]+""", " "),
+              removeTags(obj.get("questionDetail").get.toString()).replaceAll("""[\s\r]+""", " "),
+              obj.get("answer").get.toString().replaceAll("""[\s\r]+""", " "),
               obj.get("questionKeyword"),
               obj.getOrElse("loaiCauHoi", "NA").toString(), 
               obj.getOrElse("linhVuc", "NA").toString, 
@@ -100,8 +100,8 @@ object Indexer {
     println(qas.length)
     import scala.collection.JavaConversions._
     val samples = qas.toList
-    index(samples)
-    Thread.sleep(2000)
+    index(samples, "qas2")
+    Thread.sleep(5000)
     client.close()
     println("Done.")
   }

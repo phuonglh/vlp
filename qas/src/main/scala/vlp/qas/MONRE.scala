@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets
   * samples, which will be processed.
   */
 object MONRE {
+
     def main(args: Array[String]): Unit = {
         implicit val formats = Serialization.formats(NoTypeHints)
         import scala.collection.JavaConversions._
