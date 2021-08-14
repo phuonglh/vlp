@@ -12,11 +12,10 @@ import java.nio.charset.StandardCharsets
   * samples, which will be processed.
   */
 object MONRE {
-
     def main(args: Array[String]): Unit = {
         implicit val formats = Serialization.formats(NoTypeHints)
         import scala.collection.JavaConversions._
-        val folder = "C:/Users/phuonglh/vlp/dat/qas/"
+        val folder = s"${System.getProperty("user.home")}" + "/vlp/dat/qas/"
         val files = Array("01", "02", "03", "04")
         val paths = files.map(file => folder + file + ".json")
         val samples = paths.flatMap { path =>

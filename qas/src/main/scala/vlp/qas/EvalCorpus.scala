@@ -16,7 +16,7 @@ case class EvalSample(
 )
 
 /**
- *  Reads eval. data and builds evaluation samples.
+ *  Reads evaluation data and builds evaluation samples.
   * phuonglh, August 9, 2021.
   */
 object EvalCorpus {
@@ -49,7 +49,7 @@ object EvalCorpus {
     }
 
     def main(args: Array[String]): Unit = {
-        val samples = read("C:/Users/phuonglh/vlp/dat/qas/result.json")
+        val samples = read(s"${System.getProperty("user.home")}" + "/vlp/dat/qas/result.json")
         samples.take(10).foreach(println)
         println(samples.size)
         println("Done.")

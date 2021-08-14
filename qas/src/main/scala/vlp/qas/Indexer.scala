@@ -81,7 +81,7 @@ object Indexer {
   def main(args: Array[String]): Unit = {
     implicit val formats = Serialization.formats(NoTypeHints)
     import scala.collection.JavaConversions._
-    val path = "C:/Users/phuonglh/vlp/dat/qas/all.jsonl"
+    val path = s"${System.getProperty("user.home")}" + "/vlp/dat/qas/all.jsonl"
     val qas = ArrayBuffer[QA]()
     val elements = scala.io.Source.fromFile(path)("UTF-8").getLines().toList.foreach { line => 
       val obj = JSON.parseFull(line).get.asInstanceOf[Map[String, Any]]
@@ -100,7 +100,7 @@ object Indexer {
     println(qas.length)
     import scala.collection.JavaConversions._
     val samples = qas.toList
-    index(samples, "qas2")
+    index(samples, "qas")
     Thread.sleep(5000)
     client.close()
     println("Done.")
