@@ -11,5 +11,4 @@ final case class QA(
   source: String
 )
 
-
 final case class Q(id: String, question: String, questionDetail: String, keywords: List[String])

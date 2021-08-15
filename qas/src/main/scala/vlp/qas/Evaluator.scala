@@ -48,7 +48,7 @@ class Evaluator(host: String, port: Int, index: String = "qas") {
     return y.split("""\s+""").toList
   }
 
-  def call(index: String, query: String, limit: Int): List[Q] = {
+  def call(query: String, limit: Int): List[Q] = {
     val request = new SearchRequest("qas");
     val searchQuery = new SearchSourceBuilder()
     searchQuery.timeout(new TimeValue(60, TimeUnit.SECONDS))
@@ -178,7 +178,7 @@ object Evaluator {
     val query = "ô nhiễm môi trường biển là gì?"
 
     // search for the query and print the top answers
-    // val qs = evaluator.call(index, query, 5)
+    // val qs = evaluator.call(query, 5)
     // println("Number of answers = " + qs.size)
     // qs.foreach(println)
 
