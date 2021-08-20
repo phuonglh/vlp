@@ -15,6 +15,7 @@ import org.json4s.Formats
 import org.json4s.DefaultFormats
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
+import org.json4s.jackson.JsonMethods._
 import de.heikoseeberger.akkahttpjackson.JacksonSupport
 
 /**
@@ -72,7 +73,13 @@ class RankerServiceAPI(
   def search: Route = post {
     pathPrefix("search") {
       entity(as[Search]) { search =>
-        complete(search)
+        // complete(search)
+        val json = parse(search.toString)
+        val s = json.extract[Search]
+        onSuccess(actor ? s) { // or nameActor.ask(Search(query))
+          case result: List[Any] =>
+            complete(Serialization.write(result))
+        }
       }
     }
   }
