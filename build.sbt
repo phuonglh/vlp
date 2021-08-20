@@ -17,7 +17,7 @@ scalacOptions ++= Seq(
 )
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.12.12", // upgrade from 2.11.12 to 2.12.12
+  scalaVersion := "2.11.12", // upgrade from 2.11.12 to 2.12.12
   name := "vlp",
   organization := "phuonglh.com",
   version := "1.0",
@@ -30,7 +30,6 @@ lazy val commonSettings = Seq(
   run in Compile := Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)).evaluated,
   runMain in Compile := Defaults.runMainTask(fullClasspath in Compile, runner in(Compile, run)).evaluated  
 )
-
 // root project
 lazy val root = (project in file("."))
   .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, nli, sjs, qas)
@@ -218,8 +217,7 @@ lazy val sjs = (project in file("sjs"))
   .settings(
     commonSettings,
     assemblyJarName in assembly := "sjs.jar",
-    resolvers ++= Seq("Job Server Bintray" at "https://dl.bintray.com/spark-jobserver/maven", 
-      "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"),
+    resolvers ++= Seq("Artifactory" at "https://sparkjobserver.jfrog.io/artifactory/jobserver/"),
     libraryDependencies ++= Seq(
       "spark.jobserver" % "job-server-api_2.11" % jobServerVersion % "provided",
       "spark.jobserver" % "job-server-extras_2.11" % jobServerVersion % "provided"
@@ -228,27 +226,25 @@ lazy val sjs = (project in file("sjs"))
 
 // Text Mining Insights for Vietnam's Post-Pandemic Green Recovery module
 lazy val tmi = (project in file("tmi"))
-  .dependsOn(tpm)
-  .settings(
-    commonSettings,
-    mainClass in assembly := Some("vlp.tmi.NewsIndexer"),
-    assemblyJarName in assembly := "tmi.jar",
-    libraryDependencies ++= Seq(
-      "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
-      "xerces" % "xercesImpl" % "2.11.0",
-      "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22" % "provided",
-      "org.glassfish" % "javax.json" % "1.1.4",
-      "org.apache.kafka" % "kafka-clients" % "2.6.0",
-      // "org.slf4j" % "slf4j-simple" % "1.7.30",
-      "org.scalaj" %% "scalaj-http" % "2.4.2",
-      "org.twitter4j" % "twitter4j-core" % "4.0.6",
-      "org.twitter4j" % "twitter4j-stream" % "4.0.6",
-      "org.apache.bahir" %% "spark-streaming-twitter" % "2.4.0" // depends on twitter4j-* version 4.0.6
-    ),
-    run / fork := true,
-    run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
-  )
-
+ .dependsOn(tpm)
+ .settings(
+   commonSettings,
+   mainClass in assembly := Some("vlp.tmi.NewsIndexer"),
+   assemblyJarName in assembly := "tmi.jar",
+   libraryDependencies ++= Seq(
+     "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
+     "xerces" % "xercesImpl" % "2.11.0",
+     "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22" % "provided",
+     "org.glassfish" % "javax.json" % "1.1.4",
+     "org.apache.kafka" % "kafka-clients" % "2.6.0",
+     "org.scalaj" %% "scalaj-http" % "2.4.2",
+     "org.twitter4j" % "twitter4j-core" % "4.0.6",
+     "org.twitter4j" % "twitter4j-stream" % "4.0.6",
+     "org.apache.bahir" %% "spark-streaming-twitter" % "2.4.0" // depends on twitter4j-* version 4.0.6
+   ),
+   run / fork := true,
+   run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
+ )
 
 // QAS module
 lazy val qas = (project in file("qas"))
@@ -258,7 +254,16 @@ lazy val qas = (project in file("qas"))
     mainClass in assembly := Some("vlp.qas.Indexer"),
     assemblyJarName in assembly := "qas.jar",
     libraryDependencies ++= Seq(
-      "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.1.1"
+      "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.1.1",
+      "org.json4s" %% "json4s-native" % "3.5.3", // should use version 3.5.3 to fix a bug
+      "org.json4s" %% "json4s-jackson" % "3.5.3",      
+      "org.scalaj" %% "scalaj-http" % "2.4.2",
+      "com.typesafe.akka" %% "akka-actor" % "2.5.27",
+      "com.typesafe.akka" %% "akka-http" % "10.1.11",
+      "com.typesafe.akka" %% "akka-stream" % "2.5.27",
+      "com.typesafe.akka" %% "akka-slf4j" % "2.5.27",
+      "org.slf4j" % "slf4j-simple" % "1.7.16",
+      "de.heikoseeberger" %% "akka-http-jackson" % "1.28.0"
     ),
     run / fork := true,
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")

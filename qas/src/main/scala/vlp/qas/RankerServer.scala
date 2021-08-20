@@ -10,6 +10,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.Future
 import scala.io.StdIn
+import java.util.Properties
 
 /**
   *
@@ -25,7 +26,10 @@ object RankerServer extends App with RequestTimeout {
   implicit val system = ActorSystem()
   implicit val ec = system.dispatcher
 
-  val actor = system.actorOf(Props(new RankerActor), "rankerActor")
+  val properties = new Properties()
+  properties.load(Evaluator.getClass().getClassLoader.getResourceAsStream("config.properties"))
+
+  val actor = system.actorOf(Props(new RankerActor(properties)), "rankerActor")
   val api = new RankerServiceAPI(system, requestTimeout(config), actor).routes
   implicit val materializer = ActorMaterializer()
   val bindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(api, host, Integer.parseInt(port))

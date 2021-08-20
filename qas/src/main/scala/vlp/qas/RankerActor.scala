@@ -3,6 +3,7 @@ package vlp.qas
 import akka.actor.Actor
 
 import scala.collection.mutable
+import java.util.Properties
 
 /**
   * Server-side implementation of the ranker.
@@ -13,9 +14,13 @@ import scala.collection.mutable
 
 case class Search(query: String)
 
-class RankerActor extends Actor {
+class RankerActor(properties: Properties) extends Actor {
   val cache = new mutable.HashMap[String, String]()
-  val evaluator = new Evaluator("localhost", 9200, "qas")
+  val host = properties.getProperty("host")
+  val port = properties.getProperty("port").toInt
+  val index = properties.getProperty("index")
+
+  val evaluator = new Evaluator(host, port, index)
   
   override def receive: Receive = {
     case request: Search =>
