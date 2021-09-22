@@ -49,17 +49,22 @@ class Evaluator(host: String, port: Int, index: String = "qas") {
   }
 
   def call(query: String, limit: Int): List[Q] = {
+    val tokens = processQuery(query)
+    if (tokens.length > 0)
+      call(tokens, limit)
+    else List.empty[Q]
+  }
+
+  def call(tokens: List[String], limit: Int): List[Q] = {
     val request = new SearchRequest("qas");
     val searchQuery = new SearchSourceBuilder()
     searchQuery.timeout(new TimeValue(60, TimeUnit.SECONDS))
 
     val bqb = QueryBuilders.boolQuery()
-    val tokens = processQuery(query)
-    println(tokens)
     for (token <- tokens) 
       bqb.must(QueryBuilders.termQuery(FIELD, token))
 
-    println(bqb.toString)
+    println(bqb.toString) // for debugging
     searchQuery.query(bqb)
 
 

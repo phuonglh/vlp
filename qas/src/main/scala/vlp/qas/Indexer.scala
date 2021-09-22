@@ -30,8 +30,8 @@ import java.util.regex.Pattern
 
 /** 
 * Read q/a samples and index into a ES server. 
-* (C) phuonglh@gmail.com, August
-* 8, 2021.
+* (C) phuonglh@gmail.com, August 2021.
+* 
 */
 object Indexer {
   val HOST = "localhost"

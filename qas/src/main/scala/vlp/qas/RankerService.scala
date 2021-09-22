@@ -38,7 +38,7 @@ class RankerServiceAPI(
   implicit def executionContext = system.dispatcher // to call ask
   val routes = search ~ reset ~ test ~ query
 
-  implicit val formats: Formats = DefaultFormats
+  implicit val formats: Formats = DefaultFormats // json format
 
   def test: Route = pathPrefix("test") { ctx => 
     ctx.request.method match {
@@ -58,25 +58,11 @@ class RankerServiceAPI(
     }
   }
 
-  // def search = pathPrefix("search") {
-  //   formField("q") { query => 
-  //     println(s"query = ${query}")
-  //     val q = akka.util.ByteString(query)
-  //     println("q = " + q)
-  //     onSuccess(actor ? Search(query)) { // or nameActor.ask(Search(query))
-  //       case result: List[Any] =>
-  //         complete(Serialization.write(result))
-  //     }
-  //   }
-  // }
-
   def search: Route = post {
     pathPrefix("search") {
       entity(as[Search]) { search =>
         // complete(search)
-        val json = parse(search.toString)
-        val s = json.extract[Search]
-        onSuccess(actor ? s) { // or nameActor.ask(Search(query))
+        onSuccess(actor ? search) { // or nameActor.ask(Search(query))
           case result: List[Any] =>
             complete(Serialization.write(result))
         }
