@@ -268,3 +268,11 @@ lazy val qas = (project in file("qas"))
     run / fork := true,
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
   )
+
+// VCB module
+lazy val vcb = (project in file("vcb"))
+    .settings(commonSettings, 
+      mainClass in assembly := Some("vlp.vcb.BankMarketing"),
+      assemblyJarName in assembly := "vcb.jar",
+    run /fork := true
+  )

@@ -96,7 +96,7 @@ accuracy:  98.32%; precision:  94.32%; recall:  95.54%; FB1:  94.92
   `curl -X POST localhost:8090/binaries/ner -H "Content-Type: application/java-archive" --data-binary @ner.jar`
   `curl -X POST localhost:8090/binaries/sjs -H "Content-Type: application/java-archive" --data-binary @sjs.jar`
 
-  `curl -d "dependent-jar-uris=[ner]" "localhost:8090/contexts/ner?num-cpu-cores=8&memory-per-node=1024m"`
+  `curl -d "dependent-jar-uris=[ner]" "localhost:8090/contexts/ner?num-cpu-cores=4&memory-per-node=1024m"`
 
 ## Submit Request
   

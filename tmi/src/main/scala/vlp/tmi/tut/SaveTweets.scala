@@ -1,4 +1,4 @@
-package vlp.tmi
+package vlp.tmi.tut
 
 import org.apache.spark._
 import org.apache.spark.SparkContext._

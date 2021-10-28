@@ -1,4 +1,4 @@
-package vlp.tmi
+package vlp.tmi.tut
 
 import org.apache.log4j.Level
 import java.util.regex.Pattern
