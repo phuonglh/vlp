@@ -101,10 +101,11 @@ class LDA(val sparkContext: SparkContext, val config: ConfigLDA) {
 object LDA {
 
   final val logger = LoggerFactory.getLogger(getClass.getName)
+  final val tokenizer = new Tokenizer()
 
   def tokenize(news: News): Document = {
     val text = news.sentences.flatMap(sentence => {
-      Tokenizer.tokenize(sentence).map(token => token._3)
+      tokenizer.tokenize(sentence).map(token => token._3)
     }).mkString(" ")
     val u = news.url.indexOf("//")
     val v = news.url.indexOf("/", u + 2)

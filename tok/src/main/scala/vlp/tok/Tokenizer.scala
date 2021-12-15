@@ -2,9 +2,6 @@ package vlp.tok
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths, StandardOpenOption}
-
-import vlp.VLP
-
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.control.Breaks._
@@ -18,7 +15,7 @@ case class Brick(name: String, pattern: Regex, weight: Int = 0)
   * June 2019, phuonglh@gmail.com
   *
   */
-object Tokenizer {
+object Tokenizer extends Serializable {
   /**
     * A list of bricks which capture common token types.
     */
@@ -53,7 +50,9 @@ object Tokenizer {
     */
   val lexicon = Source.fromInputStream(Tokenizer.getClass.getResourceAsStream("/lexicon.txt"), "UTF-8").getLines().toSet
 
+}
 
+class Tokenizer extends Serializable {
   def segment(syllables: Array[String], forward: Boolean = false, verbose: Boolean = false): List[String] = {
     if (forward) segmentForward(syllables, verbose); else segmentBackward(syllables, verbose)
   }
@@ -74,7 +73,7 @@ object Tokenizer {
       var m = 0
       for (i <- 0 until n) {
         token = token + ' ' + syllables(i+1)
-        if (lexicon.contains(token)) {
+        if (Tokenizer.lexicon.contains(token)) {
           word = token
           m = i + 1
           if (verbose) println(word)
@@ -104,7 +103,7 @@ object Tokenizer {
       var m = syllables.size - 1
       for (i <- (m-1) to n by -1) {
         token = syllables(i) + ' ' + token
-        if (lexicon.contains(token)) {
+        if (Tokenizer.lexicon.contains(token)) {
           word = token
           m = i
           if (verbose) println(word)
@@ -124,7 +123,7 @@ object Tokenizer {
     val result = ListBuffer[(Int, String, String)]()
     if (text.trim.nonEmpty) {
       breakable {
-        for (brick <- bricks) {
+        for (brick <- Tokenizer.bricks) {
           val m = brick.pattern.findFirstMatchIn(text)
           if (m != None) {
             val x = (m.get.start, brick.name, m.get.matched)
@@ -161,7 +160,7 @@ object Tokenizer {
     */
   def merge(tokens: List[(Int, String, String)], verbose: Boolean = false): List[(Int, String, String)] = {
     if (verbose && tokens.size > 256) {
-      VLP.log(s"Merging ${tokens.size} tokens...")
+      println(s"Merging ${tokens.size} tokens...")
     }
     val result = ListBuffer[(Int, String, String)]()
     var i = 0
@@ -175,7 +174,7 @@ object Tokenizer {
         var k = i
         for (j <- i+1 until Math.min(i+3, n)) {
           w = w + ' ' + tokens(j)._3
-          if (lexicon.contains(w.toLowerCase)) {
+          if (Tokenizer.lexicon.contains(w.toLowerCase)) {
             k = j
             token = w
           }
@@ -205,7 +204,7 @@ object Tokenizer {
         val token = tokens(i)._3
         val ss = token.split("\\s+")
         val w = ss.last + " " + tokens(i+1)._3
-        if (lexicon.contains(w.toLowerCase)) {
+        if (Tokenizer.lexicon.contains(w.toLowerCase)) {
           result += ((i, "capital", ss.slice(0, ss.size-1).mkString(" ")))
           result += ((i + 1, "capital", w))
           nextIndex = i+2
@@ -263,35 +262,21 @@ object Tokenizer {
     * @param parallel
     */
   def process(inputPath: String, outputPath: String = "", parallel: Boolean = false): Unit = {
-    VLP.log("Reading input file...")
+    println("Reading input file...")
     val texts = Source.fromFile(inputPath).getLines().filter(_.trim.nonEmpty).toList
-    VLP.log(s"#(sentences) = ${texts.size}")
-    VLP.log("Tokenizing the sentences... Please wait.")
+    println(s"#(sentences) = ${texts.size}")
+    println("Tokenizing the sentences... Please wait.")
     val start = System.currentTimeMillis()
     val output = tokenizeMany(texts, parallel)
     val end = System.currentTimeMillis()
-    VLP.log(s"Duration = ${(end - start) / 1000.0} (seconds)")
+    println(s"Duration = ${(end - start) / 1000.0} (seconds)")
     if (outputPath.trim().nonEmpty) {
-      val sentences = output.map(s => s.map(_._3).mkString(" "))
-      import collection.JavaConversions._
+      import collection.JavaConverters._
+      val sentences = output.map(s => s.map(_._3).mkString(" ")).asJava
       Files.write(Paths.get(outputPath), sentences, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
       println(s"Result was written into the output file ${outputPath}")
     } else {
-      output.foreach(s => VLP.log(s.mkString(" ")))
+      output.foreach(s => println(s.mkString(" ")))
     }
-  }
-
-  def main(args: Array[String]): Unit = {
-    VLP.log(s"#(lexicon) = ${lexicon.size}")
-    if (args.size >= 2) {
-      process(args(0), args(1), true)
-    } else if (args.size >= 1) 
-        process(args(0))
-    else {
-      val text = """Tiếp nhận công văn số 10209/SKHĐT-PTHT ngày 14/11/2016 của Sở Kế hoạch và Đầu tư thành phố Hà Nội, anh Nguyễn Văn Nam vui mừng."""
-      val result = tokenizeOne(text)
-      result.foreach(a => VLP.log(a.mkString(" ")))
-    }
-    VLP.log("Done.")
   }
 }

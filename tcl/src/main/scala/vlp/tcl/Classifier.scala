@@ -20,6 +20,7 @@ import scopt.OptionParser
 import vlp.tok.SentenceDetection
 import org.apache.spark.ml.classification.RandomForestClassifier
 import java.io.File
+import vlp.tok
 
 /**
   * phuonglh, 5/28/18, 1:01 PM
@@ -27,6 +28,7 @@ import java.io.File
 class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
   val sparkSession = SparkSession.builder().getOrCreate()
+  final val tokenizer = new tok.Tokenizer()
   import sparkSession.implicits._
 
   def createDataset(path: String, numberOfSentences: Int = Int.MaxValue): Dataset[Document] = {
@@ -151,7 +153,7 @@ class Classifier(val sparkContext: SparkContext, val config: ConfigTCL) {
   def predict(inputFile: String, outputFile: String): Unit = {
     val lines = scala.io.Source.fromFile(inputFile)("UTF-8").getLines.toList.filter(_.trim.nonEmpty)
     val xs = lines.map { line =>
-      val tokens = vlp.tok.Tokenizer.tokenize(line).map(_._3)
+      val tokens = tokenizer.tokenize(line).map(_._3)
       Document("NA", tokens.mkString(" "), "NA")
     }
     import sparkSession.implicits._

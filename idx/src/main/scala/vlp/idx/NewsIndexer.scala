@@ -331,7 +331,7 @@ object NewsIndexer {
     urls.toSet
   }
 
-  def runWithTimeout[T](timeout: Long)(f: => T)(implicit ec: ExecutionContext): Option[T] = {
+  def runWithTimeout[T](timeout: Long)(f: => T): Option[T] = {
     try {
       Some(Await.result(Future(f), timeout.seconds))
     } catch {

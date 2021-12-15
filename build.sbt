@@ -1,6 +1,6 @@
 // phuonglh, May 3, 2020
-// 
-val sparkVersion = "2.4.8"
+// updated December 15, 2021 (upgrade to Spark 3.2.0 and BigDL 0.13.0)
+val sparkVersion = "3.2.0"
 val jobServerVersion = "0.11.1"
 
 javacOptions ++= Seq("-encoding", "UTF-8", "-XDignore.symbol.file", "true")
@@ -17,7 +17,7 @@ scalacOptions ++= Seq(
 )
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.11.12", // upgrade from 2.11.12 to 2.12.12
+  scalaVersion := "2.12.12", 
   name := "vlp",
   organization := "phuonglh.com",
   version := "1.0",
@@ -38,7 +38,7 @@ lazy val root = (project in file("."))
 lazy val tok = (project in file("tok"))
   .settings(
     commonSettings,
-    mainClass in assembly := Some("vlp.tok.Tokenizer"),
+    mainClass in assembly := Some("vlp.tok.VietnameseTokenizer"),
     assemblyJarName in assembly := "tok.jar"
   )
 
@@ -65,17 +65,12 @@ lazy val tdp = (project in file("tdp"))
 
 // named entity recognization module
 lazy val ner = (project in file("ner"))
-  .dependsOn(tag)
+  .dependsOn(tag, biz)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.ner.Tagger"),
     assemblyJarName in assembly := "ner.jar",
-    libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.1",
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
-    )
+    libraryDependencies ++= Seq()
   )
 
   // topic modeling module
@@ -128,23 +123,18 @@ lazy val vdr = (project in file("vdr"))
 
 // Vietnamese diacritics generation module (RNN-based approaches)
 lazy val vdg = (project in file("vdg"))
-  .dependsOn(tok)
+  .dependsOn(tok, biz)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.vdg.Generator"),
     assemblyJarName in assembly := "vdg.jar",
     resolvers += Resolver.mavenLocal,
-    libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.8.1" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-torchnet-java-mac" % "0.8.1" % "provided"
-    )
+    libraryDependencies ++= Seq()
   )
 
 // Natural language inference module
 lazy val nli = (project in file("nli"))
-  .dependsOn(tag)
+  .dependsOn(tag, biz)
   .settings(
     commonSettings,
     mainClass in assembly := Some("vlp.nli.Teller"),
@@ -152,10 +142,6 @@ lazy val nli = (project in file("nli"))
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
       "org.scalaj" %% "scalaj-http" % "2.4.2",
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.8.1" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-torchnet-java-mac" % "0.8.1" % "provided"
     )
   )
 
@@ -176,10 +162,7 @@ lazy val zoo = (project in file("zoo"))
     commonSettings,
     assemblyJarName in assembly := "zoo.jar",
     resolvers += Resolver.mavenLocal,
-    libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
-      "com.intel.analytics.zoo" % "zoo-core-dist-all" % "0.10.0" % "provided"
-    ),
+    libraryDependencies ++= Seq(),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("log4j.properties") => MergeStrategy.first
       case x =>
@@ -195,9 +178,10 @@ lazy val biz = (project in file("biz"))
     assemblyJarName in assembly := "biz.jar",
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
-      "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.12.2-spark_2.4.3" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-mac" % "0.10.0" % "provided",
-      "com.intel.analytics.bigdl.core.native.mkl" % "mkl-java-x86_64-linux" % "0.10.0" % "provided"
+        // BigDL version 0.13.0 uses Spark 3.0.0 
+        "com.intel.analytics.bigdl" % "bigdl-SPARK_3.0" % "0.13.0" % "provided", 
+        // Analytics Zoo version 0.11.0 uses BigDL version 0.13.0
+        "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.13.0-spark_3.0.0" % "0.11.0" % "provided",
     ),
     assemblyMergeStrategy in assembly := {
       case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
@@ -219,8 +203,8 @@ lazy val sjs = (project in file("sjs"))
     assemblyJarName in assembly := "sjs.jar",
     resolvers ++= Seq("Artifactory" at "https://sparkjobserver.jfrog.io/artifactory/jobserver/"),
     libraryDependencies ++= Seq(
-      "spark.jobserver" % "job-server-api_2.11" % jobServerVersion % "provided",
-      "spark.jobserver" % "job-server-extras_2.11" % jobServerVersion % "provided"
+      "spark.jobserver" % "job-server-api_2.12" % jobServerVersion % "provided",
+      "spark.jobserver" % "job-server-extras_2.12" % jobServerVersion % "provided"
     )
   )
 
@@ -269,10 +253,3 @@ lazy val qas = (project in file("qas"))
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
   )
 
-// VCB module
-lazy val vcb = (project in file("vcb"))
-    .settings(commonSettings, 
-      mainClass in assembly := Some("vlp.vcb.BankMarketing"),
-      assemblyJarName in assembly := "vcb.jar",
-    run /fork := true
-  )

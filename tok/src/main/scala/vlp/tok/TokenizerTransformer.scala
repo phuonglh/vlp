@@ -4,6 +4,8 @@ import org.apache.spark.ml.UnaryTransformer
 import org.apache.spark.ml.param.{BooleanParam, Param, Params}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.types.StringType
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql.SparkSession
 
 /**
   * phuonglh
@@ -31,12 +33,14 @@ trait TokenizerTransformerParams extends Params {
 class TokenizerTransformer(override val uid: String) extends UnaryTransformer[String, String, TokenizerTransformer]
   with TokenizerTransformerParams with DefaultParamsWritable {
   
-  def this() = this(Identifiable.randomUID("vlp.tok"))
+  val tokenizerBr: Option[Broadcast[Tokenizer]] = Some(SparkSession.getActiveSession.get.sparkContext.broadcast(new Tokenizer()))
+
+  def this() = this(Identifiable.randomUID("viTok"))
 
   override protected def createTransformFunc: (String) => String = { text =>
 
     def f(text: String): String = {
-      val tokens = Tokenizer.tokenize(text)
+      val tokens = tokenizerBr.get.value.tokenize(text)
       val output = tokens.map(_._3)
       // convert punct
       val us = if ($(convertPunctuation))

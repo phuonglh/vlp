@@ -95,7 +95,7 @@ object WordShape {
     val words = List("love", "Washington", "ABC", "H.", "A9", "F35", "H-P", "UBKT", "TƯ",
       "ĐHTH", "eBay", "iPhone", "4,120", "-4.120", "1996-08-22", "20-10-1980", "U.S.",
       "Hà_Nội", "Huế", "Đà_Nẵng", "Buôn_Mê_Thuột", "92.9kg", "93.3", "12.24.2000", "30",
-      "Modesto, California", "U.S.", "U.S.A", "U.S.A.", "phuonglh@gmail.com", "http://mim.hus.vnu.edu.vn/phuonglh",
+      "Modesto, California", "U.S.", "U.S.A", "U.S.A.", "phuonglh@gmail.com", "http://vlp.group/lhp", "http://phuonglh.com/", 
       "vlp.group", "vlp.group/vlp", "4158/QĐ-UBND", "ngày_05_tháng_2_năm_2015", "26/2016/TT-BXD", "27/NQ-HDND", "95%", "10.3%",
       "119/2009/QD-", "119/2009/QĐ-", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "CỘNG_HÒA_XÃ_HỘI_CHỦ_NGHĨA_VIỆT_NAM"
     )
