@@ -26,7 +26,7 @@ import java.text.SimpleDateFormat
 import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.RowFactory
 
-import vlp.tok.VietnameseTokenizer
+import vlp.tok.TokenizerTransformer
 
 import com.intel.analytics.zoo.pipeline.api.keras.metrics.Accuracy
 
@@ -240,7 +240,7 @@ object SHINRA {
     val input = sparkSession.createDataFrame(rdd, schema)
 
     val (tokenizer, remover) = if (config.language == "vi") {
-      (new VietnameseTokenizer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
+      (new TokenizerTransformer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
         new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
     } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
       new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
@@ -272,7 +272,7 @@ object SHINRA {
       "hungarian", "italian", "norwegian", "portuguese", "russian", "spanish", "swedish", "turkish")
 
     val (tokenizer, remover) = if (config.language == "vi") {
-      (new VietnameseTokenizer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
+      (new TokenizerTransformer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
         new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
     } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
       new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))
@@ -363,7 +363,7 @@ object SHINRA {
           val docIds = input.select("pageid").map(row => row.getString(0)).collect()
 
           val (tokenizer, remover) = if (config.language == "vi") {
-            (new VietnameseTokenizer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
+            (new TokenizerTransformer().setInputCol("text").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true), 
               new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct")))
           } else (new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(patterns), 
             new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(StopWordsRemover.loadDefaultStopWords(getLang(config.language))))

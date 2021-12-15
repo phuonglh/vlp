@@ -72,7 +72,6 @@ import com.intel.analytics.zoo.pipeline.api.keras.layers.{SelectTable => SelectT
 
 import com.intel.analytics.bigdl.utils.T
 import org.apache.spark.ml.feature.VectorAssembler
-import com.intel.analytics.bigdl.dlframes.DLClassifier
 import com.intel.analytics.zoo.pipeline.nnframes.NNClassifier
 
 /**
@@ -182,7 +181,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
     val classifier = config.modelType match {
-      case "seq" => new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(maxLen))
+      case "seq" => NNClassifier(dlModel, ClassNLLCriterion[Float](), Array(maxLen))
           .setLabelCol("category").setFeaturesCol("features")
           .setBatchSize(config.batchSize)
           .setOptimMethod(new Adam(config.learningRate))
@@ -190,7 +189,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
           .setTrainSummary(trainSummary)
           .setValidationSummary(validationSummary)
           .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
-      case "par" => new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(2*maxLen))
+      case "par" => NNClassifier(dlModel, ClassNLLCriterion[Float](), Array(2*maxLen))
           .setLabelCol("category").setFeaturesCol("features")
           .setBatchSize(config.batchSize)
           .setOptimMethod(new Adam(config.learningRate))
@@ -208,7 +207,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
           .setTrainSummary(trainSummary)
           .setValidationSummary(validationSummary)
           .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
-      case "sem" => new DLClassifier(dlModel, ClassNLLCriterion[Float](), Array(4*maxLen))
+      case "sem" => NNClassifier(dlModel, ClassNLLCriterion[Float](), Array(4*maxLen))
           .setLabelCol("category").setFeaturesCol("features")
           .setBatchSize(config.batchSize)
           .setOptimMethod(new Adam(config.learningRate))

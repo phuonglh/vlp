@@ -8,7 +8,7 @@ import java.nio.file.{Paths, Files, StandardOpenOption}
 import java.nio.charset.StandardCharsets
 
 object XNLI {
-
+    final val tokenizer = new vlp.tok.Tokenizer()
     /**
      * Convert JSONL format to JSON format.
      */ 
@@ -37,8 +37,8 @@ object XNLI {
         val tokElements = elements.par.map { element => 
             val premise = element("sentence1_tokenized").toString()
             val hypothesis = element("sentence2_tokenized").toString()
-            val premiseTokenized = vlp.tok.Tokenizer.tokenize(premise).map(_._3).mkString(" ")
-            val hypothesisTokenized = vlp.tok.Tokenizer.tokenize(hypothesis).map(_._3).mkString(" ")
+            val premiseTokenized = tokenizer.tokenize(premise).map(_._3).mkString(" ")
+            val hypothesisTokenized = tokenizer.tokenize(hypothesis).map(_._3).mkString(" ")
             Map("gold_label" -> element("gold_label"), "sentence1_tokenized" -> premiseTokenized, "sentence2_tokenized" -> hypothesisTokenized, 
                 "both" -> (premiseTokenized + " | " + hypothesisTokenized))
         }.toList

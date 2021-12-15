@@ -13,6 +13,7 @@ import java.{util => ju}
 import java.nio.file.StandardOpenOption
 
 object CorpusReader {
+  final val tokenizer = new vlp.tok.Tokenizer()
 
   /**
     * Reads a NER corpus in CoNLL-2003 format.
@@ -103,10 +104,10 @@ object CorpusReader {
       val tokens = element.child.flatMap(node => {
         if (node.getClass().getName().contains("Elem")) {
           val entityType = (node \ "@TYPE").theSeq.head.text
-          val words = vlp.tok.Tokenizer.tokenize(node.text.trim).map(_._3)
+          val words = tokenizer.tokenize(node.text.trim).map(_._3)
           Array(words.head + " " + "B-" + entityType) ++ words.tail.map(word => word + " " + "I-" + entityType)
         } else {
-          val words = vlp.tok.Tokenizer.tokenize(node.text.trim).map(_._3)
+          val words = tokenizer.tokenize(node.text.trim).map(_._3)
           words.map(word => word + " " + "O")
         }
       })

@@ -22,7 +22,7 @@ class MLP(spark: SparkSession, pipeline: PipelineModel, featureExtractor: Featur
 
   val mlp = pipeline.stages(pipeline.stages.length - 1).asInstanceOf[MultilayerPerceptronClassificationModel]
   val (theta, b) = {
-    val layers = mlp.layers
+    val layers = mlp.getLayers
     val weights = mlp.weights.toArray
     val n = layers.size
     val theta = new ListBuffer[Array[Double]]
@@ -84,7 +84,7 @@ class MLP(spark: SparkSession, pipeline: PipelineModel, featureExtractor: Featur
     }.filter(j => j >= 0).sorted.distinct
     val values = jj.map(_ => 1.0)
 
-    val layers = mlp.layers
+    val layers = mlp.getLayers
 
     // compute a forward pass through the network
     var x = new SparseVector(layers.head, jj, values).toArray

@@ -35,6 +35,7 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
   lazy val partOfSpeechModel = PipelineModel.load(configPoS.modelPath)
 
   lazy val extendedFeatureSet = if (config.twoColumns) Set.empty[String] else Set[String]("pos", "chunk", "regexp")
+  final val tokenizer = new vlp.tok.Tokenizer()
 
   private def createDF(sentences: List[Sentence]): Dataset[LabeledContext] = {
     logger.info("Featurizing the dataset. Please wait...")
@@ -295,7 +296,7 @@ class Tagger(sparkSession: SparkSession, config: ConfigNER) {
       }
     } else { 
       xs.map { x => 
-        val ws = vlp.tok.Tokenizer.tokenize(x).map(_._3)
+        val ws = tokenizer.tokenize(x).map(_._3)
         val tokens = ws.map(w => Token(w, Map.empty))
         Sentence(tokens.to[ListBuffer])
       }

@@ -16,7 +16,7 @@ import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
 import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
 import com.intel.analytics.zoo.pipeline.api.keras.layers.utils.KerasUtils
 import com.intel.analytics.zoo.pipeline.api.keras.layers.SelectTable
-import vlp.tok.VietnameseTokenizer
+import vlp.tok.TokenizerTransformer
 import org.apache.spark.ml.feature._
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.sql.DataFrame
@@ -25,7 +25,7 @@ class BERT(sparkSession: SparkSession, config: ConfigSHINRA) {
 
   def train(df: DataFrame): Unit = {
     val clazzIndexer = new StringIndexer().setInputCol("clazz").setOutputCol("label").setHandleInvalid("error")
-    val tokenizer = new VietnameseTokenizer().setInputCol("body").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true)
+    val tokenizer = new TokenizerTransformer().setInputCol("body").setOutputCol("tokens").setSplitSentences(true).setToLowercase(true).setConvertNumber(true).setConvertPunctuation(true)
     val remover = new StopWordsRemover().setInputCol("tokens").setOutputCol("words").setStopWords(Array("[num]", "punct"))
     val countVectorizer = new CountVectorizer().setInputCol("words").setOutputCol("features").setMinDF(config.minFrequency)
     val pipeline = new Pipeline().setStages(Array(clazzIndexer, tokenizer, remover, countVectorizer))

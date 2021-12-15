@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
 import com.intel.analytics.bigdl.dataset.DataSet
 import com.intel.analytics.bigdl.dataset.Sample
 
-import vlp.tok.VietnameseTokenizer
+import vlp.tok.TokenizerTransformer
 
 case class ConfigClassifier(
   master: String = "local[*]",
@@ -161,7 +161,7 @@ object Classifier {
     println("Creating text set. Please wait...")
     val textRDD = textSet.select(config.classCol, config.inputCol).rdd.map(row => {
       val content = row.getString(1).toLowerCase().split("\\s+").toArray.filter(w => w != ")" && w != "(" && w != "-")
-      val text = content.map(token => VietnameseTokenizer.convertNum(token))
+      val text = content.map(token => TokenizerTransformer.convertNum(token))
       val label = row.getString(0).split(",").head
       TextFeature(text.mkString(" "), labels(label))
       }

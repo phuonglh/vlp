@@ -25,6 +25,10 @@ lazy val commonSettings = Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
+  // BigDL version 0.13.0 uses Spark 3.0.0 
+  "com.intel.analytics.bigdl" % "bigdl-SPARK_3.0" % "0.13.0" % "provided", 
+  // Analytics Zoo version 0.11.0 uses BigDL version 0.13.0
+  "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.13.0-spark_3.0.0" % "0.11.0" % "provided",
   "com.github.scopt" %% "scopt" % "3.7.1",
   ),
   run in Compile := Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)).evaluated,
@@ -32,7 +36,31 @@ lazy val commonSettings = Seq(
 )
 // root project
 lazy val root = (project in file("."))
-  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, nli, sjs, qas)
+  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, nli, sjs, qas, nlm)
+
+// Analytic Zoo (for assembly as a uber jar to be used as a dependency)
+lazy val biz = (project in file("biz"))
+  .settings(
+    commonSettings,
+    assemblyJarName in assembly := "biz.jar",
+    resolvers += Resolver.mavenLocal,
+    libraryDependencies ++= Seq(
+        // BigDL version 0.13.0 uses Spark 3.0.0 
+        "com.intel.analytics.bigdl" % "bigdl-SPARK_3.0" % "0.13.0", 
+        // Analytics Zoo version 0.11.0 uses BigDL version 0.13.0
+        "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.13.0-spark_3.0.0" % "0.11.0",
+    ),
+    assemblyMergeStrategy in assembly := {
+      case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
+      case x if x.contains("com/intel/analytics/bigdl/mkl/") => MergeStrategy.first
+      case x if x.contains("org/tensorflow/") => MergeStrategy.first
+      case x if x.contains("google/protobuf") => MergeStrategy.first
+      case x if x.contains("org/apache/spark/unused") => MergeStrategy.first
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  )
 
 // tokenization module
 lazy val tok = (project in file("tok"))
@@ -171,29 +199,6 @@ lazy val zoo = (project in file("zoo"))
     }
   )
 
-// Analytic Zoo (for assembly as a uber jar to be used as a dependency)
-lazy val biz = (project in file("biz"))
-  .settings(
-    commonSettings,
-    assemblyJarName in assembly := "biz.jar",
-    resolvers += Resolver.mavenLocal,
-    libraryDependencies ++= Seq(
-        // BigDL version 0.13.0 uses Spark 3.0.0 
-        "com.intel.analytics.bigdl" % "bigdl-SPARK_3.0" % "0.13.0" % "provided", 
-        // Analytics Zoo version 0.11.0 uses BigDL version 0.13.0
-        "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.13.0-spark_3.0.0" % "0.11.0" % "provided",
-    ),
-    assemblyMergeStrategy in assembly := {
-      case x if x.contains("com/intel/analytics/bigdl/bigquant/") => MergeStrategy.first
-      case x if x.contains("com/intel/analytics/bigdl/mkl/") => MergeStrategy.first
-      case x if x.contains("org/tensorflow/") => MergeStrategy.first
-      case x if x.contains("google/protobuf") => MergeStrategy.first
-      case x if x.contains("org/apache/spark/unused") => MergeStrategy.first
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    }
-  )
 
 // Spark-JobServer module
 lazy val sjs = (project in file("sjs"))
@@ -253,3 +258,14 @@ lazy val qas = (project in file("qas"))
     run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
   )
 
+// Neural language model with RNN and Transformers
+lazy val nlm = (project in file("nlm"))
+ .dependsOn(tok, biz)
+ .settings(
+   commonSettings,
+   mainClass in assembly := Some("vlp.nlm.LanguageModel"),
+   assemblyJarName in assembly := "nlm.jar",
+   libraryDependencies ++= Seq(),
+   run / fork := true,
+   run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
+ )

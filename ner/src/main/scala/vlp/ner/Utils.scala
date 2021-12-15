@@ -16,7 +16,7 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 
 object Utils {
-
+  final val tokenizer = new vlp.tok.Tokenizer()
   /**
     * Renames all files in the STM annotation directory: "1.txt/lanvy.tsv" should be renamed to "1-lanvy.tsv"
     *
@@ -85,10 +85,10 @@ object Utils {
       val tokens = element.child.flatMap(node => {
         if (node.getClass().getName().contains("Elem")) {
           val entityType = entityMap.getOrElse(node.label, "UNK")
-          val tokens = if (entityType != "DOC") vlp.tok.Tokenizer.tokenize(node.text.trim).map(_._3) else node.text.trim.split("\\s+").toList
+          val tokens = if (entityType != "DOC") tokenizer.tokenize(node.text.trim).map(_._3) else node.text.trim.split("\\s+").toList
           Array(tokens.head + " " + "B-" + entityType) ++ tokens.tail.map(word => word + " " + "I-" + entityType)
         } else {
-          val tokens = vlp.tok.Tokenizer.tokenize(node.text.trim).map(_._3)
+          val tokens = tokenizer.tokenize(node.text.trim).map(_._3)
           tokens.map(token => token + " " + "O")
         }
       })
