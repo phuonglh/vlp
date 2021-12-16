@@ -34,7 +34,7 @@ class MentionExtractor(override val uid: String) extends Transformer with Defaul
 
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
-    val transformUDF = udf(this.createTransformFunc, new ArrayType(StringType, false))
+    val transformUDF = udf(this.createTransformFunc)
     dataset.withColumn($(outputCol), transformUDF(dataset($(inputCols)(0)), dataset($(inputCols)(1))))
   }
 

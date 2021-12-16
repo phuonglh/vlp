@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.ArrayType
 import org.apache.spark.sql.types.StringType
 
 /**
-  * A transformer which transforms prediction result of a [[DLModel]] to a label sequence. The prediction column of a DLModel 
+  * A transformer which transforms prediction result of a [[NNModel]] to a label sequence. The prediction column of a DLModel 
   * is a sequence of maxSequenceLength x labelSize real-valued numbers. We need a label dictionary to map indices to label strings.
   * 
   * phuonglh@gmail.com

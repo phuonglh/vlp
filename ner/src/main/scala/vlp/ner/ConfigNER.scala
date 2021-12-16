@@ -19,11 +19,11 @@ case class ConfigNER(
   input: String = "dat/ner/vie/input.txt",
   maxSequenceLength: Int = 80,
   batchSize: Int = 128,
-  wordEmbeddingSize: Int = 200,
+  wordEmbeddingSize: Int = 100,
   shapeEmbeddingSize: Int = 10,
   recurrentSize: Int = 64,
   outputSize: Int = 0,
-  epochs: Int = 80,
+  epochs: Int = 50,
   bidirectional: Boolean = false,
   twoColumns: Boolean = false
 )

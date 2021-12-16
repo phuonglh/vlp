@@ -110,7 +110,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
 
     // transform sequences of words/labels/shapes/mentions into vectors of indices for use in the DL model
     val wordSequenceVectorizer = new SequenceVectorizer(wordDictionary, config.maxSequenceLength).setInputCol("words").setOutputCol("word")
-    val labelSequenceVectorizer = new SequenceVectorizer(labelDictionary, config.maxSequenceLength).setInputCol("labels").setOutputCol("label")
+    val labelSequenceVectorizer = new SequenceVectorizer(labelDictionary, config.maxSequenceLength, false, -1).setInputCol("labels").setOutputCol("label")
     val shapeSequenceVectorizer = new SequenceVectorizer(shapeDictionary, config.maxSequenceLength).setInputCol("shapes").setOutputCol("shape")
     val mentionSequenceVectorizer = new SequenceVectorizer(mentionDictionary, config.maxSequenceLength, binary = true).setInputCol("mentions").setOutputCol("mention")
     val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape", "mention")).setOutputCol("features")
@@ -126,7 +126,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val model = buildModel(vocabSize + 1, shapeSize + 1, labelSize, featureSize)
     val trainSummary = TrainSummary(appName = config.recurrentSize.toString, logDir = "/tmp/ner/" + config.language)
     val validationSummary = ValidationSummary(appName = config.recurrentSize.toString, logDir = "/tmp/ner/" + config.language)
-    val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion[Float]()), Array(featureSize), Array(config.maxSequenceLength))
+    val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion[Float](paddingValue = -1)), Array(featureSize), Array(config.maxSequenceLength))
       .setFeaturesCol("features")
       .setLabelCol("label")
       .setBatchSize(config.batchSize)
@@ -195,8 +195,12 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, shapeSequenceVectorizer, mentionSequenceVectorizer, vectorAssembler))
 
     val beta = pipeline.fit(alpha).transform(alpha)
-    if (config.verbose) beta.show(false)
     val gamma = model.transform(beta)
+    if (config.verbose) {
+      alpha.show()
+      beta.show()
+      gamma.show()
+    }
     val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labelMap = (0 until labels.size).zip(labels).toMap
     val predictor = new Predictor(labelMap, config.maxSequenceLength).setInputCol("prediction").setOutputCol("z")
@@ -298,13 +302,13 @@ object NeuralTagger {
           case "train" => 
             val module = tagger.train(training, test)
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString).toString())
-            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength))
+            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength)).setBatchSize(config.batchSize)
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
           case "eval" => 
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString).toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
-            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength))
+            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength)).setBatchSize(config.batchSize)
             val df = tagger.createDataFrame(config.validationPath)
             val prediction = tagger.predict(df, preprocessor, model)
             val scores = Evaluator.run(prediction)
@@ -312,7 +316,7 @@ object NeuralTagger {
           case "predict" => 
             val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString()).toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
-            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength))
+            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength)).setBatchSize(config.batchSize)
             tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
             tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
           case "extract" =>
