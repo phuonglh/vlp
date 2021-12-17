@@ -4,11 +4,12 @@ package vlp.ner
 case class ConfigNER(
   master: String = "local[*]",
   executorMemory: String = "8g",
-  mode: String = "eval",
+  mode: String = "predict",
   verbose: Boolean = false,
-  modelPath: String = "dat/ner/",
+  modelPath: String = "dat/ner/two/",
   language: String = "vie",
   dataPath: String = "dat/ner/two/train.txt",
+  trainingPath: String = "dat/ner/two/train.txt",
   validationPath: String = "dat/ner/two/dev.txt",
   lambda: Double = 1E-6,
   numFeatures: Int = 32768,
@@ -25,5 +26,5 @@ case class ConfigNER(
   outputSize: Int = 0,
   epochs: Int = 50,
   bidirectional: Boolean = false,
-  twoColumns: Boolean = false
+  twoColumns: Boolean = true
 )

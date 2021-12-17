@@ -6,17 +6,7 @@ import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericF
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.nn.keras.Model
 
-import com.intel.analytics.zoo.pipeline.api.keras.layers.SoftMax
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Dense
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Embedding
-import com.intel.analytics.zoo.pipeline.api.keras.layers.GRU
-import com.intel.analytics.zoo.pipeline.api.keras.layers.TimeDistributed
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Reshape
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Bidirectional
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Input
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Select
-import com.intel.analytics.zoo.pipeline.api.keras.layers.AddConstant
-import com.intel.analytics.zoo.pipeline.api.keras.layers.Merge
+import com.intel.analytics.zoo.pipeline.api.keras.layers._
 
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.bigdl.utils.Shape
@@ -27,32 +17,23 @@ import org.slf4j.LoggerFactory
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
 
-import org.json4s._
+import org.json4s.{DefaultFormats, NoTypeHints}
 import org.json4s.jackson.Serialization
-import com.intel.analytics.bigdl.nn.TimeDistributedCriterion
+import com.intel.analytics.bigdl.nn.{TimeDistributedCriterion, ClassNLLCriterion}
 import com.intel.analytics.zoo.pipeline.nnframes.{NNEstimator, NNClassifier, NNModel}
-import com.intel.analytics.bigdl.nn.ClassNLLCriterion
-import com.intel.analytics.bigdl.optim.Adam
 import com.intel.analytics.bigdl.visualization.{TrainSummary, ValidationSummary}
-import com.intel.analytics.bigdl.optim.Trigger
-import com.intel.analytics.bigdl.optim.Top1Accuracy
+import com.intel.analytics.bigdl.optim.{Adam, Trigger, Top1Accuracy, ValidationMethod, ValidationResult, AccuracyResult}
 import org.apache.spark.ml.linalg.Vectors
-import com.intel.analytics.bigdl.optim.ValidationMethod
 import com.intel.analytics.bigdl.nn.abstractnn.Activity
-import com.intel.analytics.bigdl.optim.ValidationResult
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.optim.AccuracyResult
 
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.ml.feature.Tokenizer
-import org.apache.spark.ml.feature.CountVectorizer
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.CountVectorizerModel
-import java.nio.file.Paths
-import org.apache.spark.ml.PipelineModel
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
-import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.sql.functions.col
+import org.apache.spark.ml.feature._
+import org.apache.spark.ml._
+import java.nio.file.{Paths, Files, StandardOpenOption}
+import com.intel.analytics.bigdl.dataset.Sample
+import org.apache.spark.ml.linalg.DenseVector
 
 /**
   * A neural named entity tagger for Vietnamese.
@@ -60,9 +41,9 @@ import org.apache.spark.ml.feature.VectorAssembler
   * phuonglh@gmail.com
   * 
   */
-class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
+class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) extends Serializable {
   val logger = LoggerFactory.getLogger(getClass.getName)
-  val prefix = Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString, config.recurrentSize.toString).toString()
+  val prefix = Paths.get(config.modelPath, "gru", config.recurrentSize.toString).toString()
 
   import sparkSession.implicits._
 
@@ -93,7 +74,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     if (config.verbose) {
       testAlpha.show()
     }
-    preprocessingPipelineModel.write.overwrite.save(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString()).toString())
+    preprocessingPipelineModel.write.overwrite.save(Paths.get(config.modelPath, "gru", config.recurrentSize.toString()).toString())
 
     val wordDictionary = preprocessingPipelineModel.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
     val vocabSize = wordDictionary.size
@@ -182,7 +163,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
   /**
    * Predicts label sequence given word sequence. The input data frame has 'x' column.
   */
-  def predict(input: DataFrame, preprocessor: PipelineModel, model: NNModel[Float]): DataFrame = {
+  def predict(input: DataFrame, preprocessor: PipelineModel, module: Module[Float]): (DataFrame, DataFrame) = {
     val alpha = preprocessor.transform(input)
 
     val wordDictionary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.zipWithIndex.toMap
@@ -193,32 +174,42 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) {
     val mentionSequenceVectorizer = new SequenceVectorizer(mentionDictionary, config.maxSequenceLength, binary = true).setInputCol("mentions").setOutputCol("mention")
     val vectorAssembler = new VectorAssembler().setInputCols(Array("word", "shape", "mention")).setOutputCol("features")
     val pipeline = new Pipeline().setStages(Array(wordSequenceVectorizer, shapeSequenceVectorizer, mentionSequenceVectorizer, vectorAssembler))
-
-    val beta = pipeline.fit(alpha).transform(alpha)
-    val gamma = model.transform(beta)
-    if (config.verbose) {
-      alpha.show()
-      beta.show()
-      gamma.show()
-    }
     val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labelMap = (0 until labels.size).zip(labels).toMap
-    val predictor = new Predictor(labelMap, config.maxSequenceLength).setInputCol("prediction").setOutputCol("z")
-    predictor.transform(gamma)
+
+    val beta = pipeline.fit(alpha).transform(alpha)
+    val rdd = beta.select("features").rdd.map{ row => 
+      val x = row.get(0).asInstanceOf[DenseVector]
+      Sample(featureTensor = Tensor(x.values.map(_.toFloat), Array(3*config.maxSequenceLength)))
+    }
+    val predictions = module.predict(rdd).map(activity => {
+      // split a tensor of shape (maxSequenceLength x numLabels) into a sequence of 1d tensors, each of length numLabels.
+      val ys = activity.toTensor[Float].split(1).toSeq
+      // find argmax (positions of maximum values)
+      val zs = ys.map(tensor => (0 until tensor.toArray().size).zip(tensor.toArray()).maxBy(p => p._2)._1)
+      zs.map(labelMap(_))
+    })
+    if (config.verbose) {
+      alpha.show()
+      beta.select("word", "shape", "mention", "features").show()
+    }
+    (beta.select("words", "y"), predictions.toDF("z"))
   }
 
-  def predict(inputPathCoNLL: String, preprocessor: PipelineModel, model: NNModel[Float], outputPath: String): Unit = {
+  def predict(inputPathCoNLL: String, preprocessor: PipelineModel, module: Module[Float], outputPath: String): Unit = {
     val inputDF = createDataFrame(inputPathCoNLL)
-    val outputDF = predict(inputDF, preprocessor, model)
-    val result = outputDF.select("words", "y", "z").map(row => {
+    val (df1, df2) = predict(inputDF, preprocessor, module)
+    val ys = df1.select("words", "y").map(row => {
       val n = row.getAs[Seq[String]](0).size
-      val ys = row.getAs[String](1).split(" ")
-      val zs = row.getAs[Seq[String]](2).take(n)
-      val st = ys.zip(zs).map{case (y, z) => y + " " + z.toUpperCase()}.mkString("\n")
-      st + "\n"
+      row.getAs[String](1).split(" ").take(n)
     }).collect()
+    val zs = df2.map(row => row.getAs[Seq[String]](0)).collect()
+    val ss = ys.zip(zs).map{case (y, z) => 
+      val s = y.zip(z).map { case (a, b) => a + " " + b.toUpperCase() }.mkString("\n") 
+      s + "\n"
+    }
     import scala.collection.JavaConversions._
-    Files.write(Paths.get(outputPath), result.toList, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+    Files.write(Paths.get(outputPath), ss.toList, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 }
 
@@ -266,7 +257,7 @@ object NeuralTagger {
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('u', "numFeatures").action((x, conf) => conf.copy(numFeatures = x)).text("number of features")
-      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
+      opt[String]('d', "trainingPath").action((x, conf) => conf.copy(trainingPath = x)).text("training path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/zoo/tcl/'")
       opt[Int]('w', "wordEmbeddingSize").action((x, conf) => conf.copy(wordEmbeddingSize = x)).text("word embedding size, default is 100")
       opt[Int]('s', "shapeEmbeddingSize").action((x, conf) => conf.copy(shapeEmbeddingSize = x)).text("shape embedding size, default is 10")
@@ -293,7 +284,7 @@ object NeuralTagger {
         println(Serialization.writePretty(config))
 
         val tagger = new NeuralTagger(sparkSession, config)
-        val (training, test) = (tagger.createDataFrame(config.dataPath), tagger.createDataFrame(config.validationPath))
+        val (training, test) = (tagger.createDataFrame(config.trainingPath), tagger.createDataFrame(config.validationPath))
         training.show()
         println(training.count())
         test.show()
@@ -301,24 +292,14 @@ object NeuralTagger {
         config.mode match {
           case "train" => 
             val module = tagger.train(training, test)
-            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString).toString())
-            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength)).setBatchSize(config.batchSize)
-            tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
-            tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
-          case "eval" => 
-            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString).toString())
-            val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
-            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength)).setBatchSize(config.batchSize)
-            val df = tagger.createDataFrame(config.validationPath)
-            val prediction = tagger.predict(df, preprocessor, model)
-            val scores = Evaluator.run(prediction)
-            println(scores)
+            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, "gru", config.recurrentSize.toString).toString())
+            tagger.predict(config.trainingPath, preprocessor, module, config.modelPath + "/" + s"train-${config.recurrentSize}-${config.bidirectional}.gru")
+            tagger.predict(config.validationPath, preprocessor, module, config.modelPath + "/" + s"dev-${config.recurrentSize}-${config.bidirectional}.gru")
           case "predict" => 
-            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, config.language, "gru", config.recurrentSize.toString()).toString())
+            val preprocessor = PipelineModel.load(Paths.get(config.modelPath, "gru", config.recurrentSize.toString()).toString())
             val module = com.intel.analytics.bigdl.nn.Module.loadModule[Float](tagger.prefix + ".bigdl", tagger.prefix + ".bin")
-            val model = NNModel(module, featureSize = Array(3*config.maxSequenceLength)).setBatchSize(config.batchSize)
-            tagger.predict(config.dataPath, preprocessor, model, config.dataPath + ".gru")
-            tagger.predict(config.validationPath, preprocessor, model, config.validationPath + ".gru")
+            tagger.predict(config.trainingPath, preprocessor, module, config.modelPath + "/" + s"train-${config.recurrentSize}-${config.bidirectional}.gru")
+            tagger.predict(config.validationPath, preprocessor, module, config.modelPath + "/" + s"dev-${config.recurrentSize}-${config.bidirectional}.gru")
           case "extract" =>
             val df = training.union(test)
             val wordTokenizer = new Tokenizer().setInputCol("x").setOutputCol("words")
