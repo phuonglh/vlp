@@ -1,16 +1,18 @@
 package vlp.ner
 
-import org.apache.spark.sql.SparkSession
-
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric.NumericFloat
+import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.nn.keras.Model
-
-import com.intel.analytics.zoo.pipeline.api.keras.layers._
-
-import com.intel.analytics.bigdl.utils.Engine
-import com.intel.analytics.bigdl.utils.Shape
+import com.intel.analytics.bigdl.nn.{TimeDistributedCriterion, ClassNLLCriterion}
+import com.intel.analytics.bigdl.visualization.{TrainSummary, ValidationSummary}
+import com.intel.analytics.bigdl.optim.{Adam, Trigger, Top1Accuracy, ValidationMethod, ValidationResult, AccuracyResult}
+import com.intel.analytics.bigdl.nn.abstractnn.Activity
+import com.intel.analytics.bigdl.dataset.Sample
+import com.intel.analytics.bigdl.utils.{Engine, Shape}
 import com.intel.analytics.bigdl.Module
+import com.intel.analytics.zoo.pipeline.api.keras.layers._
+import com.intel.analytics.zoo.pipeline.nnframes.{NNEstimator, NNClassifier, NNModel}
 
 import scopt.OptionParser
 import org.slf4j.LoggerFactory
@@ -19,21 +21,14 @@ import org.apache.log4j.Logger
 
 import org.json4s.{DefaultFormats, NoTypeHints}
 import org.json4s.jackson.Serialization
-import com.intel.analytics.bigdl.nn.{TimeDistributedCriterion, ClassNLLCriterion}
-import com.intel.analytics.zoo.pipeline.nnframes.{NNEstimator, NNClassifier, NNModel}
-import com.intel.analytics.bigdl.visualization.{TrainSummary, ValidationSummary}
-import com.intel.analytics.bigdl.optim.{Adam, Trigger, Top1Accuracy, ValidationMethod, ValidationResult, AccuracyResult}
-import org.apache.spark.ml.linalg.Vectors
-import com.intel.analytics.bigdl.nn.abstractnn.Activity
-import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.col
+import org.apache.spark.ml.linalg.{Vectors, DenseVector}
 import org.apache.spark.ml.feature._
 import org.apache.spark.ml._
 import java.nio.file.{Paths, Files, StandardOpenOption}
-import com.intel.analytics.bigdl.dataset.Sample
-import org.apache.spark.ml.linalg.DenseVector
 
 /**
   * A neural named entity tagger for Vietnamese.
@@ -44,7 +39,6 @@ import org.apache.spark.ml.linalg.DenseVector
 class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) extends Serializable {
   val logger = LoggerFactory.getLogger(getClass.getName)
   val prefix = Paths.get(config.modelPath, "gru", config.recurrentSize.toString).toString()
-
   import sparkSession.implicits._
 
   def createDataFrame(dataPath: String): DataFrame = {
@@ -58,7 +52,7 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) extends Serial
 
   def train(training: DataFrame, test: DataFrame): Module[Float] = {
     // build a preprocessing pipeline and determine the dictionary and vocab size
-    val wordTokenizer = new Tokenizer().setInputCol("x").setOutputCol("words")
+    val wordTokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("words").setToLowercase(false)
     val wordCountVectorizer = new CountVectorizer().setInputCol("words").setOutputCol("wordVector").setMinDF(config.minFrequency)
     val labelTokenizer = new Tokenizer().setInputCol("y").setOutputCol("labels")
     val labelCountVectorizer = new CountVectorizer().setInputCol("labels").setOutputCol("labelVector").setMinDF(config.minFrequency)
@@ -133,20 +127,15 @@ class NeuralTagger(sparkSession: SparkSession, config: ConfigNER) extends Serial
     */
   def buildModel(vocabSize: Int, shapeSize: Int, labelSize: Int, featureSize: Int): Module[Float] = {
     val inputNode = Input(inputShape = Shape(featureSize))
-    val reshapeNode = Reshape(Array(3, featureSize/3)).inputs(inputNode)
-    
+    val reshapeNode = Reshape(Array(3, featureSize/3)).inputs(inputNode)    
     val wordSelectNode = Select(1, 0).inputs(reshapeNode)
-    val wordEmbeddingNode = Embedding(vocabSize, config.wordEmbeddingSize).inputs(wordSelectNode)
-    
+    val wordEmbeddingNode = Embedding(vocabSize, config.wordEmbeddingSize).inputs(wordSelectNode)    
     val shapeSelectNode = Select(1, 1).inputs(reshapeNode)
     val shapeEmbeddingNode = Embedding(shapeSize, config.shapeEmbeddingSize).inputs(shapeSelectNode)
-
     val mentionSelectNode = Select(1, 2).inputs(reshapeNode)
     val addOneNode = AddConstant(1).inputs(mentionSelectNode)
     val mentionEmbeddingNode = Embedding(3, 2).inputs(addOneNode)
-
     val mergeNode = Merge(mode = "concat").inputs(Array(wordEmbeddingNode, shapeEmbeddingNode, mentionEmbeddingNode))
-    
     val recurrentNode = if (!config.bidirectional) {
       GRU(config.recurrentSize, returnSequences = true).inputs(mergeNode)
     } else {
@@ -273,6 +262,7 @@ object NeuralTagger {
       case Some(config) =>
         val sparkConfig = Engine.createSparkConf()
           .setMaster(config.master)
+          .set("spark.driver.memory", config.driverMemory)
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.executor.extraJavaOptions", "-Dbigdl.engineType=mkldnn -Dcom.github.fommil.netlib.BLAS=com.intel.mkl.MKLBLAS -Dcom.github.fommil.netlib.LAPACK=com.intel.mkl.MKLLAPACK")
           .set("spark.driver.extraJavaOptions", "-Dbigdl.engineType=mkldnn")

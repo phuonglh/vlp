@@ -4,6 +4,7 @@ package vlp.ner
 case class ConfigNER(
   master: String = "local[*]",
   executorMemory: String = "8g",
+  driverMemory: String = "4g",
   mode: String = "predict",
   verbose: Boolean = false,
   modelPath: String = "dat/ner/two/",
