@@ -208,8 +208,8 @@ lazy val sjs = (project in file("sjs"))
     assemblyJarName in assembly := "sjs.jar",
     resolvers ++= Seq("Artifactory" at "https://sparkjobserver.jfrog.io/artifactory/jobserver/"),
     libraryDependencies ++= Seq(
-      "spark.jobserver" % "job-server-api_2.12" % jobServerVersion % "provided",
-      "spark.jobserver" % "job-server-extras_2.12" % jobServerVersion % "provided"
+      "spark.jobserver" %% "job-server-api" % jobServerVersion % "provided",
+      "spark.jobserver" %% "job-server-extras" % jobServerVersion % "provided"
     )
   )
 

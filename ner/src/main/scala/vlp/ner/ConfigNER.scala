@@ -7,11 +7,11 @@ case class ConfigNER(
   driverMemory: String = "4g",
   mode: String = "predict",
   verbose: Boolean = false,
-  modelPath: String = "dat/ner/two/",
+  modelPath: String = "dat/ner/vie",
   language: String = "vie",
-  dataPath: String = "dat/ner/two/train.txt",
-  trainingPath: String = "dat/ner/two/train.txt",
-  validationPath: String = "dat/ner/two/dev.txt",
+  dataPath: String = "dat/ner/vie/vie.train",
+  trainingPath: String = "dat/ner/vie/vie.train",
+  validationPath: String = "dat/ner/vie/vie.test",
   lambda: Double = 1E-6,
   numFeatures: Int = 32768,
   minFrequency: Int = 2,
@@ -27,5 +27,5 @@ case class ConfigNER(
   outputSize: Int = 0,
   epochs: Int = 50,
   bidirectional: Boolean = false,
-  twoColumns: Boolean = true
+  twoColumns: Boolean = false
 )
