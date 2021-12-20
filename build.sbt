@@ -5,15 +5,8 @@ val jobServerVersion = "0.11.1"
 
 javacOptions ++= Seq("-encoding", "UTF-8", "-XDignore.symbol.file", "true")
 
-scalacOptions ++= Seq(
-    "-Xfatal-warnings",
-    "-deprecation",
-    "-feature",
-    "-unchecked",
-    "-language:implicitConversions",
-    "-language:higherKinds",
-    "-language:existentials",
-    "-language:postfixOps"
+scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-feature", "-unchecked",
+    "-language:implicitConversions", "-language:higherKinds", "-language:existentials", "-language:postfixOps"
 )
 
 lazy val commonSettings = Seq(
@@ -35,8 +28,7 @@ lazy val commonSettings = Seq(
   runMain in Compile := Defaults.runMainTask(fullClasspath in Compile, runner in(Compile, run)).evaluated  
 )
 // root project
-lazy val root = (project in file("."))
-  .aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, nli, sjs, qas, nlm)
+lazy val root = (project in file(".")).aggregate(tok, tag, tdp, ner, tpm, tcl, idx, vdr, vdg, vec, zoo, biz, nli, sjs, qas, nlm)
 
 // Analytic Zoo (for assembly as a uber jar to be used as a dependency)
 lazy val biz = (project in file("biz"))
@@ -266,6 +258,5 @@ lazy val nlm = (project in file("nlm"))
    mainClass in assembly := Some("vlp.nlm.LanguageModel"),
    assemblyJarName in assembly := "nlm.jar",
    libraryDependencies ++= Seq(),
-   run / fork := true,
-   run / javaOptions ++= Seq("-Xmx8g", "-Djdk.tls.trustNameService=true", "-Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true")
  )
+
