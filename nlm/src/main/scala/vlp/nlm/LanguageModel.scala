@@ -21,27 +21,14 @@ import com.intel.analytics.bigdl.optim.{Optimizer, Trigger, Loss, Adam}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
+import scopt.OptionParser
 
-
-case class OptionsLM(
-    trainDataPath: String = "dat/txt/vlsp.jul.tok",
-    validDataPath: String = "dat/txt/vlsp.jul.tok",
-    dictionaryPath: String = "dat/txt",
-    vocabSize: Int = 10000,
-    numSteps: Int = 20,
-    batchSize: Int = 128,
-    maxEpoch: Int = 40,
-    modelType: String = "rnn", // ["rnn", "trm"]
-    numLayers: Int = 2,
-    hiddenSize: Int = 256,
-    keepProb: Float = 2.0f,
-    checkpoint: Option[String] = Some("models/nlm"),
-    overWriteCheckpoint: Boolean = true,
-    learningRate: Double = 1E-3,
-)
 
 /**
   * phuonglh@gmail.com, December 2021
+  * 
+  * <p/>
+  * A neural language model for Vietnamese.
   * 
   */
 object LanguageModel {
@@ -113,12 +100,12 @@ object LanguageModel {
         (trainSet, validSet)
     }
 
-    private def transformer(inputSize: Int = 10000, hiddenSize: Int = 256, outputSize: Int = 10000, numLayers: Int = 2, keepProb: Float = 2.0f): Module[Float] = {
+    private def transformer(options: OptionsLM): Module[Float] = {
         val input = Input[Float]()
-        val transformer = Transformer[Float](vocabSize = inputSize, hiddenSize = hiddenSize, numHeads = 4, filterSize = hiddenSize*4,
-                numHiddenlayers = numLayers, embeddingDropout = 1 - keepProb, attentionDropout = 0.1f, ffnDropout = 0.1f)
-            .inputs(input)
-        val linear = Linear[Float](hiddenSize, outputSize)
+        val transformer = Transformer[Float](vocabSize = options.vocabSize, hiddenSize = options.hiddenSize, numHeads = options.numHeads, 
+              filterSize = options.hiddenSize*options.numHeads, numHiddenlayers = options.numLayers, 
+              embeddingDropout = 1 - options.keepProb, attentionDropout = 0.1f, ffnDropout = 0.1f).inputs(input)
+        val linear = Linear[Float](options.hiddenSize, options.vocabSize)
         val output = TimeDistributed[Float](linear).inputs(transformer)
         Graph(input, output)
     }
@@ -163,9 +150,10 @@ object LanguageModel {
 
     def createModel(options: OptionsLM): Module[Float] = {
         if (options.modelType == "trm") {
-            transformer(inputSize = options.vocabSize, hiddenSize = options.hiddenSize, outputSize = options.vocabSize, numLayers = options.numLayers, keepProb = options.keepProb)
+            transformer(options)
         } else {
-            lstm(inputSize = options.vocabSize, hiddenSize = options.hiddenSize, outputSize = options.vocabSize, numLayers = options.numLayers, keepProb = options.keepProb)
+            lstm(inputSize = options.vocabSize, hiddenSize = options.hiddenSize, outputSize = options.vocabSize, 
+              numLayers = options.numLayers, keepProb = options.keepProb)
         }
     }
 
@@ -200,15 +188,34 @@ object LanguageModel {
 
     def main(args: Array[String]): Unit = {
         Logger.getLogger("org").setLevel(Level.WARN)
-        // create a BigDL-aware Spark context
-        val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster("local[*]")
-            .set("spark.rpc.message.maxSize", "200")
-        val sc = new SparkContext(conf)
-        Engine.init
-        val spark = SparkSession.builder.config(conf).getOrCreate()
-        // train a model
-        train(sc, OptionsLM())
+        println(new java.io.File(".").getAbsolutePath())
+        val parser = new OptionParser[OptionsLM]("vlp.nlm.LanguageModel") {
+            head("vlp.nlm.LanguageModel", "1.0")
+            opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+            opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
+            opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
+            opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
+            opt[Int]('u', "vocabSize").action((x, conf) => conf.copy(vocabSize = x)).text("number of words")
+            opt[String]('d', "trainingDataPath").action((x, conf) => conf.copy(trainDataPath = x)).text("training data path")
+            opt[String]('p', "checkpoint").action((x, conf) => conf.copy(checkpoint = Some(x))).text("checkpoint path")
+            opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("hidden size")
+            opt[Int]('n', "numSteps").action((x, conf) => conf.copy(numSteps = x)).text("maximum sequence length of a sentence")
+            opt[Int]('k', "maxEpoch").action((x, conf) => conf.copy(maxEpoch = x)).text("number of epochs")
+            opt[Unit]('v', "verbose").action((x, conf) => conf.copy(verbose = true)).text("verbose mode")
+        }
+        parser.parse(args, OptionsLM()) match {
+            case Some(optionsLM) => 
+                // create a BigDL-aware Spark context
+                val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster("local[*]")
+                    .set("spark.rpc.message.maxSize", "200")
+                val sc = new SparkContext(conf)
+                Engine.init
+                val spark = SparkSession.builder.config(conf).getOrCreate()
+                // train a model
+                train(sc, OptionsLM())
 
-        spark.stop()
+                spark.stop()
+            case None => 
+        }
     }
 }
