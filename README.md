@@ -9,13 +9,14 @@ Each basic task is implemented in a module. Some modules can be tested on a demo
 
 1. `tok`: tokenizer, which implements a rule-based word segmentation approach;
 2. `tag`: tagger, which implements a conditional Markov model for sequence tagging;
-3. `ner`: named entity recognizer, which implements a bidirectional conditional Markov model for sequence tagging;
+3. `ner`: named entity recognizer, which implements a bidirectional conditional Markov model, and a bidirectional neural network model;
 4. `tdp`: dependency parser, which implements a transition-based dependency parsing approach;
-5. `tpm`: topic modeling, which implements a Latent Dirichlet Allocation model;
+5. `tpm`: topic modeling, which implements a Latent Dirichlet Allocation (LDA) model;
 6. `tcl`: text classifier, which implements a feed-forward neural network model for text classification;
 7. `vdr`: diacritics restorer, which implements a conditional Markov model to recover diacritics for non-accented Vietnamese text; 
 8. `vdg`: diacritics generator, which implements 3 RNN-based models to recover diacritics for non-accented Vietnamese text;
 9. `zoo`: text classifier, which implements deep learning based models for text classification, including CNN, LSTM and GRU architectures;
+10. `nli`: natural language inference, which implements a number of methods, including transformers-based (BERT) models.
 
 ## 1. Tokenizer
 
@@ -29,7 +30,7 @@ If the output file is not provided, the result will be shown to the console. If 
 
 The tokenizer makes use of parallel processing in Scala, which effectively exploits **all CPU cores** of a single machine. For this reason, on a large file it is still fast. On my laptop, the tokenizer can process an input file of more than 532,000 sentences (about 1,000,000 syllables) in about 100 seconds.
 
-For really large input files in a big data setting, it is more convenient to use the tokenizer together with the [Apache Spark](http://spark.apache.org) library so that it is easy to port to a cluster of multiple nodes. We provide a transformer-based implementation of the Vietnamese tokenizer, in the class `vlp.tok.TokenizerTransformer`. This can be integrated into the machine learning pipeline of the Apache Spark Machine Learning library, in the same way as the standard `org.apache.spark.ml.feature.Tokenizer`. Note that the wrapper transformer depends on Apache Spark but not the tokenizer. If you do not want to use Apache Spark, you can simply copy the self-contained tokenizer and import it to your project, delete `TokenizerTransformer` and ignore all Apache Spark dependencies.
+For really large input files in a big data setting, it is more convenient to use the tokenizer together with the [Apache Spark](http://spark.apache.org) library so that it is easy to port to a cluster of multiple nodes. We provide a transformer-based implementation of the Vietnamese tokenizer, in the class `vlp.tok.TokenizerTransformer`. This can be integrated into the machine learning pipeline of the Apache Spark Machine Learning library, in the same way as the standard `org.apache.spark.ml.feature.Tokenizer`. Note that the wrapper transformer depends on Apache Spark but not the tokenizer. If you do not want to use this module with Apache Spark, you can simply copy the self-contained tokenizer and import it to your project, delete `TokenizerTransformer` and ignore all Apache Spark dependencies.
 
 ## 2. Part-of-Speech Tagger
 
@@ -37,7 +38,7 @@ The tagger module implements a simple first-order conditional Markov model (CMM)
 
 On the standard VLSP 2010 part-of-speech tagged treebank, this simple model gives a training accuracy of 0.9638 when all the corpus is used for training. A pre-trained model is provided in the directory `dat/tag/cmm`.
 
-Since the machine learning pipeline in use is that of Apache Spark, this module depends on Apache Spark. Suppose that you have alreadly a version of Apache Spark installed (say at the time of this writing, we use Spark 2.4.5). 
+Since the machine learning pipeline in use is that of Apache Spark, this module depends on Apache Spark. Suppose that you have alreadly a version of Apache Spark installed. 
 
 ### 2.1. Tagging Mode
 
@@ -71,7 +72,7 @@ By default, the master URL is set to `local[*]`, which means that all CPU cores 
 
 ## 3. Named Entity Recognizer
 
-The named entity recognition module implements a bidirectional conditional Markov model for sequence tagging. This tagging model combines a forward CMM and a backward CMM which are trained independently and then combined in decoding. This method has achieved the best F1 score of the [VLSP 2016 shared task on Vietnamese Named Entity Recognition](https://vlsp.org.vn/vlsp2016/eval/ner). On the standard test set of VLSP 2016 NER, its F1 score is about 88.8%.
+The named entity recognition module implements two models. The first one is a bidirectional conditional Markov model for sequence tagging. This tagging model combines a forward CMM and a backward CMM which are trained independently and then combined in decoding. This method has achieved the best F1 score of the [VLSP 2016 shared task on Vietnamese Named Entity Recognition](https://vlsp.org.vn/vlsp2016/eval/ner). On the standard test set of VLSP 2016 NER, its F1 score is about 88.8%. The second one is a neural named entity tagger which makes use of a bidirectional recurrent neural network models.
 
 The detailed approach is described in the following paper:
 
@@ -131,6 +132,10 @@ The default forward and backward CMM models are provided in the directory `dat/n
 On a large dataset, in order to avoid the out-of-memory error, you should consider to use the option `--driver-memory` of Apache Spark when submitting the job, as follows: 
 
   `$spark-submit --driver-memory 16g ner.jar -m train -l eng`
+
+### 3.3. Neural Named Entity Tagger
+
+- TODO
 
 ## 4. Dependency Parser
 
@@ -285,10 +290,6 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 - TODO 
 
 ## 10. Zoo 
-
-- TODO
-
-## 11. Spark Job Server
 
 - TODO
 

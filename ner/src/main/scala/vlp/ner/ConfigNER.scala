@@ -25,7 +25,7 @@ case class ConfigNER(
   shapeEmbeddingSize: Int = 10,
   recurrentSize: Int = 64,
   outputSize: Int = 0,
-  epochs: Int = 50,
+  epochs: Int = 100,
   bidirectional: Boolean = false,
   twoColumns: Boolean = false
 )
