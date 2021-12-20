@@ -188,7 +188,6 @@ object LanguageModel {
 
     def main(args: Array[String]): Unit = {
         Logger.getLogger("org").setLevel(Level.WARN)
-        println(new java.io.File(".").getAbsolutePath())
         val parser = new OptionParser[OptionsLM]("vlp.nlm.LanguageModel") {
             head("vlp.nlm.LanguageModel", "1.0")
             opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
@@ -212,7 +211,7 @@ object LanguageModel {
                 Engine.init
                 val spark = SparkSession.builder.config(conf).getOrCreate()
                 // train a model
-                train(sc, OptionsLM())
+                train(sc, optionsLM)
 
                 spark.stop()
             case None => 
