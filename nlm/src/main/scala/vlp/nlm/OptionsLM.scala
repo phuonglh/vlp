@@ -9,7 +9,7 @@ final case class OptionsLM(
     mode: String = "train",
     trainDataPath: String = "dat/txt/vlsp.jul.tok",
     validDataPath: String = "dat/txt/vlsp.jul.tok",
-    dictionaryPath: String = "dat/nlm/",
+    dictionaryPath: String = "dat/nlm",
     vocabSize: Int = 20000,
     numSteps: Int = 20,
     batchSize: Int = 128,
@@ -18,8 +18,8 @@ final case class OptionsLM(
     modelType: String = "rnn", // ["rnn", "trm"]
     numLayers: Int = 2,
     hiddenSize: Int = 256,
-    keepProb: Float = 2.0f,
-    checkpoint: Option[String] = Some("dat/nlm/"),    
+    keepProb: Float = 0.2f,
+    checkpoint: Option[String] = Some("dat/nlm"),
     overWriteCheckpoint: Boolean = true,
     learningRate: Double = 1E-3,
     verbose: Boolean = false

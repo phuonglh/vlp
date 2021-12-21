@@ -170,7 +170,8 @@ object LanguageModel {
             criterion = TimeDistributedCriterion[Float](CrossEntropyCriterion[Float](), sizeAverage = false, dimension = 1)
         )
         if (options.checkpoint.isDefined) {
-            optimizer.setCheckpoint(options.checkpoint.get, Trigger.everyEpoch)
+            val modelPath = options.checkpoint.get + "/" + options.modelType
+            optimizer.setCheckpoint(modelPath, Trigger.everyEpoch)
         }
         if (options.overWriteCheckpoint) {
             optimizer.overWriteCheckpoint()
@@ -193,6 +194,7 @@ object LanguageModel {
             opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
             opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
             opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
+            opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type, either 'rnn' or 'trm' ")
             opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
             opt[Int]('u', "vocabSize").action((x, conf) => conf.copy(vocabSize = x)).text("number of words")
             opt[String]('d', "trainingDataPath").action((x, conf) => conf.copy(trainDataPath = x)).text("training data path")
