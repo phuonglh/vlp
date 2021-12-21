@@ -10,6 +10,7 @@ import com.intel.analytics.bigdl.dataset.SampleToMiniBatch
 import org.slf4j.LoggerFactory
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
+import vlp.tok.WordShape
 
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.mkl.Memory
@@ -35,15 +36,15 @@ object LanguageModel {
 
     /**
       * Reads words from a line-separated text file, where each sentence is on a line and was 
-      * word segmented using space. An special padding token "<eos>" is appended to the end of 
-      * each sentence.
+      * word segmented using space. Tokens are normalized. An special padding token "<eos>" 
+      * is appended to the end of each sentence.
       * @param fileName
       * @return an iterator of words.
       */
     private def readWords(fileName: String): Iterator[String] = {
         val buffer = new ArrayBuffer[String]
         val readWords = Source.fromFile(fileName).getLines.foreach(x => {
-            val words = x.split(" ").foreach(t => buffer.append(t.toLowerCase()))
+            val words = x.split(" ").foreach(t => buffer.append(WordShape.normalize(t).toLowerCase()))
             buffer.append("<eos>")
         })
         buffer.toIterator
