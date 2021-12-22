@@ -4,9 +4,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
 import com.intel.analytics.bigdl.numeric.NumericFloat
-import com.intel.analytics.bigdl.dataset.{DataSet, SampleToMiniBatch}
+import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.dataset.{DataSet, SampleToMiniBatch, Sample}
 import com.intel.analytics.bigdl.dataset.text.{Dictionary, TextToLabeledSentence, LabeledSentenceToSample}
-import com.intel.analytics.bigdl.dataset.SampleToMiniBatch
 import org.slf4j.LoggerFactory
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
@@ -184,8 +184,17 @@ object LanguageModel {
             .optimize()
     }
 
-    def predict(seq: Seq[String], sc: SparkContext, options: OptionsLM) = {
-
+    def predict(seq: Seq[String], sc: SparkContext, model: Module[Float], dictionary: Dictionary, numSteps: Int): Tensor[Float] = {
+      val words = seq.map(x => dictionary.getIndex(x).toFloat + 1.0f)
+      val x = if (words.length > numSteps) words.toArray.take(numSteps + 1) else {
+        words.toArray ++ Array.fill[Float](numSteps - words.length + 1)(1.0f)
+      }
+      val sample = Sample(featureTensor = Tensor(x, Array(numSteps + 1)))
+      val rdd = sc.parallelize(Seq(sample))
+      val output = model.predict(rdd).map { activity =>
+        activity.toTensor[Float]
+      }
+      output.first()
     }
 
     def main(args: Array[String]): Unit = {
@@ -213,9 +222,22 @@ object LanguageModel {
                 val sc = new SparkContext(conf)
                 Engine.init
                 val spark = SparkSession.builder.config(conf).getOrCreate()
-                // train a model
-                train(sc, optionsLM)
-
+                optionsLM.mode match {
+                  case "train" => train(sc, optionsLM)
+                  case "eval" => 
+                  case "predict" => 
+                    // val seq = List("công_ty", "cung_cấp", "thiết_bị")
+                    // val seq = List("công_ty", "nhận", "thấy", "hành_động", "này", "là")
+                    val seq = List("đáng", "chú_ý", "trong", "các", "mặt_hàng", "bị")
+                    val modelPath = optionsLM.checkpoint.get + "/" + optionsLM.modelType + "/" + "20211221_163755/model.19901"
+                    val model = Module.load[Float](modelPath) // NOTE: this is a deprecated method 
+                    val dictionary = new Dictionary(optionsLM.dictionaryPath)
+                    val tensor = predict(seq, sc, model, dictionary, optionsLM.numSteps)
+                    val y = tensor(seq.size).toArray()
+                    val id2Word = dictionary.index2Word()
+                    val top5 = y.zipWithIndex.sortBy(_._1).reverse.take(5).map(p => id2Word(p._2) + " -> " + p._1)
+                    println(top5.mkString(", "))
+                }
                 spark.stop()
             case None => 
         }
