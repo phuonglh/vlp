@@ -195,15 +195,48 @@ object LanguageModel {
     }
 
     def predict(seq: Seq[String], sc: SparkContext, model: Module[Float], dictionary: Dictionary, numSteps: Int): Tensor[Float] = {
-      val words = seq.map(x => dictionary.getIndex(x).toFloat + 1.0f)
-      val x = if (words.length > numSteps) words.toArray.slice(words.length - numSteps - 1, words.length) else {
-        words.toArray ++ Array.fill[Float](numSteps - words.length + 1)(1.0f)
+      val words = seq.map(x => dictionary.getIndex(x).toFloat)
+      val x = if (words.size > numSteps) words.toArray.slice(words.size - numSteps - 1, words.size) else {
+        words.toArray ++ Array.fill[Float](numSteps - words.size + 1)(1.0f)
       }
       val sample = Sample(featureTensor = Tensor(x, Array(numSteps + 1)))
       val rdd = sc.parallelize(Seq(sample))
       val output = model.predict(rdd).map(_.toTensor[Float])
       output.first()
     }
+
+    /**
+      * Generates a number of syllables given first syllables. 
+      *
+      * @param firstSyllables
+      * @param numSyllables
+      * @param sc
+      * @param model
+      * @param dictionary
+      * @param numSteps
+      * @return a sequence of syllables
+      */
+    def generate(firstSyllables: Seq[String], numSyllables: Int, sc: SparkContext, model: Module[Float], dictionary: Dictionary, numSteps: Int): Seq[String] = {
+      val buffer = new ArrayBuffer[Float]
+      firstSyllables.foreach(s => buffer.append(dictionary.getIndex(s).toFloat))
+      val id2Word = dictionary.index2Word()
+      var stop = false
+      while (!stop && buffer.size < firstSyllables.size + numSyllables) {
+        val x = if (buffer.size > numSteps) buffer.toArray.slice(buffer.size - numSteps - 1, buffer.size) else {
+          buffer.toArray ++ Array.fill[Float](numSteps - buffer.size + 1)(1.0f)
+        }
+        val sample = Sample(featureTensor = Tensor(x, Array(numSteps + 1)))
+        val rdd = sc.parallelize(Seq(sample))
+        val output = model.predict(rdd).map(_.toTensor[Float])
+        val y = output.first()(buffer.size).toArray()
+        val nextSyllable = y.zipWithIndex.maxBy(_._1)._2
+        stop = nextSyllable == dictionary.getIndex("<eos>")
+        buffer.append(nextSyllable.toFloat)
+      }
+      buffer.map(e => id2Word(e.toInt)).toSeq
+    }
+
+
 
     def main(args: Array[String]): Unit = {
         Logger.getLogger("org").setLevel(Level.WARN)
@@ -236,17 +269,26 @@ object LanguageModel {
                   case "predict" => 
                     // val seq = List("công_ty", "cung_cấp", "thiết_bị")
                     // val seq = List("công_ty", "nhận", "thấy", "hành_động", "này", "là")
-                    // val seq = List("đáng", "chú_ý", "trong", "các", "mặt_hàng", "bị")
+                    val seq = List("đáng", "chú_ý", "trong", "các", "mặt_hàng", "bị")
                     // val seq = List("thủ_tướng", "yêu_cầu", "điều_tra")
-                    val seq = List("uỷ_ban", "kiểm_tra", "thành_uỷ", "cũng", "đã")
-                    val modelPath = optionsLM.checkpoint.get + "/" + (if (optionsLM.syllableLevel) "syll/" else "word/") + optionsLM.modelType + "/" + "20211221_163755/model.19901"
+                    // val seq = List("uỷ_ban", "kiểm_tra", "thành_uỷ", "cũng", "đã")
+                    val subDir = (if (optionsLM.syllableLevel) "syll/" else "word/")
+                    val modelPath = optionsLM.checkpoint.get + "/" + subDir + optionsLM.modelType + "/" + "20211221_163755/model.19901"
                     val model = Module.load[Float](modelPath) // NOTE: this is a deprecated method 
-                    val dictionary = new Dictionary(optionsLM.dictionaryPath)
+                    val dictionary = new Dictionary(optionsLM.dictionaryPath + "/" + subDir)
                     val tensor = predict(seq, sc, model, dictionary, optionsLM.numSteps)
                     val y = tensor(seq.size).toArray()
                     val id2Word = dictionary.index2Word()
                     val top5 = y.zipWithIndex.sortBy(_._1).reverse.take(5).map(p => id2Word(p._2) + " -> " + p._1)
                     println(top5.mkString(", "))
+                  case "generate" => 
+                    val seq = List("công_ty", "nhận", "thấy", "hành_động")
+                    val subDir = (if (optionsLM.syllableLevel) "syll/" else "word/")
+                    val modelPath = optionsLM.checkpoint.get + "/" + subDir + optionsLM.modelType + "/" + "20211221_163755/model.19901"
+                    val model = Module.load[Float](modelPath) // NOTE: this is a deprecated method 
+                    val dictionary = new Dictionary(optionsLM.dictionaryPath + "/" + subDir)
+                    val output = generate(seq, 5, sc, model, dictionary, optionsLM.numSteps)
+                    println(output)
                 }
                 spark.stop()
             case None => 
