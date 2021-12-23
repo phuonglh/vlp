@@ -10,7 +10,8 @@ final case class OptionsLM(
     trainDataPath: String = "dat/txt/vlsp.jul.tok",
     validDataPath: String = "dat/txt/vlsp.jul.tok",
     dictionaryPath: String = "dat/nlm",
-    vocabSize: Int = 20000,
+    syllableLevel: Boolean = true, // [syll, word]
+    vocabSize: Int = 10000,
     numSteps: Int = 20,
     batchSize: Int = 128,
     numHeads: Int = 4,

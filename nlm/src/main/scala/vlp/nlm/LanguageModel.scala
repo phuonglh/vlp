@@ -39,12 +39,21 @@ object LanguageModel {
       * word segmented using space. Tokens are normalized. An special padding token "<eos>" 
       * is appended to the end of each sentence.
       * @param fileName
+      * @param syllableLevel
       * @return an iterator of words.
       */
-    private def readWords(fileName: String): Iterator[String] = {
+    private def readWords(fileName: String, syllableLevel: Boolean = true): Iterator[String] = {
         val buffer = new ArrayBuffer[String]
-        val readWords = Source.fromFile(fileName).getLines.foreach(x => {
+        val lines = Source.fromFile(fileName).getLines
+        val readWords = if (!syllableLevel) lines.foreach(x => {
             val words = x.split(" ").foreach(t => buffer.append(WordShape.normalize(t).toLowerCase()))
+            buffer.append("<eos>")
+        }) else lines.foreach(x => {
+            val syllables = x.split(" ").foreach(t => {
+              val word = WordShape.normalize(t).toLowerCase()
+              val xs = word.split("_")
+              xs.foreach(buffer.append(_))
+            })
             buffer.append("<eos>")
         })
         buffer.toIterator
@@ -56,10 +65,11 @@ object LanguageModel {
       *
       * @param fileName
       * @param dictionary
+      * @param syllableLevel
       * @return an iterator of positive floats.
       */
-    private def fileToWordIdx(fileName: String, dictionary: Dictionary): Iterator[Float] = {
-        val words = readWords(fileName)
+    private def fileToWordIdx(fileName: String, dictionary: Dictionary, syllableLevel: Boolean = true): Iterator[Float] = {
+        val words = readWords(fileName, syllableLevel)
         words.map(x => dictionary.getIndex(x).toFloat + 1.0f)
     }
 
@@ -84,9 +94,9 @@ object LanguageModel {
     }
 
     def createDatasets(sc: SparkContext, options: OptionsLM) = {
-        val words = readWords(options.trainDataPath).toArray
+        val words = readWords(options.trainDataPath, options.syllableLevel).toArray
         val dictionary = Dictionary(words, options.vocabSize - 1)
-        dictionary.save(options.dictionaryPath)
+        dictionary.save(options.dictionaryPath + "/" + (if (options.syllableLevel) "syll" else "word"))
         val trainData = fileToWordIdx(options.trainDataPath, dictionary).toArray
         val validData = fileToWordIdx(options.validDataPath, dictionary).toArray
 
@@ -171,7 +181,7 @@ object LanguageModel {
             criterion = TimeDistributedCriterion[Float](CrossEntropyCriterion[Float](), sizeAverage = false, dimension = 1)
         )
         if (options.checkpoint.isDefined) {
-            val modelPath = options.checkpoint.get + "/" + options.modelType
+            val modelPath = options.checkpoint.get + "/" + (if (options.syllableLevel) "syll/" else "word/") + options.modelType
             optimizer.setCheckpoint(modelPath, Trigger.everyEpoch)
         }
         if (options.overWriteCheckpoint) {
@@ -186,14 +196,12 @@ object LanguageModel {
 
     def predict(seq: Seq[String], sc: SparkContext, model: Module[Float], dictionary: Dictionary, numSteps: Int): Tensor[Float] = {
       val words = seq.map(x => dictionary.getIndex(x).toFloat + 1.0f)
-      val x = if (words.length > numSteps) words.toArray.take(numSteps + 1) else {
+      val x = if (words.length > numSteps) words.toArray.slice(words.length - numSteps - 1, words.length) else {
         words.toArray ++ Array.fill[Float](numSteps - words.length + 1)(1.0f)
       }
       val sample = Sample(featureTensor = Tensor(x, Array(numSteps + 1)))
       val rdd = sc.parallelize(Seq(sample))
-      val output = model.predict(rdd).map { activity =>
-        activity.toTensor[Float]
-      }
+      val output = model.predict(rdd).map(_.toTensor[Float])
       output.first()
     }
 
@@ -228,8 +236,10 @@ object LanguageModel {
                   case "predict" => 
                     // val seq = List("công_ty", "cung_cấp", "thiết_bị")
                     // val seq = List("công_ty", "nhận", "thấy", "hành_động", "này", "là")
-                    val seq = List("đáng", "chú_ý", "trong", "các", "mặt_hàng", "bị")
-                    val modelPath = optionsLM.checkpoint.get + "/" + optionsLM.modelType + "/" + "20211221_163755/model.19901"
+                    // val seq = List("đáng", "chú_ý", "trong", "các", "mặt_hàng", "bị")
+                    // val seq = List("thủ_tướng", "yêu_cầu", "điều_tra")
+                    val seq = List("uỷ_ban", "kiểm_tra", "thành_uỷ", "cũng", "đã")
+                    val modelPath = optionsLM.checkpoint.get + "/" + (if (optionsLM.syllableLevel) "syll/" else "word/") + optionsLM.modelType + "/" + "20211221_163755/model.19901"
                     val model = Module.load[Float](modelPath) // NOTE: this is a deprecated method 
                     val dictionary = new Dictionary(optionsLM.dictionaryPath)
                     val tensor = predict(seq, sc, model, dictionary, optionsLM.numSteps)
