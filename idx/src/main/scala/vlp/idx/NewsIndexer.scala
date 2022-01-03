@@ -134,10 +134,10 @@ object NewsIndexer {
   }
 
   def finance: Set[String] = {
-    val categories = Array("nhip-song-tai-chinh-3", "thue-voi-cuoc-song-4", "chung-khoan-5", "tien-te-bao-hiem-6", "kinh-doanh-7")
+    val categories = Array("tai-chinh", "thue-hai-quan", "chung-khoan", "ngan-hang", "kinh-doanh", "bat-dong-san", "ke-toan-kiem-toan", "gia-ca")
     val urls = mutable.Set[String]()
     for (category <- categories) {
-      urls ++= extractURLs("http://thoibaotaichinhvietnam.vn", "pages/" + category + ".aspx", "/[\\p{Alnum}/-]+\\.aspx", (s: String) => s.startsWith("/pages/"))
+      urls ++= extractURLs("http://thoibaotaichinhvietnam.vn", category, "/[\\p{Alnum}/-]+\\.html", (s: String) => true)
     }
     logger.info("thoibaotaichinhvietnam.vn => " + urls.size)
     urls.toSet
@@ -307,7 +307,7 @@ object NewsIndexer {
     urls ++= extractURLs("https://dautubds.baodautu.vn", "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (_: String) => true)
     val categories = Set("thoi-su-d1", "dau-tu-d2", "quoc-te-d54", "doanh-nghiep-d3", "doanh-nhan-d4", "ngan-hang-d5", "tai-chinh-chung-khoan-d6")
     for (category <- categories) {
-      urls ++= extractURLs("https://baodautu.vn" + category, "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => true)
+      urls ++= extractURLs("https://baodautu.vn/" + category, "", "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => true)
     }
     logger.info("baodautu.vn => " + urls.size)
     urls.toSet
@@ -344,8 +344,8 @@ object NewsIndexer {
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
 
     import scala.collection.JavaConversions._
-    val existingURLs = MySQL.getURLs
-    logger.info(s"#(existingURLs) = ${existingURLs.size}")
+    // val existingURLs = MySQL.getURLs
+    // logger.info(s"#(existingURLs) = ${existingURLs.size}")
     val urls = mutable.Set[String]()
     urls ++= vnAgency(date)
     urls ++= vtv(date)
@@ -369,11 +369,11 @@ object NewsIndexer {
     urls ++= ictnews
 
     logger.info(s"#(totalURLs) = ${urls.size}")
-    val novelUrls = urls.diff(existingURLs)
-    logger.info(s"#(novelURLs) = ${novelUrls.size}")
+    // val novelUrls = urls.diff(existingURLs)
+    // logger.info(s"#(novelURLs) = ${novelUrls.size}")
 
-    val kafkaProducer = Kafka.createProducer("localhost:9092")
-    val news = novelUrls.par.map(url => {
+    val kafkaProducer = Kafka.createProducer("vlp.group:9092")
+    val news = urls.par.map(url => {
       logger.info(url)
       val content = runWithTimeout(5000)(extract(url))
       kafkaProducer.send(new ProducerRecord[String, String]("news", url, content.get))
@@ -387,22 +387,22 @@ object NewsIndexer {
       val xs = news.filter(x => accept(x.content))
       implicit val formats = Serialization.formats(NoTypeHints)
       val content = Serialization.writePretty(xs)
-      Files.write(Paths.get("/home/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+      Files.write(Paths.get("/Users/phuonglh/vlp/dat/idx", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
       // update the MySQL database `url`
-      MySQL.insert(novelUrls)
-      logger.info(s"#(insertedURLs) = ${novelUrls.size}")
-      // index News elements to an ES server
-      val texts = xs.map(page => new vlp.idx.News(page.url, page.content, page.date))
-      try {
-        import scala.collection.JavaConversions._
-        Indexer.indexManyNews(texts)
-      } catch {
-        case e: Exception => e.printStackTrace
-      } finally {
-        logger.info(s"(indexedNews) = ${texts.size}")
-        Thread.sleep(10000)
-        Indexer.close()
-      }
+      // MySQL.insert(novelUrls)
+      // logger.info(s"#(insertedURLs) = ${novelUrls.size}")
+      // // index News elements to an ES server
+      // val texts = xs.map(page => new vlp.idx.News(page.url, page.content, page.date))
+      // try {
+      //   import scala.collection.JavaConversions._
+      //   Indexer.indexManyNews(texts)
+      // } catch {
+      //   case e: Exception => e.printStackTrace
+      // } finally {
+      //   logger.info(s"(indexedNews) = ${texts.size}")
+      //   Thread.sleep(10000)
+      //   Indexer.close()
+      // }
     }    
   }
 
