@@ -162,7 +162,7 @@ object NewsIndexer {
     val news = urls.par.map(url => {
       logger.info(url)
       val content = runWithTimeout(5000)(extract(url)).get
-      if (content.size >= 500 && !content.contains("<div") && !content.contains("<table") && !content.contains("</p>")) {
+      if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && !content.contains("script")) {
         kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content))
         Page(url, content, new Date())
       } else {

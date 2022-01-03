@@ -24,16 +24,18 @@ object Kafka {
       new KafkaProducer[String, String](props)
   }
 
-  def consume(bootstrapServers: String): Unit = {
+  def consume(bootstrapServers: String, groupId: String): Unit = {
       val props = new ju.Properties()
       props.setProperty("bootstrap.servers", bootstrapServers)
-      props.setProperty("group.id", GROUP_ID) 
+      // set new groupId to read from the beginning
+      props.setProperty("group.id", groupId + "-consumer-" + java.util.UUID.randomUUID().toString())
       props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
       props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
       props.setProperty("enable.auto.commit", "true");
-      props.setProperty("auto.commit.interval.ms", "1000");
+      props.setProperty("auto.commit.interval.ms", "1000")
+      props.setProperty("auto.offset.reset", "earliest")
       val consumer = new KafkaConsumer[String, String](props)
-      consumer.subscribe(ju.Arrays.asList(GROUP_ID))
+      consumer.subscribe(ju.Arrays.asList(groupId))
       import scala.collection.JavaConversions._
       try {
           while (true) {
@@ -48,6 +50,8 @@ object Kafka {
   }
 
   def main(args: Array[String]): Unit = {
-      consume(Kafka.SERVERS)
+    if (args.length > 0)
+        consume(Kafka.SERVERS, args(0))
+    else consume(Kafka.SERVERS, Kafka.GROUP_ID)
   }
 }
