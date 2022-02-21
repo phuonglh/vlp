@@ -260,3 +260,10 @@ lazy val nlm = (project in file("nlm"))
    libraryDependencies ++= Seq(),
  )
 
+// Bitcoin assignment
+lazy val btc = (project in file("btc"))
+.settings(
+    commonSettings,
+    mainClass in assembly := Some("vlp.btc.Main"),
+    assemblyJarName in assembly := "btc.jar"
+)
