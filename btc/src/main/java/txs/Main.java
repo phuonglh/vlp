@@ -1,3 +1,4 @@
+package txs;
 /*
  * Main test code for Cousera cryptocurrency assignment1
  * Based on code by Sven Mentl and Pietro Brunetti
