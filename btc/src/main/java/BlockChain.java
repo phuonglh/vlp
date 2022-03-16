@@ -28,10 +28,35 @@ public class BlockChain {
         chain = new Node(genesisBlock);
     }
 
+    class Pair {
+        Block block;
+        int height;
+        Pair(Block block, int height) {
+            this.block = block;
+            this.height = height;
+        }
+    }
+
+    private Pair getMaxPair(Node node) {
+        if (node.children.isEmpty())
+            return new Pair(node.block, 1);
+        else {
+            Pair[] pairs = new Pair[node.children.size()];
+            int maxHeightIndex = 0;
+            for (int j = 1; j < pairs.length; j++) {
+                pairs[j] = getMaxPair(node.children.get(j));
+                if (pairs[maxHeightIndex].height < pairs[j].height) {
+                    maxHeightIndex = j;
+                }
+            }
+            return new Pair(pairs[maxHeightIndex].block, pairs[maxHeightIndex].height + 1);
+        }
+    }
+
     /** Get the maximum height block */
     public Block getMaxHeightBlock() {
         // IMPLEMENT THIS
-        return null;
+        return getMaxPair(chain).block;
     }
 
     /** Get the UTXOPool for mining a new block on top of max height block */
