@@ -252,18 +252,26 @@ lazy val qas = (project in file("qas"))
 
 // Neural language model with RNN and Transformers
 lazy val nlm = (project in file("nlm"))
- .dependsOn(tok, biz)
- .settings(
-   commonSettings,
-   mainClass in assembly := Some("vlp.nlm.LanguageModel"),
-   assemblyJarName in assembly := "nlm.jar",
-   libraryDependencies ++= Seq(),
- )
+    .dependsOn(tok, biz)
+    .settings(
+        commonSettings,
+        mainClass in assembly := Some("vlp.nlm.LanguageModel"),
+        assemblyJarName in assembly := "nlm.jar",
+        libraryDependencies ++= Seq(),
+    )
 
 // Bitcoin assignment
 lazy val btc = (project in file("btc"))
-.settings(
-    commonSettings,
-    mainClass in assembly := Some("vlp.btc.Main"),
-    assemblyJarName in assembly := "btc.jar"
-)
+    .settings(
+        commonSettings,
+        mainClass in assembly := Some("vlp.btc.Main"),
+        assemblyJarName in assembly := "btc.jar"
+    )
+
+// DSA lecture notes
+lazy val dsa = (project in file("dsa"))
+    .settings(
+        commonSettings,
+        mainClass in assembly := Some("vlp.dsa.Main"),
+        assemblyJarName in assembly := "dsa.jar"
+    )

@@ -1,9 +1,23 @@
+import java.util.LinkedList;
+import java.util.List;
+
 // Block Chain should maintain only limited block nodes to satisfy the functions
 // You should not have all the blocks added to the block chain in memory 
 // as it would cause a memory overflow.
 
 public class BlockChain {
     public static final int CUT_OFF_AGE = 10;
+    class Node {
+        Block block;
+        Node parent;
+        List<Node> children;
+        Node(Block block) {
+            this.block = block;
+            this.parent = null;
+            this.children = new LinkedList<>();
+        }
+    }
+    Node chain;
 
     /**
      * create an empty block chain with just a genesis block. Assume {@code genesisBlock} is a valid
@@ -11,6 +25,7 @@ public class BlockChain {
      */
     public BlockChain(Block genesisBlock) {
         // IMPLEMENT THIS
+        chain = new Node(genesisBlock);
     }
 
     /** Get the maximum height block */
@@ -45,6 +60,9 @@ public class BlockChain {
      */
     public boolean addBlock(Block block) {
         // IMPLEMENT THIS
+        if (block.getPrevBlockHash() == null)
+            return false;
+        
         return false;
     }
 

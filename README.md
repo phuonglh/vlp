@@ -17,6 +17,7 @@ Each basic task is implemented in a module. Some modules can be tested on a demo
 8. `vdg`: diacritics generator, which implements 3 RNN-based models to recover diacritics for non-accented Vietnamese text;
 9. `zoo`: text classifier, which implements deep learning based models for text classification, including CNN, LSTM and GRU architectures;
 10. `nli`: natural language inference, which implements a number of methods, including transformers-based (BERT) models.
+11. `nlm`: language modeling using recurrent neural networks and transformers
 
 ## 1. Tokenizer
 
@@ -285,13 +286,17 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 
 - TODO
 
-## 9. Natural Language Inference
+## 9. Zoo 
 
 - TODO 
 
-## 10. Zoo 
+## 10. Natural Language Inference
 
 - TODO
+
+## 11. Language Modeling
+
+- TODO 
 
 ## Compile and Package
 
@@ -311,9 +316,9 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 - In the sbt, compile the entire project with the command `compile`. All requried libraries are automatically downloaded, only at the first time.
 - In the sbt, package the project with the command `assembly`.
 - The resulting JAR files are in sub-projects, for example 
-  * tokenizer is in `tok/target/scala-2.11/tok.jar`
-  * part-of-speech tagger is in `tag/target/scala-2.11/tag.jar`
-  * named entity tagger is in `ner/target/scala-2.11/ner.jar`
+  * tokenizer is in `tok/target/scala-2.12/tok.jar`
+  * part-of-speech tagger is in `tag/target/scala-2.12/tag.jar`
+  * named entity tagger is in `ner/target/scala-2.12/ner.jar`
   * etc.
 
 ## Contact

@@ -236,8 +236,6 @@ object LanguageModel {
       buffer.map(e => id2Word(e.toInt)).toSeq
     }
 
-
-
     def main(args: Array[String]): Unit = {
         Logger.getLogger("org").setLevel(Level.WARN)
         val parser = new OptionParser[OptionsLM]("vlp.nlm.LanguageModel") {
@@ -267,13 +265,9 @@ object LanguageModel {
                   case "train" => train(sc, optionsLM)
                   case "eval" => 
                   case "predict" => 
-                    // val seq = List("công_ty", "cung_cấp", "thiết_bị")
-                    // val seq = List("công_ty", "nhận", "thấy", "hành_động", "này", "là")
-                    val seq = List("đáng", "chú_ý", "trong", "các", "mặt_hàng", "bị")
-                    // val seq = List("thủ_tướng", "yêu_cầu", "điều_tra")
-                    // val seq = List("uỷ_ban", "kiểm_tra", "thành_uỷ", "cũng", "đã")
+                    val seq = List("công", "ty", "thấy", "hành", "động")
                     val subDir = (if (optionsLM.syllableLevel) "syll/" else "word/")
-                    val modelPath = optionsLM.checkpoint.get + "/" + subDir + optionsLM.modelType + "/" + "20211221_163755/model.19901"
+                    val modelPath = optionsLM.checkpoint.get + "/" + subDir + optionsLM.modelType + "/" + "model"
                     val model = Module.load[Float](modelPath) // NOTE: this is a deprecated method 
                     val dictionary = new Dictionary(optionsLM.dictionaryPath + "/" + subDir)
                     val tensor = predict(seq, sc, model, dictionary, optionsLM.numSteps)
@@ -282,9 +276,9 @@ object LanguageModel {
                     val top5 = y.zipWithIndex.sortBy(_._1).reverse.take(5).map(p => id2Word(p._2) + " -> " + p._1)
                     println(top5.mkString(", "))
                   case "generate" => 
-                    val seq = List("công_ty", "nhận", "thấy", "hành_động")
+                    val seq = List("công", "ty", "thấy", "hành", "động")
                     val subDir = (if (optionsLM.syllableLevel) "syll/" else "word/")
-                    val modelPath = optionsLM.checkpoint.get + "/" + subDir + optionsLM.modelType + "/" + "20211221_163755/model.19901"
+                    val modelPath = optionsLM.checkpoint.get + "/" + subDir + optionsLM.modelType + "/" + "model"
                     val model = Module.load[Float](modelPath) // NOTE: this is a deprecated method 
                     val dictionary = new Dictionary(optionsLM.dictionaryPath + "/" + subDir)
                     val output = generate(seq, 5, sc, model, dictionary, optionsLM.numSteps)
