@@ -7,10 +7,10 @@ Test 1: Process a block with no transactions
 ==> passed
 
 Test 2: Process a block with a single valid transaction
-==> FAILED
+==> passed
 
 Test 3: Process a block with many valid transactions
-==> FAILED
+==> passed
 
 Test 4: Process a block with some double spends
 ==> passed
@@ -19,19 +19,19 @@ Test 5: Process a new genesis block
 ==> passed
 
 Test 6: Process a block with an invalid prevBlockHash
-==> FAILED
+==> passed
 
 Test 7: Process blocks with different sorts of invalid transactions
 ==> passed
 
 Test 8: Process multiple blocks directly on top of the genesis block
-==> FAILED
+==> passed
 
 Test 9: Process a block containing a transaction that claims a UTXO already claimed by a transaction in its parent
-==> FAILED
+==> passed
 
 Test 10: Process a block containing a transaction that claims a UTXO not on its branch
-==> FAILED
+==> passed
 
 Test 11: Process a block containing a transaction that claims a UTXO from earlier in its branch that has not yet been claimed
 ==> FAILED
@@ -52,16 +52,16 @@ Test 15: Create a block when no transactions have been processed
 ==> passed
 
 Test 16: Create a block after a single valid transaction has been processed
-==> FAILED
+==> passed
 
 Test 17: Create a block after a valid transaction has been processed, then create a second block
-==> FAILED
+==> passed
 
 Test 18: Create a block after a valid transaction has been processed that is already in a block in the longest valid branch
-==> FAILED
+==> passed
 
 Test 19: Create a block after a valid transaction has been processed that uses a UTXO already claimed by a transaction in the longest valid branch
-==> FAILED
+==> passed
 
 Test 20: Create a block after a valid transaction has been processed that is not a double spend on the longest valid branch and has not yet been included in any other block
 ==> FAILED
@@ -76,13 +76,13 @@ Test 22: Process a transaction, create a block, process a transaction, create a 
 ==> FAILED
 
 Test 23: Process a transaction, create a block, then process a block on top of that block with a transaction claiming a UTXO from that transaction
-==> FAILED
+==> passed
 
 Test 24: Process a transaction, create a block, then process a block on top of the genesis block with a transaction claiming a UTXO from that transaction
-==> FAILED
+==> passed
 
 Test 25: Process multiple blocks directly on top of the genesis block, then create a block
-==> FAILED
+==> passed
 
 Test 26: Construct two branches of approximately equal size, ensuring that blocks are always created on the proper branch
 ==> FAILED
@@ -91,4 +91,6 @@ Test 27: Similar to previous test, but then try to process blocks whose parents 
 ==> FAILED
 
 
-Total:6/27 tests passed!
+Total:19/27 tests passed!
+
+March 26, 2022 7:12 PM +07
