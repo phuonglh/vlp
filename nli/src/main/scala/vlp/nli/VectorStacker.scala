@@ -38,7 +38,8 @@ class VectorStacker(override val uid: String) extends Transformer with HasInputC
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
     val schema = dataset.schema
-    val transformUDF = udf(this.createTransformFunc, VectorType)
+    // val transformUDF = udf(this.createTransformFunc, VectorType)
+    val transformUDF = udf(this.createTransformFunc)
     dataset.withColumn($(outputCol), transformUDF(dataset($(inputCols)(0)), dataset($(inputCols)(1))))
   }
 
