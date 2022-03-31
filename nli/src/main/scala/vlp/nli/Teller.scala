@@ -399,6 +399,7 @@ object Teller {
       opt[Unit]('q', "bidirectional").action((_, conf) => conf.copy(bidirectional = true)).text("bidirectional when using gru, default is 'false'")
       opt[Int]('o', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("output size of the encoder")
       opt[Int]('n', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("maximum sequence length for a text")
+      opt[Double]('r', "learningRate").action((x, conf) => conf.copy(learningRate = x)).text("learning rate of the optimizer, default is 1e-3")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode")
       opt[Unit]('a', "tokenized").action((_, conf) => conf.copy(tokenized = true)).text("use the Vietnamese tokenized sentences, default is 'false'")
