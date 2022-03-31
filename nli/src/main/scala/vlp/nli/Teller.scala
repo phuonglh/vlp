@@ -116,6 +116,16 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     val df = prepocessor.transform(training)
     val tdf = prepocessor.transform(test)
     val (dlTrainingDF, dlTestDF) = config.modelType match {
+      case "bow" => 
+        // pre-processing pipeline of the bow model (same as the par model)
+        val premiseSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("premise").setOutputCol("premiseIndexVector")
+        val hypothesisSequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("hypothesis").setOutputCol("hypothesisIndexVector") 
+        val vectorStacker = new VectorStacker().setInputCols(Array("premiseIndexVector", "hypothesisIndexVector")).setOutputCol("features")
+        val pipeline = new Pipeline().setStages(Array(premiseSequenceVectorizer, hypothesisSequenceVectorizer, vectorStacker))
+        val ef = df.select("label", "premise", "hypothesis")
+        val tef = tdf.select("label", "premise", "hypothesis")
+        val pm = pipeline.fit(ef)
+        (pm.transform(ef), pm.transform(tef))
       case "seq" =>
         // pre-processing pipeline of the sequential model
         val sequenceVectorizer = new SequenceVectorizer(dictionary, maxLen, 0).setInputCol("tokens").setOutputCol("features")
@@ -181,6 +191,14 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("bin/nli/sum/", config.dataPack, config.language, config.modelType).toString())
     val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("bin/nli/sum/", config.dataPack, config.language, config.modelType).toString())
     val classifier = config.modelType match {
+      case "bow" => NNClassifier(dlModel, ClassNLLCriterion[Float](), Array(2*maxLen))
+          .setLabelCol("category").setFeaturesCol("features")
+          .setBatchSize(config.batchSize)
+          .setOptimMethod(new Adam(config.learningRate))
+          .setMaxEpoch(config.epochs)
+          .setTrainSummary(trainSummary)
+          .setValidationSummary(validationSummary)
+          .setValidation(Trigger.everyEpoch, trainingDF, Array(new Top1Accuracy), config.batchSize)
       case "seq" => NNClassifier(dlModel, ClassNLLCriterion[Float](), Array(maxLen))
           .setLabelCol("category").setFeaturesCol("features")
           .setBatchSize(config.batchSize)
@@ -442,56 +460,57 @@ object Teller {
                   }
                 }
               } else {
-                  val conf = ConfigTeller(modelType = config.modelType, encoderType = "bow", maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
-                    batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, language = config.language)
-                  val pack = new DataPack(config.dataPack, config.language)
-                  val teller = new Teller(sparkSession, conf, pack)
-                  for (times <- 0 until times) {
-                    val scores = teller.train(training, test)
-                    val content = Serialization.writePretty(scores) + ",\n"
-                    Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
-                  }
-              }
-            }
-          case "dict" => 
-              // val df = sparkSession.read.json("dat/nli/XNLI-1.0/vi.tok.json").select("both")
-              import org.apache.spark.sql.functions.concat_ws
-              import org.apache.spark.sql.functions.col
-              val df = sparkSession.read.json("dat/nli/XNLI-1.0/en.jsonl").select("sentence1_tokenized", "sentence2_tokenized")
-                .withColumn("both", concat_ws(" ", col("sentence1_tokenized"), col("sentence2_tokenized")))
-              df.show(false)
-              val tokenizer = new Tokenizer().setInputCol("both").setOutputCol("tokens")
-              
-              val pipeline = if (config.language == "vi") {
-                val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features")
-                new Pipeline().setStages(Array(tokenizer, vectorizer))
-              } else {
-                  val stemmer = new Stemmer().setInputCol("tokens").setOutputCol("stems").setLanguage("English")
-                  val vectorizer = new CountVectorizer().setInputCol("stems").setOutputCol("features")
-                  new Pipeline().setStages(Array(tokenizer, stemmer, vectorizer))
-                }
-              val model = pipeline.fit(df)
-              val vocabulary = model.stages.last.asInstanceOf[CountVectorizerModel].vocabulary.toList
-              val words = vocabulary.filterNot { word => 
-                val shape = WordShape.shape(word)
-                (word.size == 1) || (shape == "number") || (shape == "punctuation") || (shape == "percentage") || (word.contains("'"))
-              }
-              val outputPath = "dat/nli/XNLI-1.0/" + config.language + ".vocab.txt"
-              import scala.collection.JavaConversions._
-              Files.write(Paths.get(outputPath), words, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
-          case "trs" => 
-              val encoderOutputSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
-              for (o <- encoderOutputSizes) {
-                val conf = ConfigTeller(language = config.language, modelType = "trs", encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
-                  tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, numBlocks = config.numBlocks, numHeads = config.numHeads, intermediateSize = config.intermediateSize)
+                // bow model does not have encoder
+                val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
+                  batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, language = config.language)
                 val pack = new DataPack(config.dataPack, config.language)
                 val teller = new Teller(sparkSession, conf, pack)
-                for (times <- 0 until 5) {
+                for (times <- 0 until times) {
                   val scores = teller.train(training, test)
                   val content = Serialization.writePretty(scores) + ",\n"
                   Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                 }
               }
+            }
+          case "dict" => 
+            // val df = sparkSession.read.json("dat/nli/XNLI-1.0/vi.tok.json").select("both")
+            import org.apache.spark.sql.functions.concat_ws
+            import org.apache.spark.sql.functions.col
+            val df = sparkSession.read.json("dat/nli/XNLI-1.0/en.jsonl").select("sentence1_tokenized", "sentence2_tokenized")
+              .withColumn("both", concat_ws(" ", col("sentence1_tokenized"), col("sentence2_tokenized")))
+            df.show(false)
+            val tokenizer = new Tokenizer().setInputCol("both").setOutputCol("tokens")
+            
+            val pipeline = if (config.language == "vi") {
+              val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features")
+              new Pipeline().setStages(Array(tokenizer, vectorizer))
+            } else {
+                val stemmer = new Stemmer().setInputCol("tokens").setOutputCol("stems").setLanguage("English")
+                val vectorizer = new CountVectorizer().setInputCol("stems").setOutputCol("features")
+                new Pipeline().setStages(Array(tokenizer, stemmer, vectorizer))
+              }
+            val model = pipeline.fit(df)
+            val vocabulary = model.stages.last.asInstanceOf[CountVectorizerModel].vocabulary.toList
+            val words = vocabulary.filterNot { word => 
+              val shape = WordShape.shape(word)
+              (word.size == 1) || (shape == "number") || (shape == "punctuation") || (shape == "percentage") || (word.contains("'"))
+            }
+            val outputPath = "dat/nli/XNLI-1.0/" + config.language + ".vocab.txt"
+            import scala.collection.JavaConversions._
+            Files.write(Paths.get(outputPath), words, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+          case "trs" => 
+            val encoderOutputSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
+            for (o <- encoderOutputSizes) {
+              val conf = ConfigTeller(language = config.language, modelType = "trs", encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
+                tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, numBlocks = config.numBlocks, numHeads = config.numHeads, intermediateSize = config.intermediateSize)
+              val pack = new DataPack(config.dataPack, config.language)
+              val teller = new Teller(sparkSession, conf, pack)
+              for (times <- 0 until 5) {
+                val scores = teller.train(training, test)
+                val content = Serialization.writePretty(scores) + ",\n"
+                Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+              }
+            }
           case _ => System.err.println("Unsupported mode!")
         }
         sparkSession.stop()

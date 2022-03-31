@@ -10,8 +10,8 @@ case class ConfigTeller(
     maxSequenceLength: Int = 40,
     minFrequency: Double = 1.0,
     numFeatures: Int = 32768,
-    modelType: String = "seq",
-    encoderType: String = "cnn",
+    modelType: String = "bow",
+    encoderType: String = "NA", // use cnn/gru for seq or par model
     embeddingSize: Int = 25,
     encoderOutputSize: Int = 128,
     bidirectional: Boolean = false, // use with GRU
@@ -24,6 +24,6 @@ case class ConfigTeller(
     verbose: Boolean = false,
     tokenized: Boolean = false,
     numBlocks: Int = 2, // use with BERT
-    numHeads: Int = 8, // use with BERT
-    intermediateSize: Int = 256 // use with BERT
+    numHeads: Int = 4, // use with BERT
+    intermediateSize: Int = 128 // use with BERT
 )
