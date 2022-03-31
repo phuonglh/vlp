@@ -24,6 +24,6 @@ case class ConfigTeller(
     verbose: Boolean = false,
     tokenized: Boolean = false,
     numBlocks: Int = 2, // use with BERT
-    numHeads: Int = 8, // user with BERT
-    intermediateSize: Int = 256 // user with BERT
+    numHeads: Int = 8, // use with BERT
+    intermediateSize: Int = 256 // use with BERT
 )

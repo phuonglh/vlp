@@ -27,14 +27,15 @@ class SequenceAssembler(override val uid: String) extends Transformer with HasIn
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
-  private def createTransformFunc: (Seq[String], Seq[String]) => Seq[String] = {(xs: Seq[String], ys: Seq[String]) => 
-    xs ++ ys
+  private def createTransformFunc: (Seq[String], Seq[String]) => Seq[String] = {
+    (xs: Seq[String], ys: Seq[String]) => xs ++ ys
   }
 
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
     val schema = dataset.schema
-    val transformUDF = udf(this.createTransformFunc, new ArrayType(StringType, false))
+    // val transformUDF = udf(this.createTransformFunc, new ArrayType(StringType, false))
+    val transformUDF = udf(this.createTransformFunc)
     dataset.withColumn($(outputCol), transformUDF(dataset($(inputCols)(0)), dataset($(inputCols)(1))))
   }
 

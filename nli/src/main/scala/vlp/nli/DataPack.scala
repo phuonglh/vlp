@@ -15,5 +15,5 @@ class DataPack(val name: String, val language: String) {
     case _ => ("", "", "")
   }
 
-  def modelPath() = Paths.get("/tmp/nli/models", name, language).toString()
+  def modelPath() = Paths.get("bin/nli/", name, language).toString()
 }

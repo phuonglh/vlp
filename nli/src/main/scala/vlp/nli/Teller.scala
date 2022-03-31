@@ -165,7 +165,7 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
     }
 
     // add 1 to the 'label' column to get the 'category' column for BigDL model to train
-    val increase = udf((x: Double) => (x + 1), DoubleType)
+    val increase = udf((x: Double) => (x + 1))
     val trainingDF = dlTrainingDF.withColumn("category", increase(dlTrainingDF("label")))
     val testDF = dlTestDF.withColumn("category", increase(dlTestDF("label")))
     trainingDF.show()
@@ -178,8 +178,8 @@ class Teller(sparkSession: SparkSession, config: ConfigTeller, pack: DataPack) {
       case "sem" => sequentialTransducer(vocabSize + conceptSize, 4*maxLen)
     }
 
-    val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
-    val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("/tmp/nli/summary/", config.dataPack, config.language, config.modelType).toString())
+    val trainSummary = TrainSummary(appName = config.encoderType, logDir = Paths.get("bin/nli/sum/", config.dataPack, config.language, config.modelType).toString())
+    val validationSummary = ValidationSummary(appName = config.encoderType, logDir = Paths.get("bin/nli/sum/", config.dataPack, config.language, config.modelType).toString())
     val classifier = config.modelType match {
       case "seq" => NNClassifier(dlModel, ClassNLLCriterion[Float](), Array(maxLen))
           .setLabelCol("category").setFeaturesCol("features")
