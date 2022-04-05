@@ -417,7 +417,7 @@ object Teller {
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.executor.extraJavaOptions", "-Dbigdl.engineType=mkldnn")
           .set("spark.driver.extraJavaOptions", "-Dbigdl.engineType=mkldnn")
-          .setAppName("nli.Teller")
+          .setAppName("vlp.nli.Teller")
         val sparkSession = SparkSession.builder().config(sparkConfig).getOrCreate()
         val sparkContext = sparkSession.sparkContext
         Engine.init
@@ -446,7 +446,7 @@ object Teller {
             val embeddingSizes = Array(25, 50)
             val times = 5
             for (d <- embeddingSizes) {
-              if (config.modelType != "bow") {
+              if (config.modelType == "seq" || config.modelType == "par") {
                 val encoderOutputSizes = Array(100, 128, 150, 200, 256, 300)
                 for (o <- encoderOutputSizes) {
                   val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
@@ -460,9 +460,9 @@ object Teller {
                     Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
                   }
                 }
-              } else {
+              } else if (config.modelType == "bow") {
                 // bow model does not have encoder
-                val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
+                val conf = ConfigTeller(modelType = "bow", encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
                   batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, language = config.language)
                 val pack = new DataPack(config.dataPack, config.language)
                 val teller = new Teller(sparkSession, conf, pack)
@@ -470,6 +470,21 @@ object Teller {
                   val scores = teller.train(training, test)
                   val content = Serialization.writePretty(scores) + ",\n"
                   Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                }
+              } else {
+                  // trs model, need a small learning rate (1E-4)
+                val encoderOutputSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
+                for (o <- encoderOutputSizes) {
+                    val conf = ConfigTeller(language = config.language, modelType = "trs", encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
+                        tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, numBlocks = config.numBlocks, numHeads = config.numHeads, intermediateSize = config.intermediateSize, 
+                        learningRate = 1E-4)
+                    val pack = new DataPack(config.dataPack, config.language)
+                    val teller = new Teller(sparkSession, conf, pack)
+                    for (times <- 0 until times) {
+                        val scores = teller.train(training, test)
+                        val content = Serialization.writePretty(scores) + ",\n"
+                        Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+                    }
                 }
               }
             }
@@ -483,13 +498,15 @@ object Teller {
             val tokenizer = new Tokenizer().setInputCol("both").setOutputCol("tokens")
             
             val pipeline = if (config.language == "vi") {
+              // Vietnamese
               val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features")
               new Pipeline().setStages(Array(tokenizer, vectorizer))
             } else {
-                val stemmer = new Stemmer().setInputCol("tokens").setOutputCol("stems").setLanguage("English")
-                val vectorizer = new CountVectorizer().setInputCol("stems").setOutputCol("features")
-                new Pipeline().setStages(Array(tokenizer, stemmer, vectorizer))
-              }
+              // English
+              val stemmer = new Stemmer().setInputCol("tokens").setOutputCol("stems").setLanguage("English")
+              val vectorizer = new CountVectorizer().setInputCol("stems").setOutputCol("features")
+              new Pipeline().setStages(Array(tokenizer, stemmer, vectorizer))
+            }
             val model = pipeline.fit(df)
             val vocabulary = model.stages.last.asInstanceOf[CountVectorizerModel].vocabulary.toList
             val words = vocabulary.filterNot { word => 
@@ -499,20 +516,7 @@ object Teller {
             val outputPath = "dat/nli/XNLI-1.0/" + config.language + ".vocab.txt"
             import scala.collection.JavaConversions._
             Files.write(Paths.get(outputPath), words, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
-          case "trs" => 
-            val encoderOutputSizes = Array(8, 16, 32, 48, 64, 80, 128, 160, 200, 256, 304)
-            for (o <- encoderOutputSizes) {
-              val conf = ConfigTeller(language = config.language, modelType = "trs", encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
-                tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, numBlocks = config.numBlocks, numHeads = config.numHeads, intermediateSize = config.intermediateSize)
-              val pack = new DataPack(config.dataPack, config.language)
-              val teller = new Teller(sparkSession, conf, pack)
-              for (times <- 0 until 5) {
-                val scores = teller.train(training, test)
-                val content = Serialization.writePretty(scores) + ",\n"
-                Files.write(Paths.get("dat/nli/scores.json"), content.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
-              }
-            }
-          case _ => System.err.println("Unsupported mode!")
+          case _ => System.err.println("Unsupported model.")
         }
         sparkSession.stop()
       case None => 

@@ -15,12 +15,12 @@ case class ConfigTeller(
     embeddingSize: Int = 25,
     encoderOutputSize: Int = 128,
     bidirectional: Boolean = false, // use with GRU
-    filterSize: Int = 5, // filter size when using CNN
+    filterSize: Int = 5, // use with CNN
     numLabels: Int = 3,
     dataPack: String = "xnli",
     batchSize: Int = 32,
     epochs: Int = 40,
-    learningRate: Double = 0.001,
+    learningRate: Double = 0.001, // should use a smaller one for BERT
     verbose: Boolean = false,
     tokenized: Boolean = false,
     numBlocks: Int = 2, // use with BERT
