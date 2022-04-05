@@ -452,6 +452,7 @@ object Teller {
                   val conf = ConfigTeller(modelType = config.modelType, encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = o, 
                     batchSize = config.batchSize, bidirectional = config.bidirectional, tokenized = config.tokenized, minFrequency = config.minFrequency, 
                     epochs = config.epochs, language = config.language)
+                  println(Serialization.writePretty(config))
                   val pack = new DataPack(config.dataPack, config.language)
                   val teller = new Teller(sparkSession, conf, pack)
                   for (times <- 0 until times) {
@@ -464,6 +465,7 @@ object Teller {
                 // bow model does not have encoder
                 val conf = ConfigTeller(modelType = "bow", encoderType = config.encoderType, maxSequenceLength = n, embeddingSize = d, encoderOutputSize = -1,
                   batchSize = config.batchSize, tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, language = config.language)
+                println(Serialization.writePretty(config))  
                 val pack = new DataPack(config.dataPack, config.language)
                 val teller = new Teller(sparkSession, conf, pack)
                 for (times <- 0 until times) {
@@ -478,6 +480,7 @@ object Teller {
                     val conf = ConfigTeller(language = config.language, modelType = "trs", encoderType = "trs", maxSequenceLength = n, encoderOutputSize = o, batchSize = config.batchSize, 
                         tokenized = config.tokenized, minFrequency = config.minFrequency, epochs = config.epochs, numBlocks = config.numBlocks, numHeads = config.numHeads, intermediateSize = config.intermediateSize, 
                         learningRate = 1E-4)
+                    println(Serialization.writePretty(config))    
                     val pack = new DataPack(config.dataPack, config.language)
                     val teller = new Teller(sparkSession, conf, pack)
                     for (times <- 0 until times) {
