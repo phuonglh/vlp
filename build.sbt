@@ -22,6 +22,8 @@ lazy val commonSettings = Seq(
   "com.intel.analytics.bigdl" % "bigdl-SPARK_3.0" % "0.13.0" % "provided", 
   // Analytics Zoo version 0.11.0 uses BigDL version 0.13.0
   "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.13.0-spark_3.0.0" % "0.11.0" % "provided",
+  "com.intel.analytics.zoo" % "zoo-core-mkl-mac" % "0.11.0" % "provided",
+  "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.11.0" % "provided",
   "com.github.scopt" %% "scopt" % "3.7.1",
   ),
   run in Compile := Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)).evaluated,
