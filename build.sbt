@@ -262,7 +262,7 @@ lazy val nlm = (project in file("nlm"))
         libraryDependencies ++= Seq(),
     )
 
-// Bitcoin assignment
+// Bitcoin assignments
 lazy val btc = (project in file("btc"))
     .settings(
         commonSettings,
@@ -277,3 +277,12 @@ lazy val dsa = (project in file("dsa"))
         mainClass in assembly := Some("vlp.dsa.Main"),
         assemblyJarName in assembly := "dsa.jar"
     )
+
+// Aspect-based sentiment analysis (PoC)
+lazy val asa = (project in file("asa"))
+    .settings(
+        commonSettings,
+        mainClass in assembly := Some("vlp.asa.Main"),
+        assemblyJarName in assembly := "asa.jar"
+    )
+
