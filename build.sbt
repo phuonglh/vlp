@@ -10,7 +10,7 @@ scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-feature", "-unchecke
 )
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.12.12", 
+  scalaVersion := "2.12.15", 
   name := "vlp",
   organization := "phuonglh.com",
   version := "1.0",
@@ -286,3 +286,13 @@ lazy val asa = (project in file("asa"))
         assemblyJarName in assembly := "asa.jar"
     )
 
+// Akka actor models
+lazy val aka = (project in file("aka"))
+    .settings(
+      // commonSettings,
+      assemblyJarName in assembly := "aka.jar",
+      libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-actor-typed" % "2.6.19",
+        "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.19" % Test
+      )
+    )
