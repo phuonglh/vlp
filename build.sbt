@@ -292,6 +292,7 @@ lazy val aka = (project in file("aka"))
       // commonSettings,
       assemblyJarName in assembly := "aka.jar",
       libraryDependencies ++= Seq(
+        "org.slf4j" % "slf4j-simple" % "1.7.36",
         "com.typesafe.akka" %% "akka-actor-typed" % "2.6.19",
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.19" % Test
       )
