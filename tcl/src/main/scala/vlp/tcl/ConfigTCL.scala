@@ -18,9 +18,9 @@ case class ConfigTCL(
   maxDepth: Int = 15, // max tree depth used in the RFC
   batchSize: Int = 32,
   iterations: Int = 300,
-  dataPath: String = "dat/vne/5catsSample/part-*",
+  dataPath: String = "/home/phuonglh/Downloads/Upwork/output.csv", // "dat/vne/5catsSample/part-*",
   percentage: Double = 1.0, // percentage of the training data to be used
-  inputColumnName: String = "text",
+  inputColumnName: String = "description",
   maxTokenLength: Int = 50,
   input: String = "dat/shi/vi.txt",
   output: String = "dat/shi/vi.json"
