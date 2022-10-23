@@ -121,7 +121,7 @@ class Company(sparkSession: SparkSession, config: ConfigTCL) {
     import sparkSession.implicits._
     implicit val formats = Serialization.formats(NoTypeHints)
     val result = outputDF.select("ticker", "prediction", "probability")
-      .map(row => (row.getString(0), row.getDouble(1).toInt, row.getAs[DenseVector](2)))
+      .map(row => (row.getString(0), labels(row.getDouble(1).toInt), row.getAs[DenseVector](2)))
       .collect()
       .map(result => Serialization.write(result))
     import scala.collection.JavaConversions._  
