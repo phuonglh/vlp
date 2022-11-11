@@ -32,7 +32,6 @@ object CharConverter extends DefaultParamsReadable[CharConverter] {
   
   def convert(token: String): String = {
     if (WordShape.shape(token) == "number") "0"
-    else if (token == " ") " "
     else if (!vieMap.contains(token)) "S"
     else token
   }

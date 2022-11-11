@@ -168,11 +168,13 @@ class M1(config: ConfigVDG) extends M(config) {
       zs
     })
     df0.select("x", "y").rdd.zip(predictions).map(p => {
-      val xs = p._1.getAs[Seq[String]](0)
-      val ys = p._1.getAs[Seq[String]](1)
+      val x = p._1.getAs[Seq[String]](0)
+      val ys = p._1.getAs[Seq[String]](1) // ys will be the same as x if x is non-accented
       val zs = p._2
-      val n = Math.min(xs.size, config.maxSequenceLength)
-      Row(xs.slice(0, n), ys.slice(0, n), zs.slice(0, n))
+      val n = Math.min(x.size, config.maxSequenceLength)
+      val y = for (j <- 0 until n) yield if (ys(j) == "S" || ys(j) == "0") x(j) else ys(j)
+      val z = for (j <- 0 until n) yield if (zs(j) == "S" || ys(j) == "0") x(j) else zs(j)
+      Row(x.slice(0, n).mkString, y.mkString, z.mkString)
     })
   }
 
@@ -192,7 +194,7 @@ class M1(config: ConfigVDG) extends M(config) {
     import sparkSession.implicits._
     val input = sparkSession.sparkContext.parallelize(slices).toDF("text")
     val output = test(input, preprocessor, module)
-    output.map(row => row.getAs[Seq[String]](1).mkString).collect().mkString("\n")
+    output.map(row => row.getAs[Seq[String]](2).mkString).collect().mkString("\n")
   }
   
 }

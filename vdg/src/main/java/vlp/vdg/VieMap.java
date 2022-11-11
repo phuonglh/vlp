@@ -31,10 +31,11 @@ public class VieMap extends ConcurrentHashMap<Character, Character> implements S
   }
 
   public boolean contains(char c) {
-    return containsKey(c);
+    return containsKey(c) || containsValue(c);
   }
 
   public boolean contains(String c) {
-    return containsKey(c.charAt(0));
+    char x = c.charAt(0);
+    return containsKey(x) || containsValue(x);
   }
 }

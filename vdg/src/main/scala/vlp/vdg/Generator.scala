@@ -15,6 +15,10 @@ import org.slf4j.LoggerFactory
 import scopt.OptionParser
 import com.intel.analytics.bigdl.mkl.MKL
 import com.intel.analytics.zoo.pipeline.api.Net
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.StringType
 
 /**
   * Vietnamese Diacritics Generation
@@ -80,7 +84,7 @@ object Generator {
       opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of layers, default is 1")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the data set to use")
-      opt[Double]('o', "dropout").action((x, conf) => conf.copy(dropout = x)).text("dropout ratio, default is 0")
+      opt[Double]('u', "dropout").action((x, conf) => conf.copy(dropout = x)).text("dropout ratio, default is 0")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length in chars or tokens, depending on model type")
       opt[Int]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type to use, from 1 to 4")
@@ -90,8 +94,9 @@ object Generator {
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
       opt[Unit]('q', "peephole").action((x, conf) => conf.copy(peephole = true)).text("use 'peephole' connection with LSTM")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path, default is 'dat/txt/vtb.txt'")
-      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model path, default is 'dat/vdg/vtb/'")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'dat/vdg/vtb/'")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path, default is 'dat/txt/test.txt'")
+      opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path, default is 'dat/txt/test.out'")
       opt[Unit]('y', "jsonData").action((x, conf) => conf.copy(jsonData = true)).text("use JSON dataset, default is true for 'dat/txt/news.json'")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
       opt[Int]('e', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("encoder output size of the transformer")
@@ -128,7 +133,8 @@ object Generator {
         } else {
           "M" + config.modelType + "X" + config.numHeads + "B" + config.numBlocks + "O" + config.encoderOutputSize + "H" + config.hiddenUnits
         }
-        val path = config.modelPath + s"${modelSt}/"
+        // create a path to store this model using a given base modelPath
+        val path = config.modelPath + (if (config.modelPath.endsWith("/")) "" else "/") + s"${modelSt}/"
 
         val needDataModes = Set("train", "eval", "exp")
         if (needDataModes.contains(config.mode)) {
@@ -171,11 +177,16 @@ object Generator {
           }
         } else {
           config.mode match {
-            case "test" =>
-              val input = IO.readTextFiles(sparkContext, "dat/txt/test.txt")
+            case "predict" =>
+              val input = IO.readTextFiles(sparkContext, config.dataPath)
               val preprocessor = PipelineModel.load(path)
               val module = Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
-              vdg.test(input, preprocessor, module)
+              val rdd = vdg.predict(input, preprocessor, module)
+              val sparkSession = SparkSession.builder().getOrCreate()
+              import sparkSession.implicits._
+              val schema = StructType(Array(StructField("x", StringType, false), StructField("y", StringType, false), StructField("z", StringType, false)))
+              val df = sparkSession.createDataFrame(rdd, schema)
+              df.write.json(config.outputPath)
             case "run" =>
               val preprocessor = PipelineModel.load(path)
               val module = Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
@@ -183,6 +194,7 @@ object Generator {
               logger.info("Enter a non-accent text. Enter an empty line (Enter) to quit.")
               do {
                 text = scala.io.StdIn.readLine()
+                println(s"""You entered: "$text" """)
                 if (text.trim.nonEmpty) {
                   val output = vdg.test(text, preprocessor, module)
                   logger.info(output)
