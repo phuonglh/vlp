@@ -19,6 +19,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.RowFactory
 
 /**
   * Vietnamese Diacritics Generation
@@ -181,7 +182,9 @@ object Generator {
               val input = IO.readTextFiles(sparkContext, config.dataPath)
               val preprocessor = PipelineModel.load(path)
               val module = Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
-              val rdd = vdg.predict(input, preprocessor, module)
+              val rdd = vdg.predict(input, preprocessor, module).map { row => 
+                RowFactory.create(row.getAs[Seq[String]](0).mkString, row.getAs[Seq[String]](1).mkString, row.getAs[Seq[String]](2).mkString)
+              }
               val sparkSession = SparkSession.builder().getOrCreate()
               import sparkSession.implicits._
               val schema = StructType(Array(StructField("x", StringType, false), StructField("y", StringType, false), StructField("z", StringType, false)))

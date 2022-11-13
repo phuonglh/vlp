@@ -128,7 +128,7 @@ class M1(config: ConfigVDG) extends M(config) {
 
     logger.info("Training a RNN transducer model...")
     optimizer.setOptimMethod(new Adam[Float](learningRate = config.learningRate))
-      .setEndWhen(Trigger.or(Trigger.maxEpoch(config.epochs), Trigger.maxScore(0.99f)))
+      .setEndWhen(Trigger.or(Trigger.maxEpoch(config.epochs), Trigger.maxScore(0.993f)))
       .setValidation(Trigger.everyEpoch, validationRDD, Array(new TimeDistributedTop1Accuracy(paddingValue = 0)), config.batchSize)
       .setValidationSummary(validationSummary)
       .setTrainSummary(trainSummary)

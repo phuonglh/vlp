@@ -46,8 +46,8 @@ import org.apache.spark.sql.RowFactory
   * X = 10, Y = 60, then there are 6 executors. The executor memory = 4g. The batch size should be 4x10 = 40.
   *
   */
-object Generator {
-  final val logger = LoggerFactory.getLogger(Generator.getClass.getName)
+object VDG {
+  final val logger = LoggerFactory.getLogger(VDG.getClass.getName)
 
   def eval(config: ConfigVDG, vdg: M, dataSet: DataFrame, preprocessor: PipelineModel, module: Module[Float], trainingTime: Long = 0): Unit = {
     val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(Array(0.8, 0.1, 0.1), 150909L)
@@ -63,7 +63,7 @@ object Generator {
     val validationScore = vdg.eval(validationSet.limit(numValidationSamples.toInt), preprocessor, module)
     val testScore = vdg.eval(testSet.limit(numTestSamples.toInt), preprocessor, module)
     val eval = ConfigEval("vdg", config.dataPath, config.percentage, config.modelPath, config.modelType,
-      if (config.gru) "GRU"; else "LSTM", config.layers, config.hiddenUnits, config.encoderOutputSize, trainingScore, validationScore, testScore, trainingTime)
+      if (config.gru) "GRU"; else "LSTM", config.layers, config.hiddenUnits, trainingScore, validationScore, testScore, trainingTime)
     implicit val formats = Serialization.formats(NoTypeHints)
     val content = Serialization.writePretty(eval) + ",\n"
     Files.write(Paths.get(config.logPath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
@@ -72,7 +72,7 @@ object Generator {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
 
-    val parser = new OptionParser[ConfigVDG]("Generator") {
+    val parser = new OptionParser[ConfigVDG]("VDG") {
       head("vlp.vdg", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
@@ -90,8 +90,6 @@ object Generator {
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length in chars or tokens, depending on model type")
       opt[Int]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type to use, from 1 to 4")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
-      opt[Int]('w', "lookupWordSize").action((x, conf) => conf.copy(lookupWordSize = x)).text("word embedding size")
-      opt[Int]('c', "lookupCharacterSize").action((x, conf) => conf.copy(lookupCharacterSize = x)).text("character embedding size")
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
       opt[Unit]('q', "peephole").action((x, conf) => conf.copy(peephole = true)).text("use 'peephole' connection with LSTM")
       opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path, default is 'dat/txt/vtb.txt'")
@@ -100,7 +98,6 @@ object Generator {
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path, default is 'dat/txt/test.out'")
       opt[Unit]('y', "jsonData").action((x, conf) => conf.copy(jsonData = true)).text("use JSON dataset, default is true for 'dat/txt/news.json'")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
-      opt[Int]('e', "encoderOutputSize").action((x, conf) => conf.copy(encoderOutputSize = x)).text("encoder output size of the transformer")
     }
     parser.parse(args, ConfigVDG()) match {
       case Some(config) =>
@@ -108,7 +105,7 @@ object Generator {
         logger.info(Serialization.writePretty(config))
         val vdg = new M1(config) 
         val conf = Engine.createSparkConf()
-          .setAppName("Generator")
+          .setAppName("VDG")
           .setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
           .set("spark.cores.max", config.totalCores.toString)
@@ -123,11 +120,7 @@ object Generator {
         // use MKL to speedup the processing
         MKL.setNumThreads(4)
     
-        val modelSt = if (config.modelType < 4) {
-          "M" + config.modelType + (if (config.gru) "G"; else "L") + config.layers + "H" + config.hiddenUnits
-        } else {
-          "M" + config.modelType + "X" + config.numHeads + "B" + config.numBlocks + "O" + config.encoderOutputSize + "H" + config.hiddenUnits
-        }
+        val modelSt = "M" + config.modelType + (if (config.gru) "G"; else "L") + config.layers + "H" + config.hiddenUnits
         // create a path to store this model using a given base modelPath
         val path = config.modelPath + (if (config.modelPath.endsWith("/")) "" else "/") + s"${modelSt}/"
 

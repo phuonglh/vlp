@@ -128,7 +128,7 @@ class M1(config: ConfigVDG) extends M(config) {
 
     logger.info("Training a RNN transducer model...")
     optimizer.setOptimMethod(new Adam[Float](learningRate = config.learningRate))
-      .setEndWhen(Trigger.maxEpoch(config.epochs))
+      .setEndWhen(Trigger.or(Trigger.maxEpoch(config.epochs), Trigger.maxScore(0.99f)))
       .setValidation(Trigger.everyEpoch, validationRDD, Array(new TimeDistributedTop1Accuracy(paddingValue = 0)), config.batchSize)
       .setValidationSummary(validationSummary)
       .setTrainSummary(trainSummary)
@@ -172,9 +172,10 @@ class M1(config: ConfigVDG) extends M(config) {
       val ys = p._1.getAs[Seq[String]](1) // ys will be the same as x if x is non-accented
       val zs = p._2
       val n = Math.min(x.size, config.maxSequenceLength)
+      // recover original letters or numbers
       val y = for (j <- 0 until n) yield if (ys(j) == "S" || ys(j) == "0") x(j) else ys(j)
       val z = for (j <- 0 until n) yield if (zs(j) == "S" || ys(j) == "0") x(j) else zs(j)
-      Row(x.slice(0, n).mkString, y.mkString, z.mkString)
+      Row(x.slice(0, n), y.slice(0, n), z.slice(0, n))
     })
   }
 

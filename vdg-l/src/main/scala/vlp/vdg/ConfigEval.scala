@@ -8,8 +8,7 @@ case class ConfigEval(
   modelType: Int = 0,
   recurrentType: String = "gru",
   numLayers: Int = 1,
-  hiddenUnits: Int = 50,
-  encoderOutputSize: Int = 128, // for use with Transformers
+  hiddenUnits: Int = 64,
   trainingScore: Double = 0,
   validationScore: Double = 0,
   testScore: Double = 0,

@@ -44,11 +44,11 @@ case class ConfigVDG(
   dataPath: String = "dat/vdg/ftel/10k.txt",
   percentage: Double = 1.0, 
   modelPath: String = "dat/vdg/ftel/",
-  batchSize: Int = 32,
+  batchSize: Int = 64,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 100,
   learningRate: Double = 0.001,
-  epochs: Int = 100,
+  epochs: Int = 50,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
   peephole: Boolean = false,

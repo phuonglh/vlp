@@ -27,7 +27,7 @@ lazy val commonSettings = Seq(
 
 lazy val root = (project in file("."))
     .settings(commonSettings, 
-      assembly / mainClass := Some("vlp.vdg.Generator"),
+      assembly / mainClass := Some("vlp.vdg.VDG"),
       assembly / assemblyJarName := "vdgl.jar",
       libraryDependencies ++= Seq(),
    run / fork := true
