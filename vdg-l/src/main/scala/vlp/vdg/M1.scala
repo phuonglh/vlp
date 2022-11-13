@@ -131,6 +131,7 @@ class M1(config: ConfigVDG) extends M(config) {
     val validationSummary = ValidationSummary(appName = modelSt, logDir = "/tmp/vdg/summary/")
 
     logger.info("Training a RNN transducer model...")
+    logger.info(s"The model is ${model}")
     optimizer.setOptimMethod(new Adam[Float](learningRate = config.learningRate))
       .setEndWhen(Trigger.or(Trigger.maxEpoch(config.epochs), Trigger.maxScore(0.993f)))
       .setValidation(Trigger.everyEpoch, validationRDD, Array(new TimeDistributedTop1Accuracy(paddingValue = 0)), config.batchSize)
