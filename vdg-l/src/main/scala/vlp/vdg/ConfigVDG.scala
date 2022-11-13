@@ -49,7 +49,7 @@ case class ConfigVDG(
   maxSequenceLength: Int = 100,
   learningRate: Double = 0.001,
   epochs: Int = 50,
-  layers: Int = 1, // number of bi-recurrent layers
+  layers: Int = 2, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
   peephole: Boolean = false,
   hiddenUnits: Int = 64, // number of hidden units in each recurrent layer
