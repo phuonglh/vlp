@@ -16,8 +16,6 @@ import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric.Nu
 import com.intel.analytics.bigdl.dllib.utils.{T, Table}
 import com.intel.analytics.bigdl.dllib.feature.dataset.{PaddingParam, Sample}
 
-
-
 import scala.collection.mutable
 
 /**

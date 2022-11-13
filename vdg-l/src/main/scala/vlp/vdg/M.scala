@@ -55,8 +55,8 @@ abstract class M(config: ConfigVDG) extends Serializable {
   def eval(dataset: DataFrame, preprocessor: PipelineModel, module: Module[Float]) = {
     val result = test(dataset, preprocessor, module)
     result.cache()
-    // compute the total number of visible characters in the input sequences
-    val numChars = result.map(row => row.getAs[Seq[String]](0).mkString.filterNot(_ == ' ').size).sum
+    // // compute the total number of visible characters in the input sequences (the sum operation may be slow for large data set)
+    // val numChars = result.map(row => row.getAs[Seq[String]](0).mkString.filterNot(_ == ' ').size).sum
     val rdd = result.map(row => {
       (row.getAs[Seq[String]](1).mkString.filterNot(_ == ' '), row.getAs[Seq[String]](2).mkString.filterNot(_ == ' '))
     })
@@ -68,11 +68,7 @@ abstract class M(config: ConfigVDG) extends Serializable {
       (count, pair._1.size)
     }).reduce { case (u, v) => (u._1 + v._1, u._2 + v._2) }
     logger.info(s"accuracy = $corrects/$total = ${corrects.toDouble/total}")
-    if (total != numChars) { // M2 or M3
-      (corrects + (numChars - total))/(numChars.toDouble)
-    } else { // M1
-      corrects/(total.toDouble)
-    }
+    corrects/(total.toDouble)
   }
 
   /**
