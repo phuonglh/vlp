@@ -44,7 +44,7 @@ case class ConfigVDG(
   dataPath: String = "dat/crawl.txt",
   percentage: Double = 0.1, // 10% of the data set to use
   modelPath: String = "bin/",
-  batchSize: Int = 32,
+  batchSize: Int = 64,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 100,
   learningRate: Double = 0.001,
@@ -58,8 +58,6 @@ case class ConfigVDG(
   outputPath: String = "dat/crawl.out", 
   logPath: String = "dat/scores.json",
   modelType: Int = 1,
-  lookupWordSize: Int = 300,
-  lookupCharacterSize: Int = 30,
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
   verbose: Boolean = false
 ) extends Serializable

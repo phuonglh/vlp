@@ -48,9 +48,10 @@ import org.apache.spark.sql.RowFactory
   */
 object VDG {
   final val logger = LoggerFactory.getLogger(VDG.getClass.getName)
+  final val partition = Array(0.8, 0.1, 0.1)
 
   def eval(config: ConfigVDG, vdg: M, dataSet: DataFrame, preprocessor: PipelineModel, module: Module[Float], trainingTime: Long = 0): Unit = {
-    val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(Array(0.8, 0.1, 0.1), 150909L)
+    val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(partition, 150909L)
     logger.info("#(samples) = " + dataSet.count())
     logger.info("#(trainingSamples) = " + trainingSet.count())
     logger.info("#(validationSamples) = " + validationSet.count())
@@ -130,7 +131,7 @@ object VDG {
             IO.readJsonFiles(sparkContext, config.dataPath).sample(config.percentage, 220712L)
           else IO.readTextFiles(sparkContext, config.dataPath).sample(config.percentage, 220712L)
 
-          val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(Array(0.75, 0.15, 0.15), 150909L)
+          val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(partition, 150909L)
           logger.info("#(samples) = " + dataSet.count())
           logger.info("#(trainingSamples) = " + trainingSet.count())
           logger.info("#(validationSamples) = " + validationSet.count())
