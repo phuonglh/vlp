@@ -3,13 +3,14 @@ package vlp.vdg
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-import com.intel.analytics.bigdl.visualization.ValidationSummary
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.apache.log4j.{Level, Logger}
+
+import com.intel.analytics.bigdl.dllib.visualization.ValidationSummary
 
 case class News(url: String, sentences: List[String])
 

@@ -3,8 +3,9 @@ package vlp.vdg
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.utils.Engine
+import com.intel.analytics.bigdl.dllib.utils.Engine
+import com.intel.analytics.bigdl.dllib.utils.serializer.ModuleLoader
+
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
@@ -14,7 +15,6 @@ import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 import scopt.OptionParser
 import com.intel.analytics.bigdl.mkl.MKL
-import com.intel.analytics.zoo.pipeline.api.Net
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types.StructField
@@ -148,11 +148,7 @@ object VDG {
               eval(config, vdg, dataSet, preprocessor, module, trainingTime)
             case "eval" =>
               val preprocessor = PipelineModel.load(path)
-              val module = if (config.modelType < 4) {
-                Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
-              } else {
-                Net.load[Float](path + "vdg.bigdl", path + "vdg.bin")
-              }
+              val module = ModuleLoader.loadFromFile[Float](path + "vdg.bigdl", path + "vdg.bin")
               eval(config, vdg, dataSet, preprocessor, module)
             case "exp" =>
               for (m <- 1 to 3) {
@@ -169,7 +165,7 @@ object VDG {
             case "predict" =>
               val input = IO.readTextFiles(sparkContext, config.dataPath)
               val preprocessor = PipelineModel.load(path)
-              val module = Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
+              val module = ModuleLoader.loadFromFile[Float](path + "vdg.bigdl", path + "vdg.bin")
               val rdd = vdg.predict(input, preprocessor, module).map { row => 
                 RowFactory.create(row.getAs[Seq[String]](0).mkString, row.getAs[Seq[String]](1).mkString, row.getAs[Seq[String]](2).mkString)
               }
@@ -180,7 +176,7 @@ object VDG {
               df.write.json(config.outputPath)
             case "run" =>
               val preprocessor = PipelineModel.load(path)
-              val module = Module.loadModule[Float](path + "vdg.bigdl", path + "vdg.bin")
+              val module = ModuleLoader.loadFromFile[Float](path + "vdg.bigdl", path + "vdg.bin")
               var text = ""
               logger.info("Enter a non-accent text. Enter an empty line (Enter) to quit.")
               do {

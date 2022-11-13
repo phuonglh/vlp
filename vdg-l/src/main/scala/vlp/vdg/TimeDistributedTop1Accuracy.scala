@@ -1,9 +1,9 @@
 package vlp.vdg
 
-import com.intel.analytics.bigdl.nn.abstractnn.Activity
-import com.intel.analytics.bigdl.optim.{AccuracyResult, ValidationMethod, ValidationResult}
-import com.intel.analytics.bigdl.tensor.Tensor
-import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.Activity
+import com.intel.analytics.bigdl.dllib.optim.{AccuracyResult, ValidationMethod, ValidationResult}
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric
 
 /**
   * phuonglh
@@ -30,5 +30,5 @@ class TimeDistributedTop1Accuracy(paddingValue: Int = -1)(implicit ev: TensorNum
     }
     new AccuracyResult(correct, count)
   }
-  override def format(): String = "TimeDistributedTop1Accuracy"
+  override def format(): String = "Time Distributed Top-1 Accuracy"
 }

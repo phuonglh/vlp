@@ -1,6 +1,6 @@
 // phuonglh, November 11, 2022
-val sparkVersion = "3.2.0"
-val bigdlVersion = "0.13.0"
+val sparkVersion = "3.1.2"
+val bigdlVersion = "2.1.0"
 
 javacOptions ++= Seq("-encoding", "UTF-8")
 scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-feature", "-unchecked",
@@ -15,12 +15,8 @@ lazy val commonSettings = Seq(
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
-    // BigDL version 0.13.0 uses Spark 3.0.0 
-    "com.intel.analytics.bigdl" % "bigdl-SPARK_3.0" % "0.13.0" % "provided", 
-    // Analytics Zoo version 0.11.0 uses BigDL version 0.13.0
-    "com.intel.analytics.zoo" % "analytics-zoo-bigdl_0.13.0-spark_3.0.0" % "0.11.0" % "provided",
-    "com.intel.analytics.zoo" % "zoo-core-mkl-mac" % "0.11.0" % "provided",
-    "com.intel.analytics.zoo" % "zoo-core-mkl-linux" % "0.11.0" % "provided",
+    "com.intel.analytics.bigdl" % "bigdl-dllib-spark_3.1.2" % bigdlVersion,
+     "com.google.protobuf" % "protobuf-java" % "3.21.9",
     "com.github.scopt" %% "scopt" % "3.7.1"
   )
 )
