@@ -59,7 +59,6 @@ object VDG {
     val numTrainingSamples = (trainingSet.count() / config.batchSize) * config.batchSize
     val numValidationSamples = (validationSet.count() / config.batchSize) * config.batchSize
     val numTestSamples = (testSet.count() / config.batchSize) * config.batchSize
-
     val trainingScore = vdg.eval(trainingSet.limit(numTrainingSamples.toInt), preprocessor, module)
     val validationScore = vdg.eval(validationSet.limit(numValidationSamples.toInt), preprocessor, module)
     val testScore = vdg.eval(testSet.limit(numTestSamples.toInt), preprocessor, module)
@@ -163,9 +162,10 @@ object VDG {
         } else {
           config.mode match {
             case "predict" =>
-              val input = IO.readTextFiles(sparkContext, config.dataPath)
+              val input = IO.readTextFiles(sparkContext, config.inputPath)
               val preprocessor = PipelineModel.load(path)
               val module = ModuleLoader.loadFromFile[Float](path + "vdg.bigdl", path + "vdg.bin")
+              logger.info(module.toString)
               val rdd = vdg.predict(input, preprocessor, module).map { row => 
                 RowFactory.create(row.getAs[Seq[String]](0).mkString, row.getAs[Seq[String]](1).mkString, row.getAs[Seq[String]](2).mkString)
               }
