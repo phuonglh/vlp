@@ -35,7 +35,6 @@ public class VieMap extends ConcurrentHashMap<Character, Character> implements S
   }
 
   public boolean contains(String c) {
-    char x = c.charAt(0);
-    return containsKey(x) || containsValue(x);
+    return this.contains(c.charAt(0));
   }
 }

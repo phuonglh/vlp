@@ -176,8 +176,9 @@ class M1(config: ConfigVDG) extends M(config) {
       val zs = p._2
       val n = Math.min(x.size, config.maxSequenceLength)
       // recover original letters or numbers
+      val vm = new VieMap()
       val y = for (j <- 0 until n) yield if (ys(j) == "S" || ys(j) == "0") x(j) else ys(j)
-      val z = for (j <- 0 until n) yield if (zs(j) == "S" || ys(j) == "0") x(j) else zs(j)
+      val z = for (j <- 0 until n) yield if (zs(j) == "S" || ys(j) == "0" || !vm.contains(zs(j))) x(j) else zs(j)
       Row(x.slice(0, n), y.slice(0, n), z.slice(0, n))
     })
   }
