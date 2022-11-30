@@ -170,15 +170,16 @@ class M1(config: ConfigVDG) extends M(config) {
       })
       zs
     })
+    val vm = new VieMap()
     df0.select("x", "y").rdd.zip(predictions).map(p => {
       val x = p._1.getAs[Seq[String]](0)
       val ys = p._1.getAs[Seq[String]](1) // ys will be the same as x if x is non-accented
       val zs = p._2
       val n = Math.min(x.size, config.maxSequenceLength)
       // recover original letters or numbers
-      val vm = new VieMap()
+      val b = x.map(c => if (vm.contains(c)) true else false) // b(j) = true if x(j) need to be predict (i.e., 'a', 'd')
       val y = for (j <- 0 until n) yield if (ys(j) == "S" || ys(j) == "0") x(j) else ys(j)
-      val z = for (j <- 0 until n) yield if (zs(j) == "S" || ys(j) == "0" || !vm.contains(zs(j))) x(j) else zs(j)
+      val z = for (j <- 0 until n) yield if (zs(j) == "S" || ys(j) == "0" || !b(j)) x(j) else zs(j)
       Row(x.slice(0, n), y.slice(0, n), z.slice(0, n))
     })
   }
