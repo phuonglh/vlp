@@ -20,16 +20,13 @@ import vlp.tok.Tokenizer
   */
 class LDA(val sparkContext: SparkContext, val config: ConfigLDA) {
   final val logger = LoggerFactory.getLogger(getClass.getName)
-  var numCats: Int = 0
   val sparkSession = SparkSession.builder().getOrCreate()
   import sparkSession.implicits._
 
   def createDataset(jsonPath: String): Dataset[Document] = {
-    val data = LDA.tokenize(sparkContext, jsonPath).toDF("category", "text").as[Document]
-    numCats = data.select("category").distinct().count().toInt
-    logger.info("#(categories) = " + numCats)
-    val g = data.groupBy("category").count()
-    g.show(false)
+    val data = SparkSession.getActiveSession.get.read.json(jsonPath).as[Document]
+    if (config.verbose)
+      data.show()
     data
   }
 
@@ -75,7 +72,7 @@ class LDA(val sparkContext: SparkContext, val config: ConfigLDA) {
     */
   def predict(document: Document, model: PipelineModel): Map[String, Double] = {
     import sparkSession.implicits._
-    val dataset = sparkSession.sparkContext.parallelize(List(document)).toDF("category", "text").as[Document]
+    val dataset = sparkSession.sparkContext.parallelize(List(document)).toDF("text").as[Document]
     val output = model.transform(dataset)
     val first = output.select("topicDistribution").head()
     val topicValues = first.getAs[DenseVector](0).values.zipWithIndex
@@ -102,31 +99,6 @@ object LDA {
 
   final val logger = LoggerFactory.getLogger(getClass.getName)
   final val tokenizer = new Tokenizer()
-
-  def tokenize(news: News): Document = {
-    val text = news.sentences.flatMap(sentence => {
-      tokenizer.tokenize(sentence).map(token => token._3)
-    }).mkString(" ")
-    val u = news.url.indexOf("//")
-    val v = news.url.indexOf("/", u + 2)
-    Document(news.url.substring(u + 2, v), text)
-  }
-
-  /**
-    * Reads a JSON input file, builds a collection of news with more than 5 sentences.
-    * @param sparkContext
-    * @param inputPath
-    * @return a RDD of documents
-    */
-  def tokenize(sparkContext: SparkContext, inputPath: String): RDD[Document] = {
-    implicit val formats = Serialization.formats(NoTypeHints)
-    val lines = scala.io.Source.fromFile(inputPath, "UTF-8").getLines().toList
-    val news = lines.map(json => Serialization.read[News](json)).filter(n => n.sentences.size >= 5)
-    logger.info(s"#(news with at least 5 sentences) = ${news.size}")
-    logger.info("Start word segmenting the news to build document collection...")
-    sparkContext.parallelize(news).map { news => tokenize(news) }
-  }
-
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
@@ -165,7 +137,7 @@ object LDA {
           case "predict" =>
             val model = PipelineModel.load(config.modelPath)
             logger.info(lda.topicTerms(model).toString())
-            val document = Document("NA", "Do_vậy , Chủ_tịch FPT Software khẳng_định năng_suất lao_động là yếu_tố sống_còn của các doanh_nghiệp . Tuy_nhiên , việc nhân_viên \" chăm_chỉ hơn mỗi ngày  nhiệt_tình hơn mỗi giờ \" + " +
+            val document = Document("Do_vậy , Chủ_tịch FPT Software khẳng_định năng_suất lao_động là yếu_tố sống_còn của các doanh_nghiệp . Tuy_nhiên , việc nhân_viên \" chăm_chỉ hơn mỗi ngày  nhiệt_tình hơn mỗi giờ \" + " +
               "thực_tế không giải_quyết được bao_nhiêu . Điều quan_trọng , giúp biến_đổi về \" chất \" , là phải ứng_dụng chuyển_đổi số .")
             val result = lda.predict(document, model)
             logger.info(result.toString)
