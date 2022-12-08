@@ -22,6 +22,7 @@ object Preprocessor {
     "TT" -> "Thị trấn",
     """T\.[Tt]rấn""" ->	"Thị trấn",
     """TX\.""" -> "Thị xã ",
+    "HCM" -> "Hồ Chí Minh", 
     """\(.+\)""" -> "", // remove everything inside parentheses    
   )
 

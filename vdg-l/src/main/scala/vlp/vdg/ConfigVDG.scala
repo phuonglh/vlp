@@ -41,12 +41,12 @@ case class ConfigVDG(
   mode: String = "eval",
   minFrequency: Int = 3,
   jsonData: Boolean = false,
-  dataPath: String = "dat/crawl.txt",
-  percentage: Double = 0.1, // 10% of the data set to use
+  dataPath: String = "dat/hcm.txt",
+  percentage: Double = 0.5, // 50% of the data set to use
   modelPath: String = "bin/",
   batchSize: Int = 64,
   epsilon: Double = 1E-5,
-  maxSequenceLength: Int = 100,
+  maxSequenceLength: Int = 150,
   learningRate: Double = 0.001,
   epochs: Int = 100,
   layers: Int = 1, // number of bi-recurrent layers
@@ -54,8 +54,8 @@ case class ConfigVDG(
   peephole: Boolean = false,
   hiddenUnits: Int = 64, // number of hidden units in each recurrent layer
   dropout: Double = 0,
-  inputPath: String = "dat/crawl.txt",
-  outputPath: String = "dat/crawl.out", 
+  inputPath: String = "dat/ftel-3.txt",
+  outputPath: String = "dat/ftel-3", 
   logPath: String = "dat/scores.json",
   modelType: Int = 1,
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
