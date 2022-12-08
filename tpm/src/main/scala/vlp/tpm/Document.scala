@@ -1,3 +1,3 @@
 package vlp.tpm
 
-case class Document(category: String, text: String)
+case class Document(text: String)
