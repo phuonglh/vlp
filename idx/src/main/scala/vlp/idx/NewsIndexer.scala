@@ -196,11 +196,11 @@ object NewsIndexer {
 
   def vietnamnetInSection(section: String): Set[String] = {
     val categories = section match {
-      case "kinh-doanh" => Array("tai-chinh", "dau-tu", "thi-truong", "doanh-nhan", "tu-van-tai-chinh")
+      case "kinh-doanh" => Array("tai-chinh", "dau-tu", "thi-truong", "doanh-nhan", "tu-van-tai-chinh", "diem-tin-dung-cong-dan-4-0")
       case "thoi-su" => Array("chong-tham-nhung", "quoc-hoi", "an-toan-giao-thong", "moi-truong", "quoc-phong")
       case "the-gioi" => Array("binh-luan-quoc-te", "chan-dung", "ho-so", "the-gioi-do-day", "viet-nam-va-the-gioi", "quan-su")
       case "giao-duc" => Array("nguoi-thay", "tuyen-sinh", "du-hoc", "guong-mat-tre", "goc-phu-huynh", "khoa-hoc")
-      case "doi-song" => Array("gia-dinh", "song-la", "gioi-tre", "gioi-tre", "me-va-be", "du-lich", "am-thuc", "me-va-be")
+      case "doi-song" => Array("gia-dinh", "song-la", "gioi-tre", "tam-su", "me-va-be", "am-thuc", "meo-vat")
       case _ => Array("")
     }
     val urls = mutable.Set[String]()
@@ -245,7 +245,7 @@ object NewsIndexer {
   }
 
   def vietnamFinance: Set[String] = {
-    val categories = Array("tieu-diem.htm", "tai-chinh.htm", "ngan-hang.htm", "thi-truong.htm", "do-thi.htm", "tai-chinh-quoc-te",
+    val categories = Array("tieu-diem.htm", "tai-chinh.htm", "ngan-hang.htm", "thi-truong.htm", "do-thi.htm", "tai-chinh-quoc-te.htm",
       "ma.htm", "startup.htm", "nhan-vat.htm", "thue.htm", "tai-chinh-tieu-dung.htm", "dien-dan-vnf.htm")
     val urls = mutable.Set[String]()
     for (category <- categories)
@@ -372,14 +372,14 @@ object NewsIndexer {
     // val novelUrls = urls.diff(existingURLs)
     // logger.info(s"#(novelURLs) = ${novelUrls.size}")
 
-    val kafkaProducer = Kafka.createProducer("vlp.group:9092")
+    // val kafkaProducer = Kafka.createProducer("vlp.group:9092")
     val news = urls.par.map(url => {
       logger.info(url)
       val content = runWithTimeout(5000)(extract(url))
-      kafkaProducer.send(new ProducerRecord[String, String]("news", url, content.get))
+      // kafkaProducer.send(new ProducerRecord[String, String]("news", url, content.get))
       Page(url, content.get, new Date())
     }).toList
-    kafkaProducer.close()
+    // kafkaProducer.close()
 
     if (news.nonEmpty) {
       val accept = (s: String) => (s.size >= 500 && !s.contains("<div") && !s.contains("<table") && !s.contains("</p>"))
