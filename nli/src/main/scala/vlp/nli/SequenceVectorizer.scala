@@ -11,8 +11,8 @@ import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
 
 /**
   * A sequence vectorizer transforms a sequence of tokens into a sequence of indices
-  * using a dictionary. The unknown tokens are indexed by 0. The first token is index
-  * by 1 and the last token is index by size(dictionary).
+  * using a dictionary. The unknown tokens are indexed by 0. The first token is indexed
+  * by 1 and the last token is indexed by size(dictionary).
   * 
   * See also [[vlp.vdg.SequenceVectorizer]]
   *
