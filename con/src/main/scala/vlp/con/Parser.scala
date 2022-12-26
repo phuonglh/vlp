@@ -21,6 +21,12 @@ import org.apache.log4j.{Logger, Level}
 import com.intel.analytics.bigdl.dllib.feature.image.ImageChannelNormalize
 import com.intel.analytics.bigdl.dllib.keras.objectives.BinaryCrossEntropy
 import com.intel.analytics.bigdl.dllib.optim.Top1Accuracy
+import com.intel.analytics.bigdl.dllib.feature.image.RowToImageFeature
+import com.intel.analytics.bigdl.dllib.feature.image.ImageResize
+import com.intel.analytics.bigdl.dllib.feature.image.ImageCenterCrop
+import com.intel.analytics.bigdl.dllib.feature.image.ImageMatToTensor
+import com.intel.analytics.bigdl.dllib.feature.image.ImageFeatureToTensor
+import com.intel.analytics.bigdl.dllib.feature.common.ChainedPreprocessing
 
 
 object Parser {
@@ -51,11 +57,11 @@ object Parser {
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
-    val conf = Engine.createSparkConf().setAppName("Parser").setMaster("local[4]")
+    val conf = Engine.createSparkConf().setAppName("Parser").setMaster("local[*]")
       .set("spark.executor.cores", "1")
       .set("spark.cores.max", "8")
-      .set("spark.executor.memory", "4g")
-      .set("spark.driver.memory", "4g")
+      .set("spark.executor.memory", "8g")
+      .set("spark.driver.memory", "8g")
     val sparkContext = new SparkContext(conf)
     Engine.init
 
@@ -65,19 +71,21 @@ object Parser {
       if (new Path(row.getString(0)).getName.contains("cat")) 1 else 2 
     }
     val imagePath = "dat/cats_dogs/demo/"
-    val imageDF = NNImageReader.readImages(imagePath, sc, resizeH = 150, resizeW = 150)
+    val imageDF = NNImageReader.readImages(imagePath, sc, resizeH = 256, resizeW = 256)
     val df = imageDF.withColumn("label", createLabel(col("image")))
     df.printSchema()
     df.show()
     // train/test split
     val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 80L)
 
-    val model = buildMode(Shape(3, 150, 150))
+    val model = buildMode(Shape(3, 256, 256))
     model.compile(optimizer = new Adam(), loss = BinaryCrossEntropy(), metrics = List(new Top1Accuracy()))
 
     // preprocess the images before training
-    val transformers = ImageChannelNormalize(0, 0, 0, 255, 255, 255)
-    model.fit(trainingDF, batchSize = 64, nbEpoch = 10, labelCols = Array("label"), 
+    // val transformers = ChainedPreprocessing(Array(RowToImageFeature(), ImageResize(256, 256), 
+    //   ImageCenterCrop(224, 224), ImageChannelNormalize(123, 117, 104), ImageMatToTensor(), ImageFeatureToTensor()))
+    val transformers = ImageChannelNormalize(123, 117, 104)
+    model.fit(trainingDF, batchSize = 64, nbEpoch = 5, labelCols = Array("label"), 
       transform = transformers, valX = validationDF)
 
     sc.stop()
