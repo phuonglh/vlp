@@ -77,7 +77,8 @@ object Parser {
 
     // preprocess the images before training
     val transformers = ImageChannelNormalize(0, 0, 0, 255, 255, 255)
-    model.fit(trainingDF, batchSize = 64, nbEpoch = 10, labelCols = Array("label"), transform = transformers, valX = validationDF)
+    model.fit(trainingDF, batchSize = 64, nbEpoch = 10, labelCols = Array("label"), 
+      transform = transformers, valX = validationDF)
 
     sc.stop()
   }
