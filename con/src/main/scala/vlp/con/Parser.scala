@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 
 object Parser {
   
- def buildMode(inputShape: Shape): Sequential[Float] = {
+ def buildModel(inputShape: Shape): Sequential[Float] = {
     val model = Sequential()
     model.add(Conv2D(32, 3, 3, inputShape = inputShape))
     model.add(Activation("relu"))
@@ -114,7 +114,7 @@ object Parser {
         // train/test split
         val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 80L)
 
-        val model = buildMode(Shape(3, 256, 256))
+        val model = buildModel(Shape(3, 256, 256))
         model.compile(optimizer = new Adam(), loss = BinaryCrossEntropy(), metrics = List(new Top1Accuracy()))
 
         // preprocess the images before training

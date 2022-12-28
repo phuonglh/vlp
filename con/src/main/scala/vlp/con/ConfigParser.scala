@@ -34,8 +34,8 @@ case class ConfigParser(
   master: String = "local[4]",
   totalCores: Int = 4,    // X
   executorCores: Int = 4, // Y ==> there is Y/X executors 
-  executorMemory: String = "12g", // Z
-  driverMemory: String = "3g", // D
+  executorMemory: String = "8g", // Z
+  driverMemory: String = "8g", // D
   mode: String = "eval",
   minFrequency: Int = 3,
   dataPath: String = "dat/hcm.txt",
