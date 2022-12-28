@@ -28,6 +28,11 @@ import com.intel.analytics.bigdl.dllib.feature.image.ImageMatToTensor
 import com.intel.analytics.bigdl.dllib.feature.image.ImageFeatureToTensor
 import com.intel.analytics.bigdl.dllib.feature.common.ChainedPreprocessing
 
+import org.json4s._
+import org.json4s.jackson.Serialization
+import scopt.OptionParser
+import org.slf4j.LoggerFactory
+
 
 object Parser {
   
@@ -57,37 +62,71 @@ object Parser {
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
-    val conf = Engine.createSparkConf().setAppName("Parser").setMaster("local[*]")
-      .set("spark.executor.cores", "1")
-      .set("spark.cores.max", "8")
-      .set("spark.executor.memory", "8g")
-      .set("spark.driver.memory", "8g")
-    val sparkContext = new SparkContext(conf)
-    Engine.init
+    val logger = LoggerFactory.getLogger(Parser.getClass.getName)
 
-    val sc = NNContext.initNNContext("vlp.con.Parser")
-    // read the "cats_dogs/train" folder and create labeled images: cat -> 1, dog -> 2
-    val createLabel = udf { row: Row => 
-      if (new Path(row.getString(0)).getName.contains("cat")) 1 else 2 
+
+    val opts = new OptionParser[ConfigParser]("Parser") {
+      head("vlp.con", "1.0")
+      opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
+      opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
+      opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
+      opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 8g")
+      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
+      opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
+      opt[Int]('h', "hiddenUnits").action((x, conf) => conf.copy(hiddenUnits = x)).text("number of hidden units in each layer")
+      opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of layers, default is 1")
+      opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
+      opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the data set to use, default is 0.5")
+      opt[Double]('u', "dropout").action((x, conf) => conf.copy(dropout = x)).text("dropout ratio, default is 0")
+      opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
+      opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length")
+      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
+      opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
+      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
+      opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
+      opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input data path")
+      opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
+      opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
     }
-    val imagePath = "dat/cats_dogs/demo/"
-    val imageDF = NNImageReader.readImages(imagePath, sc, resizeH = 256, resizeW = 256)
-    val df = imageDF.withColumn("label", createLabel(col("image")))
-    df.printSchema()
-    df.show()
-    // train/test split
-    val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 80L)
+    opts.parse(args, ConfigParser()) match {
+      case Some(config) =>
+        implicit val formats = Serialization.formats(NoTypeHints)
+        println(Serialization.writePretty(config))
 
-    val model = buildMode(Shape(3, 256, 256))
-    model.compile(optimizer = new Adam(), loss = BinaryCrossEntropy(), metrics = List(new Top1Accuracy()))
+        val conf = Engine.createSparkConf().setAppName("Parser").setMaster("local[*]")
+          .set("spark.executor.cores", config.executorCores.toString)
+          .set("spark.cores.max", config.totalCores.toString)
+          .set("spark.executor.memory", config.executorMemory)
+          .set("spark.driver.memory", config.driverMemory)
+        val sparkContext = new SparkContext(conf)
+        Engine.init
 
-    // preprocess the images before training
-    // val transformers = ChainedPreprocessing(Array(RowToImageFeature(), ImageResize(256, 256), 
-    //   ImageCenterCrop(224, 224), ImageChannelNormalize(123, 117, 104), ImageMatToTensor(), ImageFeatureToTensor()))
-    val transformers = ImageChannelNormalize(123, 117, 104)
-    model.fit(trainingDF, batchSize = 64, nbEpoch = 5, labelCols = Array("label"), 
-      transform = transformers, valX = validationDF)
+        val sc = NNContext.initNNContext("vlp.con.Parser")
+        // read the "cats_dogs/train" folder and create labeled images: cat -> 1, dog -> 2
+        val createLabel = udf { row: Row => 
+          if (new Path(row.getString(0)).getName.contains("cat")) 1 else 2 
+        }
+        val imagePath = "dat/cats_dogs/demo/"
+        val imageDF = NNImageReader.readImages(imagePath, sc, resizeH = 256, resizeW = 256)
+        val df = imageDF.withColumn("label", createLabel(col("image")))
+        df.printSchema()
+        df.show()
+        // train/test split
+        val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 80L)
 
-    sc.stop()
+        val model = buildMode(Shape(3, 256, 256))
+        model.compile(optimizer = new Adam(), loss = BinaryCrossEntropy(), metrics = List(new Top1Accuracy()))
+
+        // preprocess the images before training
+        // val transformers = ChainedPreprocessing(Array(RowToImageFeature(), ImageResize(256, 256), 
+        //   ImageCenterCrop(224, 224), ImageChannelNormalize(123, 117, 104), ImageMatToTensor(), ImageFeatureToTensor()))
+        val transformers = ImageChannelNormalize(123, 117, 104)
+        model.fit(trainingDF, batchSize = 64, nbEpoch = 5, labelCols = Array("label"), 
+          transform = transformers, valX = validationDF)
+
+        sc.stop()
+      case None => {}
+    }
   }
 }
