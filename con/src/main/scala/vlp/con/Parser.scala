@@ -65,8 +65,8 @@ object Parser {
     val logger = LoggerFactory.getLogger(Parser.getClass.getName)
 
 
-    val opts = new OptionParser[ConfigParser]("Parser") {
-      head("vlp.con", "1.0")
+    val opts = new OptionParser[ConfigParser](getClass().getName()) {
+      head("vlp.con.Parser", "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
@@ -94,15 +94,14 @@ object Parser {
         implicit val formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
 
-        val conf = Engine.createSparkConf().setAppName("Parser").setMaster("local[*]")
+        val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
           .set("spark.cores.max", config.totalCores.toString)
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.driver.memory", config.driverMemory)
-        val sparkContext = new SparkContext(conf)
+        val sc = new SparkContext(conf)
         Engine.init
 
-        val sc = NNContext.initNNContext("vlp.con.Parser")
         // read the "cats_dogs/train" folder and create labeled images: cat -> 1, dog -> 2
         val createLabel = udf { row: Row => 
           if (new Path(row.getString(0)).getName.contains("cat")) 1 else 2 
@@ -122,7 +121,7 @@ object Parser {
         // val transformers = ChainedPreprocessing(Array(RowToImageFeature(), ImageResize(256, 256), 
         //   ImageCenterCrop(224, 224), ImageChannelNormalize(123, 117, 104), ImageMatToTensor(), ImageFeatureToTensor()))
         val transformers = ImageChannelNormalize(123, 117, 104)
-        model.fit(trainingDF, batchSize = 64, nbEpoch = 5, labelCols = Array("label"), 
+        model.fit(trainingDF, batchSize = config.batchSize, nbEpoch = 5, labelCols = Array("label"), 
           transform = transformers, valX = validationDF)
 
         sc.stop()

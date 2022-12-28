@@ -31,17 +31,17 @@ package vlp.con
   * @param verbose verbose mode or not
   */
 case class ConfigParser(
-  master: String = "local[*]",
-  totalCores: Int = 8,    // X=8
-  executorCores: Int = 8, // Y=8 ==> there is Y/X = 1 executors 
-  executorMemory: String = "12g", // Z=8g
-  driverMemory: String = "8g", // D=8g 
+  master: String = "local[4]",
+  totalCores: Int = 4,    // X
+  executorCores: Int = 4, // Y ==> there is Y/X executors 
+  executorMemory: String = "12g", // Z
+  driverMemory: String = "3g", // D
   mode: String = "eval",
   minFrequency: Int = 3,
   dataPath: String = "dat/hcm.txt",
   percentage: Double = 0.5, // 50% of the data set to use
   modelPath: String = "bin/",
-  batchSize: Int = 64,
+  batchSize: Int = 16,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 80,
   learningRate: Double = 0.001,
