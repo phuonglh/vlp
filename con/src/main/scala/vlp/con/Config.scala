@@ -30,7 +30,7 @@ package vlp.con
   * @param delimiters punctutations and delimiters
   * @param verbose verbose mode or not
   */
-case class ConfigParser(
+case class Config(
   master: String = "local[4]",
   totalCores: Int = 4,    // X
   executorCores: Int = 4, // Y ==> there is Y/X executors 

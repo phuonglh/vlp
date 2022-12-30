@@ -34,7 +34,7 @@ import scopt.OptionParser
 import org.slf4j.LoggerFactory
 
 
-object Parser {
+object CatDog {
   
  def buildModel(inputShape: Shape): Sequential[Float] = {
     val model = Sequential()
@@ -62,11 +62,11 @@ object Parser {
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
-    val logger = LoggerFactory.getLogger(Parser.getClass.getName)
+    val logger = LoggerFactory.getLogger(getClass.getName)
 
 
-    val opts = new OptionParser[ConfigParser](getClass().getName()) {
-      head("vlp.con.Parser", "1.0")
+    val opts = new OptionParser[Config](getClass().getName()) {
+      head(getClass().getName(), "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
@@ -89,7 +89,7 @@ object Parser {
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
     }
-    opts.parse(args, ConfigParser()) match {
+    opts.parse(args, Config()) match {
       case Some(config) =>
         implicit val formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
