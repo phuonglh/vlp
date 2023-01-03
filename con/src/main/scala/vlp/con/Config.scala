@@ -26,8 +26,8 @@ case class Config(
   recurrentSize: Int = 64, // number of units in a recurrent layer
   hiddenSize: Int = 32, // number of units in the dense layer
   dropoutProbability: Double = 0.2,
-  inputPath: String = "dat/ftel-3.txt",
-  outputPath: String = "dat/ftel-3", 
+  inputPath: String = "dat/vsc/100.txt.inp",
+  outputPath: String = "dat/vsc/100.txt.out", 
   scorePath: String = "dat/scores.json",
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
   verbose: Boolean = false

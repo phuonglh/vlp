@@ -8,6 +8,8 @@ import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEn
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.numeric.NumericFloat
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
+ import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkContext
@@ -38,20 +40,27 @@ object VSC {
     // `maxSequenceLength x recurrentSize` 
     model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
     // feed the output of the GRU to a dense layer with relu activation function
-    // 
-    model.add(TimeDistributed(Dense(config.hiddenSize, activation="relu")))
+    model.add(TimeDistributed(
+      Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    )
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
-    // the last layer for multi-class classification
-    model.add(Dense(labelSize, activation="softmax"))
-
+    // add the last layer for multi-class classification
+    model.add(TimeDistributed(
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
+    )
     return model
+  }
+
+  def readData(sc: SparkContext, config: Config): Dataset = {
+    val df = sc.textFile
   }
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
     val logger = LoggerFactory.getLogger(getClass.getName)
-
 
     val opts = new OptionParser[Config](getClass().getName()) {
       head(getClass().getName(), "1.0")
