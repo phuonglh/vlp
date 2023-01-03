@@ -1,34 +1,8 @@
 package vlp.con
 
 /**
-  * phuonglh
+  * phuonglh@gmail.com
   *
-  * @param master Apache Spark master URL
-  * @param totalCores total number of cores of all the machines
-  * @param executorCores number of cores for each executors
-  * @param executorMemory memory for each executor
-  * @param driverMemory memory for the driver
-  * @param mode running mode of the program (train/eval/exp)
-  * @param minFrequency feature frequency cutoff
-  * @param dataPath path to the data file (.txt or .json)
-  * @param percentage use only some percentage of samples in a (big) data path 
-  * @param modelPath path to the trained model
-  * @param batchSize batch size
-  * @param epsilon convergence tolerance
-  * @param maxSequenceLength maximum sequence length
-  * @param learningRate learning rate
-  * @param epochs number of training epochs
-  * @param layers number of layers
-  * @param gru use GRU unit (if true) or LSTM unit (if false)
-  * @param hiddenUnits number of hidden units used in a recurrent layer
-  * @param dropout dropout rate
-  * @param inputPath path to an input file 
-  * @param outputPah path to the output file
-  * @param scorePath path to a log file which contain scores (scores.json)
-  * @param lookupWordSize word embedding size
-  * @param lookupCharacterSize character embedding size
-  * @param delimiters punctutations and delimiters
-  * @param verbose verbose mode or not
   */
 case class Config(
   master: String = "local[4]",
@@ -46,10 +20,12 @@ case class Config(
   maxSequenceLength: Int = 80,
   learningRate: Double = 0.001,
   epochs: Int = 20,
+  embeddingSize: Int = 50,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
-  hiddenUnits: Int = 64, // number of hidden units in each recurrent layer
-  dropout: Double = 0,
+  recurrentSize: Int = 64, // number of units in a recurrent layer
+  hiddenSize: Int = 32, // number of units in the dense layer
+  dropoutProbability: Double = 0.2,
   inputPath: String = "dat/ftel-3.txt",
   outputPath: String = "dat/ftel-3", 
   scorePath: String = "dat/scores.json",
