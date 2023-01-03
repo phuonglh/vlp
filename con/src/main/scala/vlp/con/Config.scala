@@ -11,8 +11,8 @@ case class Config(
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
-  minFrequency: Int = 3,
-  dataPath: String = "dat/hcm.txt",
+  minFrequency: Int = 2,
+  vocabSize: Int = 32768,
   percentage: Double = 0.5, // 50% of the data set to use
   modelPath: String = "bin/",
   batchSize: Int = 16,

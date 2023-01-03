@@ -1,39 +1,42 @@
 package vlp.con
 
 import com.intel.analytics.bigdl.dllib.NNContext
+import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Model, Sequential}
 import com.intel.analytics.bigdl.dllib.keras.models.Models
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEntropy
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.layers._
-import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
- import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
+import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
+import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEntropy
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+import com.intel.analytics.bigdl.dllib.optim.Top1Accuracy
+import com.intel.analytics.bigdl.dllib.utils.Engine
 
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkContext
+import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.Row
-import com.intel.analytics.bigdl.dllib.utils.Engine
-import org.apache.log4j.{Logger, Level}
-import com.intel.analytics.bigdl.dllib.keras.objectives.ClassNLLCriterion
-import com.intel.analytics.bigdl.dllib.optim.Top1Accuracy
+import org.apache.spark.ml.feature._
+import org.apache.spark.ml._
 
 import org.json4s._
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
+
+import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
 
 
 object VSC {
   
- def tokenModel(vocabSize: Int, inputShape: Shape, labelSize: Int, config: Config): Sequential[Float] = {
+ def tokenModel(vocabSize: Int, labelSize: Int, inputShape: Shape, config: Config): Sequential[Float] = {
     val model = Sequential()
     // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
-    model.add(Embedding(inputDim = vocabSize, outputDim = embeddingSize, inputLength=config.maxSequenceLength))
+    model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength))
     // take the matrix above and feed to a GRU layer 
     // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
@@ -54,8 +57,35 @@ object VSC {
     return model
   }
 
-  def readData(sc: SparkContext, config: Config): Dataset = {
-    val df = sc.textFile
+  /**
+    * Reads an input text file and creates a data frame of two columns "x, y", where 
+    * "x" are input token sequences and "y" are corresponding label sequences. The text file 
+    * has a format of line-pair oriented: (y_i, x_i).
+    *
+    * @param sc a Spark context
+    * @param config
+    */
+  def readData(sc: SparkContext, config: Config): DataFrame = {
+    val spark = SparkSession.builder.getOrCreate()
+    import spark.implicits._
+    val df = sc.textFile(config.inputPath).zipWithIndex.toDF("line", "id")
+    val df0 = df.filter(col("id") % 2 === 0).withColumn("y", col("line"))
+    val df1 = df.filter(col("id") % 2 === 1).withColumn("x", col("line")).withColumn("id0", col("id") - 1)
+    val af = df0.join(df1, df0.col("id") === df1.col("id0"))
+    return af.select("x", "y")
+  }
+
+  def preprocess(df: DataFrame, config: Config): (PipelineModel, Int, Int) = {
+    val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
+    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize)
+    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs")
+    // need to transform label sequences to one-hot matrices...
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, yTokenizer, xVectorizer, yVectorizer))
+    val model = pipeline.fit(df)
+    val vocabSize = Math.min(model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size.toInt, config.vocabSize)
+    val labelSize = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary.size.toInt
+    return (model, vocabSize, labelSize)
   }
 
   def main(args: Array[String]): Unit = {
@@ -81,7 +111,6 @@ object VSC {
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
-      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("data path")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input data path")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
@@ -100,14 +129,14 @@ object VSC {
         val sc = new SparkContext(conf)
         Engine.init
 
-        val df = None
+        val df = VSC.readData(sc, config)
         df.printSchema()
         df.show()
         // train/test split
         val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 80L)
-        val vocabSize = 20
-        val labelSize = 4
-        val model = tokenModel(vocabSize, Shape(config.maxSequenceLength), labelSize, config)
+        val (pipelineModel, vocabSize, labelSize) = VSC.preprocess(df, config)
+
+        val model = tokenModel(vocabSize, labelSize, Shape(config.maxSequenceLength), config)
         model.compile(optimizer = new Adam(), loss = SparseCategoricalCrossEntropy(), metrics = List(new Top1Accuracy()))
 
         val transformers = None
