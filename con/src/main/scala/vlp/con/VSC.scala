@@ -12,7 +12,7 @@ import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEntropy
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
-import com.intel.analytics.bigdl.dllib.optim.Top1Accuracy
+import com.intel.analytics.bigdl.dllib.optim.{Loss, Top1Accuracy}
 import com.intel.analytics.bigdl.dllib.utils.Engine
 
 import org.apache.spark.SparkContext
@@ -75,17 +75,18 @@ object VSC {
     return af.select("x", "y")
   }
 
-  def preprocess(df: DataFrame, config: Config): (PipelineModel, Int, Int) = {
+  def preprocess(df: DataFrame, config: Config): (PipelineModel, Int, Array[String]) = {
     val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
-    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize)
-    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs")
-    // need to transform label sequences to one-hot matrices...
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("features").setMinDF(config.minFrequency)
+      .setVocabSize(config.vocabSize).setBinary(true)
+    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
     val pipeline = new Pipeline().setStages(Array(xTokenizer, yTokenizer, xVectorizer, yVectorizer))
     val model = pipeline.fit(df)
     val vocabSize = Math.min(model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size.toInt, config.vocabSize)
-    val labelSize = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary.size.toInt
-    return (model, vocabSize, labelSize)
+    val labels = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    println(s"vocabSize = $vocabSize, labels = ${labels.mkString}")
+    return (model, vocabSize, labels)
   }
 
   def main(args: Array[String]): Unit = {
@@ -132,15 +133,27 @@ object VSC {
         val df = VSC.readData(sc, config)
         df.printSchema()
         df.show()
+
+        val (pipelineModel, vocabSize, labels) = VSC.preprocess(df, config)
+        val af = pipelineModel.transform(df).select("features", "ys")
+        val labelDict = labels.zipWithIndex.toMap
+        val sequencer = new Sequencer(labelDict).setInputCol("ys").setOutputCol("label")
+        val bf = sequencer.transform(af)
+        bf.show()
+        bf.printSchema
+
         // train/test split
-        val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 80L)
-        val (pipelineModel, vocabSize, labelSize) = VSC.preprocess(df, config)
+        val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
+      
+        val model = tokenModel(vocabSize, labels.size, Shape(config.maxSequenceLength), config)
+        // Note that padding values for target is -1 in sparse categorical cross entropy
+        model.compile(optimizer = new Adam(), loss = SparseCategoricalCrossEntropy(), metrics = List(new Top1Accuracy(), new Loss()))
 
-        val model = tokenModel(vocabSize, labelSize, Shape(config.maxSequenceLength), config)
-        model.compile(optimizer = new Adam(), loss = SparseCategoricalCrossEntropy(), metrics = List(new Top1Accuracy()))
-
-        val transformers = None
-        model.fit(trainingDF, batchSize = config.batchSize, nbEpoch = 1, labelCols = Array("label"), valX = validationDF)
+        model.fit(
+          trainingDF, batchSize = config.batchSize, nbEpoch = config.epochs, 
+          featureCols = Array("features"), labelCols = Array("label"), 
+          valX = validationDF
+        )
 
         sc.stop()
       case None => {}
