@@ -75,18 +75,18 @@ object VSC {
     return af.select("x", "y")
   }
 
-  def preprocess(df: DataFrame, config: Config): (PipelineModel, Int, Array[String]) = {
+  def preprocess(df: DataFrame, config: Config): (PipelineModel, Array[String], Array[String]) = {
     val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
-    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("features").setMinDF(config.minFrequency)
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency)
       .setVocabSize(config.vocabSize).setBinary(true)
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
     val pipeline = new Pipeline().setStages(Array(xTokenizer, yTokenizer, xVectorizer, yVectorizer))
     val model = pipeline.fit(df)
-    val vocabSize = Math.min(model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size.toInt, config.vocabSize)
+    val vocabulary = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
     val labels = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
-    println(s"vocabSize = $vocabSize, labels = ${labels.mkString}")
-    return (model, vocabSize, labels)
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    return (model, vocabulary, labels)
   }
 
   def main(args: Array[String]): Unit = {
@@ -134,18 +134,20 @@ object VSC {
         df.printSchema()
         df.show()
 
-        val (pipelineModel, vocabSize, labels) = VSC.preprocess(df, config)
-        val af = pipelineModel.transform(df).select("features", "ys")
+        val (pipelineModel, vocabulary, labels) = VSC.preprocess(df, config)
+        val vocabDict = vocabulary.zipWithIndex.toMap
+        val af = pipelineModel.transform(df)
+        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
         val labelDict = labels.zipWithIndex.toMap
-        val sequencer = new Sequencer(labelDict).setInputCol("ys").setOutputCol("label")
-        val bf = sequencer.transform(af)
+        val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
+        val bf = ySequencer.transform(xSequencer.transform(af))
         bf.show()
-        bf.printSchema
+        bf.printSchema()
 
         // train/test split
         val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
-        val model = tokenModel(vocabSize, labels.size, Shape(config.maxSequenceLength), config)
+        val model = tokenModel(vocabulary.size, labels.size, Shape(config.maxSequenceLength), config)
         // Note that padding values for target is -1 in sparse categorical cross entropy
         model.compile(optimizer = new Adam(), loss = SparseCategoricalCrossEntropy(), metrics = List(new Top1Accuracy(), new Loss()))
 

@@ -17,7 +17,7 @@ case class Config(
   modelPath: String = "bin/",
   batchSize: Int = 16,
   epsilon: Double = 1E-5,
-  maxSequenceLength: Int = 80,
+  maxSequenceLength: Int = 20,
   learningRate: Double = 0.001,
   epochs: Int = 5,
   embeddingSize: Int = 50,
