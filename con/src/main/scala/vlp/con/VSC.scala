@@ -10,7 +10,7 @@ import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
-import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEntropy
+import com.intel.analytics.bigdl.dllib.keras.objectives.{CategoricalCrossEntropy, SparseCategoricalCrossEntropy}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.optim.{Loss, Top1Accuracy}
 import com.intel.analytics.bigdl.dllib.utils.Engine
@@ -57,6 +57,11 @@ object VSC {
       Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
       inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
     )
+    // reshape the output from `(maxSequenceLength, labelSize)` to (1, maxSequenceLength * labelSize)
+    // so as for the loss function to work (NLLCrossEntropy requires a vector)
+    model.add(Reshape(targetShape=Array(1, -1)))
+    // squeeze the singleton dimension
+    model.add(Squeeze(1))
     return model
   }
 
@@ -140,12 +145,15 @@ object VSC {
         val (pipelineModel, vocabulary, labels) = VSC.preprocess(df, config)
         val vocabDict = vocabulary.zipWithIndex.toMap
         val af = pipelineModel.transform(df)
-        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+        val sequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
         val labelDict = labels.zipWithIndex.toMap
-        val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
-        val bf = ySequencer.transform(xSequencer.transform(af))
+        // val encoder = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ys").setOutputCol("label")
+        val encoder = new OneHotEncoder(labelDict).setInputCol("ys").setOutputCol("label")
+          .setNumFeatures(labels.size).setSequenceLength(config.maxSequenceLength)
+        val bf = encoder.transform(sequencer.transform(af))
         bf.show()
         bf.printSchema()
+        bf.select("label").show(2, false)
 
         val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
@@ -158,14 +166,14 @@ object VSC {
         //   valX = validationDF
         // )
 
-        val trainSummary = TrainSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
+        val trainingSummary = TrainSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
         val validationSummary = ValidationSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
-        val classifier = NNEstimator(model, SparseCategoricalCrossEntropy[Float](), Array(config.maxSequenceLength), Array(config.maxSequenceLength)) 
+        val classifier = NNEstimator(model, CategoricalCrossEntropy[Float](), Array(config.maxSequenceLength), Array(config.maxSequenceLength * labels.size)) 
             .setLabelCol("label").setFeaturesCol("features")
             .setBatchSize(config.batchSize)
             .setOptimMethod(new Adam(config.learningRate))
             .setMaxEpoch(config.epochs)
-            .setTrainSummary(trainSummary)
+            .setTrainSummary(trainingSummary)
             .setValidationSummary(validationSummary)
             .setValidation(Trigger.everyEpoch, validationDF, Array(new Top1Accuracy), config.batchSize)
         classifier.fit(trainingDF)
