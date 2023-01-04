@@ -28,6 +28,9 @@ import scopt.OptionParser
 
 import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
+import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
+import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
+import com.intel.analytics.bigdl.dllib.optim.Trigger
 
 
 object VSC {
@@ -144,18 +147,28 @@ object VSC {
         bf.show()
         bf.printSchema()
 
-        // train/test split
         val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
         val model = tokenModel(vocabulary.size, labels.size, Shape(config.maxSequenceLength), config)
-        // Note that padding values for target is -1 in sparse categorical cross entropy
-        model.compile(optimizer = new Adam(), loss = SparseCategoricalCrossEntropy(), metrics = List(new Top1Accuracy(), new Loss()))
 
-        model.fit(
-          trainingDF, batchSize = config.batchSize, nbEpoch = config.epochs, 
-          featureCols = Array("features"), labelCols = Array("label"), 
-          valX = validationDF
-        )
+        // model.compile(optimizer = new Adam(), loss = SparseCategoricalCrossEntropy(), metrics = List(new Top1Accuracy(), new Loss()))
+        // model.fit(
+        //   trainingDF, batchSize = config.batchSize, nbEpoch = config.epochs, 
+        //   featureCols = Array("features"), labelCols = Array("label"), 
+        //   valX = validationDF
+        // )
+
+        val trainSummary = TrainSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
+        val validationSummary = ValidationSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
+        val classifier = NNEstimator(model, SparseCategoricalCrossEntropy[Float](), Array(config.maxSequenceLength), Array(config.maxSequenceLength)) 
+            .setLabelCol("label").setFeaturesCol("features")
+            .setBatchSize(config.batchSize)
+            .setOptimMethod(new Adam(config.learningRate))
+            .setMaxEpoch(config.epochs)
+            .setTrainSummary(trainSummary)
+            .setValidationSummary(validationSummary)
+            .setValidation(Trigger.everyEpoch, validationDF, Array(new Top1Accuracy), config.batchSize)
+        classifier.fit(trainingDF)
 
         sc.stop()
       case None => {}
