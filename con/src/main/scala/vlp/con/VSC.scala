@@ -141,20 +141,19 @@ object VSC {
         val vocabDict = vocabulary.zipWithIndex.toMap
         val af = pipelineModel.transform(df)
         val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-        // map the label to one-based index (for use in ClassNLLCriterion)
+        // map the label to one-based index (for use in ClassNLLCriterion of BigDL)
         val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
         val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
         val bf = ySequencer.transform(xSequencer.transform(af))
         bf.show()
         bf.printSchema()
-        bf.select("label").show(5, false)
 
-        // val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
+        val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
         val model = tokenModel(vocabulary.size, labels.size, Shape(config.maxSequenceLength), config)
 
-        val trainingSummary = TrainSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
-        val validationSummary = ValidationSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
+        val trainingSummary = TrainSummary(appName = "vsc", logDir = "bin/sum/")
+        val validationSummary = ValidationSummary(appName = "vsc", logDir = "bin/sum/")
         val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true),
           Array(config.maxSequenceLength), Array(config.maxSequenceLength))
             .setLabelCol("label").setFeaturesCol("features")
@@ -163,8 +162,8 @@ object VSC {
             .setMaxEpoch(config.epochs)
             .setTrainSummary(trainingSummary)
             .setValidationSummary(validationSummary)
-            .setValidation(Trigger.everyEpoch, bf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        classifier.fit(bf)
+            .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+        classifier.fit(trainingDF)
 
         sc.stop()
       case None => {}

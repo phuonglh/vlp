@@ -8,6 +8,7 @@ import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric
 /**
   * phuonglh@gamil.com
   * 
+  * @param paddingValue
   * @param ev
   */
 class TimeDistributedTop1Accuracy(paddingValue: Int = -1)(implicit ev: TensorNumeric[Float]) extends ValidationMethod[Float] {
