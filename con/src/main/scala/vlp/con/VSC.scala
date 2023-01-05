@@ -34,6 +34,24 @@ import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCri
 
 
 object VSC {
+
+  /**
+    * Reads an input text file and creates a data frame of two columns "x, y", where 
+    * "x" are input token sequences and "y" are corresponding label sequences. The text file 
+    * has a format of line-pair oriented: (y_i, x_i).
+    *
+    * @param sc a Spark context
+    * @param config
+    */
+  def readData(sc: SparkContext, config: Config): DataFrame = {
+    val spark = SparkSession.builder.getOrCreate()
+    import spark.implicits._
+    val df = sc.textFile(config.inputPath).zipWithIndex.toDF("line", "id")
+    val df0 = df.filter(col("id") % 2 === 0).withColumn("y", col("line"))
+    val df1 = df.filter(col("id") % 2 === 1).withColumn("x", col("line")).withColumn("id0", col("id") - 1)
+    val af = df0.join(df1, df0.col("id") === df1.col("id0"))
+    return af.select("x", "y")
+  }
   
  def tokenModel(vocabSize: Int, labelSize: Int, inputShape: Shape, config: Config): Sequential[Float] = {
     val model = Sequential()
@@ -60,36 +78,34 @@ object VSC {
     return model
   }
 
-  /**
-    * Reads an input text file and creates a data frame of two columns "x, y", where 
-    * "x" are input token sequences and "y" are corresponding label sequences. The text file 
-    * has a format of line-pair oriented: (y_i, x_i).
-    *
-    * @param sc a Spark context
-    * @param config
-    */
-  def readData(sc: SparkContext, config: Config): DataFrame = {
-    val spark = SparkSession.builder.getOrCreate()
-    import spark.implicits._
-    val df = sc.textFile(config.inputPath).zipWithIndex.toDF("line", "id")
-    val df0 = df.filter(col("id") % 2 === 0).withColumn("y", col("line"))
-    val df1 = df.filter(col("id") % 2 === 1).withColumn("x", col("line")).withColumn("id0", col("id") - 1)
-    val af = df0.join(df1, df0.col("id") === df1.col("id0"))
-    return af.select("x", "y")
-  }
-
-  def preprocess(df: DataFrame, config: Config): (PipelineModel, Array[String], Array[String]) = {
+  def tokenModelPreprocess(df: DataFrame, config: Config): (PipelineModel, Array[String], Array[String]) = {
     val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
-    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency)
       .setVocabSize(config.vocabSize).setBinary(true)
+    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
-    val pipeline = new Pipeline().setStages(Array(xTokenizer, yTokenizer, xVectorizer, yVectorizer))
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer))
     val model = pipeline.fit(df)
-    val vocabulary = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    val vocabulary = model.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val labels = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (model, vocabulary, labels)
+  }
+
+  def semiCharPreprocess(df: DataFrame, config: Config): (PipelineModel, Array[String], Array[String]) = {
+    val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
+    val xTransformer = new SemiCharTransformer().setInputCol("xs").setOutputCol("ts")
+    val xVectorizer = new CountVectorizer().setInputCol("ts").setOutputCol("us").setMinDF(config.minFrequency)
+      .setVocabSize(config.vocabSize).setBinary(true)
+    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
+    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, xTransformer, xVectorizer, yTokenizer, yVectorizer))
+    val model = pipeline.fit(df)
+    val vocabulary = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = model.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    return (model, vocabulary, labels)
+
   }
 
   def main(args: Array[String]): Unit = {
@@ -137,18 +153,29 @@ object VSC {
         df.printSchema()
         df.show()
 
-        val (pipelineModel, vocabulary, labels) = VSC.preprocess(df, config)
+        val (pipelineModel, vocabulary, labels) = config.modelType match {
+          case "tk" => VSC.tokenModelPreprocess(df, config)
+          case _ => VSC.semiCharPreprocess(df, config)
+        }
         val vocabDict = vocabulary.zipWithIndex.toMap
         val af = pipelineModel.transform(df)
-        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
         // map the label to one-based index (for use in ClassNLLCriterion of BigDL)
         val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
         val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
-        val bf = ySequencer.transform(xSequencer.transform(af))
-        bf.show()
-        bf.printSchema()
+        val bf = ySequencer.transform(af)
 
-        val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
+        val cf = config.modelType match {
+          case "tk" => 
+            val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+            xSequencer.transform(bf)
+          case _ => 
+            val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+            xSequencer.transform(bf)
+        }
+        cf.show()
+        cf.printSchema()
+
+        val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
         val model = tokenModel(vocabulary.size, labels.size, Shape(config.maxSequenceLength), config)
 
@@ -163,7 +190,7 @@ object VSC {
             .setTrainSummary(trainingSummary)
             .setValidationSummary(validationSummary)
             .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        classifier.fit(trainingDF)
+        // classifier.fit(trainingDF)
 
         sc.stop()
       case None => {}

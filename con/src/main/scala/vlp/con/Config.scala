@@ -30,5 +30,6 @@ case class Config(
   outputPath: String = "dat/vsc/vud.txt.out", 
   scorePath: String = "dat/scores.json",
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
-  verbose: Boolean = false
+  verbose: Boolean = false,
+  modelType: String = "sc" // tk: token, sc: semi-character
 ) extends Serializable

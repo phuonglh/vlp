@@ -13,25 +13,16 @@ import org.apache.spark.sql.types.{DataType, ArrayType, StringType}
 
   * phuonglh@gmail.com
   */
-class SemiCharacterTransformer(val uid: String) 
-  extends UnaryTransformer[Seq[String], Seq[String], SemiCharacterTransformer] with DefaultParamsWritable {
+class SemiCharTransformer(val uid: String) 
+  extends UnaryTransformer[Seq[String], Seq[String], SemiCharTransformer] with DefaultParamsWritable {
 
   def this() = {
     this(Identifiable.randomUID("semiChar"))
   }
 
   override protected def createTransformFunc: Seq[String] => Seq[String] = {
-    def s(x: String): Seq[String] = {
-      x.size match {
-        case 0 => Seq.empty[String]
-        case 1 => Seq(x)
-        case 2 => Seq(x.take(1), x.takeRight(1))
-        case _ => Seq(x.take(1), x.substring(1, x.size-1), x.takeRight(1))
-      }
-    }
-
     def f(xs: Seq[String]): Seq[String] = {
-      xs.flatMap(s(_))
+      xs.flatMap(SemiCharTransformer.s(_))
     }
 
     f(_)
@@ -40,6 +31,15 @@ class SemiCharacterTransformer(val uid: String)
   override protected def outputDataType: DataType = ArrayType(StringType, false)
 }
 
-object SemiCharacterTransformer extends DefaultParamsReadable[SemiCharacterTransformer] {
-  override def load(path: String): SemiCharacterTransformer = super.load(path)
+object SemiCharTransformer extends DefaultParamsReadable[SemiCharTransformer] {
+    def s(x: String): Seq[String] = {
+      x.size match {
+        case 0 => Seq.empty[String]
+        case 1 => Seq(x, "$NA", "$NA")
+        case 2 => Seq(x.take(1), "$NA", x.takeRight(1))
+        case _ => Seq(x.take(1), x.substring(1, x.size-1), x.takeRight(1))
+      }
+    }
+
+  override def load(path: String): SemiCharTransformer = super.load(path)
 }
