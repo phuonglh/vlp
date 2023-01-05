@@ -5,14 +5,13 @@ import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Model, Sequential}
 import com.intel.analytics.bigdl.dllib.keras.models.Models
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEntropy
+import com.intel.analytics.bigdl.dllib.nn.TimeDistributedCriterion
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
-import com.intel.analytics.bigdl.dllib.keras.objectives.SparseCategoricalCrossEntropy
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
-import com.intel.analytics.bigdl.dllib.optim.{Loss, Top1Accuracy}
+import com.intel.analytics.bigdl.dllib.optim.Loss
 import com.intel.analytics.bigdl.dllib.utils.Engine
 
 import org.apache.spark.SparkContext
@@ -31,6 +30,7 @@ import org.slf4j.LoggerFactory
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
+import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
 
 
 object VSC {
@@ -141,11 +141,13 @@ object VSC {
         val vocabDict = vocabulary.zipWithIndex.toMap
         val af = pipelineModel.transform(df)
         val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-        val labelDict = labels.zipWithIndex.toMap
-        val ySequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ys").setOutputCol("label")
+        // map the label to one-based index (for use in ClassNLLCriterion)
+        val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+        val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
         val bf = ySequencer.transform(xSequencer.transform(af))
         bf.show()
         bf.printSchema()
+        bf.select("label").show(5, false)
 
         // val Array(trainingDF, validationDF) = bf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
@@ -153,7 +155,7 @@ object VSC {
 
         val trainingSummary = TrainSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
         val validationSummary = ValidationSummary(appName = getClass().getName(), logDir = "bin/vsc/sum/")
-        val classifier = NNEstimator(model, SparseCategoricalCrossEntropy[Float](), 
+        val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true),
           Array(config.maxSequenceLength), Array(config.maxSequenceLength))
             .setLabelCol("label").setFeaturesCol("features")
             .setBatchSize(config.batchSize)
@@ -161,7 +163,7 @@ object VSC {
             .setMaxEpoch(config.epochs)
             .setTrainSummary(trainingSummary)
             .setValidationSummary(validationSummary)
-            .setValidation(Trigger.everyEpoch, bf, Array(new Top1Accuracy, new Loss), config.batchSize)
+            .setValidation(Trigger.everyEpoch, bf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
         classifier.fit(bf)
 
         sc.stop()
