@@ -53,7 +53,7 @@ object VSC {
     return af.select("x", "y")
   }
   
- def tokenModel(vocabSize: Int, labelSize: Int, inputShape: Shape, config: Config): Sequential[Float] = {
+ def tokenModel(vocabSize: Int, labelSize: Int, config: Config): Sequential[Float] = {
     val model = Sequential()
     // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
@@ -90,6 +90,34 @@ object VSC {
     val labels = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (model, vocabulary, labels)
+  }
+
+ def semiCharModel(vocabSize: Int, labelSize: Int, config: Config): Sequential[Float] = {
+    val model = Sequential()
+    // input to an embedding layer is an index vector of `3*maxSeqquenceLength` elements, each index is in [0, vocabSize)
+    // this layer produces a real-valued matrix of shape `3*maxSequenceLength x embeddingSize`
+    model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=3*config.maxSequenceLength))
+    // reshape the matrix to matrix of shape `maxSequenceLength x 3*embeddingSize`. This operation perform the concatenation 
+    // of [b, i, e] embedding vectors
+    model.add(Reshape(targetShape=Array(-1, 3*config.embeddingSize)))
+    // take the matrix above and feed to a GRU layer 
+    // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
+    // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
+    // `maxSequenceLength x recurrentSize` 
+    model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
+    // feed the output of the GRU to a dense layer with relu activation function
+    model.add(TimeDistributed(
+      Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    )
+    // add a dropout layer for regularization
+    model.add(Dropout(config.dropoutProbability))
+    // add the last layer for multi-class classification
+    model.add(TimeDistributed(
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
+    )
+    return model
   }
 
   def semiCharPreprocess(df: DataFrame, config: Config): (PipelineModel, Array[String], Array[String]) = {
@@ -168,7 +196,7 @@ object VSC {
           case "tk" => 
             val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
             xSequencer.transform(bf)
-          case _ => 
+          case _    => 
             val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
             xSequencer.transform(bf)
         }
@@ -177,12 +205,19 @@ object VSC {
 
         val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 80L)
       
-        val model = tokenModel(vocabulary.size, labels.size, Shape(config.maxSequenceLength), config)
+        val model = config.modelType match {
+          case "tk" => tokenModel(vocabulary.size, labels.size, config)
+          case _    => semiCharModel(vocabulary.size, labels.size, config)
+        }
 
         val trainingSummary = TrainSummary(appName = "vsc", logDir = "bin/sum/")
         val validationSummary = ValidationSummary(appName = "vsc", logDir = "bin/sum/")
-        val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true),
-          Array(config.maxSequenceLength), Array(config.maxSequenceLength))
+        val (featureSize, labelSize) = config.modelType match {
+          case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
+          case "sc" => (Array(3*config.maxSequenceLength), Array(config.maxSequenceLength))
+          case _    => (Array(0), Array(0))
+        }
+        val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true), featureSize, labelSize)
             .setLabelCol("label").setFeaturesCol("features")
             .setBatchSize(config.batchSize)
             .setOptimMethod(new Adam(config.learningRate))
@@ -190,7 +225,7 @@ object VSC {
             .setTrainSummary(trainingSummary)
             .setValidationSummary(validationSummary)
             .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        // classifier.fit(trainingDF)
+        classifier.fit(trainingDF)
 
         sc.stop()
       case None => {}
