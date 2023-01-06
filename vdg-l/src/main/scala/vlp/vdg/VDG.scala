@@ -129,8 +129,11 @@ object VDG {
           val dataSet = if (config.jsonData)
             IO.readJsonFiles(sparkContext, config.dataPath).sample(config.percentage, 220712L)
           else IO.readTextFiles(sparkContext, config.dataPath).sample(config.percentage, 220712L)
+          // add additional data files
+          val additionalDataSet = IO.readTextFiles(sparkContext, "dat/hcm-addition.txt")
+          val df = dataSet.union(additionalDataSet)
 
-          val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(partition, 150909L)
+          val Array(trainingSet, validationSet, testSet) = df.randomSplit(partition, 150909L)
           logger.info("#(samples) = " + dataSet.count())
           logger.info("#(trainingSamples) = " + trainingSet.count())
           logger.info("#(validationSamples) = " + validationSet.count())

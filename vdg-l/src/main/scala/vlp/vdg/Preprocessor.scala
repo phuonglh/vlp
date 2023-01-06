@@ -15,14 +15,27 @@ import java.nio.charset.StandardCharsets
 object Preprocessor {
   val map = Map(
     """P\.(?!\d)""" -> "Phường ", // ambiguity with P.1, P.2 (ward of HCMC)
-    "Q6" -> "Quận 6",
-    """TP\.""" -> "Thành phố ",
+    """Q\.?""" -> "Quận ",
+    """tp\.""" ->	"Thành phố", 
+    """T[Pp]\.""" -> "Thành phố ",
     """T\.[Tt]rệt""" ->	"Tầng Trệt",
     """H\.""" -> "Huyện ",
     "TT" -> "Thị trấn",
     """T\.[Tt]rấn""" ->	"Thị trấn",
     """TX\.""" -> "Thị xã ",
+    "TPHCM" -> "Thành phố Hồ Chí Minh", 
     "HCM" -> "Hồ Chí Minh", 
+    "btân" ->	"Bình Tân",
+    "tp," ->	"tân phú,",
+    "tb," ->	"tân bình,",
+    "bt,"	-> "bình thạnh,",
+    "hm,"	-> "hóc môn,",
+    "btân," ->	"bình tân,",
+    "qpn"	-> "quận phú phuận",
+    "(pn|PN)," -> "phú nhuận,",
+    "(nb|NB)," -> "nhà bè,", 
+    "(bc|BC)," ->	"bình chánh,",
+    "(gv|GV)," -> "gò vấp,",
     """\(.+\)""" -> "", // remove everything inside parentheses    
   )
 
