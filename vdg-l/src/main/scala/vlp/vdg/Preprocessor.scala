@@ -14,8 +14,10 @@ import java.nio.charset.StandardCharsets
   */
 object Preprocessor {
   val map = Map(
-    """P\.(?!\d)""" -> "Phường ", // ambiguity with P.1, P.2 (ward of HCMC)
-    """Q\.?""" -> "Quận ",
+    // """P\.(?!\d)""" -> "Phường ", // ambiguity with P.1, P.2 (ward of HCMC)
+    """P\.""" -> "Phường ", // ambiguity with P.1, P.2 (ward of HCMC)
+    """Q\.""" -> "Quận ",
+    """Q\.(?!\d)""" -> "Quận ",
     """tp\.""" ->	"Thành phố", 
     """T[Pp]\.""" -> "Thành phố ",
     """T\.[Tt]rệt""" ->	"Tầng Trệt",
@@ -26,10 +28,11 @@ object Preprocessor {
     "TPHCM" -> "Thành phố Hồ Chí Minh", 
     "HCM" -> "Hồ Chí Minh", 
     "btân" ->	"Bình Tân",
-    "tp," ->	"tân phú,",
-    "tb," ->	"tân bình,",
-    "bt,"	-> "bình thạnh,",
-    "hm,"	-> "hóc môn,",
+    "Btan" -> "Bình Tân",
+    "(tp|TP)," ->	"tân phú,",
+    "(tb|TB)," ->	"tân bình,",
+    "(bt|BT),"	-> "bình thạnh,",
+    "(hm|HM),"	-> "hóc môn,",
     "btân," ->	"bình tân,",
     "qpn"	-> "quận phú phuận",
     "(pn|PN)," -> "phú nhuận,",
