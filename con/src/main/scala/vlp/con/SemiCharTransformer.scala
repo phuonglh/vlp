@@ -32,14 +32,14 @@ class SemiCharTransformer(val uid: String)
 }
 
 object SemiCharTransformer extends DefaultParamsReadable[SemiCharTransformer] {
-    def s(x: String): Seq[String] = {
-      x.size match {
-        case 0 => Seq.empty[String]
-        case 1 => Seq(x, "$NA", "$NA")
-        case 2 => Seq(x.take(1), "$NA", x.takeRight(1))
-        case _ => Seq(x.take(1), x.substring(1, x.size-1), x.takeRight(1))
-      }
+  def s(x: String): Seq[String] = {
+    x.size match {
+      case 0 => Seq.empty[String]
+      case 1 => Seq(x, "$NA", "$NA")
+      case 2 => Seq(x.take(1), "$NA", x.takeRight(1))
+      case _ => Seq(x.take(1), x.substring(1, x.size-1), x.takeRight(1))
     }
+  }
 
   override def load(path: String): SemiCharTransformer = super.load(path)
 }

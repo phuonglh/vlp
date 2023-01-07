@@ -15,11 +15,11 @@ case class Config(
   vocabSize: Int = 32768,
   percentage: Double = 1.0, // percentage of the training data set to use
   modelPath: String = "bin/",
-  batchSize: Int = 32,
+  batchSize: Int = 64,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 30,
   learningRate: Double = 0.001,
-  epochs: Int = 5,
+  epochs: Int = 3,
   embeddingSize: Int = 20,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU

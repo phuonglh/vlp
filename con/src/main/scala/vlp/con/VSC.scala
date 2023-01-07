@@ -133,6 +133,9 @@ object VSC {
     val labels = model.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (model, vocabulary, labels)
+  }
+
+  def predict(df: DataFrame, config: Config) = {
 
   }
 
@@ -177,7 +180,7 @@ object VSC {
         val sc = new SparkContext(conf)
         Engine.init
 
-        val df = VSC.readData(sc, config)
+        val df = VSC.readData(sc, config).sample(config.percentage)
         df.printSchema()
         df.show()
 
@@ -226,6 +229,16 @@ object VSC {
             .setValidationSummary(validationSummary)
             .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
         classifier.fit(trainingDF)
+
+        val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
+        val validationLoss = validationSummary.readScalar("Loss")
+        val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
+        logger.info("     Train Accuracy: " + trainingAccuracy.mkString(", "))
+        logger.info("Validation Accuracy: " + validationAccuracy.mkString(", "))
+        logger.info("Saving the model...")
+        val inp = config.inputPath.split("/").last.split("""\.""").head
+        val prefix = s"${config.modelPath}/${config.modelType}/${inp}/"
+        model.saveModule(prefix + "/vsc.bigdl", prefix + "/vsc.bin", true)
 
         sc.stop()
       case None => {}
