@@ -48,22 +48,19 @@ import org.apache.spark.sql.RowFactory
   */
 object VDG {
   final val logger = LoggerFactory.getLogger(VDG.getClass.getName)
-  final val partition = Array(0.8, 0.1, 0.1)
+  final val partition = Array(0.8, 0.2)
 
   def eval(config: ConfigVDG, vdg: M, dataSet: DataFrame, preprocessor: PipelineModel, module: Module[Float], trainingTime: Long = 0): Unit = {
-    val Array(trainingSet, validationSet, testSet) = dataSet.randomSplit(partition, 150909L)
+    val Array(trainingSet, validationSet) = dataSet.randomSplit(partition, 150909L)
     logger.info("#(samples) = " + dataSet.count())
     logger.info("#(trainingSamples) = " + trainingSet.count())
     logger.info("#(validationSamples) = " + validationSet.count())
-    logger.info("#(testSamples) = " + testSet.count())
     val numTrainingSamples = (trainingSet.count() / config.batchSize) * config.batchSize
     val numValidationSamples = (validationSet.count() / config.batchSize) * config.batchSize
-    val numTestSamples = (testSet.count() / config.batchSize) * config.batchSize
     val trainingScore = vdg.eval(trainingSet.limit(numTrainingSamples.toInt), preprocessor, module)
     val validationScore = vdg.eval(validationSet.limit(numValidationSamples.toInt), preprocessor, module)
-    val testScore = vdg.eval(testSet.limit(numTestSamples.toInt), preprocessor, module)
     val eval = ConfigEval("vdg", config.dataPath, config.percentage, config.modelPath, config.modelType,
-      if (config.gru) "GRU"; else "LSTM", config.layers, config.hiddenUnits, trainingScore, validationScore, testScore, trainingTime)
+      if (config.gru) "GRU"; else "LSTM", config.layers, config.hiddenUnits, trainingScore, validationScore, validationScore, trainingTime)
     implicit val formats = Serialization.formats(NoTypeHints)
     val content = Serialization.writePretty(eval) + ",\n"
     Files.write(Paths.get(config.logPath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
@@ -131,27 +128,26 @@ object VDG {
           else IO.readTextFiles(sparkContext, config.dataPath).sample(config.percentage, 220712L)
           // add additional data files
           val additionalDataSet = IO.readTextFiles(sparkContext, "dat/hcm-addition.txt")
-          val df = dataSet.union(additionalDataSet)
 
-          val Array(trainingSet, validationSet, testSet) = df.randomSplit(partition, 150909L)
+          val Array(trainingSet, validationSet) = dataSet.randomSplit(partition, 150909L)
           logger.info("#(samples) = " + dataSet.count())
-          logger.info("#(trainingSamples) = " + trainingSet.count())
+          val trainingSet2 = trainingSet.union(additionalDataSet)
+          logger.info("#(trainingSamples) = " + trainingSet2.count())
           logger.info("#(validationSamples) = " + validationSet.count())
-          logger.info("#(testSamples) = " + testSet.count())
           val numValidationSamples = (validationSet.count() / config.batchSize) * config.batchSize
 
           config.mode match {
             case "train" =>
               val startTime = System.currentTimeMillis()
-              val module = vdg.train(trainingSet, validationSet.limit(numValidationSamples.toInt))
+              val module = vdg.train(trainingSet2, validationSet.limit(numValidationSamples.toInt))
               val endTime = System.currentTimeMillis()
               val trainingTime = (endTime - startTime)/1000
               val preprocessor = PipelineModel.load(path)
-              eval(config, vdg, dataSet, preprocessor, module, trainingTime)
+              eval(config, vdg, validationSet, preprocessor, module, trainingTime)
             case "eval" =>
               val preprocessor = PipelineModel.load(path)
               val module = ModuleLoader.loadFromFile[Float](path + "vdg.bigdl", path + "vdg.bin")
-              eval(config, vdg, dataSet, preprocessor, module)
+              eval(config, vdg, validationSet, preprocessor, module)
             case "exp" =>
               for (m <- 1 to 3) {
                 val startTime = System.currentTimeMillis()
