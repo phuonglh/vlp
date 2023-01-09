@@ -8,7 +8,7 @@ import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.TimeDistributedCriterion
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.layers._
-import com.intel.analytics.bigdl.dllib.keras.Model
+import com.intel.analytics.bigdl.dllib.keras.models._
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
@@ -29,7 +29,7 @@ import scopt.OptionParser
 import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
-import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
+import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
 
@@ -86,11 +86,11 @@ object VSC {
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
     val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer))
-    val model = pipeline.fit(df)
-    val vocabulary = model.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    val labels = model.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    val preprocessor = pipeline.fit(df)
+    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
-    return (model, vocabulary, labels)
+    return (preprocessor, vocabulary, labels)
   }
 
  def semiCharModel(vocabSize: Int, labelSize: Int, config: Config): Sequential[Float] = {
@@ -129,18 +129,42 @@ object VSC {
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
     val pipeline = new Pipeline().setStages(Array(xTokenizer, xTransformer, xVectorizer, yTokenizer, yVectorizer))
-    val model = pipeline.fit(df)
-    val vocabulary = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
-    val labels = model.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    val preprocessor = pipeline.fit(df)
+    val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
-    return (model, vocabulary, labels)
+    return (preprocessor, vocabulary, labels)
   }
 
   def predict(df: DataFrame, config: Config) = {
     val inp = config.inputPath.split("/").last.split("""\.""").head
     val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
-    val preprocessor = PipelineModel.load(s"{prefix}/pre/")
-    val model = Models.loadModel[Float](prefix + "vsc.bigdl")
+    val preprocessor = PipelineModel.load(s"${prefix}/pre/")
+    val model = Models.loadModel[Float](prefix + "/vsc.bigdl")
+    
+    val bf = preprocessor.transform(df)
+    val cf = config.modelType match {
+      case "tk" => 
+        val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+        val vocabDict = vocabulary.zipWithIndex.toMap
+        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+        xSequencer.transform(bf)
+      case _    => 
+        val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+        val vocabDict = vocabulary.zipWithIndex.toMap
+        val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+        xSequencer.transform(bf)
+    }
+    cf.show()
+    // create a label map which idx -> label
+    val labels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    val labelMap = labels.zipWithIndex.map(p => (p._2 + 1, p._1)).toMap
+    println(labelMap)
+
+    val m = NNModel(model)
+    val af = m.transform(cf)
+    af.show()
+    af.printSchema()
   }
 
   def main(args: Array[String]): Unit = {
@@ -189,67 +213,71 @@ object VSC {
         df.printSchema()
         df.show()
 
-        val (pipelineModel, vocabulary, labels) = config.modelType match {
-          case "tk" => VSC.tokenModelPreprocess(df, config)
-          case _ => VSC.semiCharPreprocess(df, config)
-        }
-        // save the preprocessing pipeline for later loading
-        val inp = config.inputPath.split("/").last.split("""\.""").head
-        val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
-        pipelineModel.write.overwrite.save(s"${prefix}/pre/")
-        
+        config.mode match {
+          case "train" =>        
+            val (pipelineModel, vocabulary, labels) = config.modelType match {
+              case "tk" => VSC.tokenModelPreprocess(df, config)
+              case _ => VSC.semiCharPreprocess(df, config)
+            }
+            // save the preprocessing pipeline for later loading
+            val inp = config.inputPath.split("/").last.split("""\.""").head
+            val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
+            pipelineModel.write.overwrite.save(s"${prefix}/pre/")
+            
 
-        val vocabDict = vocabulary.zipWithIndex.toMap
-        val af = pipelineModel.transform(df)
-        // map the label to one-based index (for use in ClassNLLCriterion of BigDL)
-        val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-        val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
-        val bf = ySequencer.transform(af)
+            val vocabDict = vocabulary.zipWithIndex.toMap
+            val af = pipelineModel.transform(df)
+            // map the label to one-based index (for use in ClassNLLCriterion of BigDL)
+            val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+            val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
+            val bf = ySequencer.transform(af)
 
-        val cf = config.modelType match {
-          case "tk" => 
-            val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-            xSequencer.transform(bf)
-          case _    => 
-            val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
-            xSequencer.transform(bf)
-        }
-        cf.show()
-        cf.printSchema()
+            val cf = config.modelType match {
+              case "tk" => 
+                val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+                xSequencer.transform(bf)
+              case _    => 
+                val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+                xSequencer.transform(bf)
+            }
+            cf.show()
+            cf.printSchema()
 
-        val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 80L)
-      
-        val model = config.modelType match {
-          case "tk" => tokenModel(vocabulary.size, labels.size, config)
-          case _    => semiCharModel(vocabulary.size, labels.size, config)
-        }
+            val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 80L)
+          
+            val model = config.modelType match {
+              case "tk" => tokenModel(vocabulary.size, labels.size, config)
+              case _    => semiCharModel(vocabulary.size, labels.size, config)
+            }
 
-        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
-        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
-        val (featureSize, labelSize) = config.modelType match {
-          case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
-          case "sc" => (Array(3*config.maxSequenceLength), Array(config.maxSequenceLength))
-          case _    => (Array(0), Array(0))
-        }
-        val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true), featureSize, labelSize)
-            .setLabelCol("label").setFeaturesCol("features")
-            .setBatchSize(config.batchSize)
-            .setOptimMethod(new Adam(config.learningRate))
-            .setMaxEpoch(config.epochs)
-            .setTrainSummary(trainingSummary)
-            .setValidationSummary(validationSummary)
-            .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        classifier.fit(trainingDF)
+            val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
+            val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
+            val (featureSize, labelSize) = config.modelType match {
+              case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
+              case "sc" => (Array(3*config.maxSequenceLength), Array(config.maxSequenceLength))
+              case _    => (Array(0), Array(0))
+            }
+            val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true), featureSize, labelSize)
+                .setLabelCol("label").setFeaturesCol("features")
+                .setBatchSize(config.batchSize)
+                .setOptimMethod(new Adam(config.learningRate))
+                .setMaxEpoch(config.epochs)
+                .setTrainSummary(trainingSummary)
+                .setValidationSummary(validationSummary)
+                .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+            classifier.fit(trainingDF)
 
-        val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
-        val validationLoss = validationSummary.readScalar("Loss")
-        val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
-        logger.info("     Train Accuracy: " + trainingAccuracy.mkString(", "))
-        logger.info("Validation Accuracy: " + validationAccuracy.mkString(", "))
+            val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
+            val validationLoss = validationSummary.readScalar("Loss")
+            val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
+            logger.info("     Train Accuracy: " + trainingAccuracy.mkString(", "))
+            logger.info("Validation Accuracy: " + validationAccuracy.mkString(", "))
 
-        logger.info("Saving the model...")        
-        model.saveModel(prefix + "/vsc.bigdl")
-
+            logger.info("Saving the model...")        
+            model.saveModel(prefix + "/vsc.bigdl")
+        case "predict" => 
+          predict(df, config)
+      }
         sc.stop()
       case None => {}
     }

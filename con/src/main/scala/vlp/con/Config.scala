@@ -20,7 +20,7 @@ case class Config(
   maxSequenceLength: Int = 30,
   learningRate: Double = 0.001,
   epochs: Int = 3,
-  embeddingSize: Int = 20,
+  embeddingSize: Int = 50,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
   recurrentSize: Int = 64, // number of units in a recurrent layer
