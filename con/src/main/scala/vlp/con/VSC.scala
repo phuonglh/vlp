@@ -8,6 +8,7 @@ import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.TimeDistributedCriterion
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.layers._
+import com.intel.analytics.bigdl.dllib.keras.Model
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
@@ -136,7 +137,10 @@ object VSC {
   }
 
   def predict(df: DataFrame, config: Config) = {
-
+    val inp = config.inputPath.split("/").last.split("""\.""").head
+    val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
+    val preprocessor = PipelineModel.load(s"{prefix}/pre/")
+    val model = Models.loadModel[Float](prefix + "vsc.bigdl")
   }
 
   def main(args: Array[String]): Unit = {
@@ -163,6 +167,7 @@ object VSC {
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
       opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
+      opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input data path")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
@@ -188,6 +193,12 @@ object VSC {
           case "tk" => VSC.tokenModelPreprocess(df, config)
           case _ => VSC.semiCharPreprocess(df, config)
         }
+        // save the preprocessing pipeline for later loading
+        val inp = config.inputPath.split("/").last.split("""\.""").head
+        val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
+        pipelineModel.write.overwrite.save(s"${prefix}/pre/")
+        
+
         val vocabDict = vocabulary.zipWithIndex.toMap
         val af = pipelineModel.transform(df)
         // map the label to one-based index (for use in ClassNLLCriterion of BigDL)
@@ -213,8 +224,8 @@ object VSC {
           case _    => semiCharModel(vocabulary.size, labels.size, config)
         }
 
-        val trainingSummary = TrainSummary(appName = "vsc", logDir = "bin/sum/")
-        val validationSummary = ValidationSummary(appName = "vsc", logDir = "bin/sum/")
+        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
+        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
         val (featureSize, labelSize) = config.modelType match {
           case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
           case "sc" => (Array(3*config.maxSequenceLength), Array(config.maxSequenceLength))
@@ -235,10 +246,9 @@ object VSC {
         val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
         logger.info("     Train Accuracy: " + trainingAccuracy.mkString(", "))
         logger.info("Validation Accuracy: " + validationAccuracy.mkString(", "))
-        logger.info("Saving the model...")
-        val inp = config.inputPath.split("/").last.split("""\.""").head
-        val prefix = s"${config.modelPath}/${config.modelType}/${inp}/"
-        model.saveModule(prefix + "/vsc.bigdl", prefix + "/vsc.bin", true)
+
+        logger.info("Saving the model...")        
+        model.saveModel(prefix + "/vsc.bigdl")
 
         sc.stop()
       case None => {}
