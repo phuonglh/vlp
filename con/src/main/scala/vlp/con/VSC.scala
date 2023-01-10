@@ -157,7 +157,10 @@ object VSC {
     }
     cf.show()
     // create a label map which idx -> label
-    val labels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = config.modelType match {
+      case "tk" => preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+      case _ => preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    }
     val labelMap = labels.zipWithIndex.map(p => (p._2 + 1, p._1)).toMap
     println(labelMap)
 
