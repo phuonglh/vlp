@@ -141,7 +141,12 @@ object VSC {
     val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
     val preprocessor = PipelineModel.load(s"${prefix}/pre/")
     val model = Models.loadModel[Float](prefix + "/vsc.bigdl")
-    
+    // add a custom layer ArgMax as the last layer of this model so as to 
+    // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
+    val sequential = model.asInstanceOf[Sequential[Float]]
+    val argmax = ArgMaxLayer()
+    sequential.add(argmax)
+
     val bf = preprocessor.transform(df)
     val cf = config.modelType match {
       case "tk" => 
@@ -161,13 +166,22 @@ object VSC {
       case "tk" => preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
       case _ => preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
     }
-    val labelMap = labels.zipWithIndex.map(p => (p._2 + 1, p._1)).toMap
-    println(labelMap)
 
-    val m = NNModel(model)
-    val af = m.transform(cf)
-    af.show()
-    af.printSchema()
+    // transform the gold "ys" labels to indices
+    val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+    val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")    
+    val ef = ySequencer.transform(cf)
+    // run the prediction 
+    val m = NNModel(sequential)
+    val ff = m.transform(ef)
+    ff.select("prediction", "label").show()
+
+    // evaluate the result
+    import org.apache.spark.mllib.evaluation.MulticlassMetrics
+    val predictionAndLabels = ff.map { case row => 
+      (row.getAs())
+    }
+
   }
 
   def main(args: Array[String]): Unit = {

@@ -5,21 +5,21 @@ package vlp.con
   *
   */
 case class Config(
-  master: String = "local[4]",
-  totalCores: Int = 4,    // X
-  executorCores: Int = 4, // Y ==> there is Y/X executors 
+  master: String = "local[*]",
+  totalCores: Int = 8,    // X
+  executorCores: Int = 8, // Y ==> there is Y/X executors 
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
   minFrequency: Int = 2,
   vocabSize: Int = 32768,
   percentage: Double = 1.0, // percentage of the training data set to use
-  modelPath: String = "bin/",
+  modelPath: String = "bin",
   batchSize: Int = 64,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 30,
   learningRate: Double = 0.001,
-  epochs: Int = 3,
+  epochs: Int = 2,
   embeddingSize: Int = 50,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
