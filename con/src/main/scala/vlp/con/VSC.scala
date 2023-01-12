@@ -21,6 +21,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.DoubleType
 import org.apache.spark.ml.feature._
 import org.apache.spark.ml._
+import org.apache.spark.ml.linalg.Vector
 
 import org.json4s._
 import org.json4s.jackson.Serialization
@@ -174,14 +175,43 @@ object VSC {
     // run the prediction 
     val m = NNModel(sequential)
     val ff = m.transform(ef)
-    ff.select("prediction", "label").show()
+    val result = ff.select("prediction", "label")    
 
     // evaluate the result
     import org.apache.spark.mllib.evaluation.MulticlassMetrics
-    val predictionAndLabels = ff.map { case row => 
-      (row.getAs())
+    val predictionsAndLabels = result.rdd.map { case row => 
+      (row.getAs[Seq[Float]](0).toArray, row.getAs[Vector](1).toArray)
+    }.flatMap { case (prediction, label) => 
+      // truncate the padding values
+      // find the first padding value (-1.0) in the label array
+      var i = label.indexOf(-1.0)
+      if (i == -1) i = label.size
+      prediction.take(i).map(_.toDouble).zip(label.take(i).map(_.toDouble))
+    }
+    val metrics = new MulticlassMetrics(predictionsAndLabels)
+    println(metrics.confusionMatrix)
+    println(s"accuracy = ${metrics.accuracy}")
+    // precision by label
+    val ls = metrics.labels
+    ls.foreach { l =>
+      println(s"precision($l) = " + metrics.precision(l))
     }
 
+    // Recall by label
+    ls.foreach { l =>
+      println(s"recall($l) = " + metrics.recall(l))
+    }
+
+    // False positive rate by label
+    ls.foreach { l =>
+      println(s"FPR($l) = " + metrics.falsePositiveRate(l))
+    }
+
+    // F-measure by label
+    ls.foreach { l =>
+      println(s"fMeasure($l) = " + metrics.fMeasure(l))
+    }
+    println(labelDict)
   }
 
   def main(args: Array[String]): Unit = {
