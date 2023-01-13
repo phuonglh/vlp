@@ -99,9 +99,9 @@ object VSC {
     // input to an embedding layer is an index vector of `3*maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `3*maxSequenceLength x embeddingSize`
     model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=3*config.maxSequenceLength))
-    // reshape the matrix to matrix of shape `maxSequenceLength x 3*embeddingSize`. This operation perform the concatenation 
-    // of [b, i, e] embedding vectors
-    model.add(Reshape(targetShape=Array(-1, 3*config.embeddingSize)))
+    // reshape the output to a matrix of shape `maxSequenceLength x 3*embeddingSize`. This operation performs the concatenation 
+    // of [b, i, e] embedding vectors (to [b :: i :: e])
+    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*config.embeddingSize)))
     // take the matrix above and feed to a GRU layer 
     // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
