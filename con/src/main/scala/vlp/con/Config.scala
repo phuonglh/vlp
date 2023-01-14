@@ -20,10 +20,10 @@ case class Config(
   maxSequenceLength: Int = 30,
   learningRate: Double = 0.001,
   epochs: Int = 2,
-  embeddingSize: Int = 50,
+  embeddingSize: Int = 16,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
-  recurrentSize: Int = 64, // number of units in a recurrent layer
+  recurrentSize: Int = 16, // number of units in a recurrent layer
   hiddenSize: Int = 16, // number of units in the dense layer
   dropoutProbability: Double = 0.1,
   inputPath: String = "dat/vsc/vud.txt.inp",

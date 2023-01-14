@@ -1,0 +1,29 @@
+1. Token Model
+    
+  The input to its BigDL model is a batch of sequences, each sequence is of length maxSeqLen containing integers 
+  corresponding to the indices of the tokens in the sequence, obtained via a token dictionary.
+
+    token => Embedding(d) -> RNN(d => r, returnSeq=true) -> TimeDistributed(Dense(r => h)) ->
+        Dropout(p) -> TimeDistributed(Dense(h => numLabels, softmax))
+
+2. Semi-character Model
+
+  Each syllable (or token) is decomposed into 3 parts: b = first character, e = last character, and i = the middle subsequence.
+  For example, "phương" is decomposed into ["p", "hươn", "g"]. Special cases: "ba" => ["b", "NA", "a"]; "A" => ["A", "NA", "NA"].
+
+  The input to its BigDL model is a batch of sequences, each sequence is of length 3*maxSeqLen containing integer indices as in the 
+  previous model. 
+
+    Embedding(d) -> Reshape((3*maxSeq, d) => (maxSeq, 3*d)) -> RNN(3*d => r, returnSeq=true) -> TimeDistributed(Dense(r => h)) ->
+      Dropout(p) -> TimeDistributed(Dense(h => numLabels, softmax))
+
+3. Character Model
+
+  As in the semi-character model, each token is decomposed into 3 parts [b, i, e]. Then each part is represented by a binary-valued 
+  vector. v(b) and v(e) are one-hot vectors of length d. v(i) is a multi-hot vector, also of length d. Here, d is the size of the alphabet.
+
+  The input to its BigDL model is a batch of sequence, each sequence is of length (3*maxSeqLen*d). 
+
+    Reshape(3*maxSeqLen*d => (maxSeqLen, 3*d)) -> RNN(3*d => r, returnSeq=true) -> TimeDistributed(Dense(r => h)) ->
+      Dropout(p) -> TimeDistributed(Dense(h => numLabels, softmax))
+    

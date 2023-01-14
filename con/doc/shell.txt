@@ -1,0 +1,39 @@
+import com.intel.analytics.bigdl.numeric.NumericFloat
+
+import com.intel.analytics.bigdl.dllib.keras.layers._
+import com.intel.analytics.bigdl.dllib.keras.Model
+import com.intel.analytics.bigdl.dllib.keras.models.Sequential
+import com.intel.analytics.bigdl.dllib.utils.Shape
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+
+===
+val input = Input(Shape(5))
+val layer1 = Dense(4, activation="relu").inputs(input)
+val layer2 = Dense(2, activation="sigmoid").inputs(layer1)
+val model = Model(input, layer2)
+
+val xs = Tensor(3, 5).randn()
+model.forward(xs)
+
+===
+
+val maxSequenceLength = 5
+val vocabSize = 20
+val embeddingSize = 10
+val recurrentSize = 6
+val hiddenSize = 6
+val labelSize = 4
+
+val model = Sequential()
+
+val embedding = Embedding(inputDim = vocabSize, outputDim = embeddingSize, inputLength = maxSequenceLength)
+model.add(embedding)
+
+val recurrent = GRU(outputDim = recurrentSize, returnSequences = true)
+model.add(recurrent)
+
+val x = Tensor(Array(2, maxSequenceLength)).rand()
+for (i <- 1 to maxSequenceLength) x.setValue(1, i, i*2)
+for (i <- 1 to maxSequenceLength) x.setValue(2, i, i*2-1)
+
+val td = TimeDistributed(Dense(outputDim = hiddenSize, "relu"))

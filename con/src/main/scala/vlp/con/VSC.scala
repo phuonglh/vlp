@@ -55,7 +55,7 @@ object VSC {
     return af.select("x", "y")
   }
   
- def tokenModel(vocabSize: Int, labelSize: Int, config: Config): Sequential[Float] = {
+  def tokenModel(vocabSize: Int, labelSize: Int, config: Config): Sequential[Float] = {
     val model = Sequential()
     // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
@@ -135,6 +135,31 @@ object VSC {
     val labels = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (preprocessor, vocabulary, labels)
+  }
+
+  def charModel(vocabSize: Int, labelSize: Int, config: Config): Sequential[Float] = {
+    val model = Sequential()
+    // reshape the output to a matrix of shape `maxSequenceLength x 3*vocabSize`. This operation performs the concatenation 
+    // of [b, i, e] embedding vectors (to [b :: i :: e]). Here vocab is the alphabet since each element is a character.
+    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*vocabSize)))
+    // take the matrix above and feed to a GRU layer 
+    // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
+    // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
+    // `maxSequenceLength x recurrentSize` 
+    model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
+    // feed the output of the GRU to a dense layer with relu activation function
+    model.add(TimeDistributed(
+      Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    )
+    // add a dropout layer for regularization
+    model.add(Dropout(config.dropoutProbability))
+    // add the last layer for multi-class classification
+    model.add(TimeDistributed(
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
+    )
+    return model
   }
 
   def predict(df: DataFrame, config: Config) = {
