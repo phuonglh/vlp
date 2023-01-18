@@ -141,7 +141,7 @@ object VSC {
     val model = Sequential()
     // reshape the output to a matrix of shape `maxSequenceLength x 3*vocabSize`. This operation performs the concatenation 
     // of [b, i, e] embedding vectors (to [b :: i :: e]). Here vocab is the alphabet since each element is a character.
-    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*vocabSize)))
+    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*vocabSize), inputShape=Shape(3*config.maxSequenceLength*vocabSize)))
     // take the matrix above and feed to a GRU layer 
     // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
@@ -162,6 +162,21 @@ object VSC {
     return model
   }
 
+  def charPreprocess(df: DataFrame, config: Config): (PipelineModel, Array[String], Array[String]) = {
+    val xTokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("cs").setPattern(".").setGaps(false).setToLowercase(true)
+    val xVectorizer = new CountVectorizer().setInputCol("cs").setOutputCol("us").setMinDF(config.minFrequency)
+      .setVocabSize(config.vocabSize).setBinary(true)
+    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
+    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
+    val tokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer, tokenizer))
+    val preprocessor = pipeline.fit(df)
+    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    return (preprocessor, vocabulary, labels)
+  }
+
   def predict(df: DataFrame, config: Config) = {
     val inp = config.inputPath.split("/").last.split("""\.""").head
     val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
@@ -180,17 +195,23 @@ object VSC {
         val vocabDict = vocabulary.zipWithIndex.toMap
         val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
         xSequencer.transform(bf)
-      case _    => 
+      case "sc" => 
         val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
         val vocabDict = vocabulary.zipWithIndex.toMap
         val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+        xSequencer.transform(bf)
+      case _ =>
+        val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+        val vocabDict = vocabulary.zipWithIndex.toMap
+        val xSequencer = new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
         xSequencer.transform(bf)
     }
     cf.show()
     // create a label map which idx -> label
     val labels = config.modelType match {
       case "tk" => preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
-      case _ => preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+      case "sc" => preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+      case _ => preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     }
 
     // transform the gold "ys" labels to indices
@@ -289,7 +310,8 @@ object VSC {
           case "train" =>        
             val (pipelineModel, vocabulary, labels) = config.modelType match {
               case "tk" => VSC.tokenModelPreprocess(df, config)
-              case _ => VSC.semiCharPreprocess(df, config)
+              case "sc" => VSC.semiCharPreprocess(df, config)
+              case _ => VSC.charPreprocess(df, config)
             }
             // save the preprocessing pipeline for later loading
             val inp = config.inputPath.split("/").last.split("""\.""").head
@@ -308,8 +330,12 @@ object VSC {
               case "tk" => 
                 val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
                 xSequencer.transform(bf)
-              case _    => 
+              case "sc"   => 
                 val xSequencer = new SemiCharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+                xSequencer.transform(bf)
+              case _ => 
+                println(vocabDict)
+                val xSequencer = new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
                 xSequencer.transform(bf)
             }
             cf.show()
@@ -349,6 +375,8 @@ object VSC {
 
             logger.info("Saving the model...")        
             model.saveModel(prefix + "/vsc.bigdl", overWrite = true)
+
+            predict(df, config)
         case "predict" => 
           predict(df, config)
       }

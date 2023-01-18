@@ -1,4 +1,4 @@
-
+package vlp.con
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.UnaryTransformer
@@ -35,24 +35,30 @@ class MultiHotSequencer(val uid: String, val dictionary: Map[String, Int], maxSe
   }
 
   override protected def createTransformFunc: Seq[String] => Vector = {
+    // convert a token into a double array
     def g(x: String): Array[Double] = {
       val b = x.charAt(0).toString()
-      val e = if (x.size >= 2) x.charAt(x.size-1).toString() else "NA"
+      val e = if (x.size >= 2) x.charAt(x.size-1).toString() else "$NA"
       val m = if (x.size >= 3) {
         x.substring(1, x.size-1)
-      } else "NA"
+      } else "$NA"
       val vocab = dictionaryBr.get.value
-      val vb = Array.fill[Double](vocab.size)(0)
-      vb(vocab(b)) = 1.0
-      val ve = Array.fill[Double](vocab.size)(0)
-      ve(vocab(e)) = 1.0
-      val vm = Array.fill[Double](vocab.size)(0)
-      m.foreach(c => vm(c) = 1.0)
+      val vb = Array.fill[Double](vocab.size)(0d)
+      if (vocab.contains(b))
+        vb(vocab(b)) = 1.0
+      val ve = Array.fill[Double](vocab.size)(0d)
+      if (e != "$NA" && vocab.contains(e)) 
+        ve(vocab(e)) = 1.0
+      val vm = Array.fill[Double](vocab.size)(0d)
+      if (m != "$NA") m.foreach { c => 
+        if (vocab.contains(c.toString))
+          vm(vocab(c.toString)) = 1.0 
+      }
       return vb ++ vm ++ ve
     }
-
+    // convert a sequence of token into a vector
     def f(xs: Seq[String]): Vector = {      
-      // truncate or pad
+      // truncate or pad, and then convert
       if (xs.size >= maxSeqLen) {
         val ys = xs.take(maxSeqLen)
         val vs = ys.map(x => g(x))

@@ -11,7 +11,7 @@ case class Config(
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
-  minFrequency: Int = 2,
+  minFrequency: Int = 1,
   vocabSize: Int = 32768,
   percentage: Double = 1.0, // percentage of the training data set to use
   modelPath: String = "bin",
