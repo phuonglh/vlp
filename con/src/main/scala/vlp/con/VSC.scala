@@ -319,7 +319,8 @@ object VSC {
           
             val model = config.modelType match {
               case "tk" => tokenModel(vocabulary.size, labels.size, config)
-              case _    => semiCharModel(vocabulary.size, labels.size, config)
+              case "sc"   => semiCharModel(vocabulary.size, labels.size, config)
+              case _ => charModel(vocabulary.size, labels.size, config)
             }
 
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
@@ -327,6 +328,7 @@ object VSC {
             val (featureSize, labelSize) = config.modelType match {
               case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
               case "sc" => (Array(3*config.maxSequenceLength), Array(config.maxSequenceLength))
+              case "ch" => (Array(3*config.maxSequenceLength*vocabulary.size), Array(config.maxSequenceLength))
               case _    => (Array(0), Array(0))
             }
             val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true), featureSize, labelSize)
