@@ -66,10 +66,11 @@ object VSC {
     // `maxSequenceLength x recurrentSize` 
     model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
     // feed the output of the GRU to a dense layer with relu activation function
-    model.add(TimeDistributed(
-      Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-      inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
-    )
+    // model.add(TimeDistributed(
+    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    // )
+    model.add(GRU(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
@@ -107,11 +108,12 @@ object VSC {
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
     model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
-    // feed the output of the GRU to a dense layer with relu activation function
-    model.add(TimeDistributed(
-      Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-      inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
-    )
+    // // feed the output of the GRU to a dense layer with relu activation function
+    // model.add(TimeDistributed(
+    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    // )
+    model.add(GRU(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
@@ -147,11 +149,12 @@ object VSC {
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
     model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
-    // feed the output of the GRU to a dense layer with relu activation function
-    model.add(TimeDistributed(
-      Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-      inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
-    )
+    // // feed the output of the GRU to a dense layer with relu activation function
+    // model.add(TimeDistributed(
+    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    // )
+    model.add(GRU(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
@@ -321,7 +324,7 @@ object VSC {
 
             val vocabDict = vocabulary.zipWithIndex.toMap
             val af = pipelineModel.transform(df)
-            // map the label to one-based index (for use in ClassNLLCriterion of BigDL)
+            // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
             val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
             val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
             val bf = ySequencer.transform(af)
@@ -341,7 +344,7 @@ object VSC {
             cf.show()
             cf.printSchema()
 
-            val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 80L)
+            val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 85L)
           
             val model = config.modelType match {
               case "tk" => tokenModel(vocabulary.size, labels.size, config)
@@ -357,7 +360,10 @@ object VSC {
               case "ch" => (Array(3*config.maxSequenceLength*vocabulary.size), Array(config.maxSequenceLength))
               case _    => (Array(0), Array(0))
             }
-            val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(), true), featureSize, labelSize)
+            // our classes are unbalanced, we use weights to improve accuracy
+            val w = Tensor(Array(labelDict.size)).rand()
+            w.setValue(1, 0.1f); for (j <- 2 to 5) w.setValue(j, 0.9f)
+            val classifier = NNEstimator(model, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
                 .setLabelCol("label").setFeaturesCol("features")
                 .setBatchSize(config.batchSize)
                 .setOptimMethod(new Adam(config.learningRate))
@@ -370,8 +376,8 @@ object VSC {
             val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
             val validationLoss = validationSummary.readScalar("Loss")
             val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
-            logger.info("     Train Accuracy: " + trainingAccuracy.mkString(", "))
-            logger.info("Validation Accuracy: " + validationAccuracy.mkString(", "))
+            logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
+            logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
 
             logger.info("Saving the model...")        
             model.saveModel(prefix + "/vsc.bigdl", overWrite = true)
