@@ -16,20 +16,19 @@ case class Config(
   percentage: Double = 1.0, // percentage of the training data set to use
   modelPath: String = "bin",
   batchSize: Int = 64,
-  epsilon: Double = 1E-5,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
   epochs: Int = 40,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
-  recurrentSize: Int = 32, // number of units in a recurrent layer
-  hiddenSize: Int = 16, // number of units in the dense layer
+  recurrentSize: Int = 128, // number of units in a recurrent layer
+  hiddenSize: Int = 64, // number of units in the dense layer
   dropoutProbability: Double = 0.1,
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 
   scorePath: String = "dat/scores.json",
-  delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
   verbose: Boolean = false,
-  modelType: String = "ch" // tk: token, ch: character
+  modelType: String = "ch", // tk: token, ch: character,
+  configBERT: ConfigBERT = ConfigBERT()
 ) extends Serializable

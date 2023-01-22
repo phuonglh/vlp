@@ -179,28 +179,20 @@ object VSC {
             prediction.take(i).map(_.toDouble).zip(label.take(i).map(_.toDouble))
           }
           val metrics = new MulticlassMetrics(predictionsAndLabels)
-          println(metrics.confusionMatrix)
-          println(s"accuracy = ${metrics.accuracy}")
+          val precisionByLabel = Array.fill(labels.size)(0d)
+          val recallByLabel = Array.fill(labels.size)(0d)
+          val fMeasureByLabel = Array.fill(labels.size)(0d)
           // precision by label
           val ls = metrics.labels
-          ls.foreach { l =>
-            println(s"precision($l) = " + metrics.precision(l))
+          ls.foreach { k => 
+            precisionByLabel(k.toInt-1) = metrics.precision(k)
+            recallByLabel(k.toInt-1) = metrics.recall(k)
+            fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
           }
+          val scores = Score(metrics.confusionMatrix, metrics.accuracy, precisionByLabel, 
+            recallByLabel, fMeasureByLabel)
+          println(Serialization.writePretty(scores))
 
-          // Recall by label
-          ls.foreach { l =>
-            println(s"recall($l) = " + metrics.recall(l))
-          }
-
-          // False positive rate by label
-          ls.foreach { l =>
-            println(s"FPR($l) = " + metrics.falsePositiveRate(l))
-          }
-
-          // F-measure by label
-          ls.foreach { l =>
-            println(s"fMeasure($l) = " + metrics.fMeasure(l))
-          }
         }
         sc.stop()
       case None => {}

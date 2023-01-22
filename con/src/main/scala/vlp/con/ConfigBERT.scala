@@ -10,10 +10,10 @@ package vlp.con
  * @param attnPDrop drop probability of attention
 */
 case class ConfigBERT(
-  hiddenSize: Int = 100,
+  hiddenSize: Int = 64,
   nBlock: Int = 4,
   nHead: Int = 4,
-  maxPositionLen: Int = 128,
-  intermediateSize: Int = 1024,
+  maxPositionLen: Int = 30,
+  intermediateSize: Int = 32,
   hiddenPDrop: Double = 0.1,
 )
