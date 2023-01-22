@@ -31,5 +31,5 @@ case class Config(
   scorePath: String = "dat/scores.json",
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
   verbose: Boolean = false,
-  modelType: String = "sc" // tk: token, sc: semi-character
+  modelType: String = "ch" // tk: token, ch: character
 ) extends Serializable
