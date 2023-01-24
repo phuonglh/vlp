@@ -22,12 +22,12 @@ case class Config(
   embeddingSize: Int = 16,
   layers: Int = 1, // number of bi-recurrent layers
   recurrentSize: Int = 128, // number of units in a recurrent layer
-  hiddenSize: Int = 64, // number of units in the dense layer
+  hiddenSize: Int = 64, // number of units in the last dense layer
   dropoutProbability: Double = 0.1,
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 
   scorePath: String = "dat/scores.json",
   verbose: Boolean = false,
-  modelType: String = "ch", // tk: token, ch: character
-  configBERT: ConfigBERT = ConfigBERT()
+  modelType: String = "tb", // tk: token LSTM, ch: character LSTM, tb: token BERT, cb: character BERT
+  bert: ConfigBERT = ConfigBERT()
 ) extends Serializable

@@ -96,7 +96,7 @@ object VSC {
         df.printSchema()
         df.show()
 
-        val model = ModelFactory(config.modelType, true, config)
+        val model = ModelFactory(config.modelType, config)
         config.mode match {
           case "train" =>        
             val (pipelineModel, vocabulary, labels) = model.preprocessor(df)            
@@ -105,7 +105,6 @@ object VSC {
             val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
             pipelineModel.write.overwrite.save(s"${prefix}/pre/")
             
-
             val vocabDict = vocabulary.zipWithIndex.toMap
             val af = pipelineModel.transform(df)
             // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
@@ -117,6 +116,9 @@ object VSC {
               case "tk" => 
                 val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
                 xSequencer.transform(bf)
+              case "tb" =>
+                val xSequencer = new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+                xSequencer.transform(bf)                
               case _ => 
                 val xSequencer = new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
                 xSequencer.transform(bf)
@@ -131,6 +133,7 @@ object VSC {
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
             val (featureSize, labelSize) = config.modelType match {
               case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
+              case "tb" => (Array(4*config.maxSequenceLength), Array(config.maxSequenceLength))
               case "ch" => (Array(3*config.maxSequenceLength*vocabulary.size), Array(config.maxSequenceLength))
               case _    => (Array(0), Array(0))
             }

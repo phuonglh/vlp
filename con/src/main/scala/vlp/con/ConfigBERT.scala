@@ -10,10 +10,11 @@ package vlp.con
  * @param attnPDrop drop probability of attention
 */
 case class ConfigBERT(
-  hiddenSize: Int = 64,
-  nBlock: Int = 4,
-  nHead: Int = 4,
-  maxPositionLen: Int = 30,
-  intermediateSize: Int = 32,
-  hiddenPDrop: Double = 0.1,
+  hiddenSize: Int = 96,        // 8 times less than the default 768
+  nBlock: Int = 2,             // default is 12
+  nHead: Int = 2,              // default is 12
+  maxPositionLen: Int = 30,    // should be the same as config.maxSeqLen
+  intermediateSize: Int = 96,  // 32 times less than the default 3072
+  hiddenPDrop: Double = 0.1,   // default value of BigDL BERT
+  attnPDrop: Double = 0.1      // default value of BigDL BERT
 )

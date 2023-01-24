@@ -11,8 +11,7 @@ import org.apache.spark.sql.types.DataType
 
 /**
   * A sequence vectorizer transforms a sequence of tokens into a sequence of indices
-  * using a dictionary. This transformer pads or 
-  * truncate long sentence to a given `maxSequenceLength`.
+  * using a dictionary. This transformer pads or truncate long sentence to a given `maxSequenceLength`.
   *
   * phuonglh@gmail.com
   */
