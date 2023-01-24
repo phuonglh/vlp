@@ -59,7 +59,7 @@ object ModelFactory {
 }
 
 /**
-  * Token-based model.
+  * Token-based model using LSTM
   *
   * @param config
   */
@@ -69,17 +69,17 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
     model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength))
-    // take the matrix above and feed to a GRU layer 
-    // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
+    // take the matrix above and feed to a RNN layer 
+    // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
-    model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
-    // feed the output of the GRU to a dense layer with relu activation function
+    model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
+    // feed the output of the RNN to a dense layer with relu activation function
     // model.add(TimeDistributed(
     //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
     //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
     // )
-    model.add(GRU(outputDim = config.hiddenSize, returnSequences = true))
+    model.add(LSTM(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
@@ -106,7 +106,7 @@ class TokenModel(config: Config) extends AbstractModel(config) {
 }
 
 /**
-  * Character-based model.
+  * Character-based model using LSTM
   *
   * @param config
   */
@@ -116,17 +116,17 @@ class CharModel(config: Config) extends AbstractModel(config) {
     // reshape the output to a matrix of shape `maxSequenceLength x 3*vocabSize`. This operation performs the concatenation 
     // of [b, i, e] embedding vectors (to [b :: i :: e]). Here vocab is the alphabet since each element is a character.
     model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*vocabSize), inputShape=Shape(3*config.maxSequenceLength*vocabSize)))
-    // take the matrix above and feed to a GRU layer 
-    // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
+    // take the matrix above and feed to a RNN layer 
+    // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
-    model.add(GRU(outputDim = config.recurrentSize, returnSequences = true))
-    // // feed the output of the GRU to a dense layer with relu activation function
+    model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
+    // // feed the output of the RNN to a dense layer with relu activation function
     // model.add(TimeDistributed(
     //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
     //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
     // )
-    model.add(GRU(outputDim = config.hiddenSize, returnSequences = true))
+    model.add(LSTM(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
@@ -151,4 +151,42 @@ class CharModel(config: Config) extends AbstractModel(config) {
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (preprocessor, vocabulary, labels)
   }
+}
+
+class TokenModelBERT(config: Config) extends AbstractModel(config) {
+  def createModel(vocabSize: Int, labelSize: Int): Sequential[Float] = {
+    val model = Sequential()
+    // reshape the vector of length 4*maxSeqLen to a matrix of shape Array(4, maxSeqLen)
+    val reshape = Reshape(targetShape=Array(4, config.maxSequenceLength), inputShape=Shape(4*config.maxSequenceLength))
+    model.add(reshape)
+    // split the matrix to a table of 4 inputs. We split along dimension 0 (row)
+    val split = SplitTensor(0, 4)
+    model.add(split)
+    // feed the table to a BERT layer, output the last block state only
+    val bert = BERT(vocabSize, hiddenSize, nBlock, nHead, maxPositionLen, intermediateSize, outputAllBlock = false)
+    model.add(bert)
+    // select the last state of the BERT layer, this will be a tensor of shape Array(maxSeqLen, hiddenSize)
+    val select = SelectTable(0)
+    // add the last layer for multi-class classification
+    model.add(TimeDistributed(
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+      inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
+    )
+    return model
+  }
+
+  def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
+    val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency)
+      .setVocabSize(config.vocabSize).setBinary(true)
+    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
+    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer))
+    val preprocessor = pipeline.fit(df)
+    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    return (preprocessor, vocabulary, labels)
+  }
+
 }

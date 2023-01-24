@@ -73,7 +73,6 @@ object VSC {
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
-      opt[Boolean]('g', "gru").action((x, conf) => conf.copy(gru = x)).text("use 'gru' if true, otherwise use lstm")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input data path")
@@ -157,7 +156,7 @@ object VSC {
             logger.info("Saving the model...")        
             bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
 
-        case "predict" => 
+        case "eval" => 
           val inp = config.inputPath.split("/").last.split("""\.""").head
           val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
