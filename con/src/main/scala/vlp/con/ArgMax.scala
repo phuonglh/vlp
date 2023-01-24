@@ -1,10 +1,9 @@
 package vlp.con
 
-import com.intel.analytics.bigdl.dllib.nn.ops.Operation
 import com.intel.analytics.bigdl.dllib.tensor.{IntType, Tensor}
 import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.{NumericWildcard, TensorNumeric}
 
-import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, IdentityOutputShape, TensorModule}
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, TensorModule}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.Net

@@ -170,7 +170,7 @@ class TokenModelBERT(config: Config) extends TokenModel(config) {
     val split = SplitTensor(0, 4)
     model.add(split)
     // delete the singleton dimension 1 (the batch dimension is 0)
-    model.add(Squeeze(dim=1))
+    model.add(SqueezeTableLayer())
     // feed the table to a BERT layer, output the last block state only
     val hiddenSize = config.bert.hiddenSize
     val nBlock = config.bert.nBlock
