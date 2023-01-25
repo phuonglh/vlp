@@ -95,15 +95,13 @@ object VSC {
         val df = VSC.readData(sc, config).sample(config.percentage)
         df.printSchema()
         df.show()
-
+        // split data
+        val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 85L)
+        // create a model
         val model = ModelFactory(config.modelType, config)
         config.mode match {
-          case "train" =>        
-            val (pipelineModel, vocabulary, labels) = model.preprocessor(df)            
-            // save the preprocessing pipeline for later loading
-            val inp = config.inputPath.split("/").last.split("""\.""").head
-            val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
-            pipelineModel.write.overwrite.save(s"${prefix}/pre/")
+          case "train" => 
+            val (pipelineModel, vocabulary, labels) = model.preprocessor(trainingDF)  
             
             val vocabDict = vocabulary.zipWithIndex.toMap
             val af = pipelineModel.transform(df)
@@ -126,8 +124,12 @@ object VSC {
             cf.show()
             cf.printSchema()
 
-            val Array(trainingDF, validationDF) = cf.randomSplit(Array(0.8, 0.2), seed = 85L)          
             val bigdl = model.createModel(vocabulary.size, labels.size)
+            bigdl.summary()
+
+            // get the input data set name (for example, "vud", "fin") 
+            val inp = config.inputPath.split("/").last.split("""\.""").head
+            val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
 
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
@@ -166,7 +168,8 @@ object VSC {
             val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
-
+            // save the model
+            pipelineModel.write.overwrite.save(s"${prefix}/pre/")
             logger.info("Saving the model...")        
             bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
 

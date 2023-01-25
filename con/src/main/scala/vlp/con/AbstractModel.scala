@@ -25,27 +25,33 @@ abstract class AbstractModel(config: Config) {
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String])
 
   def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float]): DataFrame = {
-    // add a custom layer ArgMax as the last layer of this model so as to 
-    // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
-    val sequential = bigdl.asInstanceOf[Sequential[Float]]
-    sequential.add(ArgMaxLayer())
     val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
+    // use a sequencer to transform the input data frame into features
     val xSequencer = config.modelType match {
-      case "tk" => 
-        new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-      case _ =>
-        new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+      case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
+      case "tb" => new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
+      case _ => new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
     }
     val cf = xSequencer.transform(bf)
     val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-    // transform the gold "ys" labels to indices
+    // transform the gold "ys" labels to indices. NOTE: this is for evaluation mode only
     val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")    
     val ef = ySequencer.transform(cf)
-    // run the prediction 
-    val m = NNModel(sequential)
+
+    // add a custom layer ArgMax as the last layer of the BigDL model so as to 
+    // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
+    val m = if (config.modelType == "tk" || config.modelType == "ch") {
+      val sequential = bigdl.asInstanceOf[Sequential[Float]]
+      sequential.add(ArgMaxLayer())
+      NNModel(sequential)
+    } else {
+      val model = bigdl.asInstanceOf[Model[Float]]
+      // TODO: add the ArgMax module to the model as the last layer
+      NNModel(model)
+    }
     val ff = m.transform(ef)
     return ff.select("prediction", "label")
   }
@@ -62,7 +68,7 @@ object ModelFactory {
 }
 
 /**
-  * Token-based model using LSTM
+  * Token-based model using LSTM. This is a sequential model.
   *
   * @param config
   */
@@ -109,7 +115,7 @@ class TokenModel(config: Config) extends AbstractModel(config) {
 }
 
 /**
-  * Character-based model using LSTM
+  * Character-based model using LSTM. This is a sequential model.
   *
   * @param config
   */
@@ -157,7 +163,7 @@ class CharModel(config: Config) extends AbstractModel(config) {
 }
 
 /**
-  * The token-based BERT model extends [[TokenModel]] to reuse its preprocessor.
+  * The token-based BERT model extends [[TokenModel]] to reuse its preprocessor. This is a graph model.
   *
   * @param config
   */
