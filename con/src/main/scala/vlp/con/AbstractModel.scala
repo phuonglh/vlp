@@ -21,13 +21,14 @@ import org.apache.spark.ml.feature.{Tokenizer, RegexTokenizer, CountVectorizer, 
   * phuonglh@gmail.com
   */
 abstract class AbstractModel(config: Config) {
-  def createModel(vocabSize: Int, labelSize: Int): Sequential[Float]
+  def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float]
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String])
 
-  def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: Sequential[Float]): DataFrame = {
+  def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float]): DataFrame = {
     // add a custom layer ArgMax as the last layer of this model so as to 
     // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
-    bigdl.add(ArgMaxLayer())
+    val sequential = bigdl.asInstanceOf[Sequential[Float]]
+    sequential.add(ArgMaxLayer())
     val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
@@ -44,7 +45,7 @@ abstract class AbstractModel(config: Config) {
     val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")    
     val ef = ySequencer.transform(cf)
     // run the prediction 
-    val m = NNModel(bigdl)
+    val m = NNModel(sequential)
     val ff = m.transform(ef)
     return ff.select("prediction", "label")
   }
@@ -66,7 +67,7 @@ object ModelFactory {
   * @param config
   */
 class TokenModel(config: Config) extends AbstractModel(config) {
-  def createModel(vocabSize: Int, labelSize: Int): Sequential[Float] = {
+  def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
     val model = Sequential()
     // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
@@ -113,7 +114,7 @@ class TokenModel(config: Config) extends AbstractModel(config) {
   * @param config
   */
 class CharModel(config: Config) extends AbstractModel(config) {
-  def createModel(vocabSize: Int, labelSize: Int): Sequential[Float] = {
+  def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
     val model = Sequential()
     // reshape the output to a matrix of shape `maxSequenceLength x 3*vocabSize`. This operation performs the concatenation 
     // of [b, i, e] embedding vectors (to [b :: i :: e]). Here vocab is the alphabet since each element is a character.
@@ -161,16 +162,22 @@ class CharModel(config: Config) extends AbstractModel(config) {
   * @param config
   */
 class TokenModelBERT(config: Config) extends TokenModel(config) {
-  override def createModel(vocabSize: Int, labelSize: Int): Sequential[Float] = {
-    val model = Sequential()
+  override def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
+    val maxSeqLen = config.maxSequenceLength
+    val inputIds = Input(inputShape = Shape(maxSeqLen))
+    val segmentIds = Input(inputShape = Shape(maxSeqLen))
+    val positionIds = Input(inputShape = Shape(maxSeqLen))
+    val masks = Input(inputShape = Shape(maxSeqLen))
+    val masksReshaped = Reshape(targetShape = Array(1, 1, maxSeqLen)).inputs(masks)
+
     // reshape the vector of length 4*maxSeqLen to a matrix of shape Array(4, maxSeqLen)
-    val reshape = Reshape(targetShape=Array(4, config.maxSequenceLength), inputShape=Shape(4*config.maxSequenceLength))
-    model.add(reshape)
-    // split the matrix to a table of 4 inputs. We split along dimension 0 (row)
-    val split = SplitTensor(0, 4)
-    model.add(split)
-    // delete the singleton dimension 1 (the batch dimension is 0)
-    model.add(SqueezeTableLayer())
+    // val reshape = Reshape(targetShape=Array(4, config.maxSequenceLength), inputShape=Shape(4*config.maxSequenceLength))    
+    // model.add(reshape)
+    // // split the matrix to a table of 4 inputs. We split along dimension 0 (row)
+    // val split = SplitTensor(0, 4)
+    // model.add(split)
+    // // delete the singleton dimension 1 (the batch dimension is 0)
+    // model.add(SqueezeTableLayer())
     // feed the table to a BERT layer, output the last block state only
     val hiddenSize = config.bert.hiddenSize
     val nBlock = config.bert.nBlock
@@ -178,14 +185,12 @@ class TokenModelBERT(config: Config) extends TokenModel(config) {
     val maxPositionLen = config.bert.maxPositionLen
     val intermediateSize = config.bert.intermediateSize
     val bert = BERT(vocabSize, hiddenSize, nBlock, nHead, maxPositionLen, intermediateSize, outputAllBlock = false)
-    model.add(bert)
-    // select the last state of the BERT layer, this will be a tensor of shape Array(maxSeqLen, hiddenSize)
-    val select = SelectTable(0)
-    // add the last layer for multi-class classification
-    model.add(TimeDistributed(
-      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-      inputShape=Shape(config.maxSequenceLength, intermediateSize))
-    )
+    val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
+    val bertOutput = SelectTable(0).inputs(bertNode)
+
+    val dense = Dense(labelSize).inputs(bertOutput)
+    val output = SoftMax().inputs(dense)
+    val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
     return model
   }
 }

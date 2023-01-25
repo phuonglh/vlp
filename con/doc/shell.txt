@@ -37,3 +37,100 @@ for (i <- 1 to maxSequenceLength) x.setValue(1, i, i*2)
 for (i <- 1 to maxSequenceLength) x.setValue(2, i, i*2-1)
 
 val td = TimeDistributed(Dense(outputDim = hiddenSize, "relu"))
+
+===
+import com.intel.analytics.bigdl.dllib.tensor._
+import com.intel.analytics.bigdl.dllib.utils.T
+import com.intel.analytics.bigdl.dllib.keras.layers.BERT
+
+Input to a BERT layer is a table of 4 tensors:
+
+// create a matrix of shape 2x5: [1 2 3 4 5 ; 6 7 8 9 10], where 2 is the batchSize
+val tokenId = Tensor(T(T(1.0, 2.0, 3.0, 4.0, 5.0), T(6.0, 7.0, 8.0, 9.0, 10.0)))
+
+// token type = 0 for sentence A, token type = 1 for sentence B
+// here we have only one sentence, therere, all token types are 0.
+val tokenTypeId = Tensor(2,5).fill(0)
+
+// position id tensor 
+val positionId = Tensor(2,5).fill(0)
+for (i <- 1 to 2; j <- 1 to 5)
+  positionId.setValue(i, j, j-1)
+
+// attention mask with indices in [0, 1]
+// it's a mask to be used if the input sequence length is smaller than seqLen in the current batch.
+val attentionMask = Tensor(2,1,1,5).fill(1.0f)
+
+
+Output of a BERT is a Table:
+ * 1. The states of BERT layer.
+ * 2. The pooled output which processes the hidden state of the last layer with regard to the first
+  token of the sequence. This would be useful for segment-level tasks.
+
+===
+* [[BERT]] A self attention keras like layer
+* @param vocab vocabulary size of training data, default is 40990
+* @param hiddenSize size of the encoder layers, default is 768
+* @param nBlock block number, default is 12
+* @param nHead head number, default is 12
+* @param maxPositionLen sequence length, default is 512
+* @param intermediateSize The size of the "intermediate" (i.e., feed-forward), default is 3072
+* @param hiddenPDrop The dropout probability for all fully connected layers, default is 0.1
+* @param attnPDrop drop probability of attention, default is 0.1
+* @param initializerRange weight initialization range, default is 0.02
+* @param outputAllBlock whether output all blocks' output, default is true
+* @param inputSeqLen sequence length of input, default is -1 which means the same with maxPositionLen
+
+val vocabSize = 20
+val hiddenSize = 96 // 8 times less than the default value
+val nBlock = 3 // 4 times less than the default value
+val nHead = 3  // 4 times less than the default value
+val maxPositionLen = 5
+val intermediateSize = 384 // 8 times less than the default value
+val hiddenPDrop = 0.1
+val attnPDrop = 0.1
+val initializerRange = 0.02
+val inputSeqLen = -1
+
+// create a table 
+val x = T(tokenId, tokenTypeId, positionId, attentionMask)
+val bert = BERT(vocabSize, hiddenSize, nBlock, nHead, maxPositionLen, intermediateSize, outputAllBlock = true)
+val shape = Shape(List(Shape(1, maxPositionLen), Shape(1, maxPositionLen), Shape(1, maxPositionLen), Shape(2, 1, 1, maxPositionLen)))
+bert.build(shape)
+val output = bert.forward(x) // ==> this is an activity, need to cast to Table
+val y = output.toTable
+
+// get the first state of the BERT layer
+val y1 = y(1).asInstanceOf[Tensor[Float]]
+// get the second state of the BERT layer
+val y2 = y(2).asInstanceOf[Tensor[Float]]
+// get the third state of the BERT layer
+val y3 = y(3).asInstanceOf[Tensor[Float]]
+
+Each of the state above is of size Array(2, 5, 96).
+
+// get the pooled output which processes the hidden state of the last layer with regard to the first
+//  token of the sequence. This would be useful for segment-level tasks.
+val y4 = y(4).asInstanceOf[Tensor[Float]]
+
+The pooled output is of size Array(2, 96).
+
+If the param outputAllBlock=false, then there is only two tensor in the output table.
+
+===
+val x = Tensor(2,20).rand()
+val reshape = Reshape(targetShape=Array(4,5), inputShape=Shape(20))
+reshape.build(Shape(-1,20))
+val y = reshape.forward(x)
+
+val split = SplitTensor(1, 4, inputShape=Shape(4,5)) // split along row (0 is the batch dimension)
+split.build(Shape(-1,4,5))
+val z = split.foward(y) // => a table of 4 elements
+
+// take the first element:
+ val z1 = z(1).asInstanceOf[Tensor[Float]] // => a DenseTensor of size 2x1x5
+
+ // squeeze all the tensors inside the table
+val squeezeTable = SqueezeTableLayer(Shape(4))
+squeezeTable.build(Shape(-1,4))
+squeezeTable.forward(z)

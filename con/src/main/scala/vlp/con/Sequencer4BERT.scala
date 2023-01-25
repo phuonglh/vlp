@@ -32,20 +32,21 @@ class Sequencer4BERT(val uid: String, val dictionary: Map[String, Int], maxSeque
 
   override protected def createTransformFunc: Seq[String] => Vector = {
     def f(xs: Seq[String]): Vector = {
-      // token ids, start from 1, therefore we need to increase the ids of the vocabulary by 1
-      val tokens = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0).toDouble + 1).toArray
+      val n = xs.size
+      // token ids
+      val tokens = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0).toDouble).toArray
       // token type, all are 0 (0 for sentence A, 1 for sentence B -- here we have only one sentence)
-      val types = Array.fill[Double](maxSeqLen)(0)
+      val types = Array.fill[Double](n)(0)
       // positions, start from 0 until xs.size
-      val positions = Array.fill[Double](maxSeqLen)(0)
-      for (j <- 0 until maxSeqLen)
+      val positions = Array.fill[Double](n)(0)
+      for (j <- 0 until n)
         positions(j) = j
       // attention masks with indices in [0, 1]
-      val masks = Array.fill[Double](maxSeqLen)(1)
+      val masks = Array.fill[Double](n)(1)
 
       // truncate or pad
       if (xs.size >= maxSeqLen) {
-        Vectors.dense(tokens.take(maxSeqLen) ++ types.take(maxSeqLen) ++ positions.take(maxSeqLen) ++ positions.take(maxSeqLen))
+        Vectors.dense(tokens.take(maxSeqLen) ++ types.take(maxSeqLen) ++ positions.take(maxSeqLen) ++ masks.take(maxSeqLen))
       } else {
         val a = tokens    ++ Array.fill[Double](maxSeqLen - xs.size)(pad)
         val b = types     ++ Array.fill[Double](maxSeqLen - xs.size)(0)

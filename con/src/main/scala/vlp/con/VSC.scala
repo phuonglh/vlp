@@ -131,23 +131,34 @@ object VSC {
 
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
-            val (featureSize, labelSize) = config.modelType match {
-              case "tk" => (Array(config.maxSequenceLength), Array(config.maxSequenceLength))
-              case "tb" => (Array(4*config.maxSequenceLength), Array(config.maxSequenceLength))
-              case "ch" => (Array(3*config.maxSequenceLength*vocabulary.size), Array(config.maxSequenceLength))
-              case _    => (Array(0), Array(0))
-            }
-            // our classes are unbalanced, we use weights to improve accuracy
+
+            // our classes are unbalanced, hence we use weights to improve accuracy
             val w = Tensor(Array(labelDict.size)).rand()
             w.setValue(1, 0.1f); for (j <- 2 to 5) w.setValue(j, 0.9f)
-            val classifier = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
-                .setLabelCol("label").setFeaturesCol("features")
-                .setBatchSize(config.batchSize)
-                .setOptimMethod(new Adam(config.learningRate))
-                .setMaxEpoch(config.epochs)
-                .setTrainSummary(trainingSummary)
-                .setValidationSummary(validationSummary)
-                .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+
+            val maxSeqLen = config.maxSequenceLength
+            val classifier = config.modelType match {
+              case "tk" => 
+                val (featureSize, labelSize) = (Array(maxSeqLen), Array(maxSeqLen))
+                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+              case "tb" => 
+                val (featureSize, labelSize) = (Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen)), Array(maxSeqLen))
+                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+              case "ch" => 
+                val (featureSize, labelSize) = (Array(3*maxSeqLen*vocabulary.size), Array(maxSeqLen))
+                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+              case _ => 
+                val (featureSize, labelSize) = (Array(0), Array(0))
+                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+            }
+
+            classifier.setLabelCol("label").setFeaturesCol("features")
+              .setBatchSize(config.batchSize)
+              .setOptimMethod(new Adam(config.learningRate))
+              .setMaxEpoch(config.epochs)
+              .setTrainSummary(trainingSummary)
+              .setValidationSummary(validationSummary)
+              .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
             classifier.fit(trainingDF)
 
             val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
