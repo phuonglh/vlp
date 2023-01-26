@@ -51,6 +51,32 @@ object VSC {
     return af.select("x", "y")
   }
   
+  def evaluate(result: DataFrame, labelSize: Int): Score = {
+    // evaluate the result
+    import org.apache.spark.mllib.evaluation.MulticlassMetrics
+    val predictionsAndLabels = result.rdd.map { case row => 
+      (row.getAs[Seq[Float]](0).toArray, row.getAs[Vector](1).toArray)
+    }.flatMap { case (prediction, label) => 
+      // truncate the padding values
+      // find the first padding value (-1.0) in the label array
+      var i = label.indexOf(-1.0)
+      if (i == -1) i = label.size
+      prediction.take(i).map(_.toDouble).zip(label.take(i).map(_.toDouble))
+    }
+    val metrics = new MulticlassMetrics(predictionsAndLabels)
+    val precisionByLabel = Array.fill(labelSize)(0d)
+    val recallByLabel = Array.fill(labelSize)(0d)
+    val fMeasureByLabel = Array.fill(labelSize)(0d)
+    // precision by label
+    val ls = metrics.labels
+    ls.foreach { k => 
+      precisionByLabel(k.toInt-1) = metrics.precision(k)
+      recallByLabel(k.toInt-1) = metrics.recall(k)
+      fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
+    }
+    Score(metrics.confusionMatrix, metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel)
+  }
+
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
     val logger = LoggerFactory.getLogger(getClass.getName)
@@ -101,31 +127,29 @@ object VSC {
         val model = ModelFactory(config.modelType, config)
         config.mode match {
           case "train" => 
-            val (pipelineModel, vocabulary, labels) = model.preprocessor(trainingDF)  
+            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)  
+            val bigdl = model.createModel(vocabulary.size, labels.size)
+            bigdl.summary()
             
             val vocabDict = vocabulary.zipWithIndex.toMap
-            val af = pipelineModel.transform(df)
+            val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
             // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
             val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
             val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
-            val bf = ySequencer.transform(af)
+            val (bft, bfv) = (ySequencer.transform(aft), ySequencer.transform(afv))
 
-            val cf = config.modelType match {
+            val (cft, cfv) = config.modelType match {
               case "tk" => 
                 val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-                xSequencer.transform(bf)
+                (xSequencer.transform(bft), xSequencer.transform(bfv))
               case "tb" =>
                 val xSequencer = new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-                xSequencer.transform(bf)                
+                (xSequencer.transform(bft), xSequencer.transform(bfv))
               case _ => 
                 val xSequencer = new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-                xSequencer.transform(bf)
+                (xSequencer.transform(bft), xSequencer.transform(bfv))
             }
-            cf.show()
-            cf.printSchema()
-
-            val bigdl = model.createModel(vocabulary.size, labels.size)
-            bigdl.summary()
+            cfv.printSchema()
 
             // get the input data set name (for example, "vud", "fin") 
             val inp = config.inputPath.split("/").last.split("""\.""").head
@@ -160,55 +184,42 @@ object VSC {
               .setMaxEpoch(config.epochs)
               .setTrainSummary(trainingSummary)
               .setValidationSummary(validationSummary)
-              .setValidation(Trigger.everyEpoch, validationDF, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-            classifier.fit(trainingDF)
+              .setValidation(Trigger.everyEpoch, cfv, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+            // fit the classifier, which will train the bigdl model and return a NNModel
+            // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
+            // at the end to output a good format for BigDL. See the predict() method.
+            classifier.fit(cft)
 
             val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
             val validationLoss = validationSummary.readScalar("Loss")
             val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
-            // save the model
-            pipelineModel.write.overwrite.save(s"${prefix}/pre/")
-            logger.info("Saving the model...")        
-            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
-
+            // evaluate             
+            // val dft = model.predict(trainingDF, preprocessor, bigdl)
+            // val trainingScores = evaluate(dft, labels.size)
+            // logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+            val dfv = model.predict(validationDF, preprocessor, bigdl)
+            val validationScores = evaluate(dfv, labels.size)
+            logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
+            // // save the model
+            // preprocessor.write.overwrite.save(s"${prefix}/pre/")
+            // logger.info("Saving the model...")        
+            // bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
         case "eval" => 
           val inp = config.inputPath.split("/").last.split("""\.""").head
           val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
+          logger.info(s"Loading preprocessor ${prefix}/pre/...")
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
-          val bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl").asInstanceOf[Sequential[Float]] // convert from KerasNet to Sequential
+          logger.info(s"Loading model ${prefix}/vsc.bigdl...")
+          val bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl")
           val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
           val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
           val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 85L)
           val model = ModelFactory(bigdl, config)
           val result = model.predict(validationDF, preprocessor, bigdl)
-          // evaluate the result
-          import org.apache.spark.mllib.evaluation.MulticlassMetrics
-          val predictionsAndLabels = result.rdd.map { case row => 
-            (row.getAs[Seq[Float]](0).toArray, row.getAs[Vector](1).toArray)
-          }.flatMap { case (prediction, label) => 
-            // truncate the padding values
-            // find the first padding value (-1.0) in the label array
-            var i = label.indexOf(-1.0)
-            if (i == -1) i = label.size
-            prediction.take(i).map(_.toDouble).zip(label.take(i).map(_.toDouble))
-          }
-          val metrics = new MulticlassMetrics(predictionsAndLabels)
-          val precisionByLabel = Array.fill(labels.size)(0d)
-          val recallByLabel = Array.fill(labels.size)(0d)
-          val fMeasureByLabel = Array.fill(labels.size)(0d)
-          // precision by label
-          val ls = metrics.labels
-          ls.foreach { k => 
-            precisionByLabel(k.toInt-1) = metrics.precision(k)
-            recallByLabel(k.toInt-1) = metrics.recall(k)
-            fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
-          }
-          val scores = Score(metrics.confusionMatrix, metrics.accuracy, precisionByLabel, 
-            recallByLabel, fMeasureByLabel)
-          println(Serialization.writePretty(scores))
-
+          val scores = evaluate(result, labels.size)
+          logger.info(Serialization.writePretty(scores))
         }
         sc.stop()
       case None => {}

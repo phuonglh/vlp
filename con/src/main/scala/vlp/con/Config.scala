@@ -10,11 +10,11 @@ package vlp.con
  * @param attnPDrop drop probability of attention
 */
 case class ConfigBERT(
-  hiddenSize: Int = 96,        // 8 times less than the default 768
+  hiddenSize: Int = 48,        // 16 times less than the default 768
   nBlock: Int = 2,             // default is 12
   nHead: Int = 2,              // default is 12
   maxPositionLen: Int = 30,    // should be the same as config.maxSeqLen
-  intermediateSize: Int = 96,  // 32 times less than the default 3072
+  intermediateSize: Int = 48,  // 64 times less than the default 3072
   hiddenPDrop: Double = 0.1,   // default value of BigDL BERT
   attnPDrop: Double = 0.1      // default value of BigDL BERT
 ) extends Serializable 
@@ -37,14 +37,14 @@ case class Config(
   batchSize: Int = 64,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
-  epochs: Int = 40,
+  epochs: Int = 5,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of bi-recurrent layers
-  recurrentSize: Int = 128, // number of units in a recurrent layer
-  hiddenSize: Int = 64, // number of units in the last dense layer
+  recurrentSize: Int = 64, // number of units in a recurrent layer
+  hiddenSize: Int = 32, // number of units in the last dense layer
   dropoutProbability: Double = 0.1,
-  inputPath: String = "dat/vsc/vud.txt.inp",
-  outputPath: String = "dat/vsc/vud.txt.out", 
+  inputPath: String = "dat/vsc/100.txt.inp",
+  outputPath: String = "dat/vsc/100.txt.out", 
   scorePath: String = "dat/scores.json",
   verbose: Boolean = false,
   modelType: String = "tb", // tk: token LSTM, ch: character LSTM, tb: token BERT, cb: character BERT

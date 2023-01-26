@@ -49,10 +49,14 @@ abstract class AbstractModel(config: Config) {
       NNModel(sequential)
     } else {
       val model = bigdl.asInstanceOf[Model[Float]]
-      // TODO: add the ArgMax module to the model as the last layer
+      // val sequential = Sequential()
+      // sequential.add(model)
+      // sequential.add(ArgMaxLayer())
+      // NNModel(sequential)
       NNModel(model)
     }
     val ff = m.transform(ef)
+    ff.show(false)
     return ff.select("prediction", "label")
   }
 }
