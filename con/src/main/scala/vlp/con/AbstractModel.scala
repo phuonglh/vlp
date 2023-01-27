@@ -46,17 +46,21 @@ abstract class AbstractModel(config: Config) {
     val m = if (config.modelType == "tk" || config.modelType == "ch") {
       val sequential = bigdl.asInstanceOf[Sequential[Float]]
       sequential.add(ArgMaxLayer())
+      println(sequential.summary())
       NNModel(sequential)
     } else {
       val model = bigdl.asInstanceOf[Model[Float]]
-      // val sequential = Sequential()
-      // sequential.add(model)
-      // sequential.add(ArgMaxLayer())
-      // NNModel(sequential)
-      NNModel(model)
+      val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
+      val output = model.node("output")
+      val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
+      val modelNew = Model(inputs.toArray, outputNew)
+      println(modelNew.summary())
+      // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
+      val maxSeqLen = config.maxSequenceLength
+      val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
+      NNModel(modelNew, featureSize)
     }
     val ff = m.transform(ef)
-    ff.show(false)
     return ff.select("prediction", "label")
   }
 }
@@ -174,11 +178,11 @@ class CharModel(config: Config) extends AbstractModel(config) {
 class TokenModelBERT(config: Config) extends TokenModel(config) {
   override def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
     val maxSeqLen = config.maxSequenceLength
-    val inputIds = Input(inputShape = Shape(maxSeqLen))
-    val segmentIds = Input(inputShape = Shape(maxSeqLen))
-    val positionIds = Input(inputShape = Shape(maxSeqLen))
-    val masks = Input(inputShape = Shape(maxSeqLen))
-    val masksReshaped = Reshape(targetShape = Array(1, 1, maxSeqLen)).inputs(masks)
+    val inputIds = Input(inputShape = Shape(maxSeqLen), "inputIds")
+    val segmentIds = Input(inputShape = Shape(maxSeqLen), "segmentIds")
+    val positionIds = Input(inputShape = Shape(maxSeqLen), "positionIds")
+    val masks = Input(inputShape = Shape(maxSeqLen), "masks")
+    val masksReshaped = Reshape(targetShape = Array(1, 1, maxSeqLen)).setName("reshape").inputs(masks)
 
     // reshape the vector of length 4*maxSeqLen to a matrix of shape Array(4, maxSeqLen)
     // val reshape = Reshape(targetShape=Array(4, config.maxSequenceLength), inputShape=Shape(4*config.maxSequenceLength))    
@@ -194,12 +198,12 @@ class TokenModelBERT(config: Config) extends TokenModel(config) {
     val nHead = config.bert.nHead
     val maxPositionLen = config.bert.maxPositionLen
     val intermediateSize = config.bert.intermediateSize
-    val bert = BERT(vocabSize, hiddenSize, nBlock, nHead, maxPositionLen, intermediateSize, outputAllBlock = false)
+    val bert = BERT(vocabSize, hiddenSize, nBlock, nHead, maxPositionLen, intermediateSize, outputAllBlock = false).setName("BERT")
     val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
-    val bertOutput = SelectTable(0).inputs(bertNode)
+    val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
 
-    val dense = Dense(labelSize).inputs(bertOutput)
-    val output = SoftMax().inputs(dense)
+    val dense = Dense(labelSize).setName("dense").inputs(bertOutput)
+    val output = SoftMax().setName("output").inputs(dense)
     val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
     return model
   }
