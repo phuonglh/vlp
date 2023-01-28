@@ -187,7 +187,7 @@ object VSC {
               .setValidation(Trigger.everyEpoch, cfv, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
             // fit the classifier, which will train the bigdl model and return a NNModel
             // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
-            // at the end to output a good format for BigDL. See the predict() method.
+            // at the end to output a good format for BigDL. See the predict() method for detail.
             classifier.fit(cft)
 
             val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
@@ -196,16 +196,16 @@ object VSC {
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
             // evaluate             
-            // val dft = model.predict(trainingDF, preprocessor, bigdl)
-            // val trainingScores = evaluate(dft, labels.size)
-            // logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+            val dft = model.predict(trainingDF, preprocessor, bigdl)
+            val trainingScores = evaluate(dft, labels.size)
+            logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
             val dfv = model.predict(validationDF, preprocessor, bigdl)
             val validationScores = evaluate(dfv, labels.size)
             logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
-            // // save the model
-            // preprocessor.write.overwrite.save(s"${prefix}/pre/")
-            // logger.info("Saving the model...")        
-            // bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
+            // save the model
+            preprocessor.write.overwrite.save(s"${prefix}/pre/")
+            logger.info("Saving the model...")        
+            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
         case "eval" => 
           val inp = config.inputPath.split("/").last.split("""\.""").head
           val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
