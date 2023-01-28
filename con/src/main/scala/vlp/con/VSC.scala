@@ -15,13 +15,12 @@ import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SparkSession, DataFrame}
-import org.apache.spark.sql.functions._
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.feature.CountVectorizerModel
 import org.apache.spark.ml.linalg.Vector
 
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SparkSession, DataFrame}
 
 import org.json4s._
 import org.json4s.jackson.Serialization
@@ -33,24 +32,6 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 
 
 object VSC {
-
-  /**
-    * Reads an input text file and creates a data frame of two columns "x, y", where 
-    * "x" are input token sequences and "y" are corresponding label sequences. The text file 
-    * has a format of line-pair oriented: (y_i, x_i).
-    *
-    * @param sc a Spark context
-    * @param config
-    */
-  def readData(sc: SparkContext, config: Config): DataFrame = {
-    val spark = SparkSession.builder.config(sc.getConf).getOrCreate()    
-    import spark.implicits._
-    val df = sc.textFile(config.inputPath).zipWithIndex.toDF("line", "id")
-    val df0 = df.filter(col("id") % 2 === 0).withColumn("y", col("line"))
-    val df1 = df.filter(col("id") % 2 === 1).withColumn("x", col("line")).withColumn("id0", col("id") - 1)
-    val af = df0.join(df1, df0.col("id") === df1.col("id0"))
-    return af.select("x", "y")
-  }
   
   def evaluate(result: DataFrame, labelSize: Int, config: Config, split: String): Score = {
     // evaluate the result
@@ -126,7 +107,7 @@ object VSC {
         val sc = new SparkContext(conf)
         Engine.init
 
-        val df = VSC.readData(sc, config).sample(config.percentage)
+        val df = DataReader.readData(sc, config).sample(config.percentage)
         df.printSchema()
         df.show()
         // split data
