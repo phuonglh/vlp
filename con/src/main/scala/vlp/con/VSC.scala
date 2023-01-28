@@ -29,6 +29,7 @@ import scopt.OptionParser
 
 import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
+import java.nio.file.{Files, Paths, StandardOpenOption}
 
 
 object VSC {
@@ -51,7 +52,7 @@ object VSC {
     return af.select("x", "y")
   }
   
-  def evaluate(result: DataFrame, labelSize: Int): Score = {
+  def evaluate(result: DataFrame, labelSize: Int, config: Config, split: String): Score = {
     // evaluate the result
     import org.apache.spark.mllib.evaluation.MulticlassMetrics
     val predictionsAndLabels = result.rdd.map { case row => 
@@ -74,7 +75,15 @@ object VSC {
       recallByLabel(k.toInt-1) = metrics.recall(k)
       fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
     }
-    Score(metrics.confusionMatrix, metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel)
+    Score(
+      config.inputPath,
+      config.modelType,
+      split,
+      if ("tk" == config.modelType) config.embeddingSize else -1,
+      if (Seq("tb", "sb").contains(config.modelType)) config.bert.hiddenSize else config.recurrentSize,
+      if (Seq("tb", "sb").contains(config.modelType)) config.bert.nHead else config.layers,
+      metrics.confusionMatrix, metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel
+    )
   }
 
   def main(args: Array[String]): Unit = {
@@ -93,7 +102,6 @@ object VSC {
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of layers, default is 1")
       opt[Int]('r', "recurrentSize").action((x, conf) => conf.copy(recurrentSize = x)).text("number of hidden units in each recurrent layer")
-      opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("number of hidden units in the dense layer")
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the data set to use")
       opt[Double]('u', "dropoutProbability").action((x, conf) => conf.copy(dropoutProbability = x)).text("dropout ratio")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
@@ -124,7 +132,11 @@ object VSC {
         // split data
         val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 85L)
         // create a model
-        val model = ModelFactory(config.modelType, config)
+        val model = ModelFactory(config)
+        // get the input data set name (for example, "vud", "fin") and create a prefix
+        val inp = config.inputPath.split("/").last.split("""\.""").head
+        val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
+
         config.mode match {
           case "train" => 
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)  
@@ -150,10 +162,6 @@ object VSC {
                 (xSequencer.transform(bft), xSequencer.transform(bfv))
             }
             cfv.printSchema()
-
-            // get the input data set name (for example, "vud", "fin") 
-            val inp = config.inputPath.split("/").last.split("""\.""").head
-            val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
 
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
@@ -197,29 +205,38 @@ object VSC {
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
             // evaluate             
             val dft = model.predict(trainingDF, preprocessor, bigdl)
-            val trainingScores = evaluate(dft, labels.size)
+            val trainingScores = evaluate(dft, labels.size, config, "train")
             logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+            var content = Serialization.writePretty(trainingScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
             val dfv = model.predict(validationDF, preprocessor, bigdl)
-            val validationScores = evaluate(dfv, labels.size)
+            val validationScores = evaluate(dfv, labels.size, config, "valid")
             logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
+            content = Serialization.writePretty(validationScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+
             // save the model
             preprocessor.write.overwrite.save(s"${prefix}/pre/")
             logger.info("Saving the model...")        
             bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
         case "eval" => 
-          val inp = config.inputPath.split("/").last.split("""\.""").head
-          val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
           logger.info(s"Loading preprocessor ${prefix}/pre/...")
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
           logger.info(s"Loading model ${prefix}/vsc.bigdl...")
           val bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl")
           val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
           val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-          val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 85L)
-          val model = ModelFactory(bigdl, config)
-          val result = model.predict(validationDF, preprocessor, bigdl)
-          val scores = evaluate(result, labels.size)
+          val model = ModelFactory(config)
+          val trainingResult = model.predict(trainingDF, preprocessor, bigdl)          
+          var scores = evaluate(trainingResult, labels.size, config, "train")
           logger.info(Serialization.writePretty(scores))
+          var content = Serialization.writePretty(scores) + ",\n"
+          Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+          val result = model.predict(validationDF, preprocessor, bigdl)
+          scores = evaluate(result, labels.size, config, "valid")
+          logger.info(Serialization.writePretty(scores))
+          content = Serialization.writePretty(scores) + ",\n"
+          Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         }
         sc.stop()
       case None => {}

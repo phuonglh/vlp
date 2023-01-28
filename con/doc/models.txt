@@ -26,3 +26,36 @@
   m(Jerry) = one-hot-vector(e) + one-hot-vector(r) + one-hot-vector(r)
  
 ===
+
+1. Token Representation for BERT
+
+  A table of 4 tensors:
+    - tokenIds (using a vocabulary, same as in the Token Model)
+    - segmentIds (all have value 0 since we only have one sentence)
+    - positionIds (which range in [0 to maxSeqLen) interval)
+    - masks (all have value 1)
+
+  The tokenIds tensor is obtained via the same preprocessing as in the Token Model. The Sequence4BERT 
+  preprocessor create a feature vector which is the concatenation of the 4 tensors above:
+
+    tokenIds::segmentIds::positionIds::masks
+
+  An appropriate feature size array is used to help convert this feature vector into a table of 4 inputs for BERT to work, each 
+  input has an input shape Array(maxSeqLen). Note that we use a Reshape layer to reshape the masks input to 
+  targetShape = Array(1, 1, maxSeqLen). 
+
+2. Character Representation for BERT
+
+  Jerry => [J, err, y] => 3 subtokens
+
+
+===
+
+M1. Token Model with LSTM: [Sequencer, LSTM] (input is a vector of token ids)
+M2. Token Model with BERT: [Sequencer4BERT, BERT] (input is a vector of token ids)
+M3. Character Model with LSTM: [MultiHotSequencer, LSTM] (input is a multi-hot vector)
+M4. Subsyllable Model with BERT: [SubsyllableSequencer, BERT] (input is a vector of subsyllable ids)
+
+
+Conference paper: M1 and M2
+Journal paper: M2, M3 and M4.

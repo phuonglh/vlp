@@ -7,22 +7,22 @@ import org.apache.spark.sql.types.{DataType, ArrayType, StringType}
 
 
 /**
-  * A semi-character transformer which transforms a token sequence into a sub-token sequence:
-    [John, loves, Mary] => [J, oh, n, l, ove, s, M, ar, y]. This utility is used to build sub-token 
+  * A subsyllable transformer which transforms a syllable sequence into a subsyllable sequence:
+    [John, loves, Mary] => [J, oh, n, l, ove, s, M, ar, y]. This utility is used to build sub-syllable 
     vocabulary.
 
   * phuonglh@gmail.com
   */
-class SemiCharTransformer(val uid: String) 
-  extends UnaryTransformer[Seq[String], Seq[String], SemiCharTransformer] with DefaultParamsWritable {
+class SubsyllableTransformer(val uid: String) 
+  extends UnaryTransformer[Seq[String], Seq[String], SubsyllableTransformer] with DefaultParamsWritable {
 
   def this() = {
-    this(Identifiable.randomUID("semiChar"))
+    this(Identifiable.randomUID("subsyll"))
   }
 
   override protected def createTransformFunc: Seq[String] => Seq[String] = {
     def f(xs: Seq[String]): Seq[String] = {
-      xs.flatMap(SemiCharTransformer.s(_))
+      xs.flatMap(SubsyllableTransformer.s(_))
     }
 
     f(_)
@@ -31,7 +31,7 @@ class SemiCharTransformer(val uid: String)
   override protected def outputDataType: DataType = ArrayType(StringType, false)
 }
 
-object SemiCharTransformer extends DefaultParamsReadable[SemiCharTransformer] {
+object SubsyllableTransformer extends DefaultParamsReadable[SubsyllableTransformer] {
   def s(x: String): Seq[String] = {
     x.size match {
       case 0 => Seq.empty[String]
@@ -41,5 +41,5 @@ object SemiCharTransformer extends DefaultParamsReadable[SemiCharTransformer] {
     }
   }
 
-  override def load(path: String): SemiCharTransformer = super.load(path)
+  override def load(path: String): SubsyllableTransformer = super.load(path)
 }

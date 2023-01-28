@@ -66,13 +66,18 @@ abstract class AbstractModel(config: Config) {
 }
 
 object ModelFactory {
-  def apply(representation: String, config: Config) = representation match {
+  /**
+    * Create a model from scratch.
+    *
+    * @param config
+    * @return
+    */
+  def apply(config: Config) = config.modelType match {
     case "tk" => new TokenModel(config)
-    case "ch" => new CharModel(config)
     case "tb" => new TokenModelBERT(config)
+    case "ch" => new CharModel(config)
     case _ => new TokenModel(config)
   }
-  def apply(bigdl: KerasNet[Float], config: Config) = new TokenModel(config)
 }
 
 /**
@@ -90,19 +95,18 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
-    model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
+    for (j <- 0 until config.layers)
+      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
     // feed the output of the RNN to a dense layer with relu activation function
     // model.add(TimeDistributed(
     //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
     //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
     // )
-    model.add(LSTM(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
     model.add(TimeDistributed(
-      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-      inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
     )
     return model
   }
@@ -137,19 +141,18 @@ class CharModel(config: Config) extends AbstractModel(config) {
     // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
-    model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
+    for (j <- 0 until config.layers)
+      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
     // // feed the output of the RNN to a dense layer with relu activation function
     // model.add(TimeDistributed(
     //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
     //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
     // )
-    model.add(LSTM(outputDim = config.hiddenSize, returnSequences = true))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability))
     // add the last layer for multi-class classification
     model.add(TimeDistributed(
-      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-      inputShape=Shape(config.maxSequenceLength, config.hiddenSize))
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
     )
     return model
   }

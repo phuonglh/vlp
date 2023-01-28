@@ -2,8 +2,8 @@ package vlp.con
 
 /**
  * @param hiddenSize size of the encoder layers (embeddingSize)
- * @param nBlock block number
- * @param nHead head number
+ * @param nBlock number of blocks
+ * @param nHead number of heads
  * @param maxPositionLen sequence length, default is 512
  * @param intermediateSize The size of the "intermediate" (i.e., feed-forward)
  * @param hiddenPDrop The dropout probability for all fully connected layers
@@ -37,17 +37,16 @@ case class Config(
   batchSize: Int = 64,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
-  epochs: Int = 10,
+  epochs: Int = 20,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of bi-recurrent layers
-  recurrentSize: Int = 64, // number of units in a recurrent layer
-  hiddenSize: Int = 32, // number of units in the last dense layer
+  recurrentSize: Int = 48, // number of units in a recurrent layer
   dropoutProbability: Double = 0.1,
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 
-  scorePath: String = "dat/scores.json",
+  scorePath: String = "dat/vsc/scores.json",
   verbose: Boolean = false,
-  modelType: String = "tb", // tk: token LSTM, ch: character LSTM, tb: token BERT, cb: character BERT
+  modelType: String = "tb", // tk: token LSTM, ch: character LSTM, tb: token BERT, cb: subsyllable BERT
   bert: ConfigBERT = ConfigBERT()
 ) extends Serializable
 
