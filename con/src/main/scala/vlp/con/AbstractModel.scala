@@ -24,7 +24,7 @@ abstract class AbstractModel(config: Config) {
   def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float]
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String])
 
-  def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float]): DataFrame = {
+  def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float], argMaxLayer: Boolean = true): DataFrame = {
     val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
@@ -45,20 +45,24 @@ abstract class AbstractModel(config: Config) {
     // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
     val m = if (config.modelType == "tk" || config.modelType == "ch") {
       val sequential = bigdl.asInstanceOf[Sequential[Float]]
-      sequential.add(ArgMaxLayer())
+      if (argMaxLayer) sequential.add(ArgMaxLayer())
       println(sequential.summary())
       NNModel(sequential)
     } else {
       val model = bigdl.asInstanceOf[Model[Float]]
-      val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
-      val output = model.node("output")
-      val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
-      val modelNew = Model(inputs.toArray, outputNew)
-      println(modelNew.summary())
-      // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
-      val maxSeqLen = config.maxSequenceLength
-      val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
-      NNModel(modelNew, featureSize)
+      if (argMaxLayer) {
+        val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
+        val output = model.node("output")
+        val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
+        val modelNew = Model(inputs.toArray, outputNew)
+        println(modelNew.summary())
+        // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
+        val maxSeqLen = config.maxSequenceLength
+        val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
+        NNModel(modelNew, featureSize)
+      } else {
+        NNModel(model)
+      }
     }
     val ff = m.transform(ef)
     return ff.select("prediction", "label")
@@ -113,8 +117,7 @@ class TokenModel(config: Config) extends AbstractModel(config) {
 
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
     val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
-    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency)
-      .setVocabSize(config.vocabSize).setBinary(true)
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
     val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer))
@@ -159,8 +162,7 @@ class CharModel(config: Config) extends AbstractModel(config) {
 
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
     val xTokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("cs").setPattern(".").setGaps(false).setToLowercase(true)
-    val xVectorizer = new CountVectorizer().setInputCol("cs").setOutputCol("us").setMinDF(config.minFrequency)
-      .setVocabSize(config.vocabSize).setBinary(true)
+    val xVectorizer = new CountVectorizer().setInputCol("cs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
     val tokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")

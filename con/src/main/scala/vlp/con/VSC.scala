@@ -32,6 +32,17 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 
 object VSC {
   
+  def dataPaths(language: String): (String, String) = {
+    language match {
+      case "czech" => ("dat/ged/czech/cs_gecc_train.tsv", "dat/ged/czech/cs_gecc_dev.tsv")
+      case "english" => ("dat/ged/english/en_fce_train.tsv", "dat/ged/english/en_fce_dev.tsv")
+      case "german" => ("dat/ged/german/de_falko-merlin_train.tsv", "dat/ged/german/de_falko-merlin_dev.tsv")
+      case "italian" => ("dat/ged/italian/it_merlin_train.tsv", "dat/ged/italian/it_merlin_dev.tsv")
+      case "swedish" => ("dat/ged/swedish/sv_swell_train.tsv", "dat/ged/swedish/sv_swell_dev.tsv")
+      case _ => ("dat/vsc/100.txt.inp", "dat/vsc/100.txt.inp")
+    }
+  }
+
   def evaluate(result: DataFrame, labelSize: Int, config: Config, split: String): Score = {
     // evaluate the result
     import org.apache.spark.mllib.evaluation.MulticlassMetrics
@@ -55,11 +66,7 @@ object VSC {
       recallByLabel(k.toInt-1) = metrics.recall(k)
       fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
     }
-    val inp = if (config.ged) {
-      config.trainPath.split("/").reverse(1)
-    } else {
-      config.inputPath.split("/").last.split("""\.""").head
-    }
+    val inp = if (config.ged) config.language else config.inputPath.split("/").last.split("""\.""").head
     Score(
       inp, config.modelType, split,
       if ("tk" == config.modelType) config.embeddingSize else -1,
@@ -88,7 +95,7 @@ object VSC {
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the data set to use")
       opt[Double]('u', "dropoutProbability").action((x, conf) => conf.copy(dropoutProbability = x)).text("dropout ratio")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
-      opt[Int]('l', "maxSequenceLength").action((x, conf) => conf.copy(maxSequenceLength = x)).text("max sequence length")
+      opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language {czech, english, german, italian, swedish, vietnamese}")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
@@ -110,9 +117,10 @@ object VSC {
         val sc = new SparkContext(conf)
         Engine.init
 
+        val (trainPath, validPath) = dataPaths(config.language)
         val Array(trainingDF, validationDF) = if (config.ged) {
           // separate train/dev split
-          Array(DataReader.readDataGED(sc, config.trainPath), DataReader.readDataGED(sc, config.validPath))
+          Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
         } else {
           // personal data set with 80/20 of train/valid split
           val df = DataReader.readData(sc, config.inputPath).sample(config.percentage)
@@ -123,12 +131,8 @@ object VSC {
         // split data
         // create a model
         val model = ModelFactory(config)
-        // get the input data set name (for example, "vud", "fin" / "english") and create a prefix
-        val inp = if (config.ged) {
-          config.trainPath.split("/").reverse(1)
-        } else {
-          config.inputPath.split("/").last.split("""\.""").head
-        }
+        // get the input data set name (for example, "vud", "fin", "english", "italian") and create a prefix
+        val inp = if (config.ged) config.language else config.inputPath.split("/").last.split("""\.""").head
         val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
 
         config.mode match {
@@ -192,42 +196,42 @@ object VSC {
             // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
             // at the end to output a good format for BigDL. See the predict() method for detail.
             classifier.fit(cft)
+            // save the model
+            preprocessor.write.overwrite.save(s"${prefix}/pre/")
+            logger.info("Saving the model...")        
+            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
 
             val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
             val validationLoss = validationSummary.readScalar("Loss")
             val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
-            // evaluate             
-            val dft = model.predict(trainingDF, preprocessor, bigdl)
+            // evaluate on the training data
+            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
             val trainingScores = evaluate(dft, labels.size, config, "train")
             logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
             var content = Serialization.writePretty(trainingScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-            val dfv = model.predict(validationDF, preprocessor, bigdl)
+            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
             val validationScores = evaluate(dfv, labels.size, config, "valid")
             logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
             content = Serialization.writePretty(validationScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-
-            // save the model
-            preprocessor.write.overwrite.save(s"${prefix}/pre/")
-            logger.info("Saving the model...")        
-            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
         case "eval" => 
           logger.info(s"Loading preprocessor ${prefix}/pre/...")
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
           logger.info(s"Loading model ${prefix}/vsc.bigdl...")
-          val bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl")
+          var bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl")
           val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
           val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
           val model = ModelFactory(config)
-          val trainingResult = model.predict(trainingDF, preprocessor, bigdl)          
+          val trainingResult = model.predict(trainingDF, preprocessor, bigdl, true)
           var scores = evaluate(trainingResult, labels.size, config, "train")
           logger.info(Serialization.writePretty(scores))
           var content = Serialization.writePretty(scores) + ",\n"
           Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-          val result = model.predict(validationDF, preprocessor, bigdl)
+          val result = model.predict(validationDF, preprocessor, bigdl, false)
           scores = evaluate(result, labels.size, config, "valid")
           logger.info(Serialization.writePretty(scores))
           content = Serialization.writePretty(scores) + ",\n"

@@ -34,7 +34,7 @@ case class Config(
   vocabSize: Int = 32768,
   percentage: Double = 1.0, // percentage of the training data set to use
   modelPath: String = "bin",
-  batchSize: Int = 64,
+  batchSize: Int = 128,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
   epochs: Int = 20,
@@ -42,8 +42,7 @@ case class Config(
   layers: Int = 1, // number of bi-recurrent layers
   recurrentSize: Int = 48, // number of units in a recurrent layer
   dropoutProbability: Double = 0.1,
-  trainPath: String = "dat/ged/italian/it_merlin_train.tsv",
-  validPath: String = "dat/ged/italian/it_merlin_dev.tsv",
+  language: String = "vietnamese",
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 
   scorePath: String = "dat/vsc/scores.json",
