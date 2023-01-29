@@ -42,10 +42,13 @@ case class Config(
   layers: Int = 1, // number of bi-recurrent layers
   recurrentSize: Int = 48, // number of units in a recurrent layer
   dropoutProbability: Double = 0.1,
+  trainPath: String = "dat/ged/italian/it_merlin_train.tsv",
+  validPath: String = "dat/ged/italian/it_merlin_dev.tsv",
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 
   scorePath: String = "dat/vsc/scores.json",
   verbose: Boolean = false,
+  ged: Boolean = false, // multi-language GED data
   modelType: String = "tb", // tk: token LSTM, ch: character LSTM, tb: token BERT, cb: subsyllable BERT
   bert: ConfigBERT = ConfigBERT()
 ) extends Serializable

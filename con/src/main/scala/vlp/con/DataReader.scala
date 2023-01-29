@@ -15,13 +15,13 @@ object DataReader {
     * has a format of line-pair oriented: (y_i, x_i).
     *
     * @param sc a Spark context
-    * @param config
+    * @param dataPath
     * @return a data frame with two columns (x, y), representing input and output sequence.
     */
-  def readData(sc: SparkContext, config: Config): DataFrame = {
+  def readData(sc: SparkContext, dataPath: String): DataFrame = {
     val spark = SparkSession.builder.config(sc.getConf).getOrCreate()    
     import spark.implicits._
-    val df = sc.textFile(config.inputPath).zipWithIndex.toDF("line", "id")
+    val df = sc.textFile(dataPath).zipWithIndex.toDF("line", "id")
     val df0 = df.filter(col("id") % 2 === 0).withColumn("y", col("line"))
     val df1 = df.filter(col("id") % 2 === 1).withColumn("x", col("line")).withColumn("id0", col("id") - 1)
     val af = df0.join(df1, df0.col("id") === df1.col("id0"))

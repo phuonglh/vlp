@@ -7,12 +7,11 @@ import com.intel.analytics.bigdl.dllib.keras.models.Models
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.TimeDistributedCriterion
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
-import com.intel.analytics.bigdl.dllib.optim.Loss
+import com.intel.analytics.bigdl.dllib.optim.{Loss, Trigger}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Engine
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
-import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
 
 import org.apache.spark.ml.PipelineModel
@@ -56,10 +55,13 @@ object VSC {
       recallByLabel(k.toInt-1) = metrics.recall(k)
       fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
     }
+    val inp = if (config.ged) {
+      config.trainPath.split("/").reverse(1)
+    } else {
+      config.inputPath.split("/").last.split("""\.""").head
+    }
     Score(
-      config.inputPath,
-      config.modelType,
-      split,
+      inp, config.modelType, split,
       if ("tk" == config.modelType) config.embeddingSize else -1,
       if (Seq("tb", "sb").contains(config.modelType)) config.bert.hiddenSize else config.recurrentSize,
       if (Seq("tb", "sb").contains(config.modelType)) config.bert.nHead else config.layers,
@@ -93,6 +95,7 @@ object VSC {
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input data path")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
+      opt[Unit]('g', "GED").action((_, conf) => conf.copy(ged = true)).text("GED mode, default is false")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
@@ -107,15 +110,25 @@ object VSC {
         val sc = new SparkContext(conf)
         Engine.init
 
-        val df = DataReader.readData(sc, config).sample(config.percentage)
-        df.printSchema()
-        df.show()
+        val Array(trainingDF, validationDF) = if (config.ged) {
+          // separate train/dev split
+          Array(DataReader.readDataGED(sc, config.trainPath), DataReader.readDataGED(sc, config.validPath))
+        } else {
+          // personal data set with 80/20 of train/valid split
+          val df = DataReader.readData(sc, config.inputPath).sample(config.percentage)
+          df.randomSplit(Array(0.8, 0.2), seed = 85L)
+        }
+        trainingDF.printSchema()
+        trainingDF.show()
         // split data
-        val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), seed = 85L)
         // create a model
         val model = ModelFactory(config)
-        // get the input data set name (for example, "vud", "fin") and create a prefix
-        val inp = config.inputPath.split("/").last.split("""\.""").head
+        // get the input data set name (for example, "vud", "fin" / "english") and create a prefix
+        val inp = if (config.ged) {
+          config.trainPath.split("/").reverse(1)
+        } else {
+          config.inputPath.split("/").last.split("""\.""").head
+        }
         val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
 
         config.mode match {
@@ -148,8 +161,9 @@ object VSC {
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
 
             // our classes are unbalanced, hence we use weights to improve accuracy
+            // the first label is more common than al the rest, hence it takes a lesser weight
             val w = Tensor(Array(labelDict.size)).rand()
-            w.setValue(1, 0.1f); for (j <- 2 to 5) w.setValue(j, 0.9f)
+            w.setValue(1, 0.1f); for (j <- 2 to labelDict.size) w.setValue(j, 0.9f)
 
             val maxSeqLen = config.maxSequenceLength
             val classifier = config.modelType match {
