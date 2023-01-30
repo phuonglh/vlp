@@ -54,17 +54,12 @@ abstract class AbstractModel(config: Config) {
       // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
       val maxSeqLen = config.maxSequenceLength
       val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
-      if (argMaxLayer) {
-        val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
-        val output = model.node("output")
-        val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
-        val modelNew = Model(inputs.toArray, outputNew)
-        println(modelNew.summary())
-        NNModel(modelNew, featureSize)
-      } else {
-        println(model.summary())
-        NNModel(model, featureSize)
-      }
+      val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
+      val output = model.node("output")
+      val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
+      val modelNew = Model(inputs.toArray, outputNew)
+      println(modelNew.summary())
+      NNModel(modelNew, featureSize)
     }
     val ff = m.transform(ef)
     return ff.select("prediction", "label")
