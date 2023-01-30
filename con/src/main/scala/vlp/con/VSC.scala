@@ -59,8 +59,9 @@ object VSC {
     val precisionByLabel = Array.fill(labelSize)(0d)
     val recallByLabel = Array.fill(labelSize)(0d)
     val fMeasureByLabel = Array.fill(labelSize)(0d)
-    // precision by label
+    // precision by label: our BigDL model uses 1-based labels, so we need to decrease 1 unit.
     val ls = metrics.labels
+    println(ls.mkString(", "))
     ls.foreach { k => 
       precisionByLabel(k.toInt-1) = metrics.precision(k)
       recallByLabel(k.toInt-1) = metrics.recall(k)

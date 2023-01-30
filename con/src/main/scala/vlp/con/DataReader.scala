@@ -46,7 +46,8 @@ object DataReader {
       if (v > u) { // don't treat two consecutive empty lines
         val s = lines.slice(u, v)
         val tokens = s.map(line => {
-          val parts = line.trim.split("\\s+")
+          val parts = line.trim.split("""\t+""")
+          if (parts.size < 2) println(line)
           (parts(0), parts(1))
         })
         val x = tokens.map(_._1)

@@ -37,6 +37,7 @@ abstract class AbstractModel(config: Config) {
     val cf = xSequencer.transform(bf)
     val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+    println(labelDict)
     // transform the gold "ys" labels to indices. NOTE: this is for evaluation mode only
     val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")    
     val ef = ySequencer.transform(cf)
@@ -50,18 +51,19 @@ abstract class AbstractModel(config: Config) {
       NNModel(sequential)
     } else {
       val model = bigdl.asInstanceOf[Model[Float]]
+      // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
+      val maxSeqLen = config.maxSequenceLength
+      val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
       if (argMaxLayer) {
         val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
         val output = model.node("output")
         val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
         val modelNew = Model(inputs.toArray, outputNew)
         println(modelNew.summary())
-        // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
-        val maxSeqLen = config.maxSequenceLength
-        val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
         NNModel(modelNew, featureSize)
       } else {
-        NNModel(model)
+        println(model.summary())
+        NNModel(model, featureSize)
       }
     }
     val ff = m.transform(ef)
