@@ -10,22 +10,22 @@ import org.apache.spark.sql.types.DataType
 
 
 /**
-  * A subsyllable sequencer which transforms a sequence of tokens into a sequence 
-  * of subsyllable index [b, i, e] for each token in the sequence. A dictionary which is 
-  * obtained by [[SubsyllableTransformer]] is used to create indices. If there are n tokens then 
+  * A subtoken sequencer which transforms a sequence of tokens into a sequence 
+  * of subtoken indices [b, i, e] for each token in the sequence. A dictionary which is 
+  * obtained by [[SubtokenTransformer]] is used to create indices. If there are n tokens then 
     this sequencer produces a vector of (3*n) elements.
   *
   * phuonglh@gmail.com
   */
-class SubsyllableSequencer(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) 
-  extends UnaryTransformer[Seq[String], Vector, SubsyllableSequencer] with DefaultParamsWritable {
+class SubtokenSequencer(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) 
+  extends UnaryTransformer[Seq[String], Vector, SubtokenSequencer] with DefaultParamsWritable {
 
   var dictionaryBr: Option[Broadcast[Map[String, Int]]] = None
   var maxSeqLen: Int = -1
   var pad: Float = -1f
 
   def this(dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) = {
-    this(Identifiable.randomUID("subsyllSeq"), dictionary, maxSequenceLength, padding)
+    this(Identifiable.randomUID("subtokSeq"), dictionary, maxSequenceLength, padding)
     val sparkContext = SparkSession.getActiveSession.get.sparkContext
     dictionaryBr = Some(sparkContext.broadcast(dictionary))
     this.maxSeqLen = maxSequenceLength
@@ -35,7 +35,7 @@ class SubsyllableSequencer(val uid: String, val dictionary: Map[String, Int], ma
   override protected def createTransformFunc: Seq[String] => Vector = {
     def f(xs: Seq[String]): Vector = {
       val a = xs.flatMap{x => 
-        val ts = SubsyllableTransformer.s(x)
+        val ts = SubtokenTransformer.s(x)
         ts.map(t => dictionaryBr.get.value.getOrElse(t, 0).toDouble)
       }.toArray
       // truncate or pad
@@ -53,6 +53,6 @@ class SubsyllableSequencer(val uid: String, val dictionary: Map[String, Int], ma
   override protected def outputDataType: DataType = VectorType
 }
 
-object SubsyllableSequencer extends DefaultParamsReadable[SubsyllableSequencer] {
-  override def load(path: String): SubsyllableSequencer = super.load(path)
+object SubtokenSequencer extends DefaultParamsReadable[SubtokenSequencer] {
+  override def load(path: String): SubtokenSequencer = super.load(path)
 }

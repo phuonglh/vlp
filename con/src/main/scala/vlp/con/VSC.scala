@@ -70,7 +70,7 @@ object VSC {
     val inp = if (config.ged) config.language else config.inputPath.split("/").last.split("""\.""").head
     Score(
       inp, config.modelType, split,
-      if ("tk" == config.modelType) config.embeddingSize else -1,
+      if (Seq("tk", "st").contains(config.modelType)) config.embeddingSize else -1,
       if (Seq("tb", "sb").contains(config.modelType)) config.bert.hiddenSize else config.recurrentSize,
       if (Seq("tb", "sb").contains(config.modelType)) config.bert.nHead else config.layers,
       metrics.confusionMatrix, metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel
@@ -149,17 +149,13 @@ object VSC {
             val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
             val (bft, bfv) = (ySequencer.transform(aft), ySequencer.transform(afv))
 
-            val (cft, cfv) = config.modelType match {
-              case "tk" => 
-                val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-                (xSequencer.transform(bft), xSequencer.transform(bfv))
-              case "tb" =>
-                val xSequencer = new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-                (xSequencer.transform(bft), xSequencer.transform(bfv))
-              case _ => 
-                val xSequencer = new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-                (xSequencer.transform(bft), xSequencer.transform(bfv))
+            val xSequencer = config.modelType match {
+              case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+              case "tb" => new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+              case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+              case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
             }
+            val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
             cfv.printSchema()
 
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
@@ -177,6 +173,9 @@ object VSC {
                 NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
               case "tb" => 
                 val (featureSize, labelSize) = (Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen)), Array(maxSeqLen))
+                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+              case "st" => 
+                val (featureSize, labelSize) = (Array(3*maxSeqLen), Array(maxSeqLen))
                 NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
               case "ch" => 
                 val (featureSize, labelSize) = (Array(3*maxSeqLen*vocabulary.size), Array(maxSeqLen))
@@ -224,7 +223,7 @@ object VSC {
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
           logger.info(s"Loading model ${prefix}/vsc.bigdl...")
           var bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl")
-          val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+          val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
           val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
           val model = ModelFactory(config)
           val trainingResult = model.predict(trainingDF, preprocessor, bigdl, true)

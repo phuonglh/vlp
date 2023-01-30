@@ -30,12 +30,13 @@ abstract class AbstractModel(config: Config) {
     val bf = preprocessor.transform(df)
     // use a sequencer to transform the input data frame into features
     val xSequencer = config.modelType match {
-      case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
-      case "tb" => new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
-      case _ => new MultiHotSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
+      case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+      case "tb" => new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+      case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+      case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")        
     }
     val cf = xSequencer.transform(bf)
-    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
     println(labelDict)
     // transform the gold "ys" labels to indices. NOTE: this is for evaluation mode only
@@ -44,7 +45,7 @@ abstract class AbstractModel(config: Config) {
 
     // add a custom layer ArgMax as the last layer of the BigDL model so as to 
     // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
-    val m = if (config.modelType == "tk" || config.modelType == "ch") {
+    val m = if (Seq("tk", "st", "ch").contains(config.modelType)) {
       val sequential = bigdl.asInstanceOf[Sequential[Float]]
       if (argMaxLayer) sequential.add(ArgMaxLayer())
       println(sequential.summary())
@@ -76,6 +77,7 @@ object ModelFactory {
   def apply(config: Config) = config.modelType match {
     case "tk" => new TokenModel(config)
     case "tb" => new TokenModelBERT(config)
+    case "st" => new SubtokenModel(config)
     case "ch" => new CharModel(config)
     case _ => new TokenModel(config)
   }
@@ -91,36 +93,79 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     val model = Sequential()
     // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
-    model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength))
+    model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength).setName(s"Embedding-${config.modelType}"))
     // take the matrix above and feed to a RNN layer 
     // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
     for (j <- 0 until config.layers)
-      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
+      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
     // feed the output of the RNN to a dense layer with relu activation function
     // model.add(TimeDistributed(
     //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
     //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
     // )
     // add a dropout layer for regularization
-    model.add(Dropout(config.dropoutProbability))
+    model.add(Dropout(config.dropoutProbability).setName("dropout"))
     // add the last layer for multi-class classification
     model.add(TimeDistributed(
-      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+      Dense(labelSize, activation="softmax").setName("Dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
     )
     return model
   }
 
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
-    val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
-    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
-    val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer))
+    val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
+    val pipeline = new Pipeline().setStages(Array(yTokenizer, yVectorizer, xTokenizer, xVectorizer))
     val preprocessor = pipeline.fit(df)
-    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    val vocabulary = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    return (preprocessor, vocabulary, labels)
+  }
+}
+
+class SubtokenModel(config: Config) extends AbstractModel(config) {  
+  def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
+    val model = Sequential()
+    // input to an embedding layer is an index vector of `3*maxSeqquenceLength` elements, each index is in [0, vocabSize)
+    // this layer produces a real-valued matrix of shape `3*maxSequenceLength x embeddingSize`
+    model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=3*config.maxSequenceLength).setName(s"Embedding-${config.modelType}"))
+    // reshape the output to a matrix of shape `maxSequenceLength x 3*embeddingSize`. This operation performs the concatenation 
+    // of [b, i, e] embedding vectors (to [b :: i :: e])
+    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*config.embeddingSize)).setName("Reshape"))
+    // take the matrix above and feed to a recurrent layer 
+    // by default, the GRU layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
+    // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
+    // `maxSequenceLength x recurrentSize` 
+    for (j <- 0 until config.layers)
+      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
+    // // feed the output of the GRU to a dense layer with relu activation function
+    // model.add(TimeDistributed(
+    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
+    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
+    // )
+    // add a dropout layer for regularization
+    model.add(Dropout(config.dropoutProbability).setName("Dropout"))
+    // add the last layer for multi-class classification
+    model.add(TimeDistributed(
+      Dense(labelSize, activation="softmax").setName("Dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+    )
+    return model
+  }
+  def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
+    val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
+    val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
+    val xTokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
+    val xTransformer = new SubtokenTransformer().setInputCol("xs").setOutputCol("ts")
+    val xVectorizer = new CountVectorizer().setInputCol("ts").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
+    val pipeline = new Pipeline().setStages(Array(yTokenizer, yVectorizer, xTokenizer, xTransformer, xVectorizer))
+    val preprocessor = pipeline.fit(df)
+    val vocabulary = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (preprocessor, vocabulary, labels)
   }
@@ -158,15 +203,15 @@ class CharModel(config: Config) extends AbstractModel(config) {
   }
 
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
-    val xTokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("cs").setPattern(".").setGaps(false).setToLowercase(true)
-    val xVectorizer = new CountVectorizer().setInputCol("cs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
     val yTokenizer = new Tokenizer().setInputCol("y").setOutputCol("ys")
     val yVectorizer = new CountVectorizer().setInputCol("ys").setOutputCol("vs").setBinary(true)
+    val xTokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("cs").setPattern(".").setGaps(false).setToLowercase(true)
+    val xVectorizer = new CountVectorizer().setInputCol("cs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
     val tokenizer = new Tokenizer().setInputCol("x").setOutputCol("xs")
-    val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yTokenizer, yVectorizer, tokenizer))
+    val pipeline = new Pipeline().setStages(Array(yTokenizer, yVectorizer, xTokenizer, xVectorizer, tokenizer))
     val preprocessor = pipeline.fit(df)
-    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    val vocabulary = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
     return (preprocessor, vocabulary, labels)
   }

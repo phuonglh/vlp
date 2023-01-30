@@ -1,4 +1,4 @@
-1. Token Model
+M1. Token Model with LSTM
     
   The input to its BigDL model is a batch of sequences, each sequence is of length maxSeqLen containing integers 
   corresponding to the indices of the tokens in the sequence, obtained via a token dictionary.
@@ -9,25 +9,21 @@
   INP: [Tom, loves, Jerry] ==> [i(Tom), i(loves), i(Jerry)]
 
 
-2. Character Model
+M2. Subtoken Model with LSTM
 
-  As in the semi-character model, each token is decomposed into 3 parts [b, i, e]. Then each part is represented by a binary-valued 
-  vector. v(b) and v(e) are one-hot vectors of length d. v(i) is a multi-hot vector, also of length d. Here, d is the size of the alphabet.
+  Each token is decomposed into 3 parts: b = first character, e = last character, and i = the middle subsequence.
+  For example, "phương" is decomposed into ["p", "hươn", "g"]. Special cases: "ba" => ["b", "NA", "a"]; "A" => ["A", "NA", "NA"].
 
-  The input to its BigDL model is a batch of sequence, each sequence is of length (3*maxSeqLen*d). 
+  The input to its BigDL model is a batch of sequences, each sequence is of length 3*maxSeqLen containing integer indices as in the 
+  previous model. 
 
-    Reshape(3*maxSeqLen*d => (maxSeqLen, 3*d)) -> RNN(3*d => r, returnSeq=true) -> TimeDistributed(Dense(r => h)) ->
+    Embedding(d) -> Reshape((3*maxSeq, d) => (maxSeq, 3*d)) -> RNN(3*d => r, returnSeq=true) -> TimeDistributed(Dense(r => h)) ->
       Dropout(p) -> TimeDistributed(Dense(h => numLabels, softmax))
-  
-  INP: [Tom, loves, Jerry] => [b(Tom), m(Tom), e(Tom),..., b(Jerry), m(Jerry), e(Jerry)]
 
-  b(Jerry) = one-hot-vector(J)
-  e(Jerry) = one-hot-vector(y)
-  m(Jerry) = one-hot-vector(e) + one-hot-vector(r) + one-hot-vector(r)
- 
-===
+  INP: [Tom, loves, Jerry] ==> [T, o, m, l, ove, s, J, err, y] => [i(T), i(o), i(m),..., i(J), i(err), i(y)] 
 
-1. Token Representation for BERT
+
+M3. Token Model with BERT
 
   A table of 4 tensors:
     - tokenIds (using a vocabulary, same as in the Token Model)
@@ -44,18 +40,34 @@
   input has an input shape Array(maxSeqLen). Note that we use a Reshape layer to reshape the masks input to 
   targetShape = Array(1, 1, maxSeqLen). 
 
-2. Character Representation for BERT
+M4. Subtoken Model with BERT
 
   Jerry => [J, err, y] => 3 subtokens
 
+===
+M5. Character Model
+
+  As in the semi-character model, each token is decomposed into 3 parts [b, i, e]. Then each part is represented by a binary-valued 
+  vector. v(b) and v(e) are one-hot vectors of length d. v(i) is a multi-hot vector, also of length d. Here, d is the size of the alphabet.
+
+  The input to its BigDL model is a batch of sequence, each sequence is of length (3*maxSeqLen*d). 
+
+    Reshape(3*maxSeqLen*d => (maxSeqLen, 3*d)) -> RNN(3*d => r, returnSeq=true) -> TimeDistributed(Dense(r => h)) ->
+      Dropout(p) -> TimeDistributed(Dense(h => numLabels, softmax))
+  
+  INP: [Tom, loves, Jerry] => [b(Tom), m(Tom), e(Tom),..., b(Jerry), m(Jerry), e(Jerry)]
+
+  b(Jerry) = one-hot-vector(J)
+  e(Jerry) = one-hot-vector(y)
+  m(Jerry) = one-hot-vector(e) + one-hot-vector(r) + one-hot-vector(r)
 
 ===
 
 M1. Token Model with LSTM: [Sequencer, LSTM] (input is a vector of token ids)
-M2. Token Model with BERT: [Sequencer4BERT, BERT] (input is a vector of token ids)
-M3. Character Model with LSTM: [MultiHotSequencer, LSTM] (input is a multi-hot vector)
-M4. Subsyllable Model with BERT: [SubsyllableSequencer, BERT] (input is a vector of subsyllable ids)
+M2. Subtoken with LSTM: [SubtokenSequencer, LSTM] (input is a vector of subtoken ids)
+M3. Token Model with BERT: [Sequencer4BERT, BERT] (input is a vector of token ids)
+M4. Subsyllable Model with BERT: [SubtokenSequencer, BERT] (input is a vector of subtoken ids)
+M5. Character Model with LSTM: [CharSequencer, LSTM] (input is a multi-hot vector)
 
-
-Conference paper: M1 and M2
-Journal paper: M2, M3 and M4.
+Conference paper: M1, M2, M4, M5
+Journal paper: others or combination of models, seq2seq models.

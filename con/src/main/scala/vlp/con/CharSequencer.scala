@@ -10,24 +10,24 @@ import org.apache.spark.sql.types.DataType
 
 
 /**
-  * A multi-hot sequence vectorizer transforms a sequence of tokens into a sequence of character indices
+  * A char sequence vectorizer transforms a sequence of tokens into a sequence of character indices
   * using a dictionary. This transformer pads or 
   * truncate long sentence to a given `maxSequenceLength`. See the character model for detail.
-  * Given a syllable "khanh", this transformer converts it to a multi-hot vector of length 3*|V|, 
+  * Given a token "khanh", this transformer converts it to a multi-hot vector of length 3*|V|, 
   * where |V| is the size of a dictionary (alphabet), b::i::e, where b and e are two one-hot vectors, 
   * and e is a multi-hot vector representing a bag-of-character "{h, a, n}".  
   * 
   * phuonglh@gmail.com
   */
-class MultiHotSequencer(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) 
-  extends UnaryTransformer[Seq[String], Vector, MultiHotSequencer] with DefaultParamsWritable {
+class CharSequencer(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) 
+  extends UnaryTransformer[Seq[String], Vector, CharSequencer] with DefaultParamsWritable {
 
   var dictionaryBr: Option[Broadcast[Map[String, Int]]] = None
   var maxSeqLen: Int = -1
   var pad: Float = -1f
 
   def this(dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) = {
-    this(Identifiable.randomUID("seq"), dictionary, maxSequenceLength, padding)
+    this(Identifiable.randomUID("charSeq"), dictionary, maxSequenceLength, padding)
     val sparkContext = SparkSession.getActiveSession.get.sparkContext
     dictionaryBr = Some(sparkContext.broadcast(dictionary))
     this.maxSeqLen = maxSequenceLength
@@ -79,6 +79,6 @@ class MultiHotSequencer(val uid: String, val dictionary: Map[String, Int], maxSe
   override protected def outputDataType: DataType = VectorType
 }
 
-object MultiHotSequencer extends DefaultParamsReadable[MultiHotSequencer] {
-  override def load(path: String): MultiHotSequencer = super.load(path)
+object CharSequencer extends DefaultParamsReadable[CharSequencer] {
+  override def load(path: String): CharSequencer = super.load(path)
 }
