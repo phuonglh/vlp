@@ -25,7 +25,14 @@ abstract class AbstractModel(config: Config) {
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String])
 
   def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float], argMaxLayer: Boolean = true): DataFrame = {
-    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+    val vocabModelIndex = config.modelType match {
+      case "tk" => 3
+      case "tb" => 3
+      case "st" => 4
+      case "ch" => 3
+      case _ => -1
+    }
+    val vocabulary = preprocessor.stages(vocabModelIndex).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
     // use a sequencer to transform the input data frame into features
@@ -181,23 +188,23 @@ class CharModel(config: Config) extends AbstractModel(config) {
     val model = Sequential()
     // reshape the output to a matrix of shape `maxSequenceLength x 3*vocabSize`. This operation performs the concatenation 
     // of [b, i, e] embedding vectors (to [b :: i :: e]). Here vocab is the alphabet since each element is a character.
-    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*vocabSize), inputShape=Shape(3*config.maxSequenceLength*vocabSize)))
+    model.add(Reshape(targetShape=Array(config.maxSequenceLength, 3*vocabSize), inputShape=Shape(3*config.maxSequenceLength*vocabSize)).setName("Reshape"))
     // take the matrix above and feed to a RNN layer 
     // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // but since we want sequence information, we make it return a sequences, so the output will be a matrix of shape 
     // `maxSequenceLength x recurrentSize` 
     for (j <- 0 until config.layers)
-      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true))
+      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
     // // feed the output of the RNN to a dense layer with relu activation function
     // model.add(TimeDistributed(
     //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
     //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
     // )
     // add a dropout layer for regularization
-    model.add(Dropout(config.dropoutProbability))
+    model.add(Dropout(config.dropoutProbability).setName("Dropout"))
     // add the last layer for multi-class classification
     model.add(TimeDistributed(
-      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]].setName("Dense"))
     )
     return model
   }

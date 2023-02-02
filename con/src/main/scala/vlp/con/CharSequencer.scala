@@ -15,7 +15,7 @@ import org.apache.spark.sql.types.DataType
   * truncate long sentence to a given `maxSequenceLength`. See the character model for detail.
   * Given a token "khanh", this transformer converts it to a multi-hot vector of length 3*|V|, 
   * where |V| is the size of a dictionary (alphabet), b::i::e, where b and e are two one-hot vectors, 
-  * and e is a multi-hot vector representing a bag-of-character "{h, a, n}".  
+  * and i is a multi-hot vector representing a bag-of-character "{h, a, n}".
   * 
   * phuonglh@gmail.com
   */
