@@ -47,7 +47,7 @@ case class Config(
   outputPath: String = "dat/vsc/vud.txt.out", 
   scorePath: String = "dat/vsc/scores.json",
   verbose: Boolean = false,
-  ged: Boolean = false, // multi-language GED data
+  ged: Boolean = true, // multi-language GED data
   modelType: String = "tk", 
   bert: ConfigBERT = ConfigBERT()
 ) extends Serializable
