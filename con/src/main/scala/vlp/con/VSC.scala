@@ -254,21 +254,21 @@ object VSC {
             // each config will be run 3 times
             for (k <- 0 to 2) {
               val conf = Config(embeddingSize = e, recurrentSize = r, layers = j)
-              logger.info(Serialization.writePretty(config))
+              logger.info(Serialization.writePretty(conf))
               val model = ModelFactory(conf)
-              val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+              val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
               // evaluate on the training data
               val dft = model.predict(trainingDF, preprocessor, bigdl, true)
-              val trainingScores = evaluate(dft, labels.size, config, "train")
+              val trainingScores = evaluate(dft, labels.size, conf, "train")
               logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
               var content = Serialization.writePretty(trainingScores) + ",\n"
-              Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
               // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
               val dfv = model.predict(validationDF, preprocessor, bigdl, false)
-              val validationScores = evaluate(dfv, labels.size, config, "valid")
+              val validationScores = evaluate(dfv, labels.size, conf, "valid")
               logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
               content = Serialization.writePretty(validationScores) + ",\n"
-              Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
             }       
           }
       }
