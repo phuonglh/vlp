@@ -246,27 +246,30 @@ object VSC {
           // Two models (LSTM, BERT) and two representations (token, subtoken) are run and compared.
           // Different hyper-parameters are tried.
           // 1. LSTM experiments
-          val embeddingSizes = Seq(16)
-          val recurrentSizes = Seq(32)
-          val layerSizes = Seq(1)
+          val embeddingSizes = Seq(16, 32, 64)
+          val recurrentSizes = Seq(32, 64, 128)
+          val layerSizes = Seq(1, 2, 3)
           val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
-            val conf = Config(embeddingSize = e, recurrentSize = r, layers = j)
-            logger.info(Serialization.writePretty(config))
-            val model = ModelFactory(conf)
-            val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
-            // evaluate on the training data
-            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
-            val trainingScores = evaluate(dft, labels.size, config, "train")
-            logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
-            var content = Serialization.writePretty(trainingScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
-            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
-            val validationScores = evaluate(dfv, labels.size, config, "valid")
-            logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
-            content = Serialization.writePretty(validationScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)            
+            // each config will be run 3 times
+            for (k <- 0 to 2) {
+              val conf = Config(embeddingSize = e, recurrentSize = r, layers = j)
+              logger.info(Serialization.writePretty(config))
+              val model = ModelFactory(conf)
+              val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+              // evaluate on the training data
+              val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+              val trainingScores = evaluate(dft, labels.size, config, "train")
+              logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+              var content = Serialization.writePretty(trainingScores) + ",\n"
+              Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+              val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+              val validationScores = evaluate(dfv, labels.size, config, "valid")
+              logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
+              content = Serialization.writePretty(validationScores) + ",\n"
+              Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            }       
           }
       }
       sc.stop()
