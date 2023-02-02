@@ -3,7 +3,7 @@ package vlp.con
 import com.intel.analytics.bigdl.dllib.NNContext
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Model, Sequential}
-import com.intel.analytics.bigdl.dllib.keras.models.Models
+import com.intel.analytics.bigdl.dllib.keras.models.{Models, KerasNet}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.TimeDistributedCriterion
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
@@ -77,6 +77,66 @@ object VSC {
     )
   }
 
+  def train(model: AbstractModel, config: Config, trainingDF: DataFrame, validationDF: DataFrame, 
+    preprocessor: PipelineModel, vocabulary: Array[String], labels: Array[String], 
+    trainingSummary: TrainSummary, validationSummary: ValidationSummary): KerasNet[Float] = {
+    val bigdl = model.createModel(vocabulary.size, labels.size)
+    bigdl.summary()
+    
+    val vocabDict = vocabulary.zipWithIndex.toMap
+    val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
+    // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
+    val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+    val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
+    val (bft, bfv) = (ySequencer.transform(aft), ySequencer.transform(afv))
+
+    val xSequencer = config.modelType match {
+      case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+      case "tb" => new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+      case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
+      case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+    }
+    val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
+    cfv.printSchema()
+
+    // our classes are unbalanced, hence we use weights to improve accuracy
+    // the first label is more common than al the rest, hence it takes a lesser weight
+    val w = Tensor(Array(labelDict.size)).rand()
+    w.setValue(1, 0.1f); for (j <- 2 to labelDict.size) w.setValue(j, 0.9f)
+
+    val maxSeqLen = config.maxSequenceLength
+    val classifier = config.modelType match {
+      case "tk" => 
+        val (featureSize, labelSize) = (Array(maxSeqLen), Array(maxSeqLen))
+        NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+      case "tb" => 
+        val (featureSize, labelSize) = (Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen)), Array(maxSeqLen))
+        NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+      case "st" => 
+        val (featureSize, labelSize) = (Array(3*maxSeqLen), Array(maxSeqLen))
+        NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+      case "ch" => 
+        val (featureSize, labelSize) = (Array(3*maxSeqLen*vocabulary.size), Array(maxSeqLen))
+        NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+      case _ => 
+        val (featureSize, labelSize) = (Array(0), Array(0))
+        NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
+    }
+
+    classifier.setLabelCol("label").setFeaturesCol("features")
+      .setBatchSize(config.batchSize)
+      .setOptimMethod(new Adam(config.learningRate))
+      .setMaxEpoch(config.epochs)
+      .setTrainSummary(trainingSummary)
+      .setValidationSummary(validationSummary)
+      .setValidation(Trigger.everyEpoch, cfv, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+    // fit the classifier, which will train the bigdl model and return a NNModel
+    // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
+    // at the end to output a good format for BigDL. See the predict() method for detail.
+    classifier.fit(cft)
+    return bigdl
+  }
+
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
     val logger = LoggerFactory.getLogger(getClass.getName)
@@ -108,7 +168,7 @@ object VSC {
     opts.parse(args, Config()) match {
       case Some(config) =>
         implicit val formats = Serialization.formats(NoTypeHints)
-        println(Serialization.writePretty(config))
+        logger.info(Serialization.writePretty(config))
 
         val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
@@ -129,73 +189,18 @@ object VSC {
         }
         trainingDF.printSchema()
         trainingDF.show()
-        // split data
         // create a model
         val model = ModelFactory(config)
         // get the input data set name (for example, "vud", "fin", "english", "italian") and create a prefix
         val inp = if (config.ged) config.language else config.inputPath.split("/").last.split("""\.""").head
         val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
+        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
+        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
 
         config.mode match {
           case "train" => 
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)  
-            val bigdl = model.createModel(vocabulary.size, labels.size)
-            bigdl.summary()
-            
-            val vocabDict = vocabulary.zipWithIndex.toMap
-            val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
-            // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
-            val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-            val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
-            val (bft, bfv) = (ySequencer.transform(aft), ySequencer.transform(afv))
-
-            val xSequencer = config.modelType match {
-              case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-              case "tb" => new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-              case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
-              case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-            }
-            val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
-            cfv.printSchema()
-
-            val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
-            val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
-
-            // our classes are unbalanced, hence we use weights to improve accuracy
-            // the first label is more common than al the rest, hence it takes a lesser weight
-            val w = Tensor(Array(labelDict.size)).rand()
-            w.setValue(1, 0.1f); for (j <- 2 to labelDict.size) w.setValue(j, 0.9f)
-
-            val maxSeqLen = config.maxSequenceLength
-            val classifier = config.modelType match {
-              case "tk" => 
-                val (featureSize, labelSize) = (Array(maxSeqLen), Array(maxSeqLen))
-                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
-              case "tb" => 
-                val (featureSize, labelSize) = (Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen)), Array(maxSeqLen))
-                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
-              case "st" => 
-                val (featureSize, labelSize) = (Array(3*maxSeqLen), Array(maxSeqLen))
-                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
-              case "ch" => 
-                val (featureSize, labelSize) = (Array(3*maxSeqLen*vocabulary.size), Array(maxSeqLen))
-                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
-              case _ => 
-                val (featureSize, labelSize) = (Array(0), Array(0))
-                NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights=w, logProbAsInput=false), true), featureSize, labelSize)
-            }
-
-            classifier.setLabelCol("label").setFeaturesCol("features")
-              .setBatchSize(config.batchSize)
-              .setOptimMethod(new Adam(config.learningRate))
-              .setMaxEpoch(config.epochs)
-              .setTrainSummary(trainingSummary)
-              .setValidationSummary(validationSummary)
-              .setValidation(Trigger.everyEpoch, cfv, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-            // fit the classifier, which will train the bigdl model and return a NNModel
-            // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
-            // at the end to output a good format for BigDL. See the predict() method for detail.
-            classifier.fit(cft)
+            val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
             preprocessor.write.overwrite.save(s"${prefix}/pre/")
             logger.info("Saving the model...")        
@@ -236,8 +241,35 @@ object VSC {
           logger.info(Serialization.writePretty(scores))
           content = Serialization.writePretty(scores) + ",\n"
           Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-        }
-        sc.stop()
+        case "experiment" => 
+          // perform multiple experiments for a given language
+          // Two models (LSTM, BERT) and two representations (token, subtoken) are run and compared.
+          // Different hyper-parameters are tried.
+          // 1. LSTM experiments
+          val embeddingSizes = Seq(16)
+          val recurrentSizes = Seq(32)
+          val layerSizes = Seq(1)
+          val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+          for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
+            val conf = Config(embeddingSize = e, recurrentSize = r, layers = j)
+            logger.info(Serialization.writePretty(config))
+            val model = ModelFactory(conf)
+            val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+            // evaluate on the training data
+            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            val trainingScores = evaluate(dft, labels.size, config, "train")
+            logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+            var content = Serialization.writePretty(trainingScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+            val validationScores = evaluate(dfv, labels.size, config, "valid")
+            logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
+            content = Serialization.writePretty(validationScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)            
+          }
+      }
+      sc.stop()
       case None => {}
     }
   }

@@ -48,7 +48,7 @@ case class Config(
   scorePath: String = "dat/vsc/scores.json",
   verbose: Boolean = false,
   ged: Boolean = false, // multi-language GED data
-  modelType: String = "tb", // tk: token LSTM, ch: character LSTM, tb: token BERT, cb: subsyllable BERT
+  modelType: String = "tk", 
   bert: ConfigBERT = ConfigBERT()
 ) extends Serializable
 

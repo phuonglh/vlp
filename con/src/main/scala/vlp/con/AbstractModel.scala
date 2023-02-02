@@ -107,11 +107,6 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     // `maxSequenceLength x recurrentSize` 
     for (j <- 0 until config.layers)
       model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
-    // feed the output of the RNN to a dense layer with relu activation function
-    // model.add(TimeDistributed(
-    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
-    // )
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability).setName("dropout"))
     // add the last layer for multi-class classification
@@ -150,11 +145,6 @@ class SubtokenModel(config: Config) extends AbstractModel(config) {
     // `maxSequenceLength x recurrentSize` 
     for (j <- 0 until config.layers)
       model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
-    // // feed the output of the GRU to a dense layer with relu activation function
-    // model.add(TimeDistributed(
-    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
-    // )
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability).setName("Dropout"))
     // add the last layer for multi-class classification
@@ -195,11 +185,6 @@ class CharModel(config: Config) extends AbstractModel(config) {
     // `maxSequenceLength x recurrentSize` 
     for (j <- 0 until config.layers)
       model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
-    // // feed the output of the RNN to a dense layer with relu activation function
-    // model.add(TimeDistributed(
-    //   Dense(config.hiddenSize, activation="relu").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]], 
-    //   inputShape=Shape(config.maxSequenceLength, config.recurrentSize))
-    // )
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability).setName("Dropout"))
     // add the last layer for multi-class classification
