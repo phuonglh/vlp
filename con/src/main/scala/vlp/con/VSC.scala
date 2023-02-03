@@ -86,19 +86,11 @@ object VSC {
     trainingSummary: TrainSummary, validationSummary: ValidationSummary): KerasNet[Float] = {
     val bigdl = model.createModel(vocabulary.size, labels.size)
     bigdl.summary()
-    
+    // build a vocab map
     val vocabDict = vocabulary.zipWithIndex.toMap
-    // make sure the dataframes are ready before launching a training process
-    val future: Future[(DataFrame, DataFrame)] = Future {
-      (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
-    }
-    val (aft, afv) = Await.result(future, Duration.Inf)
-    // val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
-    
     // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
     val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
     val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
-    val (bft, bfv) = (ySequencer.transform(aft), ySequencer.transform(afv))
 
     val xSequencer = config.modelType match {
       case "tk" => new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
@@ -106,7 +98,14 @@ object VSC {
       case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
       case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
     }
-    val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
+
+    // make sure the dataframes are ready before launching a training process
+    val future: Future[(DataFrame, DataFrame)] = Future {
+      val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
+      val (bft, bfv) = (ySequencer.transform(aft), ySequencer.transform(afv))
+      (xSequencer.transform(bft), xSequencer.transform(bfv))
+    }
+    val (cft, cfv) = Await.result(future, Duration.Inf)
     cfv.printSchema()
 
     // our classes are unbalanced, hence we use weights to improve accuracy
