@@ -254,7 +254,6 @@ object VSC {
           // perform multiple experiments for a given language
           // Two models (LSTM, BERT) and two representations (token, subtoken) are run and compared.
           // Different hyper-parameters are tried.
-          val types = Seq("st")
           val embeddingSizes = Seq(16, 32, 64)
           val recurrentSizes = Seq(32, 64, 128)
           val layerSizes = Seq(1, 2, 3)
@@ -264,10 +263,10 @@ object VSC {
           }
           val (preprocessor, vocabulary, labels) = Await.result(future, Duration.Inf)
           // val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
-          for (t <- types; e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
+          for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
             // each config will be run 3 times
             for (k <- 0 to 2) {
-              val conf = Config(modelType = t, embeddingSize = e, recurrentSize = r, layers = j, language = config.language)
+              val conf = Config(embeddingSize = e, recurrentSize = r, layers = j, language = config.language)
               logger.info(Serialization.writePretty(conf))
               val model = ModelFactory(conf)
               val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
