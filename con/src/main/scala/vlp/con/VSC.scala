@@ -28,6 +28,9 @@ import scopt.OptionParser
 import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Paths, StandardOpenOption}
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration._
+
 
 
 object VSC {
@@ -199,7 +202,7 @@ object VSC {
 
         config.mode match {
           case "train" => 
-            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)  
+            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
             preprocessor.write.overwrite.save(s"${prefix}/pre/")
@@ -245,11 +248,17 @@ object VSC {
           // perform multiple experiments for a given language
           // Two models (LSTM, BERT) and two representations (token, subtoken) are run and compared.
           // Different hyper-parameters are tried.
-          val types = Seq("tk", "st")
+          val types = Seq("st")
           val embeddingSizes = Seq(16, 32, 64)
           val recurrentSizes = Seq(32, 64, 128)
           val layerSizes = Seq(1, 2, 3)
-          val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+          // need to wait the preprocessor thread to finish before launching experiment
+          implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+          val future: Future[(PipelineModel, Array[String], Array[String])] = Future {
+            model.preprocessor(trainingDF)
+          }
+          val (preprocessor, vocabulary, labels) = Await.result(future, Duration.Inf)
+          // val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           for (t <- types; e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
             // each config will be run 3 times
             for (k <- 0 to 2) {
