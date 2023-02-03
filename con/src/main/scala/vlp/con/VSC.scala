@@ -34,6 +34,7 @@ import scala.concurrent.duration._
 
 
 object VSC {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
   
   def dataPaths(language: String): (String, String) = {
     language match {
@@ -99,7 +100,12 @@ object VSC {
       case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
       case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
     }
-    val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
+    // make sure the dataframes are ready before launching a training process
+    val future: Future[(DataFrame, DataFrame)] = Future {
+      (xSequencer.transform(bft), xSequencer.transform(bfv))
+    }
+    val (cft, cfv) = Await.result(future, Duration.Inf)
+    // val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
     cfv.printSchema()
 
     // our classes are unbalanced, hence we use weights to improve accuracy
@@ -253,7 +259,6 @@ object VSC {
           val recurrentSizes = Seq(32, 64, 128)
           val layerSizes = Seq(1, 2, 3)
           // need to wait the preprocessor thread to finish before launching experiment
-          implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
           val future: Future[(PipelineModel, Array[String], Array[String])] = Future {
             model.preprocessor(trainingDF)
           }
