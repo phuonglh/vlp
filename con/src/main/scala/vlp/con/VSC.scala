@@ -88,7 +88,13 @@ object VSC {
     bigdl.summary()
     
     val vocabDict = vocabulary.zipWithIndex.toMap
-    val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
+    // make sure the dataframes are ready before launching a training process
+    val future: Future[(DataFrame, DataFrame)] = Future {
+      (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
+    }
+    val (aft, afv) = Await.result(future, Duration.Inf)
+    // val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
+    
     // map the label to one-based index (for use in ClassNLLCriterion of BigDL), label padding value is -1.
     val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
     val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")
@@ -100,12 +106,7 @@ object VSC {
       case "st" => new SubtokenSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("ts").setOutputCol("features")
       case _ => new CharSequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
     }
-    // make sure the dataframes are ready before launching a training process
-    val future: Future[(DataFrame, DataFrame)] = Future {
-      (xSequencer.transform(bft), xSequencer.transform(bfv))
-    }
-    val (cft, cfv) = Await.result(future, Duration.Inf)
-    // val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
+    val (cft, cfv) = (xSequencer.transform(bft), xSequencer.transform(bfv))
     cfv.printSchema()
 
     // our classes are unbalanced, hence we use weights to improve accuracy
