@@ -266,7 +266,8 @@ object VSC {
           for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
             // each config will be run 3 times
             for (k <- 0 to 2) {
-              val conf = Config(embeddingSize = e, recurrentSize = r, layers = j, language = config.language)
+              // note that the model type is passed by the global configuration through the command line
+              val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language)
               logger.info(Serialization.writePretty(conf))
               val model = ModelFactory(conf)
               val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)

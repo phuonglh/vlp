@@ -125,7 +125,7 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     val preprocessor = pipeline.fit(df)
     val vocabulary = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString(", ")}")
     return (preprocessor, vocabulary, labels)
   }
 }
@@ -163,7 +163,7 @@ class SubtokenModel(config: Config) extends AbstractModel(config) {
     val preprocessor = pipeline.fit(df)
     val vocabulary = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
     val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString(", ")}")
     return (preprocessor, vocabulary, labels)
   }
 }
@@ -204,7 +204,7 @@ class CharModel(config: Config) extends AbstractModel(config) {
     val preprocessor = pipeline.fit(df)
     val vocabulary = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString}")
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString(", ")}")
     return (preprocessor, vocabulary, labels)
   }
 }
