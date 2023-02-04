@@ -38,7 +38,7 @@ object VSC {
   
   def dataPaths(language: String): (String, String) = {
     language match {
-      case "czech" => ("dat/ged/czech/cs_gecc_train.tsv", "dat/ged/czech/cs_gecc_dev.tsv")
+      case "czech" => ("dat/ged/czech/cs_geccc_train.tsv", "dat/ged/czech/cs_geccc_dev.tsv")
       case "english" => ("dat/ged/english/en_fce_train.tsv", "dat/ged/english/en_fce_dev.tsv")
       case "german" => ("dat/ged/german/de_falko-merlin_train.tsv", "dat/ged/german/de_falko-merlin_dev.tsv")
       case "italian" => ("dat/ged/italian/it_merlin_train.tsv", "dat/ged/italian/it_merlin_dev.tsv")
