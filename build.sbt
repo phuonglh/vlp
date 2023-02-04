@@ -297,3 +297,13 @@ lazy val aka = (project in file("aka"))
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.19" % Test
       )
     )
+
+// Fundamental RL model
+lazy val frl = (project in file("frl"))
+    .settings(
+      assemblyJarName in assembly := "frl.jar",
+      libraryDependencies ++= Seq(
+        "org.slf4j" % "slf4j-simple" % "1.7.36",
+        "org.scalatest" %% "scalatest" % "3.1.1" % "test"
+      )
+    )
