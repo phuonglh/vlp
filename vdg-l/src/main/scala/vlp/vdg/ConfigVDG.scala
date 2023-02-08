@@ -42,20 +42,20 @@ case class ConfigVDG(
   minFrequency: Int = 3,
   jsonData: Boolean = false,
   dataPath: String = "dat/hcm.txt",
-  percentage: Double = 0.5, // 50% of the data set to use
+  percentage: Double = 1.0, 
   modelPath: String = "bin/",
   batchSize: Int = 64,
   epsilon: Double = 1E-5,
   maxSequenceLength: Int = 150,
-  learningRate: Double = 0.001,
+  learningRate: Double = 1E-5,
   epochs: Int = 100,
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
   peephole: Boolean = false,
   hiddenUnits: Int = 64, // number of hidden units in each recurrent layer
   dropout: Double = 0,
-  inputPath: String = "dat/ftel-3.txt",
-  outputPath: String = "dat/ftel-3", 
+  inputPath: String = "dat/ftel-6.txt",
+  outputPath: String = "dat/ftel-6", 
   logPath: String = "dat/scores.json",
   modelType: Int = 1,
   delimiters: String = """[\s.,/;?!:'"…”“’+̀= ́&)(|‘– ̃ ̉•_><*̛̆©̂@ð°ö​#²®·●ñš~‎›øçî□-]+""",
