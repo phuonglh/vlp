@@ -52,7 +52,7 @@ case class ConfigVDG(
   layers: Int = 1, // number of bi-recurrent layers
   gru: Boolean = true, // use GRU or LSTM, default is GRU
   peephole: Boolean = false,
-  hiddenUnits: Int = 64, // number of hidden units in each recurrent layer
+  hiddenUnits: Int = 128, // number of hidden units in each recurrent layer
   dropout: Double = 0,
   inputPath: String = "dat/ftel-6.txt",
   outputPath: String = "dat/ftel-6", 

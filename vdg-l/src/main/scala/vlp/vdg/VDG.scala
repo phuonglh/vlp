@@ -48,7 +48,7 @@ import org.apache.spark.sql.RowFactory
   */
 object VDG {
   final val logger = LoggerFactory.getLogger(VDG.getClass.getName)
-  final val partition = Array(0.8, 0.2)
+  final val partition = Array(0.9, 0.1)
 
   def eval(config: ConfigVDG, vdg: M, dataSet: DataFrame, preprocessor: PipelineModel, module: Module[Float], trainingTime: Long = 0): Unit = {
     val Array(trainingSet, validationSet) = dataSet.randomSplit(partition, 150909L)
