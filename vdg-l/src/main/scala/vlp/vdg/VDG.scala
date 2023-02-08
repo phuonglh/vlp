@@ -143,7 +143,7 @@ object VDG {
               val endTime = System.currentTimeMillis()
               val trainingTime = (endTime - startTime)/1000
               val preprocessor = PipelineModel.load(path)
-              eval(config, vdg, validationSet, preprocessor, module, trainingTime)
+              eval(config, vdg, dataSet, preprocessor, module, trainingTime)
             case "eval" =>
               val preprocessor = PipelineModel.load(path)
               val module = ModuleLoader.loadFromFile[Float](path + "vdg.bigdl", path + "vdg.bin")
