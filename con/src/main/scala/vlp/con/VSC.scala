@@ -109,7 +109,7 @@ object VSC {
     cfv.printSchema()
 
     // our classes are unbalanced, hence we use weights to improve accuracy
-    // the first label is more common than al the rest, hence it takes a lesser weight
+    // the first label is more common than all the rest, hence it takes a lesser weight
     val w = Tensor(Array(labelDict.size)).rand()
     w.setValue(1, 0.1f); for (j <- 2 to labelDict.size) w.setValue(j, 0.9f)
 
@@ -171,6 +171,7 @@ object VSC {
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input data path")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
+      opt[String]('s', "scorePath").action((x, conf) => conf.copy(scorePath = x)).text("score path")
       opt[Unit]('v', "verbose").action((_, conf) => conf.copy(verbose = true)).text("verbose mode, default is false")
       opt[Unit]('g', "GED").action((_, conf) => conf.copy(ged = true)).text("GED mode, default is false")
     }
@@ -186,6 +187,7 @@ object VSC {
           .set("spark.driver.memory", config.driverMemory)
         val sc = new SparkContext(conf)
         Engine.init
+        val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
 
         val (trainPath, validPath) = dataPaths(config.language)
         val Array(trainingDF, validationDF) = if (config.ged) {

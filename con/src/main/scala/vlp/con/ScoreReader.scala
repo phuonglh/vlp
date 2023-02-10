@@ -1,5 +1,6 @@
 package vlp.con
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SparkSession, DataFrame}
 import org.apache.spark.sql.functions._
 
@@ -38,8 +39,16 @@ object ScoreReader {
           avg("f0"), avg("f1")
         ).sort(col("embeddingSize"), col("encoderSize"), col("layerSize"))
         // write out the result        
-        average.repartition(1).write.option("header", "true").option("delimiter", "\t").csv(s"dat/vsc/$language-$s.tsv")
+        average.repartition(1).write.option("header", "true").option("delimiter", "\t").csv(s"dat/vsc/result/$language-$t-$s")
       }
     }
+  }
+
+  def main(args: Array[String]): Unit = {
+    val scorePath = args(0)
+    val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
+    val spark = SparkSession.builder.config(conf).getOrCreate()
+    averageLSTM(spark, scorePath)
+    spark.stop()
   }
 }
