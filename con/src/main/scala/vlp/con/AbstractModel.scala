@@ -59,7 +59,7 @@ abstract class AbstractModel(config: Config) {
       NNModel(sequential)
     } else {
       val model = bigdl.asInstanceOf[Model[Float]]
-      // we need to provide feature size for this multiple-output module (to convert 'features' into a table)
+      // we need to provide feature size for this multiple-input module (to convert 'features' into a table)
       val maxSeqLen = config.maxSequenceLength
       val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
       val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
@@ -69,6 +69,7 @@ abstract class AbstractModel(config: Config) {
       println(modelNew.summary())
       NNModel(modelNew, featureSize)
     }
+    // run the prediction and return prediction results as well as gold labels
     val ff = m.transform(ef)
     return ff.select("prediction", "label")
   }
@@ -79,7 +80,7 @@ object ModelFactory {
     * Create a model from scratch.
     *
     * @param config
-    * @return
+    * @return a model
     */
   def apply(config: Config) = config.modelType match {
     case "tk" => new TokenModel(config)
@@ -189,7 +190,7 @@ class CharModel(config: Config) extends AbstractModel(config) {
     model.add(Dropout(config.dropoutProbability).setName("Dropout"))
     // add the last layer for multi-class classification
     model.add(TimeDistributed(
-      Dense(labelSize, activation="softmax").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]].setName("Dense"))
+      Dense(labelSize, activation="softmax").setName("Dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
     )
     return model
   }

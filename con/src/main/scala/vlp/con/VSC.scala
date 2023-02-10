@@ -252,19 +252,21 @@ object VSC {
           logger.info(Serialization.writePretty(scores))
           content = Serialization.writePretty(scores) + ",\n"
           Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-        case "experiment" => 
+        case "experiment-tk-st" => 
           // perform multiple experiments for a given language
-          // Two models (LSTM, BERT) and two representations (token, subtoken) are run and compared.
-          // Different hyper-parameters are tried.
+          // Multi-layer LSTM models and two representations (token, subtoken) are run and compared.
+          // Different hyper-parameters are tried: 27 triples of hyper-parameter configs, each is run 3 times.
+          // So, there are 81 runs for each language in this experiment.
           val embeddingSizes = Seq(16, 32, 64)
           val recurrentSizes = Seq(32, 64, 128)
           val layerSizes = Seq(1, 2, 3)
-          // need to wait the preprocessor thread to finish before launching experiment
+          // need to wait the preprocessor thread to finish before launching experiment: JOKING, not necessary!
           val future: Future[(PipelineModel, Array[String], Array[String])] = Future {
             model.preprocessor(trainingDF)
           }
           val (preprocessor, vocabulary, labels) = Await.result(future, Duration.Inf)
           // val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+          val scorePath = s"dat/vsc/scores-tk-st-${config.language}.json"
           for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
             // each config will be run 3 times
             for (k <- 0 to 2) {
@@ -276,15 +278,41 @@ object VSC {
               // evaluate on the training data
               val dft = model.predict(trainingDF, preprocessor, bigdl, true)
               val trainingScores = evaluate(dft, labels.size, conf, "train")
-              logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
               var content = Serialization.writePretty(trainingScores) + ",\n"
-              Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
               // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
               val dfv = model.predict(validationDF, preprocessor, bigdl, false)
               val validationScores = evaluate(dfv, labels.size, conf, "valid")
-              logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
               content = Serialization.writePretty(validationScores) + ",\n"
-              Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            }       
+          }
+        case "experiment-ch" => 
+          // perform multiple experiments for a given language with the character-based model.
+          // Different hyper-parameters are tried: 9 triples of hyper-parameter configs, each is run 3 times.
+          // So, there are 27 runs for each language in this experiment.
+          val recurrentSizes = Seq(32, 64, 128)
+          val layerSizes = Seq(1, 2, 3)
+          val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+          val scorePath = s"dat/vsc/scores-ch-${config.language}.json"
+          for (r <- recurrentSizes; j <- layerSizes) {
+            // each config will be run 3 times
+            for (k <- 0 to 2) {
+              // note that the model type is passed by the global configuration through the command line
+              val conf = Config(modelType = config.modelType, recurrentSize = r, layers = j, language = config.language)
+              logger.info(Serialization.writePretty(conf))
+              val model = ModelFactory(conf)
+              val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+              // evaluate on the training data
+              val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+              val trainingScores = evaluate(dft, labels.size, conf, "train")
+              var content = Serialization.writePretty(trainingScores) + ",\n"
+              Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+              val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+              val validationScores = evaluate(dfv, labels.size, conf, "valid")
+              content = Serialization.writePretty(validationScores) + ",\n"
+              Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
             }       
           }
       }
