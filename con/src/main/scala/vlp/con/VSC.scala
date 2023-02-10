@@ -271,7 +271,7 @@ object VSC {
             // each config will be run 3 times
             for (k <- 0 to 2) {
               // note that the model type is passed by the global configuration through the command line
-              val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language)
+              val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language, ged = config.ged)
               logger.info(Serialization.writePretty(conf))
               val model = ModelFactory(conf)
               val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
@@ -299,7 +299,7 @@ object VSC {
             // each config will be run 3 times
             for (k <- 0 to 2) {
               // note that the model type is passed by the global configuration through the command line
-              val conf = Config(modelType = config.modelType, recurrentSize = r, layers = j, language = config.language)
+              val conf = Config(modelType = config.modelType, recurrentSize = r, layers = j, language = config.language, ged = config.ged)
               logger.info(Serialization.writePretty(conf))
               val model = ModelFactory(conf)
               val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
