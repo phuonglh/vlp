@@ -1,9 +1,5 @@
 package vlp.woz
 
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.catalyst.ScalaReflection
-val scalaSchema = ScalaReflection.schemaFor[SlotValues].dataType.asInstanceOf[StructType]
-
 final case class Slot(
   copy_from: String,
   exclusive_end: Long,

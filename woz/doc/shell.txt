@@ -39,7 +39,66 @@ ef.show
 # convert to our schema 
 val ff = ef.as[Dialogue]
 
-# filter dialogue in the taxi domain
-val tf = ff.filter(exists(col("services"), _.contains("taxi")))
+# filter dialogue in the restaurant domain
+val gf = ff.filter(exists(col("services"), _.contains("restaurant")))
 
-tf.filter(col("turns").getValue(0).speaker === "USER")
+# flat map all the turns of the dialogues using the `turns` field
+val hf = gf.flatMap(_.turns)
+hf.count 
+hf.show
+
++--------------------+-------+-------+--------------------+
+|              frames|speaker|turn_id|           utterance|
++--------------------+-------+-------+--------------------+
+|[{[], restaurant,...|   USER|      0|I am looking for ...|
+|                  []| SYSTEM|      1|It is an expensiv...|
+|[{[], restaurant,...|   USER|      2|Yes, I would. Ple...|
+|                  []| SYSTEM|      3|Alright, I've boo...|
+|[{[], restaurant,...|   USER|      4|Thanks, that's al...|
+|                  []| SYSTEM|      5|You too, enjoy yo...|
+|[{[], restaurant,...|   USER|      0|Could you tell me...|
+|                  []| SYSTEM|      1|I have them at 18...|
+|[{[], restaurant,...|   USER|      2|Great! Do you kno...|
+|                  []| SYSTEM|      3|Sure, they are in...|
+|[{[], restaurant,...|   USER|      4|   Thanks, good bye.|
+|                  []| SYSTEM|      5|You're welcome. H...|
+|[{[], restaurant,...|   USER|      0|Can you help me f...|
+|[{[], restaurant,...| SYSTEM|      1|There is Sala Tho...|
+|[{[], restaurant,...|   USER|      2|Yes, that would b...|
+|                  []| SYSTEM|      3|Can you please te...|
+|[{[], restaurant,...|   USER|      4|Thursday at 12:45...|
+|                  []| SYSTEM|      5|I was able to boo...|
+|[{[], restaurant,...|   USER|      6|thank you for you...|
+|                  []| SYSTEM|      7|You are quite wel...|
++--------------------+-------+-------+--------------------+
+
+# flat map all the frames, keep `speaker` and `utterance` along the way
+# since the dialogues are in a single domain, we filter out out-of-domain frames because they are all empty
+val kf = hf.flatMap(turn => turn.frames.filter(_.service == "restaurant").map((turn.speaker, turn.utterance, _))).toDF("speaker", "utterance", "frame")
+kf.show
+
++-------+--------------------+--------------------+
+|speaker|           utterance|               frame|
++-------+--------------------+--------------------+
+|   USER|I am looking for ...|{[], restaurant, ...|
+|   USER|Yes, I would. Ple...|{[], restaurant, ...|
+|   USER|Thanks, that's al...|{[], restaurant, ...|
+|   USER|Could you tell me...|{[], restaurant, ...|
+|   USER|Great! Do you kno...|{[], restaurant, ...|
+|   USER|   Thanks, good bye.|{[], restaurant, ...|
+|   USER|Can you help me f...|{[], restaurant, ...|
+| SYSTEM|There is Sala Tho...|{[], restaurant, ...|
+|   USER|Yes, that would b...|{[], restaurant, ...|
+|   USER|Thursday at 12:45...|{[], restaurant, ...|
+|   USER|thank you for you...|{[], restaurant, ...|
+|   USER|No, the reservati...|{[], restaurant, ...|
+|   USER|Hi, I'm looking f...|{[], restaurant, ...|
+|   USER|I'd like somethin...|{[], restaurant, ...|
+| SYSTEM|Most of the expen...|{[], restaurant, ...|
+|   USER|That sounds nice!...|{[], restaurant, ...|
+|   USER|No, that's everyt...|{[], restaurant, ...|
+|   USER|Hi there. I'm try...|{[], restaurant, ...|
+|   USER|Not really, if yo...|{[], restaurant, ...|
+|   USER|Thanks! That's al...|{[], restaurant, ...|
++-------+--------------------+--------------------+
+
