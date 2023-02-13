@@ -1,0 +1,45 @@
+# read whole data
+val path = "/Users/phuonglh/vlp/woz/dat/woz/data/MultiWOZ_2.2/dev/dialogues_001.json"
+val df = spark.read.option("multiline", "true").json(path)
+df.printSchema
+df.count
+
+# filter single domain dialogues
+import org.apache.spark.sql.functions._
+val ef = df.filter(col("dialogue_id").startsWith("SNG"))
+ef.count
+
+ef.show
+
++-------------+------------+--------------------+
+|  dialogue_id|    services|               turns|
++-------------+------------+--------------------+
+|SNG01627.json|      [taxi]|[{[{[], taxi, [{n...|
+| SNG0329.json|     [train]|[{[{[], train, []...|
+|SNG01735.json|      [taxi]|[{[{[], taxi, [{n...|
+| SNG0551.json|[restaurant]|[{[{[], restauran...|
+|SNG01993.json|     [train]|[{[{[], train, []...|
+|SNG02071.json|[restaurant]|[{[{[], restauran...|
+| SNG0899.json|     [hotel]|[{[{[], hotel, [{...|
+| SNG0759.json|     [hotel]|[{[{[], hotel, [{...|
+|SNG01598.json|      [taxi]|[{[{[], taxi, [{n...|
+|SNG01184.json|[restaurant]|[{[{[], restauran...|
+| SNG1049.json|     [hotel]|[{[{[], hotel, []...|
+|SNG02346.json|     [train]|[{[{[], train, []...|
+| SNG0665.json|[restaurant]|[{[{[], restauran...|
+| SNG0374.json|     [train]|[{[{[], train, [{...|
+| SNG0041.json|      [taxi]|[{[{[], taxi, [],...|
+| SNG0651.json|[restaurant]|[{[{[], restauran...|
+|SNG02221.json|     [train]|[{[{[], train, [{...|
+| SNG1046.json|     [hotel]|[{[{[], hotel, []...|
+| SNG0807.json|     [hotel]|[{[{[], hotel, []...|
+| SNG1143.json|[attraction]|[{[{[], attractio...|
++-------------+------------+--------------------+
+
+# convert to our schema 
+val ff = ef.as[Dialogue]
+
+# filter dialogue in the taxi domain
+val tf = ff.filter(exists(col("services"), _.contains("taxi")))
+
+tf.filter(col("turns").getValue(0).speaker === "USER")
