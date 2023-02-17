@@ -20,6 +20,7 @@ lazy val commonSettings = Seq(
     "com.github.scopt" %% "scopt" % "3.7.1",
     "org.scala-lang" % "scala-reflect" % "2.12.15",
     "org.slf4j" % "slf4j-simple" % "1.7.36",
+     "org.json4s" %% "json4s-native" % "3.4.0",
     "org.scalatest" %% "scalatest" % "3.1.1" % "test"
   )
 )
