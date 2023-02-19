@@ -11,9 +11,18 @@ case class Act(
   frames: List[(String, String)] // (slot, value)
 )
 
+case class Span(
+  actName: String,
+  slot: String,
+  value: Any,
+  start: Option[Int],
+  end: Option[Int]
+)
+
 case class Turn(
   id: String,
-  acts: Set[Act]
+  acts: Set[Act],
+  spans: List[Span]
 )
 
 case class Dialog(
@@ -22,6 +31,12 @@ case class Dialog(
 )
 
 object DialogActReader {
+
+  def toInt(x: Any): Option[Int] = x match {
+    case i: BigInt => Some(i.intValue())
+    case _ => None
+  }
+
   /**
     * Reads the dialog act file and return a sequence of dialogs.
     *
@@ -39,26 +54,32 @@ object DialogActReader {
       val turnMap = dialogs(id).asInstanceOf[Map[String, Any]]
       // get sorted turnIds (need to convert string id to int id in the sort function)
       val turnIds = turnMap.keySet.toList.sortBy(_.toInt)
-      // get corresponding acts
       val turns = turnIds.map { id =>
         val elements = turnMap(id).asInstanceOf[Map[String, Any]]
+        // get acts
         val dialogAct = elements("dialog_act").asInstanceOf[Map[String, List[List[String]]]]
         val acts = dialogAct.keySet.map { name => 
           val frames = dialogAct(name).map(list => (list(0), list(1)))
           Act(name, frames)
         }
-        Turn(id, acts)
+        // get spans 
+        val spanInfo = elements("span_info").asInstanceOf[List[List[Any]]]
+        val spans = spanInfo.map { list => 
+          Span(list(0).asInstanceOf[String], list(1).asInstanceOf[String], list(2), toInt(list(3)), toInt(list(4)))
+        }
+        Turn(id, acts, spans)
       }
       Dialog(id, turns)
     }
   }
   /**
-    * Extracts a sequence of triples (dialogId, turnId, actName)
+    * Extracts a sequence of triples (dialogId, turnId, actName).
+    * If there are multiple acts, only the first act is extracted (head).
     *
     * @param ds
     */
   def readActNames(ds: Seq[Dialog]): Seq[(String, String, String)] = {
-    ds.toList.flatMap(d => d.turns.map(t => (d.id, t.id, if (t.acts.size > 0)t.acts.toSeq.head.name else "")))
+    ds.toList.flatMap(d => d.turns.map(t => (d.id, t.id, if (t.acts.size > 0) t.acts.toSeq.head.name else "")))
   }
 
   def main(args: Array[String]): Unit = {

@@ -1,0 +1,24 @@
+NLU Problem
+
+  INP: an utterance
+  OUT: dialog act -- its semantic representation, consisting of intent and (slot, value) pairs.
+
+For example,
+
+  INP = Hello, find me a free attraction please?
+  OUT = dialogAct(intent=Inform, domain=Attraction, slot=fee, value=free)
+
+The problem can be divided into two subtasks: 
+  - intent classification: find the intent type of an utterance
+  - slot tagging: identify the value of a slot
+
+Approach:
+  - Use BERT for sentence representation
+  - For dialog acts such as Inform and Recommend whose values appear in the sentence, perform sequence 
+    labeling to output tags in BIO format (e.g., B-Inform-fee)
+  - For dialog acts that do not have actual values, for example (intent=Request, domain=Attraction, slot=fee), 
+    use a binary classifier on the sentence representation to predict whether the sentence should be 
+    labeled with this dialog act.
+  - Context information: Use the same BERT to get the embedding of the last 3 utterances:
+    [CLS] utterance-1 [SEP] utterance-2 [SEP] utterance-3 [SEP]
+    The context embedding is the embedding of the [CLS] token.
