@@ -178,7 +178,6 @@ object VSC {
     opts.parse(args, Config()) match {
       case Some(config) =>
         implicit val formats = Serialization.formats(NoTypeHints)
-        logger.info(Serialization.writePretty(config))
 
         val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
@@ -210,6 +209,7 @@ object VSC {
 
         config.mode match {
           case "train" => 
+            logger.info(Serialization.writePretty(config))
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
@@ -268,12 +268,12 @@ object VSC {
           // val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           val scorePath = s"dat/vsc/scores-tk-st-${config.language}.json"
           for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
+            // note that the model type is passed by the global configuration through the command line
+            val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language, ged = config.ged)
+            logger.info(Serialization.writePretty(conf))
+            val model = ModelFactory(conf)
             // each config will be run 3 times
             for (k <- 0 to 2) {
-              // note that the model type is passed by the global configuration through the command line
-              val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language, ged = config.ged)
-              logger.info(Serialization.writePretty(conf))
-              val model = ModelFactory(conf)
               val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
               // evaluate on the training data
               val dft = model.predict(trainingDF, preprocessor, bigdl, true)
@@ -296,12 +296,11 @@ object VSC {
           val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           val scorePath = s"dat/vsc/scores-ch-${config.language}.json"
           for (r <- recurrentSizes; j <- layerSizes) {
+            val conf = Config(modelType = "ch", recurrentSize = r, layers = j, language = config.language, ged = config.ged)
+            logger.info(Serialization.writePretty(conf))
+            val model = ModelFactory(conf)
             // each config will be run 3 times
             for (k <- 0 to 2) {
-              // note that the model type is passed by the global configuration through the command line
-              val conf = Config(modelType = config.modelType, recurrentSize = r, layers = j, language = config.language, ged = config.ged)
-              logger.info(Serialization.writePretty(conf))
-              val model = ModelFactory(conf)
               val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
               // evaluate on the training data
               val dft = model.predict(trainingDF, preprocessor, bigdl, true)
@@ -314,6 +313,35 @@ object VSC {
               content = Serialization.writePretty(validationScores) + ",\n"
               Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
             }       
+          }
+        case "experiment-tb" =>
+          // perform multiple experiments with token BERT model. 
+          // There are 54 configurations, each is run 5 times.
+          val hiddenSizes = Seq(16, 32, 64)
+          val nBlocks = Seq(2, 4, 6)
+          val nHeads = Seq(2, 4, 6)
+          val intermediateSizes = Seq(32, 64)
+          val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+          val scorePath = s"dat/vsc/scores-tb-${config.language}.json"
+          for (hiddenSize <- hiddenSizes; nBlock <- nBlocks; nHead <- nHeads; intermediateSize <- intermediateSizes) {
+            val bertConfig = ConfigBERT(hiddenSize, nBlock, nHead, config.maxSequenceLength, intermediateSize)
+            val conf = Config(modelType = "tb", language = config.language, ged = config.ged, bert = bertConfig)
+            logger.info(Serialization.writePretty(conf))
+            val model = ModelFactory(conf)
+            // each config will be run 5 times
+            for (k <- 0 to 4) {
+              val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+              // evaluate on the training data
+              val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+              val trainingScores = evaluate(dft, labels.size, conf, "train")
+              var content = Serialization.writePretty(trainingScores) + ",\n"
+              Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+              // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+              val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+              val validationScores = evaluate(dfv, labels.size, conf, "valid")
+              content = Serialization.writePretty(validationScores) + ",\n"
+              Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            }
           }
       }
       sc.stop()
