@@ -318,8 +318,8 @@ object VSC {
           // perform multiple experiments with token BERT model. 
           // There are 54 configurations, each is run 5 times.
           val hiddenSizes = Seq(16, 32, 64)
-          val nBlocks = Seq(2, 4, 6)
-          val nHeads = Seq(2, 4, 6)
+          val nBlocks = Seq(2, 4, 8)
+          val nHeads = Seq(2, 4, 8)
           val intermediateSizes = Seq(32, 64)
           val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           val scorePath = s"dat/vsc/scores-tb-${config.language}.json"
