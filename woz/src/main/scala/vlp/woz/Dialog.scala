@@ -2,9 +2,9 @@ package vlp.woz
 
 final case class Slot(
   copy_from: String,
-  exclusive_end: Long,
+  exclusive_end: Option[Long],
   slot: String,
-  start: Long,
+  start: Option[Long],
   value: String
 )
 
@@ -30,7 +30,7 @@ final case class Turn(
   utterance: String
 )
 
-final case class Dialogue(
+final case class Dialog(
   dialogue_id: String,
   services: Array[String],
   turns: Array[Turn]

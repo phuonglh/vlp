@@ -16,11 +16,10 @@ lazy val commonSettings = Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
     "com.intel.analytics.bigdl" % "bigdl-dllib-spark_3.1.2" % bigdlVersion,
-     "com.google.protobuf" % "protobuf-java" % "3.21.9",
+    "com.google.protobuf" % "protobuf-java" % "3.21.9",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "org.scala-lang" % "scala-reflect" % "2.12.15",
-    "org.slf4j" % "slf4j-simple" % "1.7.36",
-     "org.json4s" %% "json4s-jackson" % "4.0.6",
+    "org.json4s" %% "json4s-jackson" % "3.5.3", // use 3.5.3 to fix a bug of JSON
     "org.scalatest" %% "scalatest" % "3.1.1" % "test"
   )
 )

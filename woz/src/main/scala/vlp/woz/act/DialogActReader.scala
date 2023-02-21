@@ -6,6 +6,11 @@ import java.nio.file.{Paths, Files, StandardOpenOption}
 import java.nio.charset.StandardCharsets
 
 
+/**
+  * phuonglh, 2023
+  * 
+  */
+
 case class Act(
   name: String,
   frames: List[(String, String)] // (slot, value)
@@ -73,13 +78,14 @@ object DialogActReader {
     }
   }
   /**
-    * Extracts a sequence of triples (dialogId, turnId, actName).
-    * If there are multiple acts, only the first act is extracted (head).
+    * Extracts a sequence of triples (dialogId, turnId, [actName1, actName2]).
+    * Normally, a turn has one act or two acts. 
     *
     * @param ds
+    * @return a sequence of triples (dialogId, turnId, actNames)
     */
-  def readActNames(ds: Seq[Dialog]): Seq[(String, String, String)] = {
-    ds.toList.flatMap(d => d.turns.map(t => (d.id, t.id, if (t.acts.size > 0) t.acts.toSeq.head.name else "")))
+  def readActNames(ds: Seq[Dialog]): Seq[(String, String, List[String])] = {
+    ds.toList.flatMap(d => d.turns.map(t => (d.id, t.id, t.acts.toList.map(_.name))))
   }
 
   def main(args: Array[String]): Unit = {
