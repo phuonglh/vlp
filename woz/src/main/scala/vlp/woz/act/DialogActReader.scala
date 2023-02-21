@@ -42,12 +42,23 @@ object DialogActReader {
     case _ => None
   }
 
+  // /**
+  //   * Reads a train/dev/test directory and return all *.json files.
+  //   *
+  //   * @param split
+  //   */
+  // def jsonPaths(split: String): List[String] = {
+  //   val path = s"dat/woz/data/MultiWOZ_2.2/${split}"
+  //   import scala.collection.JavaConverters._
+  //   Files.list(Paths.get(path)).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList
+  // }
+
   /**
     * Reads the dialog act file and return a sequence of dialogs.
     *
     * @param path
     */
-  def read(path: String): Seq[Dialog] = {
+  def readDialogs(path: String): Seq[Dialog] = {
     implicit val formats = DefaultFormats    
     val content = scala.io.Source.fromFile(path).getLines().toList.mkString("\n")
     val ds = parse(content)
@@ -84,16 +95,19 @@ object DialogActReader {
     * @param ds
     * @return a sequence of triples (dialogId, turnId, actNames)
     */
-  def readActNames(ds: Seq[Dialog]): Seq[(String, String, List[String])] = {
+  def extractActNames(ds: Seq[Dialog]): Seq[(String, String, List[String])] = {
     ds.toList.flatMap(d => d.turns.map(t => (d.id, t.id, t.acts.toList.map(_.name))))
   }
 
-  def main(args: Array[String]): Unit = {
-    val path = if (args.size == 0) "dat/woz/003.json" else args(0)
-    val ds = read(path)
+  def readAll(): Seq[(String, String, List[String])] = {
+    val ds = readDialogs("dat/woz/data/MultiWOZ_2.2/dialog_acts.json")
     println(s"Number of dialogs = ${ds.size}")
-    val as = readActNames(ds)
+    extractActNames(ds)
+  }
+
+  def main(args: Array[String]): Unit = {
+    val as = readAll()
     println(s"Number of turns = ${as.size}")
-    as.toList.take(10).foreach(println)
+    as.toList.take(20).foreach(println)
   }
 }
