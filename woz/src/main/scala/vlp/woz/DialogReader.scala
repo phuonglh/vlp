@@ -54,7 +54,7 @@ object DialogReader {
         .sort(col("dialogId"), col("turnId").cast("int")) // need to cast turnId to int before sorting
         // save the df to json
         if (save)
-          ff.repartition(1).write.option("header", "true").option("delimiter", "\t").json(s"dat/woz/act/$split")
+          ff.repartition(1).write.json(s"dat/woz/act/$split")
       ff
     }
   }
