@@ -38,7 +38,7 @@ object DialogReader {
     val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
     val spark = SparkSession.builder.config(conf).getOrCreate()
         
-    val df = readDialogs(spark, "train")
+    val df = readDialogs(spark, "dev")
     df.show(false)
     println(s"Number of turns = ${df.count}")
 
@@ -48,6 +48,14 @@ object DialogReader {
     af.show(false)
     println(s"Number of turns in the act dataset = ${af.count}")
     af.printSchema()
+
+    // inner join of two data frames using dialogId and turnId
+    // then sort the resulting data frame by dialogId and turnId
+    val ff = df.as("df").join(af, df("dialogId") === af("dialogId") && df("turnId") === af("turnId"), "inner")
+      .select("df.*", "actNames") // select columns from df to avoid duplicates of column names
+      .sort(col("dialogId"), col("turnId").cast("int")) // need to cast turnId to int before sorting
+    ff.show(50, false)
+    println(ff.count)
 
     spark.close()
   }
