@@ -76,7 +76,9 @@ object VSC {
       inp, config.modelType, split,
       if (Seq("tk", "st").contains(config.modelType)) config.embeddingSize else -1,
       if (Seq("tb", "sb").contains(config.modelType)) config.bert.hiddenSize else config.recurrentSize,
-      if (Seq("tb", "sb").contains(config.modelType)) config.bert.nHead else config.layers,
+      if (Seq("tb", "sb").contains(config.modelType)) config.bert.nBlock else config.layers,
+      if (Seq("tb", "sb").contains(config.modelType)) config.bert.nHead else -1,
+      if (Seq("tb", "sb").contains(config.modelType)) config.bert.intermediateSize else -1,
       metrics.confusionMatrix, metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel
     )
   }
