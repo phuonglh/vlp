@@ -271,7 +271,7 @@ object VSC {
           val scorePath = s"dat/vsc/scores-tk-st-${config.language}.json"
           for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
             // note that the model type is passed by the global configuration through the command line
-            val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language, ged = config.ged)
+            val conf = Config(modelType = config.modelType, embeddingSize = e, recurrentSize = r, layers = j, language = config.language, ged = config.ged, batchSize = config.batchSize)
             logger.info(Serialization.writePretty(conf))
             val model = ModelFactory(conf)
             // each config will be run 3 times
@@ -298,7 +298,7 @@ object VSC {
           val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           val scorePath = s"dat/vsc/scores-ch-${config.language}.json"
           for (r <- recurrentSizes; j <- layerSizes) {
-            val conf = Config(modelType = "ch", recurrentSize = r, layers = j, language = config.language, ged = config.ged)
+            val conf = Config(modelType = "ch", recurrentSize = r, layers = j, language = config.language, ged = config.ged, batchSize = config.batchSize)
             logger.info(Serialization.writePretty(conf))
             val model = ModelFactory(conf)
             // each config will be run 3 times
@@ -327,7 +327,7 @@ object VSC {
           val scorePath = s"dat/vsc/scores-tb-${config.language}.json"
           for (hiddenSize <- hiddenSizes; nBlock <- nBlocks; nHead <- nHeads; intermediateSize <- intermediateSizes) {
             val bertConfig = ConfigBERT(hiddenSize, nBlock, nHead, config.maxSequenceLength, intermediateSize)
-            val conf = Config(modelType = "tb", language = config.language, ged = config.ged, bert = bertConfig)
+            val conf = Config(modelType = "tb", language = config.language, ged = config.ged, bert = bertConfig, batchSize = config.batchSize)
             logger.info(Serialization.writePretty(conf))
             val model = ModelFactory(conf)
             // each config will be run 5 times

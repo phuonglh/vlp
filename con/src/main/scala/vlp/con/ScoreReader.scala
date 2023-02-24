@@ -15,7 +15,8 @@ object ScoreReader {
     val df = spark.read.option("multiline", "true").json(scorePath)
     val language = df.select("input").first.getString(0)
     // filter by model
-    val modelTypes = Seq("tk", "st")
+    val modelTypes = Seq("tk", "st", "ch")
+    // val modelTypes = Seq("ch")
     for (t <- modelTypes) {
       val ef = df.filter(col("modelType") === t)
       val splits = Seq("train", "valid")
