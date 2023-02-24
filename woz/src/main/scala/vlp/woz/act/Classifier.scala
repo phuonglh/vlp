@@ -12,8 +12,8 @@ import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Engine
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNClassifier, NNEstimator}
-import com.intel.analytics.bigdl.dllib.keras.objectives.BinaryCrossEntropy
-import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
+// import com.intel.analytics.bigdl.dllib.keras.objectives.BinaryCrossEntropy
+import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, BCECriterion, MSECriterion}
 
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.feature.CountVectorizerModel
@@ -57,12 +57,12 @@ object Classifier {
 
     val maxSeqLen = config.maxSequenceLength
     val classifier = if (config.modelType == "lstm") {
-        val (featureSize, labelSize) = (Array(maxSeqLen), Array(1))
-        NNEstimator(bigdl, BinaryCrossEntropy(sizeAverage=true), featureSize, labelSize)
+        val (featureSize, labelSize) = (Array(maxSeqLen), Array(labels.size))
+        NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     } else {
         val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
         val labelSize = Array(1)
-        NNEstimator(bigdl, BinaryCrossEntropy(sizeAverage=true), featureSize, labelSize)
+        NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     }
 
     classifier.setLabelCol("label").setFeaturesCol("features")
@@ -71,7 +71,7 @@ object Classifier {
       .setMaxEpoch(config.epochs)
       .setTrainSummary(trainingSummary)
       .setValidationSummary(validationSummary)
-      .setValidation(Trigger.everyEpoch, cfv, Array(new CategoricalAccuracy(), new Loss()), config.batchSize)
+      .setValidation(Trigger.everyEpoch, cfv, Array(new CategoricalAccuracy()), config.batchSize)
     // fit the classifier, which will train the bigdl model and return a NNModel
     // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
     // at the end to output a good format for BigDL. See the predict() method for detail.
@@ -176,17 +176,17 @@ object Classifier {
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
             // evaluate on the training data
-            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
-            val trainingScores = evaluate(dft, labels.size, config, "train")
-            logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
-            var content = Serialization.writePretty(trainingScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
-            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
-            val validationScores = evaluate(dfv, labels.size, config, "valid")
-            logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
-            content = Serialization.writePretty(validationScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            // val trainingScores = evaluate(dft, labels.size, config, "train")
+            // logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+            // var content = Serialization.writePretty(trainingScores) + ",\n"
+            // Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+            // val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+            // val validationScores = evaluate(dfv, labels.size, config, "valid")
+            // logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
+            // content = Serialization.writePretty(validationScores) + ",\n"
+            // Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
           case _ => logger.error("What mode do you want to run?")
         }
         sc.stop()

@@ -44,7 +44,7 @@ case class Config(
   dropoutProbability: Double = 0.1,
   trainPath: String = "dat/woz/act/dev/",
   devPath: String = "dat/woz/act/dev/",
-  testPath: String = "dat/woz/act/test/",
+  testPath: String = "dat/woz/act/dev/",
   outputPath: String = "dat/out/",
   scorePath: String = "dat/act/scores.json",
   verbose: Boolean = false,
