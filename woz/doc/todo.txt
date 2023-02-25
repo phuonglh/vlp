@@ -1,0 +1,12 @@
+TODO:
+  - read dialog act names for each turn.
+    Turn(
+      3,
+      Set(Act(Booking-Inform,List((none,none))), Act(Hotel-Inform,List((choice,1), (parking,yes), (pricerange,cheap)))),
+      List(Span(Hotel-Inform,choice,1,Some(8),Some(9)), Span(Hotel-Inform,pricerange,cheap,Some(10),Some(15)))
+    )
+    => (SNG01856.json, 3, [Booking-Inform, Hotel-Inform]
+
+  From dialog id and turn id, map to utterance for multi-label classification.
+
+DONE:

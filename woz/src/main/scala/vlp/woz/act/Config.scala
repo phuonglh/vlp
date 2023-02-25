@@ -37,10 +37,10 @@ case class Config(
   batchSize: Int = 128,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
-  epochs: Int = 20,
+  epochs: Int = 40,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of bi-recurrent layers
-  recurrentSize: Int = 48, // number of units in a recurrent layer
+  recurrentSize: Int = 32, // number of units in a recurrent layer
   dropoutProbability: Double = 0.1,
   trainPath: String = "dat/woz/act/dev/",
   devPath: String = "dat/woz/act/dev/",

@@ -5,14 +5,14 @@ import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Model, Sequential}
 import com.intel.analytics.bigdl.dllib.keras.models.{Models, KerasNet}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.keras.metrics.CategoricalAccuracy
+import com.intel.analytics.bigdl.dllib.keras.metrics.{CategoricalAccuracy, Top5Accuracy}
+import com.intel.analytics.bigdl.dllib.optim.{MeanAveragePrecision}
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
-import com.intel.analytics.bigdl.dllib.optim.{Loss, Trigger}
+import com.intel.analytics.bigdl.dllib.optim.{Loss, MAE, Trigger}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Engine
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
-import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNClassifier, NNEstimator}
-// import com.intel.analytics.bigdl.dllib.keras.objectives.BinaryCrossEntropy
+import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
 import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, BCECriterion, MSECriterion}
 
 import org.apache.spark.ml.PipelineModel
@@ -61,7 +61,7 @@ object Classifier {
         NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     } else {
         val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
-        val labelSize = Array(1)
+        val labelSize = Array(labels.size)
         NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     }
 
@@ -71,7 +71,7 @@ object Classifier {
       .setMaxEpoch(config.epochs)
       .setTrainSummary(trainingSummary)
       .setValidationSummary(validationSummary)
-      .setValidation(Trigger.everyEpoch, cfv, Array(new CategoricalAccuracy()), config.batchSize)
+      .setValidation(Trigger.everyEpoch, cfv, Array(new CategoricalAccuracy(), new MAE()), config.batchSize)
     // fit the classifier, which will train the bigdl model and return a NNModel
     // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
     // at the end to output a good format for BigDL. See the predict() method for detail.

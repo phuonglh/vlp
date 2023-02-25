@@ -129,10 +129,12 @@ class TokenModelBERT(config: Config) extends TokenModel(config) {
     val nHead = config.bert.nHead
     val maxPositionLen = config.bert.maxPositionLen
     val intermediateSize = config.bert.intermediateSize
+    // use a BERT layer, not output all blocks (there will be 2 outputs)
     val bert = BERT(vocabSize, hiddenSize, nBlock, nHead, maxPositionLen, intermediateSize, outputAllBlock = false).setName("BERT")
     val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
-    val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
-
+    // get the pooled output which processes the hidden state of the last layer with regard to the first
+    //  token of the sequence. This would be useful for classification tasks.
+    val bertOutput = SelectTable(1).setName("firstBlock").inputs(bertNode)
     val dense = Dense(labelSize).setName("dense").inputs(bertOutput)
     val output = SoftMax().setName("output").inputs(dense)
     val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
