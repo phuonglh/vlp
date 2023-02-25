@@ -159,34 +159,56 @@ object Classifier {
         val prefix = s"${config.modelPath}/${config.modelType}"
         val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/${config.modelType}/")
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/${config.modelType}/")
+        // read train/dev datasets
+        val (trainingDF, validationDF) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
 
         config.mode match {
           case "train" => 
             logger.info(Serialization.writePretty(config))
-            val (trainingDF, validationDF) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
             preprocessor.write.overwrite.save(s"${config.modelPath}/pre/")
             logger.info("Saving the model...")        
             bigdl.saveModel(prefix + "/act.bigdl", overWrite = true)
-            val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
+            val trainingAccuracy = trainingSummary.readScalar("Top1Accuracy")
             val validationLoss = validationSummary.readScalar("Loss")
-            val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
+            val validationAccuracy = validationSummary.readScalar("Top1Accuracy")
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
+            logger.info("Validation Loss: " + validationLoss.mkString(", "))
             // evaluate on the training data
-            // val dft = model.predict(trainingDF, preprocessor, bigdl, true)
-            // val trainingScores = evaluate(dft, labels.size, config, "train")
-            // logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
-            // var content = Serialization.writePretty(trainingScores) + ",\n"
-            // Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-            // // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
-            // val dfv = model.predict(validationDF, preprocessor, bigdl, false)
-            // val validationScores = evaluate(dfv, labels.size, config, "valid")
-            // logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
-            // content = Serialization.writePretty(validationScores) + ",\n"
-            // Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            val trainingScores = evaluate(dft, labels.size, config, "train")
+            logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
+            var content = Serialization.writePretty(trainingScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+            val validationScores = evaluate(dfv, labels.size, config, "valid")
+            logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
+            content = Serialization.writePretty(validationScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+          case "eval" => 
+            logger.info(s"Loading preprocessor ${config.modelPath}/pre/...")
+            val preprocessor = PipelineModel.load(s"${config.modelPath}/pre/")
+            logger.info(s"Loading model ${prefix}/act.bigdl...")
+            var bigdl = Models.loadModel[Float](prefix + "/act.bigdl")
+            val labels = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+            val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+            logger.info(labelDict.toString)
+            val model = ModelFactory(config)
+            val trainingResult = model.predict(trainingDF, preprocessor, bigdl, true)
+            trainingResult.show(false)
+            var scores = evaluate(trainingResult, labels.size, config, "train")
+            logger.info(Serialization.writePretty(scores))
+            var content = Serialization.writePretty(scores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            val result = model.predict(validationDF, preprocessor, bigdl, false)
+            scores = evaluate(result, labels.size, config, "valid")
+            logger.info(Serialization.writePretty(scores))
+            content = Serialization.writePretty(scores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
           case _ => logger.error("What mode do you want to run?")
         }
         sc.stop()

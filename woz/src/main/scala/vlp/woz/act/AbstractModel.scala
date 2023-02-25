@@ -24,7 +24,7 @@ abstract class AbstractModel(config: Config) {
   def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float]
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String])
 
-  def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float], argMaxLayer: Boolean = true): DataFrame = {
+  def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float], extraLayer: Boolean = true): DataFrame = {
     val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
@@ -35,12 +35,13 @@ abstract class AbstractModel(config: Config) {
       new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
     }
     val cf = xSequencer.transform(bf)
-
+    cf.show()
     // add a custom layer ArgMax as the last layer of the BigDL model so as to 
     // make the nnframes API of BigDL work. By default, the BigDL nnframes only process 2-d data (including the batch dimension)
     val m = if (config.modelType == "lstm") {
       val sequential = bigdl.asInstanceOf[Sequential[Float]]
-      if (argMaxLayer) sequential.add(ArgMaxLayer())
+      NNModel(sequential).transform(cf).select("prediction").show(false)
+      if (extraLayer) sequential.add(TopKLayer())
       println(sequential.summary())
       NNModel(sequential)
     } else {
@@ -50,13 +51,14 @@ abstract class AbstractModel(config: Config) {
       val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
       val inputs = model.nodes(Seq("inputIds", "segmentIds", "positionIds", "masks"))
       val output = model.node("output")
-      val outputNew = ArgMaxLayer().setName("argMax").inputs(output)
+      val outputNew = TopKLayer().setName("topK").inputs(output)
       val modelNew = Model(inputs.toArray, outputNew)
       println(modelNew.summary())
       NNModel(modelNew, featureSize)
     }
     // run the prediction and return predicted labels as well as gold labels
     val ff = m.transform(cf)
+    ff.show()
     return ff.select("prediction", "label")
   }
 }

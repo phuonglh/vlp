@@ -26,7 +26,7 @@ case class ConfigBERT(
 case class Config(
   master: String = "local[*]",
   totalCores: Int = 8,    // X
-  executorCores: Int = 8, // Y ==> there is Y/X executors 
+  executorCores: Int = 8, // Y ==> there are Y/X executors 
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
@@ -48,7 +48,6 @@ case class Config(
   outputPath: String = "dat/out/",
   scorePath: String = "dat/act/scores.json",
   verbose: Boolean = false,
-  ged: Boolean = false, // multi-language GED data
   modelType: String = "lstm", 
   bert: ConfigBERT = ConfigBERT()
 ) extends Serializable
