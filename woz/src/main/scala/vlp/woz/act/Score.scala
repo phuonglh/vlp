@@ -4,17 +4,6 @@ package vlp.woz.act
   * Scoes for multilabel classification.
   * phuonglh@gmail.com
   *
-  * @param modelType
-  * @param split
-  * @param embeddingSize
-  * @param encoderSize
-  * @param layerSize
-  * @param nHead
-  * @param intermediateSize
-  * @param accuracy
-  * @param precision
-  * @param recall
-  * @param fMeasure
   */
 case class Score(
   modelType: String,
@@ -25,6 +14,10 @@ case class Score(
   nHead: Int = -1,            // applicable for BERT
   intermediateSize: Int = -1, // applicable for BERT
   accuracy: Double,
+  f1Measure: Double,
+  microF1Measure: Double, 
+  microPrecision: Double,
+  microRecall: Double,
   precision: Array[Double],
   recall: Array[Double],
   fMeasure: Array[Double]

@@ -102,7 +102,8 @@ object Classifier {
       if (config.modelType == "bert") config.bert.nBlock else config.layers,
       if (config.modelType == "bert") config.bert.nHead else -1,
       if (config.modelType == "bert") config.bert.intermediateSize else -1,
-      metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel
+      metrics.accuracy, metrics.f1Measure, metrics.microF1Measure, metrics.microPrecision, metrics.microRecall,
+      precisionByLabel, recallByLabel, fMeasureByLabel
     )
   }
 

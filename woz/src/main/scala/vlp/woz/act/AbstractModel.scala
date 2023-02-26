@@ -82,8 +82,10 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength).setName(s"Embedding-${config.modelType}"))
     // take the matrix above and feed to a RNN layer 
     // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
-    for (j <- 0 until config.layers)
-      model.add(LSTM(outputDim = config.recurrentSize).setName(s"LSTM-$j"))
+    // if using multi-layers of LSTM, we need to use returnSequences=true except for the last layer.
+    for (j <- 0 until (config.layers-1))
+      model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
+    model.add(LSTM(outputDim = config.recurrentSize).setName(s"LSTM-${config.layers-1}"))
     // add a dropout layer for regularization
     model.add(Dropout(config.dropoutProbability).setName("dropout"))
     // add the last layer for multi-class classification
