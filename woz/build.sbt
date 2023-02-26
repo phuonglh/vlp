@@ -26,7 +26,7 @@ lazy val commonSettings = Seq(
 
 lazy val root = (project in file("."))
     .settings(commonSettings, 
-      assembly / mainClass := Some("vlp.woz.DomainFilter"),
+      assembly / mainClass := Some("vlp.woz.Classifier"),
       assembly / assemblyJarName := "woz.jar",
       libraryDependencies ++= Seq(),
    run / fork := true

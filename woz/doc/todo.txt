@@ -1,4 +1,12 @@
 TODO:
+  - improvement of the current model: word shapes (time, phone, number, etc)
+  - construct a model which makes use of act history.
+  - build a multilabel classification model to perform multi-act prediction with supervised LSTM and BERT.
+
+DONE:
+
+  - develop a TopKSelector transformer which selects label using a threshold probability value.
+  - create train/dev/test split of dataset for the task.
   - read dialog act names for each turn.
     Turn(
       3,
@@ -9,4 +17,22 @@ TODO:
 
   From dialog id and turn id, map to utterance for multi-label classification.
 
-DONE:
+MODELS
+
+  1. Baseline (using LSTM or BERT)
+    [t1, t2,..., tN] ==> BERT ==> [u := contextualized representation of utterance] => SoftMax(numLabels)
+    Trained with BCECriterion loss. Select top 2 acts whose probability values >= 0.1f.
+
+    Limitations: always return 2 acts at the maximum. (There are 3-act utterances in the dataset. What is the ratio?)
+
+  2. Act-History Aware Model (using BERT)
+
+    (a) [t1, t2,..., tN] ==> BERT ==> [u := contextualized representation of utterance] 
+
+    (b) [[a11, a12], [a21], [a31, a32],..., [aK1, aK2]] ==> [v := contextualized vector of act history]
+
+    (c) u :+: v => SoftMax(numLabels)
+
+    Step (a) is the same as the baseline method. 
+
+    Step (b) has two variants: BoA (Bag-of-Act) or SoA (Sequence-of-Act).
