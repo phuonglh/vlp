@@ -1,7 +1,21 @@
 package vlp.woz.act
 
-import org.apache.spark.mllib.linalg.Matrix
-
+/**
+  * Scoes for multilabel classification.
+  * phuonglh@gmail.com
+  *
+  * @param modelType
+  * @param split
+  * @param embeddingSize
+  * @param encoderSize
+  * @param layerSize
+  * @param nHead
+  * @param intermediateSize
+  * @param accuracy
+  * @param precision
+  * @param recall
+  * @param fMeasure
+  */
 case class Score(
   modelType: String,
   split: String,
@@ -10,7 +24,6 @@ case class Score(
   layerSize: Int,             // number of recurrent layers in LSTM or number of blocks in BERT
   nHead: Int = -1,            // applicable for BERT
   intermediateSize: Int = -1, // applicable for BERT
-  confusionMatrix: Matrix,
   accuracy: Double,
   precision: Array[Double],
   recall: Array[Double],

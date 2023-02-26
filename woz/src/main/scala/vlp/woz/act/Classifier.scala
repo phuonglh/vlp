@@ -17,7 +17,6 @@ import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, BCECriterio
 
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.feature.CountVectorizerModel
-import org.apache.spark.ml.linalg.Vector
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SparkSession, DataFrame}
@@ -29,6 +28,7 @@ import scopt.OptionParser
 import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Paths, StandardOpenOption}
+import org.apache.spark.mllib.evaluation.MultilabelMetrics
 
 /**
   * phuonglh@gmail.com
@@ -81,27 +81,19 @@ object Classifier {
 
   def evaluate(result: DataFrame, labelSize: Int, config: Config, split: String): Score = {
     // evaluate the result
-    import org.apache.spark.mllib.evaluation.MulticlassMetrics
     val predictionsAndLabels = result.rdd.map { case row => 
-      (row.getAs[Seq[Float]](0).toArray, row.getAs[Vector](1).toArray)
-    }.flatMap { case (prediction, label) => 
-      // truncate the padding values
-      // find the first padding value (-1.0) in the label array
-      var i = label.indexOf(-1.0)
-      if (i == -1) i = label.size
-      prediction.take(i).map(_.toDouble).zip(label.take(i).map(_.toDouble))
+      (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
     }
-    val metrics = new MulticlassMetrics(predictionsAndLabels)
+    val metrics = new MultilabelMetrics(predictionsAndLabels)
     val precisionByLabel = Array.fill(labelSize)(0d)
     val recallByLabel = Array.fill(labelSize)(0d)
     val fMeasureByLabel = Array.fill(labelSize)(0d)
-    // precision by label: our BigDL model uses 1-based labels, so we need to decrease 1 unit.
     val ls = metrics.labels
     println(ls.mkString(", "))
     ls.foreach { k => 
-      precisionByLabel(k.toInt-1) = metrics.precision(k)
-      recallByLabel(k.toInt-1) = metrics.recall(k)
-      fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
+      precisionByLabel(k.toInt) = metrics.precision(k)
+      recallByLabel(k.toInt) = metrics.recall(k)
+      fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
     }
     Score(
       config.modelType, split,
@@ -110,7 +102,7 @@ object Classifier {
       if (config.modelType == "bert") config.bert.nBlock else config.layers,
       if (config.modelType == "bert") config.bert.nHead else -1,
       if (config.modelType == "bert") config.bert.intermediateSize else -1,
-      metrics.confusionMatrix, metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel
+      metrics.accuracy, precisionByLabel, recallByLabel, fMeasureByLabel
     )
   }
 
@@ -134,7 +126,8 @@ object Classifier {
       opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the data set to use")
       opt[Double]('u', "dropoutProbability").action((x, conf) => conf.copy(dropoutProbability = x)).text("dropout ratio")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
-      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 0.001")
+      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-4")
+      opt[String]('d', "trainPath").action((x, conf) => conf.copy(trainPath = x)).text("training data directory")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
@@ -161,6 +154,7 @@ object Classifier {
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/${config.modelType}/")
         // read train/dev datasets
         val (trainingDF, validationDF) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
+        val testDF = spark.read.json(config.testPath)
 
         config.mode match {
           case "train" => 
@@ -177,38 +171,64 @@ object Classifier {
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
             logger.info("Validation Loss: " + validationLoss.mkString(", "))
-            // evaluate on the training data
-            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            // transform actNames to a sequence of labels
+            val labelDict = labels.zipWithIndex.toMap
+            logger.info(labelDict.toString)
+            val labelIndexer = new SequenceIndexer(labelDict).setInputCol("actNames").setOutputCol("target")
+            val (cft, cfv) = (labelIndexer.transform(trainingDF), labelIndexer.transform(validationDF))
+            // training score
+            val dft = model.predict(cft, preprocessor, bigdl)
             val trainingScores = evaluate(dft, labels.size, config, "train")
             logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
             var content = Serialization.writePretty(trainingScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
-            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+            // validation score
+            val dfv = model.predict(cfv, preprocessor, bigdl)
             val validationScores = evaluate(dfv, labels.size, config, "valid")
             logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
             content = Serialization.writePretty(validationScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // test score
+            val xf = labelIndexer.transform(testDF)
+            val test = model.predict(xf, preprocessor, bigdl)
+            val testScores = evaluate(xf, labels.size, config, "test")
+            logger.info(s"Test score: ${Serialization.writePretty(testScores)}")
+            content = Serialization.writePretty(testScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
           case "eval" => 
             logger.info(s"Loading preprocessor ${config.modelPath}/pre/...")
             val preprocessor = PipelineModel.load(s"${config.modelPath}/pre/")
             logger.info(s"Loading model ${prefix}/act.bigdl...")
             var bigdl = Models.loadModel[Float](prefix + "/act.bigdl")
+            // transform actNames to a sequence of labels
             val labels = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
-            val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+            val labelDict = labels.zipWithIndex.toMap
             logger.info(labelDict.toString)
+            val labelIndexer = new SequenceIndexer(labelDict).setInputCol("actNames").setOutputCol("target")
+            val dft = labelIndexer.transform(trainingDF)
             val model = ModelFactory(config)
-            val trainingResult = model.predict(trainingDF, preprocessor, bigdl, true)
+            // training score
+            val trainingResult = model.predict(dft, preprocessor, bigdl)
             trainingResult.show(false)
             var scores = evaluate(trainingResult, labels.size, config, "train")
             logger.info(Serialization.writePretty(scores))
             var content = Serialization.writePretty(scores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-            val result = model.predict(validationDF, preprocessor, bigdl, false)
-            scores = evaluate(result, labels.size, config, "valid")
+            // validation score
+            val dfv = labelIndexer.transform(validationDF)
+            val validationResult = model.predict(dfv, preprocessor, bigdl)
+            scores = evaluate(validationResult, labels.size, config, "valid")
             logger.info(Serialization.writePretty(scores))
             content = Serialization.writePretty(scores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // test score
+            val xf = labelIndexer.transform(testDF)
+            val test = model.predict(xf, preprocessor, bigdl)
+            val testScores = evaluate(xf, labels.size, config, "test")
+            logger.info(s"Test score: ${Serialization.writePretty(testScores)}")
+            content = Serialization.writePretty(testScores) + ",\n"
+            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+
           case _ => logger.error("What mode do you want to run?")
         }
         sc.stop()

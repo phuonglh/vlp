@@ -13,6 +13,7 @@ import scala.reflect.ClassTag
 
 /**
   * A customized layer that operates on tensor to extract top labels from a prediction vector. 
+  * NOTE: This utility is not used anymore. It has been replaced by [[TopKSelector]] transformer.
   * 
   * @author phuonglh@gmail.com
   * @param k: 
