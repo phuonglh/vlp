@@ -38,7 +38,7 @@ import org.apache.spark.mllib.evaluation.MultilabelMetrics
   */
 object Classifier {
   implicit val formats = Serialization.formats(NoTypeHints)
-  
+
   def train(model: AbstractModel, config: Config, trainingDF: DataFrame, validationDF: DataFrame, 
     preprocessor: PipelineModel, vocabulary: Array[String], labels: Array[String], 
     trainingSummary: TrainSummary, validationSummary: ValidationSummary): KerasNet[Float] = {
@@ -127,7 +127,6 @@ object Classifier {
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of layers, default is 1")
       opt[Int]('r', "recurrentSize").action((x, conf) => conf.copy(recurrentSize = x)).text("number of hidden units in each recurrent layer")
-      opt[Double]('n', "percentage").action((x, conf) => conf.copy(percentage = x)).text("percentage of the data set to use")
       opt[Double]('u', "dropoutProbability").action((x, conf) => conf.copy(dropoutProbability = x)).text("dropout ratio")
       opt[Int]('f', "minFrequency").action((x, conf) => conf.copy(minFrequency = x)).text("min feature frequency")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-4")

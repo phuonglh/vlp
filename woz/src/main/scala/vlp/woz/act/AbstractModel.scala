@@ -40,7 +40,6 @@ abstract class AbstractModel(config: Config) {
       println(bigdl.summary())
       NNModel(bigdl)
     } else {
-      // val model = bigdl.asInstanceOf[Model[Float]]
       // we need to provide feature size for this multiple-input module (to convert 'features' into a table)
       val maxSeqLen = config.maxSequenceLength
       val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
