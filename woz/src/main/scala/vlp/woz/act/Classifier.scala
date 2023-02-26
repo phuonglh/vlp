@@ -37,6 +37,8 @@ import org.apache.spark.mllib.evaluation.MultilabelMetrics
   * 
   */
 object Classifier {
+  implicit val formats = Serialization.formats(NoTypeHints)
+  
   def train(model: AbstractModel, config: Config, trainingDF: DataFrame, validationDF: DataFrame, 
     preprocessor: PipelineModel, vocabulary: Array[String], labels: Array[String], 
     trainingSummary: TrainSummary, validationSummary: ValidationSummary): KerasNet[Float] = {
@@ -56,7 +58,7 @@ object Classifier {
     cfv.printSchema()
 
     val maxSeqLen = config.maxSequenceLength
-    val classifier = if (config.modelType == "lstm") {
+    val estimator = if (config.modelType == "lstm") {
         val (featureSize, labelSize) = (Array(maxSeqLen), Array(labels.size))
         NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     } else {
@@ -65,17 +67,14 @@ object Classifier {
         NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     }
 
-    classifier.setLabelCol("label").setFeaturesCol("features")
+    estimator.setLabelCol("label").setFeaturesCol("features")
       .setBatchSize(config.batchSize)
       .setOptimMethod(new Adam(config.learningRate))
       .setMaxEpoch(config.epochs)
       .setTrainSummary(trainingSummary)
       .setValidationSummary(validationSummary)
       .setValidation(Trigger.everyEpoch, cfv, Array(new CategoricalAccuracy(), new MAE()), config.batchSize)
-    // fit the classifier, which will train the bigdl model and return a NNModel
-    // but we cannot use this NNModel to transform because we need a custom layer ArgMaxLayer 
-    // at the end to output a good format for BigDL. See the predict() method for detail.
-    classifier.fit(cft)
+    estimator.fit(cft)
     return bigdl
   }
 
@@ -107,6 +106,10 @@ object Classifier {
     )
   }
 
+  def saveScore(score: Score, path: String) = {
+    var content = Serialization.writePretty(score) + ",\n"
+    Files.write(Paths.get(path), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  }
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
@@ -137,8 +140,6 @@ object Classifier {
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
-        implicit val formats = Serialization.formats(NoTypeHints)
-
         val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
           .set("spark.cores.max", config.totalCores.toString)
@@ -179,23 +180,20 @@ object Classifier {
             val (cft, cfv) = (labelIndexer.transform(trainingDF), labelIndexer.transform(validationDF))
             // training score
             val dft = model.predict(cft, preprocessor, bigdl)
-            val trainingScores = evaluate(dft, labels.size, config, "train")
-            logger.info(s"Training score: ${Serialization.writePretty(trainingScores)}") 
-            var content = Serialization.writePretty(trainingScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            val trainingScore = evaluate(dft, labels.size, config, "train")
+            logger.info(s"${Serialization.writePretty(trainingScore)}") 
+            saveScore(trainingScore, config.scorePath)
             // validation score
             val dfv = model.predict(cfv, preprocessor, bigdl)
-            val validationScores = evaluate(dfv, labels.size, config, "valid")
-            logger.info(s"Validation score: ${Serialization.writePretty(validationScores)}")
-            content = Serialization.writePretty(validationScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            val validationScore = evaluate(dfv, labels.size, config, "valid")
+            logger.info(s"${Serialization.writePretty(validationScore)}") 
+            saveScore(validationScore, config.scorePath)
             // test score
             val xf = labelIndexer.transform(testDF)
             val test = model.predict(xf, preprocessor, bigdl)
-            val testScores = evaluate(test, labels.size, config, "test")
-            logger.info(s"Test score: ${Serialization.writePretty(testScores)}")
-            content = Serialization.writePretty(testScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            val testScore = evaluate(test, labels.size, config, "test")
+            logger.info(s"${Serialization.writePretty(testScore)}") 
+            saveScore(testScore, config.scorePath)
           case "eval" => 
             logger.info(s"Loading preprocessor ${config.modelPath}/pre/...")
             val preprocessor = PipelineModel.load(s"${config.modelPath}/pre/")
@@ -211,24 +209,85 @@ object Classifier {
             // training score
             val trainingResult = model.predict(dft, preprocessor, bigdl)
             trainingResult.show(false)
-            var scores = evaluate(trainingResult, labels.size, config, "train")
-            logger.info(Serialization.writePretty(scores))
-            var content = Serialization.writePretty(scores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            var score = evaluate(trainingResult, labels.size, config, "train")
+            logger.info(s"${Serialization.writePretty(score)}") 
+            saveScore(score, config.scorePath)
             // validation score
             val dfv = labelIndexer.transform(validationDF)
             val validationResult = model.predict(dfv, preprocessor, bigdl)
-            scores = evaluate(validationResult, labels.size, config, "valid")
-            logger.info(Serialization.writePretty(scores))
-            content = Serialization.writePretty(scores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            score = evaluate(validationResult, labels.size, config, "valid")
+            logger.info(s"${Serialization.writePretty(score)}") 
+            saveScore(score, config.scorePath)
             // test score
             val xf = labelIndexer.transform(testDF)
             val test = model.predict(xf, preprocessor, bigdl)
-            val testScores = evaluate(test, labels.size, config, "test")
-            logger.info(s"Test score: ${Serialization.writePretty(testScores)}")
-            content = Serialization.writePretty(testScores) + ",\n"
-            Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            score = evaluate(test, labels.size, config, "test")
+            logger.info(s"${Serialization.writePretty(score)}") 
+            saveScore(score, config.scorePath)
+
+          case "experiment-lstm" => 
+            // Perform multiple experiments with token LSTM model. There are 27 configurations, each is run 3 times.
+            val embeddingSizes = Seq(16, 32, 64)
+            val recurrentSizes = Seq(32, 64, 128)
+            val layerSizes = Seq(1, 2, 3)
+            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+            val labelDict = labels.zipWithIndex.toMap
+            val labelIndexer = new SequenceIndexer(labelDict).setInputCol("actNames").setOutputCol("target")
+            val (cft, cfv) = (labelIndexer.transform(trainingDF), labelIndexer.transform(validationDF))
+            val xf = labelIndexer.transform(testDF)
+            for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
+              // note that the model type is passed by the global configuration through the command line
+              val conf = Config(modelType = "lstm", embeddingSize = e, recurrentSize = r, layers = j, batchSize = config.batchSize)
+              val model = ModelFactory(conf)
+              // each config will be run 3 times
+              for (k <- 0 to 2) {
+                val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+                // training score
+                val dft = model.predict(cft, preprocessor, bigdl)
+                val trainingScore = evaluate(dft, labels.size, config, "train")
+                saveScore(trainingScore, config.scorePath)
+                // validation score
+                val dfv = model.predict(cfv, preprocessor, bigdl)
+                val validationScore = evaluate(dfv, labels.size, config, "valid")
+                saveScore(validationScore, config.scorePath)
+                // test score                
+                val test = model.predict(xf, preprocessor, bigdl)
+                val testScore = evaluate(test, labels.size, config, "test")
+                saveScore(testScore, config.scorePath)
+              }
+            }
+          case "experiment-bert" =>
+            // Perform multiple experiments with token BERT model. There are 54 configurations, each is run 3 times.
+            val hiddenSizes = Seq(16, 32, 64)
+            val nBlocks = Seq(2, 4, 8)
+            val nHeads = Seq(2, 4, 8)
+            val intermediateSizes = Seq(32, 64)
+            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+            val labelDict = labels.zipWithIndex.toMap
+            val labelIndexer = new SequenceIndexer(labelDict).setInputCol("actNames").setOutputCol("target")
+            val (cft, cfv) = (labelIndexer.transform(trainingDF), labelIndexer.transform(validationDF))
+            val xf = labelIndexer.transform(testDF)
+            for (hiddenSize <- hiddenSizes; nBlock <- nBlocks; nHead <- nHeads; intermediateSize <- intermediateSizes) {
+              val bertConfig = ConfigBERT(hiddenSize, nBlock, nHead, config.maxSequenceLength, intermediateSize)
+              val conf = Config(modelType = "bert", bert = bertConfig, batchSize = config.batchSize)
+              val model = ModelFactory(conf)
+              // each config will be run 3 times
+              for (k <- 0 to 2) {
+                val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+                // training score
+                val dft = model.predict(cft, preprocessor, bigdl)
+                val trainingScore = evaluate(dft, labels.size, config, "train")
+                saveScore(trainingScore, config.scorePath)
+                // validation score
+                val dfv = model.predict(cfv, preprocessor, bigdl)
+                val validationScore = evaluate(dfv, labels.size, config, "valid")
+                saveScore(validationScore, config.scorePath)
+                // test score                
+                val test = model.predict(xf, preprocessor, bigdl)
+                val testScore = evaluate(test, labels.size, config, "test")
+                saveScore(testScore, config.scorePath)
+              }
+            }
 
           case _ => logger.error("What mode do you want to run?")
         }

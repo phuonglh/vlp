@@ -1,7 +1,7 @@
 package vlp.woz.act
 
 /**
-  * Scoes for multilabel classification.
+  * Scores for multilabel classification.
   * phuonglh@gmail.com
   *
   */

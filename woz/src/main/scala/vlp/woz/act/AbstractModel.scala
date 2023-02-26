@@ -77,7 +77,7 @@ object ModelFactory {
 class TokenModel(config: Config) extends AbstractModel(config) {
   def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
     val model = Sequential()
-    // input to an embedding layer is an index vector of `maxSeqquenceLength` elements, each index is in [0, vocabSize)
+    // input to an embedding layer is an index vector of `maxSequenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
     model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength).setName(s"Embedding-${config.modelType}"))
     // take the matrix above and feed to a RNN layer 
