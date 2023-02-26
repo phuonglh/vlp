@@ -191,7 +191,7 @@ object Classifier {
             // test score
             val xf = labelIndexer.transform(testDF)
             val test = model.predict(xf, preprocessor, bigdl)
-            val testScores = evaluate(xf, labels.size, config, "test")
+            val testScores = evaluate(test, labels.size, config, "test")
             logger.info(s"Test score: ${Serialization.writePretty(testScores)}")
             content = Serialization.writePretty(testScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
@@ -224,7 +224,7 @@ object Classifier {
             // test score
             val xf = labelIndexer.transform(testDF)
             val test = model.predict(xf, preprocessor, bigdl)
-            val testScores = evaluate(xf, labels.size, config, "test")
+            val testScores = evaluate(test, labels.size, config, "test")
             logger.info(s"Test score: ${Serialization.writePretty(testScores)}")
             content = Serialization.writePretty(testScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
