@@ -151,8 +151,8 @@ object Classifier {
         // create a model
         val model = ModelFactory(config)
         val prefix = s"${config.modelPath}/${config.modelType}"
-        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/${config.modelType}/")
-        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/${config.modelType}/")
+        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/")
+        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/")
         // read train/dev datasets
         val (trainingDF, validationDF) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
         val testDF = spark.read.json(config.testPath)
