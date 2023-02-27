@@ -199,7 +199,7 @@ object Classifier {
             logger.info(s"Loading model ${prefix}/act.bigdl...")
             var bigdl = Models.loadModel[Float](prefix + "/act.bigdl")
             // transform actNames to a sequence of labels
-            val labels = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+            val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
             val labelDict = labels.zipWithIndex.toMap
             logger.info(labelDict.toString)
             val labelIndexer = new SequenceIndexer(labelDict).setInputCol("actNames").setOutputCol("target")

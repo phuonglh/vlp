@@ -10,10 +10,11 @@ import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.nnframes.NNModel
 
-
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.feature.{Tokenizer, RegexTokenizer, CountVectorizer, CountVectorizerModel, StringIndexer, StringIndexerModel}
+
+import vlp.woz.WordShaper
 
 /**
  * Multi-label dialog act classification.
@@ -25,7 +26,7 @@ abstract class AbstractModel(config: Config) {
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String])
 
   def predict(df: DataFrame, preprocessor: PipelineModel, bigdl: KerasNet[Float]): DataFrame = {
-    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+    val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
     // use a sequencer to transform the input data frame into features
@@ -93,13 +94,14 @@ class TokenModel(config: Config) extends AbstractModel(config) {
   }
 
   def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
-    val xTokenizer = new RegexTokenizer().setInputCol("utterance").setOutputCol("xs").setPattern("""[\s,?.'"/!;)(]+""")
+    val xTokenizer = new RegexTokenizer().setInputCol("utterance").setOutputCol("tokens").setPattern("""[\s,?.'"/!;)(]+""")
+    val xShaper = new WordShaper().setInputCol("tokens").setOutputCol("xs")
     val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
     val yVectorizer = new CountVectorizer().setInputCol("actNames").setOutputCol("label").setBinary(true)
-    val pipeline = new Pipeline().setStages(Array(xTokenizer, xVectorizer, yVectorizer))
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, xShaper, xVectorizer, yVectorizer))
     val preprocessor = pipeline.fit(df)
-    val vocabulary = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-    val labels = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
     println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString(", ")}")
     return (preprocessor, vocabulary, labels)
   }

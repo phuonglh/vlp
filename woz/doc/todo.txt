@@ -1,10 +1,10 @@
 TODO:
-  - improvement of the current model: word shapes (time, phone, number, etc)
   - construct a model which makes use of act history.
-  - build a multilabel classification model to perform multi-act prediction with supervised LSTM and BERT.
 
 DONE:
 
+  - improvement of the current model: word shapes (time, phone, number, etc)
+  - build a multilabel classification model to perform multi-act prediction with supervised LSTM and BERT.
   - develop a TopKSelector transformer which selects label using a threshold probability value.
   - create train/dev/test split of dataset for the task.
   - read dialog act names for each turn.
