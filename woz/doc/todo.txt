@@ -1,5 +1,6 @@
 TODO:
-  - construct a model which makes use of act history.
+  - dataset transformation for history-based learning
+  - construct a model which makes use of act history; first variant: BoA representation.
 
 DONE:
 

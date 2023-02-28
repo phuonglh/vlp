@@ -102,3 +102,12 @@ kf.show
 |   USER|Thanks! That's al...|{[], restaurant, ...|
 +-------+--------------------+--------------------+
 
+=====
+Window functions:
+
+import org.apache.spark.sql.expressions.Window
+
+val w = Window.partitionBy("dialogId").orderBy(col("turnId").cast("int"))
+val df2 = df1.withColumn("acts(-3)", lag("actNames", 3).over(w))
+val df3 = df2.withColumn("acts(-2)", lag("actNames", 2).over(w))
+val df4 = df3.withColumn("acts(-1)", lag("actNames", 1).over(w))

@@ -4,6 +4,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SparkSession, DataFrame}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.catalyst.ScalaReflection
 
 import org.apache.log4j.{Logger, Level}
@@ -53,10 +54,33 @@ object DialogReader {
         .select("df.*", "actNames") // select columns from df to avoid duplicates of column names
         .sort(col("dialogId"), col("turnId").cast("int")) // need to cast turnId to int before sorting
         // save the df to json
-        if (save)
-          ff.repartition(1).write.json(s"dat/woz/act/$split")
+        if (save) ff.repartition(1).write.json(s"dat/woz/act/$split")
       ff
     }
+  }
+
+  /**
+    * For each turn in a df (read by the [[#readDialogActs()]] method), concat the act history at previous 3 turns.
+    * First, we use the `concat_ws()` function to flatten the `actNames` column (say, turn an array `[Hotel-Inform, Hotel-Select]`
+    * to a space-delimited string `Hotel-Inform Hotel-Select`). 
+    * 
+    * We need to define a window on the frame which is partitioned by `dialogId`; the rows in each 
+    * partition is ordered by integer-valued `turnId`. 
+    * Then we use the `lag()` function repeatedly to extract acts(-3), acts(-2), acts(-1) values of the current act.
+    * Finally, we concatenate 3 acts(-i) columns together.
+    * @param spark
+    * @param df
+    */
+  def concatDialogActs(spark: SparkSession, df: DataFrame): DataFrame = {
+    val df1 = df.withColumn("acts", concat_ws(" ", col("actNames")))
+    // define a window
+    val window = Window.partitionBy("dialogId").orderBy(col("turnId").cast("int"))
+    // repeatedly add 3 columns for previous acts
+    val df2 = df1.withColumn("acts(-3)", lag("actNames", 3).over(window))
+    val df3 = df2.withColumn("acts(-2)", lag("actNames", 2).over(window))
+    val df4 = df3.withColumn("acts(-1)", lag("actNames", 1).over(window))
+    // concatenate 3 columns
+    df4.withColumn("prevActs", concat_ws(" ", col("acts(-3)"), col("acts(-2)"), col("acts(-1)")))
   }
 
   def main(args: Array[String]): Unit = {
