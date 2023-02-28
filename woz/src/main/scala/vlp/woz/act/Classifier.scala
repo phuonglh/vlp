@@ -243,15 +243,15 @@ object Classifier {
                 val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
                 // training score
                 val dft = model.predict(cft, preprocessor, bigdl)
-                val trainingScore = evaluate(dft, labels.size, config, "train")
+                val trainingScore = evaluate(dft, labels.size, conf, "train")
                 saveScore(trainingScore, config.scorePath)
                 // validation score
                 val dfv = model.predict(cfv, preprocessor, bigdl)
-                val validationScore = evaluate(dfv, labels.size, config, "valid")
+                val validationScore = evaluate(dfv, labels.size, conf, "valid")
                 saveScore(validationScore, config.scorePath)
                 // test score                
                 val test = model.predict(xf, preprocessor, bigdl)
-                val testScore = evaluate(test, labels.size, config, "test")
+                val testScore = evaluate(test, labels.size, conf, "test")
                 saveScore(testScore, config.scorePath)
               }
             }
@@ -275,15 +275,15 @@ object Classifier {
                 val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
                 // training score
                 val dft = model.predict(cft, preprocessor, bigdl)
-                val trainingScore = evaluate(dft, labels.size, config, "train")
+                val trainingScore = evaluate(dft, labels.size, conf, "train")
                 saveScore(trainingScore, config.scorePath)
                 // validation score
                 val dfv = model.predict(cfv, preprocessor, bigdl)
-                val validationScore = evaluate(dfv, labels.size, config, "valid")
+                val validationScore = evaluate(dfv, labels.size, conf, "valid")
                 saveScore(validationScore, config.scorePath)
                 // test score                
                 val test = model.predict(xf, preprocessor, bigdl)
-                val testScore = evaluate(test, labels.size, config, "test")
+                val testScore = evaluate(test, labels.size, conf, "test")
                 saveScore(testScore, config.scorePath)
               }
             }
