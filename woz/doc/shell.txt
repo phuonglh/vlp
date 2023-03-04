@@ -111,3 +111,33 @@ val w = Window.partitionBy("dialogId").orderBy(col("turnId").cast("int"))
 val df2 = df1.withColumn("acts(-3)", lag("actNames", 3).over(w))
 val df3 = df2.withColumn("acts(-2)", lag("actNames", 2).over(w))
 val df4 = df3.withColumn("acts(-1)", lag("actNames", 1).over(w))
+
+
+===
+import com.intel.analytics.bigdl.numeric.NumericFloat
+import com.intel.analytics.bigdl.dllib.keras.{Sequential, Model}
+import com.intel.analytics.bigdl.dllib.keras.models.KerasNet
+import com.intel.analytics.bigdl.dllib.keras.layers._
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+import com.intel.analytics.bigdl.dllib.utils.Shape
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
+import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
+import com.intel.analytics.bigdl.dllib.nnframes.NNModel
+import com.intel.analytics.bigdl.dllib.utils.{MultiShape, Shape, T, Table}
+
+val input1 = Tensor[Float](2, 5, 8).rand(0, 1)
+val input2 = Tensor[Float](2, 7).rand(0, 1)
+val input = T(1 -> input1, 2 -> input2)
+
+val layer1 = Input[Float](inputShape=Shape(5,8))
+val layer2 = Input[Float](inputShape=Shape(7))
+val lstm1 = LSTM(3, returnSequences=true).inputs(layer1)
+val lstm2 = LSTM(4).inputs(lstm1)
+val merge = Merge(mode="concat").inputs(lstm2, layer2)
+
+val dense = Dense(12).inputs(merge)
+val output = SoftMax().inputs(dense)
+val model = Model(Array(layer1, layer2), output)
+
+
+

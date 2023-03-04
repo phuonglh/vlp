@@ -10,11 +10,12 @@ import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.nnframes.NNModel
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{SparkSession, DataFrame}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.ml.feature.{Tokenizer, RegexTokenizer, CountVectorizer, CountVectorizerModel, StringIndexer, StringIndexerModel}
+import org.apache.spark.ml.feature.{Tokenizer, RegexTokenizer, CountVectorizer, CountVectorizerModel, StringIndexer, StringIndexerModel, VectorAssembler}
 
 import vlp.woz.WordShaper
+
 
 /**
  * Multi-label dialog act classification.
@@ -29,21 +30,38 @@ abstract class AbstractModel(config: Config) {
     val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
     val vocabDict = vocabulary.zipWithIndex.toMap
     val bf = preprocessor.transform(df)
-    // use a sequencer to transform the input data frame into features
-    val xSequencer = if (config.modelType == "lstm") {
-      new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-    } else {
-      new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+    // transform the input data frame into features
+    val cf = config.modelType match {
+      case "lstm" => 
+        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+        xSequencer.transform(bf)
+      case "bert" => 
+        val xSequencer = new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+        xSequencer.transform(bf)
+      case "lstm-boa" =>
+        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("vs")
+        val bf1 = xSequencer.transform(bf)
+        val prevVectorizer = preprocessor.stages(5).asInstanceOf[CountVectorizerModel]
+        val bf2 = prevVectorizer.transform(bf1)
+        val assembler = new VectorAssembler().setInputCols(Array("vs", "ys")).setOutputCol("features")
+        assembler.transform(bf2)
+      case _ => 
+        // default to TokenModel (lstm)
+        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+        xSequencer.transform(bf)
     }
-    val cf = xSequencer.transform(bf)
     cf.show()
     val m = if (config.modelType == "lstm") {
       println(bigdl.summary())
       NNModel(bigdl)
-    } else {
+    } else if (config.modelType == "bert") {
       // we need to provide feature size for this multiple-input module (to convert 'features' into a table)
       val maxSeqLen = config.maxSequenceLength
       val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
+      println(bigdl.summary())
+      NNModel(bigdl, featureSize)
+    } else {
+      val featureSize = Array(Array(config.maxSequenceLength), Array(vocabDict.size))
       println(bigdl.summary())
       NNModel(bigdl, featureSize)
     }
@@ -65,6 +83,7 @@ object ModelFactory {
   def apply(config: Config) = config.modelType match {
     case "lstm" => new TokenModel(config)
     case "bert" => new TokenModelBERT(config)
+    case "lstm-boa" => new TokenModelBOA(config)
     case _ => new TokenModel(config)
   }
 }
@@ -80,7 +99,7 @@ class TokenModel(config: Config) extends AbstractModel(config) {
     // input to an embedding layer is an index vector of `maxSequenceLength` elements, each index is in [0, vocabSize)
     // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
     model.add(Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=config.maxSequenceLength).setName(s"Embedding-${config.modelType}"))
-    // take the matrix above and feed to a RNN layer 
+    // take the embedding matrix above and feed to a RNN layer 
     // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
     // if using multi-layers of LSTM, we need to use returnSequences=true except for the last layer.
     for (j <- 0 until (config.layers-1))
@@ -136,5 +155,54 @@ class TokenModelBERT(config: Config) extends TokenModel(config) {
     val output = SoftMax().setName("output").inputs(dense)
     val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
     return model
+  }
+}
+
+/**
+  * Extended token model which uses LSTM: Bag-of-Act representation.
+  *
+  * @param config
+  */
+class TokenModelBOA(config: Config) extends AbstractModel(config) {
+
+  override def createModel(vocabSize: Int, labelSize: Int): KerasNet[Float] = {
+    val maxSeqLen = config.maxSequenceLength
+    // utterance token ids
+    val xs = Input(inputShape = Shape(maxSeqLen), "xs")
+    // previous act ids
+    val ps = Input(inputShape = Shape(labelSize), "ps")
+    // embed xs to es vectors
+    // input to an embedding layer is an index vector of `maxSequenceLength` elements, each index is in [0, vocabSize)
+    // this layer produces a real-valued matrix of shape `maxSequenceLength x embeddingSize`
+    val es = Embedding(inputDim = vocabSize, outputDim = config.embeddingSize, inputLength=maxSeqLen).setName(s"Embedding-${config.modelType}").inputs(xs)
+    // take the embedding matrix and feed to a RNN layer 
+    // by default, the RNN layer produces a real-valued vector of length `recurrentSize` (the last output of the recurrent cell)
+    // if using multi-layers of LSTM, we need to use returnSequences=true except for the last layer.
+    // first recurrent layer
+    val r0 = LSTM(outputDim = config.recurrentSize, returnSequences = true).setName("LSTM-0").inputs(es)
+    // second recurrent layer
+    val r1 = LSTM(outputDim = config.recurrentSize).setName("LSTM-1").inputs(r0)
+    // concat the default last dimension
+    val concat = Merge(mode="concat").setName("concat").inputs(r1, ps)
+    // output
+    val dense = Dense(labelSize).setName("dense").inputs(concat)
+    val output = SoftMax().setName("output").inputs(dense)
+    val model = Model(Array(xs, ps), output)
+    return model
+  }
+
+  override def preprocessor(df: DataFrame): (PipelineModel, Array[String], Array[String]) = {
+    val xTokenizer = new RegexTokenizer().setInputCol("utterance").setOutputCol("tokens").setPattern("""[\s,?.'"/!;)(]+""")
+    val xShaper = new WordShaper().setInputCol("tokens").setOutputCol("xs")
+    val xVectorizer = new CountVectorizer().setInputCol("xs").setOutputCol("us").setMinDF(config.minFrequency).setVocabSize(config.vocabSize).setBinary(true)
+    val yVectorizer = new CountVectorizer().setInputCol("actNames").setOutputCol("label").setBinary(true)
+    // prevAct vectorizer    
+    val prevVectorizer = new CountVectorizer().setInputCol("ps").setOutputCol("ys").setBinary(true)
+    val pipeline = new Pipeline().setStages(Array(xTokenizer, xShaper, xVectorizer, yVectorizer, prevVectorizer))
+    val preprocessor = pipeline.fit(df)
+    val vocabulary = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    val labels = preprocessor.stages(3).asInstanceOf[CountVectorizerModel].vocabulary
+    println(s"vocabSize = ${vocabulary.size}, labels = ${labels.mkString(", ")}")
+    return (preprocessor, vocabulary, labels)
   }
 }

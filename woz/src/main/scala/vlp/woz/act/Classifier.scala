@@ -16,7 +16,7 @@ import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
 import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, BCECriterion, MSECriterion}
 
 import org.apache.spark.ml.PipelineModel
-import org.apache.spark.ml.feature.CountVectorizerModel
+import org.apache.spark.ml.feature.{CountVectorizerModel, VectorAssembler, RegexTokenizer}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SparkSession, DataFrame}
@@ -29,6 +29,8 @@ import org.apache.log4j.{Logger, Level}
 import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
+
+import vlp.woz.DialogReader
 
 /**
   * phuonglh@gmail.com
@@ -47,26 +49,36 @@ object Classifier {
     // build a vocab map
     val vocabDict = vocabulary.zipWithIndex.toMap
 
-    val xSequencer = if (config.modelType == "lstm") {
-        new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
-    } else { 
-      new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features") 
-    }
-
     val (aft, afv) = (preprocessor.transform(trainingDF), preprocessor.transform(validationDF))
-    val (cft, cfv) = (xSequencer.transform(aft), xSequencer.transform(afv))
+
+    val (cft, cfv) = if (config.modelType == "lstm") {
+      val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
+      (xSequencer.transform(aft), xSequencer.transform(afv))
+    } else if (config.modelType == "bert") { 
+      val xSequencer = new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features") 
+      (xSequencer.transform(aft), xSequencer.transform(afv))
+    } else { // lstm-boa
+      val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("ts")
+      val (cft1, cfv1) = (xSequencer.transform(aft), xSequencer.transform(afv))
+      val assembler = new VectorAssembler().setInputCols(Array("ts", "ys")).setOutputCol("features")
+      (assembler.transform(cft1), assembler.transform(cfv1))
+    }
     cfv.printSchema()
 
     val maxSeqLen = config.maxSequenceLength
     val estimator = if (config.modelType == "lstm") {
-        val (featureSize, labelSize) = (Array(maxSeqLen), Array(labels.size))
-        NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
-    } else {
-        val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
-        val labelSize = Array(labels.size)
-        NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
+      val featureSize = Array(maxSeqLen)
+      val labelSize = Array(labels.size)
+      NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
+    } else if (config.modelType == "bert") {
+      val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
+      val labelSize = Array(labels.size)
+      NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
+    } else { // lstm-boa
+      val featureSize = Array(Array(maxSeqLen), Array(labels.size))
+      val labelSize = Array(labels.size)
+      NNEstimator(bigdl, BCECriterion(), featureSize, labelSize)
     }
-
     estimator.setLabelCol("label").setFeaturesCol("features")
       .setBatchSize(config.batchSize)
       .setOptimMethod(new Adam(config.learningRate))
@@ -96,7 +108,7 @@ object Classifier {
     }
     Score(
       config.modelType, split,
-      if (config.modelType == "lstm") config.embeddingSize else -1,
+      if (config.modelType.startsWith("lstm")) config.embeddingSize else -1,
       if (config.modelType == "bert") config.bert.hiddenSize else config.recurrentSize,
       if (config.modelType == "bert") config.bert.nBlock else config.layers,
       if (config.modelType == "bert") config.bert.nHead else -1,
@@ -154,8 +166,16 @@ object Classifier {
         val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/")
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/")
         // read train/dev datasets
-        val (trainingDF, validationDF) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
-        val testDF = spark.read.json(config.testPath)
+        val (trainingDF0, validationDF0) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
+        val testDF0 = spark.read.json(config.testPath)
+
+        val trainingDF1 = DialogReader.concatDialogActs(spark, trainingDF0)
+        val validationDF1 = DialogReader.concatDialogActs(spark, validationDF0)
+        val testDF1 = DialogReader.concatDialogActs(spark, testDF0)
+        val prevTokenizer = new RegexTokenizer().setInputCol("prevActs").setOutputCol("ps").setPattern("""[\s]+""")
+        val (trainingDF, validationDF) = (prevTokenizer.transform(trainingDF1), prevTokenizer.transform(validationDF1))
+        val testDF = prevTokenizer.transform(testDF1)
+        testDF.show()
 
         config.mode match {
           case "train" => 

@@ -1,9 +1,10 @@
 TODO:
-  - dataset transformation for history-based learning
-  - construct a model which makes use of act history; first variant: BoA representation.
-
+  - experiments with BoA model
+  
 DONE:
 
+  - construct a model which makes use of act history; first variant: BoA representation.
+  - dataset transformation for history-based learning
   - improvement of the current model: word shapes (time, phone, number, etc)
   - build a multilabel classification model to perform multi-act prediction with supervised LSTM and BERT.
   - develop a TopKSelector transformer which selects label using a threshold probability value.
