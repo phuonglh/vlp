@@ -39,12 +39,10 @@ abstract class AbstractModel(config: Config) {
         val xSequencer = new Sequencer4BERT(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
         xSequencer.transform(bf)
       case "lstm-boa" =>
-        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("vs")
+        val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("ts")
         val bf1 = xSequencer.transform(bf)
-        val prevVectorizer = preprocessor.stages(5).asInstanceOf[CountVectorizerModel]
-        val bf2 = prevVectorizer.transform(bf1)
-        val assembler = new VectorAssembler().setInputCols(Array("vs", "ys")).setOutputCol("features")
-        assembler.transform(bf2)
+        val assembler = new VectorAssembler().setInputCols(Array("ts", "ys")).setOutputCol("features")
+        assembler.transform(bf1)
       case _ => 
         // default to TokenModel (lstm)
         val xSequencer = new Sequencer(vocabDict, config.maxSequenceLength, 0).setInputCol("xs").setOutputCol("features")
