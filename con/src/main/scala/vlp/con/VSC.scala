@@ -295,7 +295,8 @@ object VSC {
           val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
           val scorePath = s"dat/vsc/scores-ch-${config.language}.json"
           for (r <- recurrentSizes; j <- layerSizes) {
-            val conf = Config(modelType = "ch", recurrentSize = r, layers = j, language = config.language, ged = config.ged, batchSize = config.batchSize)
+            val conf = Config(modelType = "ch", recurrentSize = r, layers = j, language = config.language, ged = config.ged, batchSize = config.batchSize,
+              driverMemory = config.driverMemory, executorMemory = config.executorMemory)
             logger.info(Serialization.writePretty(conf))
             val model = ModelFactory(conf)
             // each config will be run 3 times
@@ -324,7 +325,8 @@ object VSC {
           val scorePath = s"dat/vsc/scores-tb-${config.language}.json"
           for (hiddenSize <- hiddenSizes; nBlock <- nBlocks; nHead <- nHeads; intermediateSize <- intermediateSizes) {
             val bertConfig = ConfigBERT(hiddenSize, nBlock, nHead, config.maxSequenceLength, intermediateSize)
-            val conf = Config(modelType = "tb", language = config.language, ged = config.ged, bert = bertConfig, batchSize = config.batchSize)
+            val conf = Config(modelType = "tb", language = config.language, ged = config.ged, bert = bertConfig, batchSize = config.batchSize,
+              driverMemory = config.driverMemory, executorMemory = config.executorMemory)
             logger.info(Serialization.writePretty(conf))
             val model = ModelFactory(conf)
             // each config will be run 5 times
@@ -350,7 +352,8 @@ object VSC {
             "italian" -> (16, 128, 2), "swedish" -> (16, 28, 1))
           for (lang <- langs) {
             val (e, r, j) = if (what == "tk") hyperparamsTK(lang) else (-1, 128, 2) // ch
-            val conf = Config(modelType = what, embeddingSize = e, recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize) 
+            val conf = Config(modelType = what, embeddingSize = e, recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize, 
+              driverMemory = config.driverMemory, executorMemory = config.executorMemory)
             logger.info(Serialization.writePretty(conf))
             val (trainPath, validPath) = dataPaths(conf.language)
             val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
@@ -383,7 +386,8 @@ object VSC {
           // use the same BERT config for all languages
           val bertConfig = ConfigBERT(32, 2, 4, config.maxSequenceLength, config.bert.intermediateSize)
           for (lang <- langs) {            
-            val conf = Config(modelType = "tb", language = lang, ged = true, bert = bertConfig, batchSize = config.batchSize)
+            val conf = Config(modelType = "tb", language = lang, ged = true, bert = bertConfig, batchSize = config.batchSize,
+              driverMemory = config.driverMemory, executorMemory = config.executorMemory)
             logger.info(Serialization.writePretty(conf))
             val (trainPath, validPath) = dataPaths(conf.language)
             val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
