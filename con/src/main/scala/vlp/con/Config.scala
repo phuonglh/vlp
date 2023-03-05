@@ -35,7 +35,7 @@ case class Config(
   percentage: Double = 1.0, // percentage of the training data set to use
   modelPath: String = "bin",
   batchSize: Int = 128,
-  maxSequenceLength: Int = 30,
+  maxSequenceLength: Int = 60,
   learningRate: Double = 5E-4,
   epochs: Int = 20,
   embeddingSize: Int = 16,
