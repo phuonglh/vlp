@@ -383,7 +383,7 @@ object VSC {
           // use the same BERT config for all languages
           val bertConfig = ConfigBERT(32, 2, 4, config.maxSequenceLength, config.bert.intermediateSize)
           for (lang <- langs) {            
-            val conf = Config(modelType = "tb", language = config.language, ged = true, bert = bertConfig, batchSize = config.batchSize)
+            val conf = Config(modelType = "tb", language = lang, ged = true, bert = bertConfig, batchSize = config.batchSize)
             logger.info(Serialization.writePretty(conf))
             val (trainPath, validPath) = dataPaths(conf.language)
             val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
