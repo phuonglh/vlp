@@ -5,7 +5,6 @@ import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Model, Sequential}
 import com.intel.analytics.bigdl.dllib.keras.models.{Models, KerasNet}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.nn.TimeDistributedCriterion
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.optim.{Loss, Trigger}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
@@ -49,7 +48,6 @@ object VSC {
 
   def evaluate(result: DataFrame, labelSize: Int, config: Config, split: String): Score = {
     // evaluate the result
-    import org.apache.spark.mllib.evaluation.MulticlassMetrics
     val predictionsAndLabels = result.rdd.map { case row => 
       (row.getAs[Seq[Float]](0).toArray, row.getAs[Vector](1).toArray)
     }.flatMap { case (prediction, label) => 
@@ -59,7 +57,7 @@ object VSC {
       if (i == -1) i = label.size
       prediction.take(i).map(_.toDouble).zip(label.take(i).map(_.toDouble))
     }
-    val metrics = new MulticlassMetrics(predictionsAndLabels)
+    val metrics = new org.apache.spark.mllib.evaluation.MulticlassMetrics(predictionsAndLabels)
     val precisionByLabel = Array.fill(labelSize)(0d)
     val recallByLabel = Array.fill(labelSize)(0d)
     val fMeasureByLabel = Array.fill(labelSize)(0d)
@@ -69,7 +67,7 @@ object VSC {
     ls.foreach { k => 
       precisionByLabel(k.toInt-1) = metrics.precision(k)
       recallByLabel(k.toInt-1) = metrics.recall(k)
-      fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k)
+      fMeasureByLabel(k.toInt-1) = metrics.fMeasure(k, 0.5) // beta = 0.5
     }
     val inp = if (config.ged) config.language else config.inputPath.split("/").last.split("""\.""").head
     Score(
@@ -220,7 +218,6 @@ object VSC {
             bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
 
             val trainingAccuracy = trainingSummary.readScalar("TimeDistributedTop1Accuracy")
-            val validationLoss = validationSummary.readScalar("Loss")
             val validationAccuracy = validationSummary.readScalar("TimeDistributedTop1Accuracy")
             logger.info("Train Accuracy: " + trainingAccuracy.mkString(", "))
             logger.info("Valid Accuracy: " + validationAccuracy.mkString(", "))
@@ -344,6 +341,75 @@ object VSC {
               content = Serialization.writePretty(validationScores) + ",\n"
               Files.write(Paths.get(scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
             }
+          }
+        case "ged-lstm" =>
+          val what = config.modelType // {tk, ch}
+          val langs = Seq("czech", "english", "german", "italian", "swedish")
+          // language -> (embeddingSize, encoderSize, layers)
+          val hyperparamsTK = Map("czech" -> (64, 128, 1), "english" -> (16, 32, 2), "german" -> (16, 64, 1),
+            "italian" -> (16, 128, 2), "swedish" -> (16, 28, 1))
+          for (lang <- langs) {
+            val (e, r, j) = if (what == "tk") hyperparamsTK(lang) else (-1, 128, 2) // ch
+            val conf = Config(modelType = what, embeddingSize = e, recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize) 
+            logger.info(Serialization.writePretty(conf))
+            val (trainPath, validPath) = dataPaths(conf.language)
+            val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
+            // create a model
+            val model = ModelFactory(conf)
+            val prefix = s"${conf.modelPath}/${lang}/${config.modelType}"
+            val trainingSummary = TrainSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
+            val validationSummary = ValidationSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
+
+            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+            val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+            // save the model
+            preprocessor.write.overwrite.save(s"${prefix}/pre/")
+            logger.info("Saving the model...")
+            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
+
+            // evaluate on the training data
+            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            val trainingScores = evaluate(dft, labels.size, conf, "train")
+            var content = Serialization.writePretty(trainingScores) + ",\n"
+            Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+            val validationScores = evaluate(dfv, labels.size, conf, "valid")
+            content = Serialization.writePretty(validationScores) + ",\n"
+            Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+          }
+        case "ged-bert" =>
+          val langs = Seq("czech", "english", "german", "italian", "swedish")
+          // use the same BERT config for all languages
+          val bertConfig = ConfigBERT(32, 2, 4, config.maxSequenceLength, config.bert.intermediateSize)
+          for (lang <- langs) {            
+            val conf = Config(modelType = "tb", language = config.language, ged = true, bert = bertConfig, batchSize = config.batchSize)
+            logger.info(Serialization.writePretty(conf))
+            val (trainPath, validPath) = dataPaths(conf.language)
+            val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
+            // create a model
+            val model = ModelFactory(conf)
+            val prefix = s"${conf.modelPath}/${lang}/${config.modelType}"
+            val trainingSummary = TrainSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
+            val validationSummary = ValidationSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
+
+            val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
+            val bigdl = train(model, conf, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+            // save the model
+            preprocessor.write.overwrite.save(s"${prefix}/pre/")
+            logger.info("Saving the model...")
+            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
+
+            // evaluate on the training data
+            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            val trainingScores = evaluate(dft, labels.size, conf, "train")
+            var content = Serialization.writePretty(trainingScores) + ",\n"
+            Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            // evaluate on the validation data (don't add the second ArgMaxLayer at the end)
+            val dfv = model.predict(validationDF, preprocessor, bigdl, false)
+            val validationScores = evaluate(dfv, labels.size, conf, "valid")
+            content = Serialization.writePretty(validationScores) + ",\n"
+            Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
           }
       }
       sc.stop()

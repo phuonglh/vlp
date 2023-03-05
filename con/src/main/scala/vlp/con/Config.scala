@@ -26,7 +26,7 @@ case class ConfigBERT(
 case class Config(
   master: String = "local[*]",
   totalCores: Int = 8,    // X
-  executorCores: Int = 8, // Y ==> there is Y/X executors 
+  executorCores: Int = 8, // Y ==> there are Y/X executors 
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
@@ -39,13 +39,13 @@ case class Config(
   learningRate: Double = 5E-4,
   epochs: Int = 20,
   embeddingSize: Int = 16,
-  layers: Int = 1, // number of bi-recurrent layers
+  layers: Int = 1, // number of recurrent layers
   recurrentSize: Int = 48, // number of units in a recurrent layer
   dropoutProbability: Double = 0.1,
   language: String = "vietnamese",
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 
-  scorePath: String = "dat/vsc/scores.json",
+  scorePath: String = "dat/vsc/scores.ged.json",
   verbose: Boolean = false,
   ged: Boolean = false, // multi-language GED data
   modelType: String = "tk", 
