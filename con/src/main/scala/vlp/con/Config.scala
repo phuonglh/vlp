@@ -13,7 +13,7 @@ case class ConfigBERT(
   hiddenSize: Int = 48,        // 16 times less than the default 768
   nBlock: Int = 2,             // default is 12
   nHead: Int = 2,              // default is 12
-  maxPositionLen: Int = 30,    // should be the same as config.maxSeqLen
+  maxPositionLen: Int = 60,    // should be the same as config.maxSeqLen
   intermediateSize: Int = 48,  // 64 times less than the default 3072
   hiddenPDrop: Double = 0.1,   // default value of BigDL BERT
   attnPDrop: Double = 0.1      // default value of BigDL BERT
