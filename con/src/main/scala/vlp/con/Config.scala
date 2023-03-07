@@ -40,8 +40,8 @@ case class Config(
   epochs: Int = 40,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of recurrent layers
-  recurrentSize: Int = 48, // number of units in a recurrent layer
-  dropoutProbability: Double = 0.1,
+  recurrentSize: Int = 64, // number of units in a recurrent layer
+  dropoutProbability: Double = 0.0,
   language: String = "vietnamese",
   inputPath: String = "dat/vsc/vud.txt.inp",
   outputPath: String = "dat/vsc/vud.txt.out", 

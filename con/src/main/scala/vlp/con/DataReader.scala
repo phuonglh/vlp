@@ -61,5 +61,30 @@ object DataReader {
     import spark.implicits._
     sc.parallelize(xs.zip(ys)).toDF("x", "y")
   }
-  
+
+  /**
+    * Reads a test corpus in GED format (one column, *.tsv)
+    * @param sc
+    * @param dataPath
+    * @return a data frame
+    */
+  def readTestDataGED(sc: SparkContext, dataPath: String): DataFrame = {
+    val lines = (Source.fromFile(dataPath, "UTF-8").getLines() ++ List("")).toArray
+    val xs = new ListBuffer[String]()
+    val indices = lines.zipWithIndex.filter(p => p._1.trim.isEmpty).map(p => p._2)
+    var u = 0
+    var v = 0
+    for (i <- (0 until indices.length)) {
+      v = indices(i)
+      if (v > u) { // don't treat two consecutive empty lines
+        val s = lines.slice(u, v)
+        val x = s.map(_.trim)
+        xs.append(x.mkString(" "))
+      }
+      u = v + 1
+    }
+    val spark = SparkSession.builder.config(sc.getConf).getOrCreate()    
+    import spark.implicits._
+    sc.parallelize(xs).toDF("x").withColumn("y", lit("NA"))
+  }  
 }

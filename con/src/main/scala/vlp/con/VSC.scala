@@ -15,6 +15,7 @@ import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCri
 
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.feature.CountVectorizerModel
+import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.spark.ml.linalg.Vector
 
 import org.apache.spark.SparkContext
@@ -46,9 +47,20 @@ object VSC {
     }
   }
 
+  def testPath(language: String): String = {
+    language match {
+      case "czech" => "dat/ged/czech/cs_geccc_test_unlabelled.tsv"
+      case "english" => "dat/ged/english/en_fce_test_unlabelled.tsv"
+      case "german" => "dat/ged/german/de_falko-merlin_test_unlabelled.tsv"
+      case "italian" => "dat/ged/italian/it_merlin_test_unlabelled.tsv"
+      case "swedish" => "dat/ged/swedish/sv_swell_test_unlabelled.tsv"
+      case _ => ""
+    }
+  }
+
   def evaluate(result: DataFrame, labelSize: Int, config: Config, split: String): Score = {
     // evaluate the result
-    val predictionsAndLabels = result.rdd.map { case row => 
+    val predictionsAndLabels = result.rdd.map{ case row => 
       (row.getAs[Seq[Float]](0).toArray, row.getAs[Vector](1).toArray)
     }.flatMap { case (prediction, label) => 
       // truncate the padding values
@@ -349,7 +361,7 @@ object VSC {
           val langs = Seq("czech", "english", "german", "italian", "swedish")
           // language -> (embeddingSize, encoderSize, layers)
           val hyperparamsTK = Map("czech" -> (64, 128, 1), "english" -> (16, 32, 2), "german" -> (16, 64, 1),
-            "italian" -> (16, 128, 2), "swedish" -> (16, 28, 1))
+            "italian" -> (16, 128, 2), "swedish" -> (16, 128, 1))
           for (lang <- langs) {
             val (e, r, j) = if (what == "tk") hyperparamsTK(lang) else (-1, 128, 2) // ch
             val conf = Config(modelType = what, embeddingSize = e, recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize, 
@@ -415,6 +427,36 @@ object VSC {
             content = Serialization.writePretty(validationScores) + ",\n"
             Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
           }
+        case "predict" =>
+          logger.info(s"Loading preprocessor ${prefix}/pre/...")
+          val preprocessor = PipelineModel.load(s"${prefix}/pre/")
+          logger.info(s"Loading model ${prefix}/vsc.bigdl...")
+          var bigdl = Models.loadModel[Float](prefix + "/vsc.bigdl")
+          val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+          val model = ModelFactory(config)
+          // read test data and predict
+          val testDF = DataReader.readTestDataGED(sc, testPath(config.language))
+          val testResult = model.predict(testDF, preprocessor, bigdl, true)
+          testResult.show()
+          // use "xs" column to find the number of tokens in an input sentence -- this number 
+          // can larger than config.maxSeqLength. In this case, we set all predicted labels as correct (1.0)
+          val ys = testResult.rdd.map{ case row => (row.getAs[Seq[Float]](0).toArray, row.getAs[Seq[String]](2).size)}
+            .map { case (prediction, n) =>
+              val zs = prediction.map(k => labels(k.toInt - 1))
+              if (n <= zs.size) zs.take(n) else {
+                // pad with correct labels
+                zs ++ List.fill(n - zs.size)(labels(0))
+              }
+            }.collect()
+          ys.take(10).foreach(y => println(y.mkString(", ")))
+          val tokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("t").setPattern("""[\s]+""").setToLowercase(false)
+          val us = tokenizer.transform(testResult).select("t").rdd.map{ case row => row.getAs[Seq[String]](0).toArray }.collect()
+          val vs = us.zip(ys).map{ case (u, y) => 
+            u.zip(y).map{ case (a, b) => a + "\t" + b}.mkString("\n")
+          }
+          vs.take(3).foreach{a => println(a)}
+          // var content = Serialization.writePretty(scores) + ",\n"
+          // Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
       }
       sc.stop()
       case None => {}

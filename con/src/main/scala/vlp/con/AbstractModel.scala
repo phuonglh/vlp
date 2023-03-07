@@ -46,7 +46,8 @@ abstract class AbstractModel(config: Config) {
     val labels = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
     val labelDict = labels.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
     println(labelDict)
-    // transform the gold "ys" labels to indices. NOTE: this is for evaluation mode only
+    // transform the gold "ys" labels to indices. In the evaluation mode, we have correct label sequences.
+    // In the test mode, this return only "NA" label, which is indexed as 0.
     val ySequencer = new Sequencer(labelDict, config.maxSequenceLength, -1).setInputCol("ys").setOutputCol("label")    
     val ef = ySequencer.transform(cf)
 
@@ -71,7 +72,7 @@ abstract class AbstractModel(config: Config) {
     }
     // run the prediction and return prediction results as well as gold labels
     val ff = m.transform(ef)
-    return ff.select("prediction", "label")
+    return ff.select("prediction", "label", "xs", "x")
   }
 }
 
