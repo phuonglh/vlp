@@ -384,7 +384,7 @@ object VSC {
         case "ged-bert" =>
           val langs = Seq("czech", "english", "german", "italian", "swedish")
           // use the same BERT config for all languages
-          val bertConfig = ConfigBERT(32, 2, 4, config.maxSequenceLength, config.bert.intermediateSize)
+          val bertConfig = ConfigBERT(64, 2, 4, config.maxSequenceLength, config.bert.intermediateSize)
           for (lang <- langs) {            
             val conf = Config(modelType = "tb", language = lang, ged = true, bert = bertConfig, batchSize = config.batchSize,
               driverMemory = config.driverMemory, executorMemory = config.executorMemory)

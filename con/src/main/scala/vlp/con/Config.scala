@@ -37,7 +37,7 @@ case class Config(
   batchSize: Int = 128,
   maxSequenceLength: Int = 60,
   learningRate: Double = 5E-4,
-  epochs: Int = 20,
+  epochs: Int = 40,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of recurrent layers
   recurrentSize: Int = 48, // number of units in a recurrent layer
