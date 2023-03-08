@@ -448,15 +448,13 @@ object VSC {
                 zs ++ List.fill(n - zs.size)(labels(0))
               }
             }.collect()
-          ys.take(10).foreach(y => println(y.mkString(", ")))
           val tokenizer = new RegexTokenizer().setInputCol("x").setOutputCol("t").setPattern("""[\s]+""").setToLowercase(false)
           val us = tokenizer.transform(testResult).select("t").rdd.map{ case row => row.getAs[Seq[String]](0).toArray }.collect()
           val vs = us.zip(ys).map{ case (u, y) => 
-            u.zip(y).map{ case (a, b) => a + "\t" + b}.mkString("\n")
+            u.zip(y).map{ case (a, b) => a + "\t" + b}.mkString("\n") + "\n"
           }
-          vs.take(3).foreach{a => println(a)}
-          // var content = Serialization.writePretty(scores) + ",\n"
-          // Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+          val content = vs.mkString("\n")
+          Files.write(Paths.get(config.outputPath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
       }
       sc.stop()
       case None => {}

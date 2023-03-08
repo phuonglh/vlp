@@ -44,7 +44,7 @@ case class Config(
   dropoutProbability: Double = 0.0,
   language: String = "vietnamese",
   inputPath: String = "dat/vsc/vud.txt.inp",
-  outputPath: String = "dat/vsc/vud.txt.out", 
+  outputPath: String = "dat/out/output.txt", 
   scorePath: String = "dat/vsc/scores.ged.json",
   verbose: Boolean = false,
   ged: Boolean = false, // multi-language GED data
