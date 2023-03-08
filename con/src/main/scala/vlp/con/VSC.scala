@@ -359,14 +359,10 @@ object VSC {
         case "ged-lstm" =>
           val what = config.modelType // {tk, ch}
           val langs = Seq("czech", "english", "german", "italian", "swedish")
-          // language -> (embeddingSize, encoderSize, layers)
-          val hyperparamsTK = Map("czech" -> (64, 128, 1), "english" -> (16, 32, 2), "german" -> (16, 64, 1),
-            "italian" -> (16, 128, 2), "swedish" -> (16, 128, 1))
           for (lang <- langs) {
-            val (e, r, j) = if (what == "tk") hyperparamsTK(lang) else (-1, 128, 2) // ch
+            val (e, r, j) = if (what == "tk") (config.recurrentSize, config.layers) else (-1, config.recurrentSize, config.layers) // ch
             val conf = Config(modelType = what, embeddingSize = e, recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize, 
               driverMemory = config.driverMemory, executorMemory = config.executorMemory)
-            logger.info(Serialization.writePretty(conf))
             val (trainPath, validPath) = dataPaths(conf.language)
             val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
             // create a model
@@ -396,11 +392,10 @@ object VSC {
         case "ged-bert" =>
           val langs = Seq("czech", "english", "german", "italian", "swedish")
           // use the same BERT config for all languages
-          val bertConfig = ConfigBERT(64, 2, 4, config.maxSequenceLength, config.bert.intermediateSize)
+          val bertConfig = ConfigBERT(64, 4, 4, config.maxSequenceLength, config.bert.intermediateSize)
           for (lang <- langs) {            
             val conf = Config(modelType = "tb", language = lang, ged = true, bert = bertConfig, batchSize = config.batchSize,
               driverMemory = config.driverMemory, executorMemory = config.executorMemory)
-            logger.info(Serialization.writePretty(conf))
             val (trainPath, validPath) = dataPaths(conf.language)
             val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
             // create a model
