@@ -38,7 +38,7 @@ case class Config(
   maxSequenceLength: Int = 60,
   learningRate: Double = 5E-4,
   epochs: Int = 40,
-  embeddingSize: Int = 16,
+  embeddingSize: Int = 64,
   layers: Int = 1, // number of recurrent layers
   recurrentSize: Int = 64, // number of units in a recurrent layer
   dropoutProbability: Double = 0.0,

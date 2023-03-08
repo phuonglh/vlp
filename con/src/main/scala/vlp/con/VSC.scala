@@ -360,7 +360,7 @@ object VSC {
           val what = config.modelType // {tk, ch}
           val langs = Seq("czech", "english", "german", "italian", "swedish")
           for (lang <- langs) {
-            val (e, r, j) = if (what == "tk") (config.recurrentSize, config.layers) else (-1, config.recurrentSize, config.layers) // ch
+            val (e, r, j) = if (what == "tk") (config.embeddingSize, config.recurrentSize, config.layers) else (-1, config.recurrentSize, config.layers) // ch
             val conf = Config(modelType = what, embeddingSize = e, recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize, 
               driverMemory = config.driverMemory, executorMemory = config.executorMemory)
             val (trainPath, validPath) = dataPaths(conf.language)
