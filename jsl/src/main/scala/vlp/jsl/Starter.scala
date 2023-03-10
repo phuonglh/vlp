@@ -35,7 +35,7 @@ object Starter {
     prediction.show()
     prediction.select("ner_converter.result").show(false)
     prediction.select("pos.result").show(false)
-
+    spark.stop()    
   }
 
   def pretrainedPipeline(args: Array[String]): Unit = {
@@ -53,7 +53,6 @@ object Starter {
     val pipelineML = new PretrainedPipeline("explain_document_ml", lang = "en")
     pipelineML.annotate("Google has announced the release of a beta version of the popular TensorFlow machine learning library")
     pipelineML.transform(testData).select("pos").show(false)
-
   }
 
   def pretrainedPipelineLD(args: Array[String]): Unit = {
