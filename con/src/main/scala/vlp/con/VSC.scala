@@ -215,7 +215,6 @@ object VSC {
         val model = ModelFactory(config)
         // get the input data set name (for example, "vud", "fin", "english", "italian") and create a prefix
         val inp = if (config.ged) config.language else config.inputPath.split("/").last.split("""\.""").head
-        val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
         val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/${inp}/")
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/${inp}/")
 
@@ -225,6 +224,7 @@ object VSC {
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
+            val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
             preprocessor.write.overwrite.save(s"${prefix}/pre/")
             logger.info("Saving the model...")        
             bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
@@ -246,6 +246,7 @@ object VSC {
             content = Serialization.writePretty(validationScores) + ",\n"
             Files.write(Paths.get(config.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         case "eval" => 
+          val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
           logger.info(s"Loading preprocessor ${prefix}/pre/...")
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
           logger.info(s"Loading model ${prefix}/vsc.bigdl...")
@@ -400,7 +401,7 @@ object VSC {
             val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
             // create a model
             val model = ModelFactory(conf)
-            val prefix = s"${conf.modelPath}/${lang}/${config.modelType}"
+            val prefix = s"${conf.modelPath}/${lang}/${conf.modelType}"
             val trainingSummary = TrainSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
             val validationSummary = ValidationSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
 
@@ -423,6 +424,7 @@ object VSC {
             Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
           }
         case "predict" =>
+          val prefix = s"${config.modelPath}/${inp}/${config.modelType}"
           logger.info(s"Loading preprocessor ${prefix}/pre/...")
           val preprocessor = PipelineModel.load(s"${prefix}/pre/")
           logger.info(s"Loading model ${prefix}/vsc.bigdl...")
@@ -464,7 +466,7 @@ object VSC {
             val df = trainingDF.union(validationDF)
             // create a model
             val model = ModelFactory(conf)
-            val prefix = s"${conf.modelPath}/${lang}/${config.modelType}"
+            val prefix = s"${conf.modelPath}/${lang}/${conf.modelType}"
             val trainingSummary = TrainSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
             val validationSummary = ValidationSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
 
@@ -476,7 +478,7 @@ object VSC {
             bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
 
             // evaluate on the training data
-            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            val dft = model.predict(df, preprocessor, bigdl, true)
             val trainingScores = evaluate(dft, labels.size, conf, "train")
             var content = Serialization.writePretty(trainingScores) + ",\n"
             Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
