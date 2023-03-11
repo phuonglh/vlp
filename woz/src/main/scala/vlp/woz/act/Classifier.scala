@@ -247,16 +247,17 @@ object Classifier {
           case "experiment-lstm" => 
             // Perform multiple experiments with token LSTM model. There are 27 configurations, each is run 3 times.
             val embeddingSizes = Seq(16, 32, 64)
-            val recurrentSizes = Seq(32, 64, 128)
+            val recurrentSizes = Seq(32, 64, 128, 256, 512)
             val layerSizes = Seq(1, 2, 3)
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val labelDict = labels.zipWithIndex.toMap
             val labelIndexer = new SequenceIndexer(labelDict).setInputCol("actNames").setOutputCol("target")
             val (cft, cfv) = (labelIndexer.transform(trainingDF), labelIndexer.transform(validationDF))
             val xf = labelIndexer.transform(testDF)
+            val t = config.modelType // [lstm, lstm-boa]
             for (e <- embeddingSizes; r <- recurrentSizes; j <- layerSizes) {
               // note that the model type is passed by the global configuration through the command line
-              val conf = Config(modelType = "lstm", embeddingSize = e, recurrentSize = r, layers = j, batchSize = config.batchSize)
+              val conf = Config(modelType = t, embeddingSize = e, recurrentSize = r, layers = j, batchSize = config.batchSize)
               val model = ModelFactory(conf)
               // each config will be run 3 times
               for (k <- 0 to 2) {
@@ -307,7 +308,6 @@ object Classifier {
                 saveScore(testScore, config.scorePath)
               }
             }
-
           case _ => logger.error("What mode do you want to run?")
         }
         sc.stop()

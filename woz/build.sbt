@@ -24,7 +24,7 @@ lazy val commonSettings = Seq(
   )
 )
 
-lazy val root = (project in file("."))
+lazy val woz = (project in file("."))
     .settings(commonSettings, 
       assembly / mainClass := Some("vlp.woz.Classifier"),
       assembly / assemblyJarName := "woz.jar",
