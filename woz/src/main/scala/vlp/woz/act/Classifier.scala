@@ -245,7 +245,7 @@ object Classifier {
             saveScore(score, config.scorePath)
 
           case "experiment-lstm" => 
-            // Perform multiple experiments with token LSTM model. There are 27 configurations, each is run 3 times.
+            // Perform multiple experiments with token LSTM model. There are 45 configurations, each is run 3 times.
             val embeddingSizes = Seq(16, 32, 64)
             val recurrentSizes = Seq(32, 64, 128, 256, 512)
             val layerSizes = Seq(1, 2, 3)
