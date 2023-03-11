@@ -450,6 +450,37 @@ object VSC {
           }
           val content = vs.mkString("\n")
           Files.write(Paths.get(config.outputPath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+
+        case "submission" => // train the character-based model on all the languages with the best hyper-parameters selected by the validation set          
+          val langs = Seq("czech", "english", "german", "italian", "swedish")
+          val hyperparams = Map("czech" -> (64, 2), "english" -> (128, 2), "german" -> (256, 1), "italian" -> (256, 2), "swedish" -> (256, 2))
+          for (lang <- langs) {
+            val (r, j) = hyperparams(lang)
+            val conf = Config(modelType = "ch", recurrentSize = r, layers = j, language = lang, ged = true, batchSize = config.batchSize, 
+              driverMemory = config.driverMemory, executorMemory = config.executorMemory)
+            val (trainPath, validPath) = dataPaths(conf.language)
+            val Array(trainingDF, validationDF) = Array(DataReader.readDataGED(sc, trainPath), DataReader.readDataGED(sc, validPath))
+            // combine training and validation dataset into one df to train
+            val df = trainingDF.union(validationDF)
+            // create a model
+            val model = ModelFactory(conf)
+            val prefix = s"${conf.modelPath}/${lang}/${config.modelType}"
+            val trainingSummary = TrainSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
+            val validationSummary = ValidationSummary(appName = conf.modelType, logDir = s"sum/${lang}/")
+
+            val (preprocessor, vocabulary, labels) = model.preprocessor(df)
+            val bigdl = train(model, conf, df, df, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
+            // save the model
+            preprocessor.write.overwrite.save(s"${prefix}/pre/")
+            logger.info("Saving the model...")
+            bigdl.saveModel(prefix + "/vsc.bigdl", overWrite = true)
+
+            // evaluate on the training data
+            val dft = model.predict(trainingDF, preprocessor, bigdl, true)
+            val trainingScores = evaluate(dft, labels.size, conf, "train")
+            var content = Serialization.writePretty(trainingScores) + ",\n"
+            Files.write(Paths.get(conf.scorePath), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+          }          
       }
       sc.stop()
       case None => {}

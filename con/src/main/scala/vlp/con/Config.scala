@@ -37,7 +37,7 @@ case class Config(
   batchSize: Int = 128,
   maxSequenceLength: Int = 60,
   learningRate: Double = 5E-4,
-  epochs: Int = 40,
+  epochs: Int = 80,
   embeddingSize: Int = 64,
   layers: Int = 1, // number of recurrent layers
   recurrentSize: Int = 64, // number of units in a recurrent layer
@@ -48,7 +48,7 @@ case class Config(
   scorePath: String = "dat/vsc/scores.ged.json",
   verbose: Boolean = false,
   ged: Boolean = false, // multi-language GED data
-  modelType: String = "tk", 
+  modelType: String = "tk",
   bert: ConfigBERT = ConfigBERT()
 ) extends Serializable
 
