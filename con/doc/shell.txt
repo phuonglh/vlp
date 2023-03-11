@@ -39,6 +39,9 @@ for (i <- 1 to maxSequenceLength) x.setValue(2, i, i*2-1)
 val td = TimeDistributed(Dense(outputDim = hiddenSize, "relu"))
 
 ===
+
+import com.intel.analytics.bigdl.numeric.NumericFloat
+import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.tensor._
 import com.intel.analytics.bigdl.dllib.utils.T
 import com.intel.analytics.bigdl.dllib.keras.layers.BERT
