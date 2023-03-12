@@ -106,6 +106,7 @@ object DialogReader {
     */
   def readDialogsFPT(spark: SparkSession, path: String, save: Boolean = false): DataFrame = {
     val df = spark.read.format("com.databricks.spark.xml").option("rootTag", "TEI.DIALOG").option("rowTag", "utterance").load(path)
+    df.printSchema()
     // extract the samples: (utteranceId, "utterance", Seq[communicativeFunction])
     val rdd = df.rdd.map { row => Row(
       row.getAs[Row]("txt").getAs[Long]("_id").toString, row.getAs[Row]("txt").getAs[String]("_VALUE"), 
@@ -129,7 +130,7 @@ object DialogReader {
     spark.sparkContext.setLogLevel("ERROR")
 
     // val df = readDialogsWOZ(spark, false)
-    val df = readDialogsFPT(spark, "dat/fpt/1801-1900.xml", true)
+    val df = readDialogsFPT(spark, "dat/fpt/", true)
     df.show()
     println("Number of utterances = " + df.count)
     df.printSchema()
