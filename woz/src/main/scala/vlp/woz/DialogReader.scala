@@ -1,14 +1,12 @@
 package vlp.woz
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SparkSession, DataFrame}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{SparkSession, DataFrame, Row}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.catalyst.ScalaReflection
 
-import org.apache.log4j.{Logger, Level}
-import org.slf4j.LoggerFactory
 import vlp.woz.act.DialogActReader
 
 /**
@@ -16,7 +14,6 @@ import vlp.woz.act.DialogActReader
   * 
   */
 object DialogReader {
-  val logger = LoggerFactory.getLogger(getClass.getName)
 
   def readDialogs(spark: SparkSession, split: String): DataFrame = {
     import spark.implicits._
@@ -83,18 +80,59 @@ object DialogReader {
     df4.withColumn("prevActs", concat_ws(" ", col("acts(-3)"), col("acts(-2)"), col("acts(-1)")))
   }
 
-  def main(args: Array[String]): Unit = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
-
-    val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
-    val spark = SparkSession.builder.config(conf).getOrCreate()
-    val dfs = readDialogActs(spark, true)
+  /**
+    * Reads WOZ dialogs writes splits out.
+    *
+    * @param spark
+    * @param save
+    * @return
+    */
+  def readDialogsWOZ(spark: SparkSession, save: Boolean = false): Seq[DataFrame] = {
+    val dfs = readDialogActs(spark, save)
     println(s"#(trainingSamples) = ${dfs(0).count}")
     println(s"     #(devSamples) = ${dfs(1).count}")
     println(s"    #(testSamples) = ${dfs(2).count}")
     dfs(2).show()
     dfs(2).printSchema()
+    dfs
+  }
 
+  /**
+    * Reads FPT dialogs and writes out
+    *
+    * @param spark
+    * @param path
+    * @param save
+    */
+  def readDialogsFPT(spark: SparkSession, path: String, save: Boolean = false): DataFrame = {
+    val df = spark.read.format("com.databricks.spark.xml").option("rootTag", "TEI.DIALOG").option("rowTag", "utterance").load(path)
+    // extract the samples: (utteranceId, "utterance", Seq[communicativeFunction])
+    val rdd = df.rdd.map { row => Row(
+      row.getAs[Row]("txt").getAs[Long]("_id").toString, row.getAs[Row]("txt").getAs[String]("_VALUE"), 
+      // use flatMap to flatten communicativeFunctions elements
+      row.getAs[Seq[Row]]("act").flatMap(_.getAs[Seq[String]]("communicativeFunction"))
+      )
+    }
+    val schema = StructType(Seq(
+      StructField("turnId", StringType, true),
+      StructField("utterance", StringType, true),
+      StructField("actNames", ArrayType(StringType, true), true)
+    ))
+    val ef = spark.createDataFrame(rdd, schema)
+    if (save) ef.repartition(1).write.json(s"dat/vie/act/")
+    ef
+  }
+
+  def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
+    val spark = SparkSession.builder.config(conf).getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
+
+    // val df = readDialogsWOZ(spark, false)
+    val df = readDialogsFPT(spark, "dat/fpt/1801-1900.xml", true)
+    df.show()
+    println("Number of utterances = " + df.count)
+    df.printSchema()
     spark.close()
   }
 }

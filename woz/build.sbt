@@ -20,6 +20,7 @@ lazy val commonSettings = Seq(
     "com.github.scopt" %% "scopt" % "3.7.1",
     "org.scala-lang" % "scala-reflect" % "2.12.15",
     "org.json4s" %% "json4s-jackson" % "3.5.3", // use 3.5.3 to fix a bug of JSON
+    "com.databricks" %% "spark-xml" % "0.16.0", // to read XML files into Spark
     "org.scalatest" %% "scalatest" % "3.1.1" % "test"
   )
 )
