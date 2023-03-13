@@ -1,6 +1,7 @@
 package vlp.jsl
 
 import com.johnsnowlabs.nlp.annotator._
+import com.johnsnowlabs.nlp.annotators.seq2seq.GPT2Transformer
 import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.pretrained.PretrainedPipeline
 import org.apache.spark.ml.Pipeline
@@ -8,10 +9,33 @@ import org.apache.spark.sql.SparkSession
 
 object Starter {
   val spark: SparkSession = SparkSession.builder.appName("vlp.jsl.Starter").master("local[*]").getOrCreate
+  import spark.implicits._
 
   def main(args: Array[String]): Unit = {
     spark.sparkContext.setLogLevel("ERROR")
+    gpt2()
+    spark.stop()
+  }
 
+  def gpt2(): Unit = {
+    val documentAssembler = new DocumentAssembler().setInputCol("text").setOutputCol("documents")
+    val gpt2 = GPT2Transformer.pretrained("gpt2")
+      .setInputCols(Array("documents"))
+      .setMinOutputLength(10)
+      .setMaxOutputLength(50)
+      .setDoSample(false)
+      .setTopK(50)
+      .setNoRepeatNgramSize(3)
+      .setOutputCol("generation")
+
+    val pipeline = new Pipeline().setStages(Array(documentAssembler, gpt2))
+
+    val data = Seq("My name is Leonardo.", "Tôi là Trương Gia Bình, chủ tịch công ty cổ phần FPT.").toDF("text")
+    val result = pipeline.fit(data).transform(data)
+    result.select("generation.result").show(false)
+  }
+
+  def ner(): Unit = {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val sentenceDetector = new SentenceDetector().setInputCols("document").setOutputCol("sentence")
     val token = new Tokenizer().setInputCols("sentence").setOutputCol("token")
@@ -35,7 +59,6 @@ object Starter {
     prediction.show()
     prediction.select("ner_converter.result").show(false)
     prediction.select("pos.result").show(false)
-    spark.stop()    
   }
 
   def pretrainedPipeline(args: Array[String]): Unit = {
@@ -56,8 +79,6 @@ object Starter {
   }
 
   def pretrainedPipelineLD(args: Array[String]): Unit = {
-    spark.sparkContext.setLogLevel("ERROR")
-
     val testData = Array(
       "A természetes nyelvfeldolgozás története általában az 1950-es években kezdődött, bár a korábbi időszakokból származó munkák is megtalálhatók. 1950-ben Alan Turing közzétett egy cikket, melynek címe: „Számítástechnika és intelligenciagépek”, és amely intelligenciakritériumként javasolta a Turing-tesztet.",
       "Geoffrey Everest Hinton é um psicólogo cognitivo britânico canadense e cientista da computação, mais conhecido por seu trabalho em redes neurais artificiais. Desde 2013, ele trabalha para o Google e a Universidade de Toronto. Em 2017, foi co-fundador e tornou-se Conselheiro Científico Chefe do Vector Institute of Toronto."
