@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Scrolling</title>
+  </head>
+  <body>
+    <style>
+      #progress {
+        border-bottom: 5px solid red; 
+        width: 0;
+        height: 5px;
+        position: fixed;
+        top: 0; left: 0;
+      }
+   </style>
+   <div id="progress"></div> 
+   <script>
+    document.body.appendChild(document.createTextNode("supercalifragilisticexpialidocious ".repeat(1000)));
+    let bar = document.querySelector("#progress"); 
+    window.addEventListener("scroll", () => {
+    let max = document.body.scrollHeight - innerHeight;
+    bar.style.width = `${(pageYOffset / max) * 100}%`; });
+   </script>
+  </body>
+</html>

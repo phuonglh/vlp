@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Balloon</title>
+  </head>
+  <body>
+    <p>Press up/down arrow to inflate/deflate a balloon. It can be blown up!</p>
+    <p id="balloon" style="font-size: 12px">🎈</p>
+    <script>
+      let balloon = document.querySelector("#balloon");
+
+      function change(event) {
+        let currentSize = balloon.style.fontSize
+        let s = currentSize.substring(0, currentSize.length - 2);
+        if (event.key == "ArrowUp") {
+          console.log("Current size:", s);
+          balloon.style.fontSize = s*1.2 + "px";
+        }
+        if (event.key == "ArrowDown") {
+          console.log("Current size:", s);
+          balloon.style.fontSize = s*0.9 + "px";
+        }
+        event.preventDefault();
+        if (s >= 100) {
+          balloon.textContent = "💥";
+          window.removeEventListener("keydown", change);
+        }
+      }
+      window.addEventListener("keydown", change);
+    </script>
+  </body>
+</html>

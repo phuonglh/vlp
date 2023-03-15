@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="us">
+  <head>
+    <title>This is a demo page</title>
+    <script>
+      var a1a1 = 0.15;
+      var a2a2 = 0.35;
+      var a1a2 = 1 - (a1a1 + a2a2);
+      var p = a1a1 + a1a2/2;
+      var q = 1 - p;
+      console.log("generation 0:", a1a1 , a1a2, a2a2);
+
+      function roundNumber(value, decimals = 4) {
+        var shifter = Math.pow(10, decimals);
+        return Math.round(value * shifter) / (10* shifter);
+      }
+
+      function nextGeneration() {
+        a1a1 = p * p;
+        a1a2 = 2 * p * q;
+        a2a2 = q * q;
+      }
+
+      let times = prompt("Enter a number")
+      if (!Number.isNaN(times)) {
+        for (var i = 0; i < times; i++) {
+          nextGeneration();
+          console.log("generation:", i, roundNumber(a1a1) , roundNumber(a1a2), roundNumber(a2a2));
+        } 
+      } else {
+        console.log("Not a number!");
+      }
+    </script>
+  </head>
+  <body>
+    Hello World.
+  </body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Drawing</title>
+  </head>
+  <body>
+    <p>Your name: <input type="text" data-help="Your full name"></p>
+    <p>Your age: <input type="text" data-help="Your name in years"></p>
+    <p id="help" style="color: red;"></p>
+    <script>
+      let help = document.querySelector("#help");
+      let fields = document.querySelectorAll("input");
+      for (let field of Array.from(fields)) {
+        field.addEventListener("focus", event => {
+          let text = event.target.getAttribute("data-help");
+          help.textContent = text;
+        });
+        field.addEventListener("blur", event => {
+          help.textContent = "";
+        }); 
+      }
+    </script>
+  </body>
+</html>

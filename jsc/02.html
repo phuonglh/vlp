@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>JavaScript Inside</title>
+  </head>
+  <body>
+    <h1>My home page</h1>
+    <button onclick="alert('Hello')">First</button>
+    <p style="border: 3px solid blue">This is a paragraph.</p>
+    <script>
+      let elements = document.getElementsByTagName("p");
+      console.log(Array.from(elements));
+      console.log(elements[0].clientHeight);
+      console.log(elements[0].clientWidth);
+      elements[0].style.color = "magenta";
+      elements[0].style.fontFamily = "Monaco";
+    </script>
+    <p>This is a second paragraph.</p>
+    <p>Click this document to activate the handler.</p>
+    <script>
+      window.addEventListener("click", () => {
+        console.log("You knocked?");
+      })
+    </script>
+    <button>Second</button>
+    <script>
+      let b = document.querySelector("button");
+      b.addEventListener("click", () => {
+        console.log("You click the button.");
+      })
+      document.body.addEventListener("click", event => {
+        if (event.target.nodeName == "BUTTON") {
+          console.log("Clicked", event.target.textContent)
+        }
+      })
+    </script>
+    <p>This page turns to violet when you hold the V key.</p>
+    <script>
+      window.addEventListener("keydown", event => {
+        if (event.key == "v") {
+          document.body.style.background = "violet";
+        }
+      });
+      window.addEventListener("keyup", event => {
+        if (event.key == "v") {
+          document.body.style.background = "";
+        }
+      })
+    </script>
+  </body>
+</html>

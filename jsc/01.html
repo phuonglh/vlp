@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="us">
+  <head>
+    <title>Recursion Demo</title>
+    <script>
+        function findSolution(target) {
+          function find(current, history) {
+            if (current == target)
+              return history;
+            else {
+                if (current > target)
+                  return null;
+                else return find(current + 5, `(${history} + 5)`) || find(current * 3, `(${history} * 3)`)
+            }
+          }
+          return find(1, "1")
+        }
+
+        let target = prompt("Enter a target number")
+        console.log(findSolution(target))
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
