@@ -16,6 +16,7 @@ import scopt.OptionParser
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
 import vlp.woz.DialogReader
+import org.apache.spark.ml.feature.RegexTokenizer
 
 /**
   * phuonglh@gmail.com
@@ -69,7 +70,9 @@ object ClassifierFPT {
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/vie/")
         // read all the act
         val df = spark.read.json("dat/vie/act")
-        val Array(trainingDF, validationDF, testDF) = df.randomSplit(Array(0.8, 0.1, 0.1), 220712L)
+        val prevTokenizer = new RegexTokenizer().setInputCol("prevActs").setOutputCol("ps").setPattern("""[\s]+""")
+
+        val Array(trainingDF, validationDF, testDF) = prevTokenizer.transform(df).randomSplit(Array(0.8, 0.1, 0.1), 220712L)
         testDF.show()
 
         config.mode match {
