@@ -7,7 +7,7 @@ val scalaTestVersion = "3.2.14"
 
 name := "jsl"
 
-version := "4.3.0"
+version := "4.3.2"
 
 scalaVersion := "2.12.15"
 
@@ -23,7 +23,7 @@ ThisBuild / developers := List(
     url = url("https://github.com/phuonglh")))
 
 val sparkVer = "3.3.1"
-val sparkNLP = "4.3.0"
+val sparkNLP = "4.3.2"
 
 libraryDependencies ++= {
   Seq(

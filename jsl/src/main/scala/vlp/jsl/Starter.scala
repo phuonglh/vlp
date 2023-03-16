@@ -13,7 +13,7 @@ object Starter {
 
   def main(args: Array[String]): Unit = {
     spark.sparkContext.setLogLevel("ERROR")
-    gpt2()
+    pretrainedPipeline()
     spark.stop()
   }
 
@@ -30,7 +30,7 @@ object Starter {
 
     val pipeline = new Pipeline().setStages(Array(documentAssembler, gpt2))
 
-    val data = Seq("My name is Leonardo.", "Tôi là Trương Gia Bình, chủ tịch công ty cổ phần FPT.").toDF("text")
+    val data = Seq("My name is Leonardo.", "Tôi là Trương Gia Bình, chủ tịch công ty cổ phần FPT.").toDF("text").repartition(1)
     val result = pipeline.fit(data).transform(data)
     result.select("generation.result").show(false)
   }
@@ -61,20 +61,23 @@ object Starter {
     prediction.select("pos.result").show(false)
   }
 
-  def pretrainedPipeline(args: Array[String]): Unit = {
-    spark.sparkContext.setLogLevel("ERROR")
+  def pretrainedPipeline(): Unit = {
 
     val testData = spark.createDataFrame(Seq(
         (1, "Google has announced the release of a beta version of the popular TensorFlow machine learning library"),
-        (2, "The Paris metro will soon enter the 21st century, ditching single-use paper tickets for rechargeable electronic cards."))
-      ).toDF("id", "text")
+        (2, "The Paris metro will soon enter the 21st century, ditching single-use paper tickets for rechargeable electronic cards."),
+        (3, "US releases map of approximate location of downed Reaper drone"),
+        (4, "The US Air Force released a graphic map of the approximate locations and times of the MQ-9 Reaper collision with a Russian fighter jet and the crash into the Black Sea earlier this week."),
+        (5, "US Air Forces in Europe noted in a follow up tweet that the “points on the map are not plotted to scale, the distances provided in the text boxes are an estimation of the incident's location.”"),
+        (6, "Earlier today, the US military also released newly declassified video of the Tuesday encounter between the drone and Russian fighter jet as it played out over the Black Sea."),
+        (7, "While US officials say they likely will not be able to retrieve the downed drone, Russia has said the decision on whether to retrieve it from the Black Sea will come from Russia's Ministry of Defense.")
+      )).toDF("id", "text")
 
     val pipeline = new PretrainedPipeline("explain_document_dl", lang = "en")
-    pipeline.annotate("Google has announced the release of a beta version of the popular TensorFlow machine learning library")
     pipeline.transform(testData).select("entities").show(false)
+    println(pipeline.annotate("Google has announced the release of a beta version of the popular TensorFlow machine learning library"))
 
     val pipelineML = new PretrainedPipeline("explain_document_ml", lang = "en")
-    pipelineML.annotate("Google has announced the release of a beta version of the popular TensorFlow machine learning library")
     pipelineML.transform(testData).select("pos").show(false)
   }
 
