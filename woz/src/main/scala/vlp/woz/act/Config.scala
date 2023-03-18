@@ -32,15 +32,15 @@ case class Config(
   mode: String = "eval",
   minFrequency: Int = 1,
   vocabSize: Int = 32768,
-  modelPath: String = "bin/act/",
   batchSize: Int = 128,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
-  epochs: Int = 40,
+  epochs: Int = 80,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of recurrent layers
   recurrentSize: Int = 32, // number of units in a recurrent layer
   dropoutProbability: Double = 0.1,
+  modelPath: String = "bin/act/",
   trainPath: String = "dat/woz/act/train/",
   devPath: String = "dat/woz/act/dev/",
   testPath: String = "dat/woz/act/test/",
