@@ -3,7 +3,8 @@ package vlp.woz.jsl
 import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotator._
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
-import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, UniversalSentenceEncoder, XlmRoBertaEmbeddings}
+import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, XlmRoBertaEmbeddings}
+import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, RoBertaSentenceEmbeddings, XlmRoBertaSentenceEmbeddings, UniversalSentenceEncoder}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
@@ -29,16 +30,15 @@ object MultilabelClassifier {
     val document = new DocumentAssembler().setInputCol("utterance").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
-      case "b" => BertEmbeddings.pretrained("bert_embeddings_bert_base_vi_cased", "vi").setInputCols(Array("token", "document")).setOutputCol("embeddings")
-      case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_spm_vie", "vie").setInputCols(Array("token", "document")).setOutputCol("embeddings")
-      case "l" => DistilBertEmbeddings.pretrained("distilbert_embeddings_base_multilingual_cased", "xx").setInputCols(Array("token", "document")).setOutputCol("embeddings")
-      case "u" => UniversalSentenceEncoder.pretrained().setInputCols("document").setOutputCol("embeddings")
-      case "x" => XlmRoBertaEmbeddings.pretrained("xlmroberta_embeddings_afriberta_base", "xx").setInputCols(Array("token", "document")).setOutputCol("embeddings")
+      case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "r" => RoBertaSentenceEmbeddings.pretrained().setInputCols("document").setOutputCol("embeddings") // this is for English only
+      case "x" => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
       case _ => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
     }
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("actNames")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
-      .setThreshold(0.5f)
+      .setThreshold(0.4f)
       .setValidationSplit(0.1f)
     val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, classifier)) 
     val model = pipeline.fit(df)

@@ -16,5 +16,5 @@ case class ConfigJSL(
   testPath: String = "dat/woz/act/test/",
   outputPath: String = "dat/out/",
   scorePath: String = "dat/woz/act/scores.json",
-  modelType: String = "b", // [b, d, l, s, u, x]
+  modelType: String = "b", // {b, u, r, x}
 ) extends Serializable
