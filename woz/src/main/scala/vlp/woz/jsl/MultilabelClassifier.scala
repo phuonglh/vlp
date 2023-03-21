@@ -5,7 +5,10 @@ import com.johnsnowlabs.nlp.annotator._
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
 import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, XlmRoBertaEmbeddings}
 import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, RoBertaSentenceEmbeddings, XlmRoBertaSentenceEmbeddings, UniversalSentenceEncoder}
+import com.johnsnowlabs.nlp.functions._
+import com.johnsnowlabs.nlp.Annotation
 import org.apache.spark.ml.{Pipeline, PipelineModel}
+import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
@@ -15,6 +18,8 @@ import vlp.woz.DialogReader
 import org.json4s._
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
+
+
 
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
@@ -45,6 +50,43 @@ object MultilabelClassifier {
     return model
   }
 
+  def predict(df: DataFrame, model: PipelineModel, config: ConfigJSL, split: String): DataFrame = {
+    val ef = model.transform(df)
+    val ff = ef.mapAnnotationsCol("category", "prediction", "category", (a: Seq[Annotation]) => if (a.nonEmpty) a.map(_.result) else List.empty[String])
+    ff.select("actNames", "prediction")
+  }
+
+  def evaluate(result: DataFrame, config: ConfigJSL, split: String): Score = {
+    // run the prediction
+
+    // evaluate the result
+    val predictionsAndLabels = result.rdd.map { case row => 
+      (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
+    }
+    val metrics = new MultilabelMetrics(predictionsAndLabels)
+    val labelSize = 0 // TODO
+    val precisionByLabel = Array.fill(labelSize)(0d)
+    val recallByLabel = Array.fill(labelSize)(0d)
+    val fMeasureByLabel = Array.fill(labelSize)(0d)
+    val ls = metrics.labels
+    println(ls.mkString(", "))
+    ls.foreach { k => 
+      precisionByLabel(k.toInt) = metrics.precision(k)
+      recallByLabel(k.toInt) = metrics.recall(k)
+      fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
+    }
+    Score(
+      config.modelType, split,
+      metrics.accuracy, metrics.f1Measure, metrics.microF1Measure, metrics.microPrecision, metrics.microRecall,
+      precisionByLabel, recallByLabel, fMeasureByLabel
+    )
+  }
+
+  def saveScore(score: Score, path: String) = {
+    var content = Serialization.writePretty(score) + ",\n"
+    Files.write(Paths.get(path), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  }
+
   def main(args: Array[String]): Unit = {
     val opts = new OptionParser[ConfigJSL](getClass().getName()) {
       head(getClass().getName(), "1.0")
@@ -53,7 +95,7 @@ object MultilabelClassifier {
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
       opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 16g")
-      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, test}")
+      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, predict}")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language {en, vi}")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
@@ -84,7 +126,11 @@ object MultilabelClassifier {
             val output = model.transform(df)
             output.printSchema
             output.show()
-            model.write.overwrite.save(config.modelPath)
+            model.write.overwrite.save(config.modelPath + "/" + config.modelType)
+          case "predict" =>
+            val model = PipelineModel.load(config.modelPath + "/" + config.modelType)
+            val ef = predict(df, model, config, "all")
+            ef.show(false)
           case "eval" => 
         }
 
