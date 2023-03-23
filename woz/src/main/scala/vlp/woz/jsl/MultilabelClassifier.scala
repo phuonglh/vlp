@@ -2,12 +2,13 @@ package vlp.woz.jsl
 
 import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotator._
+import com.johnsnowlabs.nlp.functions._
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
 import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, XlmRoBertaEmbeddings}
 import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, RoBertaSentenceEmbeddings, XlmRoBertaSentenceEmbeddings, UniversalSentenceEncoder}
-import com.johnsnowlabs.nlp.functions._
 import com.johnsnowlabs.nlp.Annotation
 import org.apache.spark.ml.{Pipeline, PipelineModel}
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
@@ -32,6 +33,8 @@ object MultilabelClassifier {
   implicit val formats = Serialization.formats(NoTypeHints)
 
   def train(config: ConfigJSL, df: DataFrame): PipelineModel = {
+    // use a vectorizer to get label vocab
+    val actVectorizer = new CountVectorizer().setInputCol("actNames").setOutputCol("ys")
     val document = new DocumentAssembler().setInputCol("utterance").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
@@ -45,7 +48,7 @@ object MultilabelClassifier {
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
       .setThreshold(0.4f)
       .setValidationSplit(0.1f)
-    val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, classifier)) 
+    val pipeline = new Pipeline().setStages(Array(actVectorizer, document, tokenizer, embeddings, classifier)) 
     val model = pipeline.fit(df)
     return model
   }
@@ -56,14 +59,16 @@ object MultilabelClassifier {
     ff.select("actNames", "prediction")
   }
 
-  def evaluate(result: DataFrame, config: ConfigJSL, split: String): Score = {
-    // run the prediction
-
-    // evaluate the result
+  def evaluate(result: DataFrame, labelIndex: Map[String, Double], config: ConfigJSL, split: String): Score = {
+    // predict
     val predictionsAndLabels = result.rdd.map { case row => 
-      (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
+      (row.getAs[Seq[String]](1).toArray, row.getAs[Seq[String]](0).toArray)
     }
-    val metrics = new MultilabelMetrics(predictionsAndLabels)
+    // convert to Double value
+    val zy = predictionsAndLabels.map { case (zs, ys) =>
+      (zs.map(labelIndex(_)), ys.map(labelIndex(_)))
+    }
+    val metrics = new MultilabelMetrics(zy)
     val labelSize = 0 // TODO
     val precisionByLabel = Array.fill(labelSize)(0d)
     val recallByLabel = Array.fill(labelSize)(0d)
@@ -132,6 +137,13 @@ object MultilabelClassifier {
             val ef = predict(df, model, config, "all")
             ef.show(false)
           case "eval" => 
+            val model = PipelineModel.load(config.modelPath + "/" + config.modelType)
+            val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
+            val labelIndex = labels.zipWithIndex.toMap.mapValues(_.toDouble)
+            val ef = predict(df, model, config, "all")
+            ef.show(false)
+            val score = evaluate(ef, labelIndex, config, "all")
+            println(Serialization.writePretty(score))
         }
 
         sc.stop()
