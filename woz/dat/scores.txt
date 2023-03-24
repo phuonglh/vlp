@@ -97,3 +97,5 @@
 
 -t d (DeBERTa base, Vietnamese)
 
+
+-t s (DistilBERT base, Vietnamese)

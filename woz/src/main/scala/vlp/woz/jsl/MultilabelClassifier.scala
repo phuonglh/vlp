@@ -48,11 +48,15 @@ object MultilabelClassifier {
           DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("xs")
         else 
           DeBertaEmbeddings.pretrained("deberta_v3_base", "en").setInputCols("document", "token").setOutputCol("xs") 
+      case "s" => if (config.language == "vi")
+          DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("xs")
+        else 
+          DistilBertEmbeddings.pretrained("distilbert_base_cased", "en").setInputCols("document", "token").setOutputCol("xs") 
       case _ => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
     }
     var stages = Array(actVectorizer, document, tokenizer, embeddings)
     val sentenceEmbedding = new SentenceEmbeddings().setInputCols("document", "xs").setOutputCol("embeddings")
-    if (Set("x").contains(config.modelType)) 
+    if (Set("d", "s").contains(config.modelType)) 
       stages = stages ++ Array(sentenceEmbedding)
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("actNames")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
