@@ -1,39 +1,87 @@
--t x 
+-t b
 
-Epoch 199/200 - 2.69s - loss: 0.060275123 - acc: 0.9851293 - batches: 169
-Quality on validation dataset (10.0%), validation examples = 2395 
-time to finish evaluation: 0.32s
-Macro-average	 prec: 0.20619847, rec: 0.10625328, f1: 0.14024094
-Micro-average	 prec: 0.78809357, recall: 0.36494914, f1: 0.49887845
-Epoch 200/200 - 2.74s - loss: 0.060255896 - acc: 0.9851405 - batches: 169
-Quality on validation dataset (10.0%), validation examples = 2395 
-time to finish evaluation: 0.32s
-Macro-average	 prec: 0.20644549, rec: 0.10634905, f1: 0.14038149
-Micro-average	 prec: 0.78824365, recall: 0.36527732, f1: 0.4992151
+  Epoch 199/200 - 2.81s - loss: 0.03076101 - acc: 0.9951062 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.36s
+  Macro-average	 prec: 0.42310485, rec: 0.30537716, f1: 0.3547282
+  Micro-average	 prec: 0.79745764, recall: 0.6176567, f1: 0.6961346
+  Epoch 200/200 - 2.82s - loss: 0.03073651 - acc: 0.99511236 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.35s
+  Macro-average	 prec: 0.42316958, rec: 0.30543968, f1: 0.35479313
+  Micro-average	 prec: 0.79745764, recall: 0.6176567, f1: 0.6961346
+
+  Epoch 199/200 - 2.63s - loss: 0.030455604 - acc: 0.99519813 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.33s
+  Macro-average	 prec: 0.38999504, rec: 0.2720437, f1: 0.32051203
+  Micro-average	 prec: 0.7749469, recall: 0.60330576, f1: 0.6784386
+  Epoch 200/200 - 2.58s - loss: 0.030430842 - acc: 0.9952042 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.37s
+  Macro-average	 prec: 0.38980672, rec: 0.27197874, f1: 0.32040334
+  Micro-average	 prec: 0.77428937, recall: 0.60330576, f1: 0.6781865
+
+-t r (RoBERTa English only)
+
+  Epoch 199/200 - 2.10s - loss: 0.06427936 - acc: 0.9843948 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.32s
+  Macro-average	 prec: 0.18335566, rec: 0.09903317, f1: 0.12860489
+  Micro-average	 prec: 0.7111582, recall: 0.33289257, f1: 0.45350146
+  Epoch 200/200 - 2.15s - loss: 0.06426552 - acc: 0.9843928 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.32s
+  Macro-average	 prec: 0.18349673, rec: 0.09894311, f1: 0.12856357
+  Micro-average	 prec: 0.7116608, recall: 0.33289257, f1: 0.4536036
+
+-t x (RoBERTa cross-language)
+
+  Epoch 199/200 - 2.69s - loss: 0.060275123 - acc: 0.9851293 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.32s
+  Macro-average	 prec: 0.20619847, rec: 0.10625328, f1: 0.14024094
+  Micro-average	 prec: 0.78809357, recall: 0.36494914, f1: 0.49887845
+  Epoch 200/200 - 2.74s - loss: 0.060255896 - acc: 0.9851405 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.32s
+  Macro-average	 prec: 0.20644549, rec: 0.10634905, f1: 0.14038149
+  Micro-average	 prec: 0.78824365, recall: 0.36527732, f1: 0.4992151
+
+  Epoch 199/200 - 3.19s - loss: 0.060195424 - acc: 0.98526275 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.35s
+  Macro-average	 prec: 0.23031567, rec: 0.11226339, f1: 0.1509492
+  Micro-average	 prec: 0.7647458, recall: 0.37289256, f1: 0.50133336
+  Epoch 200/200 - 3.26s - loss: 0.06017551 - acc: 0.9852749 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.39s
+  Macro-average	 prec: 0.23034498, rec: 0.11233836, f1: 0.15102325
+  Micro-average	 prec: 0.76490515, recall: 0.37322313, f1: 0.5016663
+
 
 -t u
 
-Epoch 199/200 - 2.74s - loss: 0.047797505 - acc: 0.989082 - batches: 169
-Quality on validation dataset (10.0%), validation examples = 2395 
-time to finish evaluation: 0.32s
-Macro-average	 prec: 0.29060698, rec: 0.19682395, f1: 0.23469341
-Micro-average	 prec: 0.7936047, recall: 0.5375779, f1: 0.64097047
-Epoch 200/200 - 2.78s - loss: 0.047788285 - acc: 0.989087 - batches: 169
-Quality on validation dataset (10.0%), validation examples = 2395 
-time to finish evaluation: 0.33s
-Macro-average	 prec: 0.29060698, rec: 0.19682395, f1: 0.23469341
-Micro-average	 prec: 0.7936047, recall: 0.5375779, f1: 0.64097047
+  Epoch 199/200 - 2.74s - loss: 0.047797505 - acc: 0.989082 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.32s
+  Macro-average	 prec: 0.29060698, rec: 0.19682395, f1: 0.23469341
+  Micro-average	 prec: 0.7936047, recall: 0.5375779, f1: 0.64097047
+  Epoch 200/200 - 2.78s - loss: 0.047788285 - acc: 0.989087 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.33s
+  Macro-average	 prec: 0.29060698, rec: 0.19682395, f1: 0.23469341
+  Micro-average	 prec: 0.7936047, recall: 0.5375779, f1: 0.64097047
 
--t b
+  Epoch 199/200 - 2.07s - loss: 0.047453493 - acc: 0.9891566 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.31s
+  Macro-average	 prec: 0.27338985, rec: 0.19352636, f1: 0.22662799
+  Micro-average	 prec: 0.7671233, recall: 0.5183471, f1: 0.6186624
+  Epoch 200/200 - 2.04s - loss: 0.04744391 - acc: 0.98916006 - batches: 169
+  Quality on validation dataset (10.0%), validation examples = 2395 
+  time to finish evaluation: 0.31s
+  Macro-average	 prec: 0.27338985, rec: 0.19352636, f1: 0.22662799
+  Micro-average	 prec: 0.7671233, recall: 0.5183471, f1: 0.6186624
 
-Epoch 199/200 - 2.81s - loss: 0.03076101 - acc: 0.9951062 - batches: 169
-Quality on validation dataset (10.0%), validation examples = 2395 
-time to finish evaluation: 0.36s
-Macro-average	 prec: 0.42310485, rec: 0.30537716, f1: 0.3547282
-Micro-average	 prec: 0.79745764, recall: 0.6176567, f1: 0.6961346
-Epoch 200/200 - 2.82s - loss: 0.03073651 - acc: 0.99511236 - batches: 169
-Quality on validation dataset (10.0%), validation examples = 2395 
-time to finish evaluation: 0.35s
-Macro-average	 prec: 0.42316958, rec: 0.30543968, f1: 0.35479313
-Micro-average	 prec: 0.79745764, recall: 0.6176567, f1: 0.6961346
 
