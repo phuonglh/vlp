@@ -35,6 +35,17 @@
   Macro-average	 prec: 0.18349673, rec: 0.09894311, f1: 0.12856357
   Micro-average	 prec: 0.7116608, recall: 0.33289257, f1: 0.4536036
 
+Epoch 199/200 - 2.77s - loss: 0.06418386 - acc: 0.98437345 - batches: 169
+Quality on validation dataset (10.0%), validation examples = 2395 
+time to finish evaluation: 0.34s
+Macro-average	 prec: 0.20229426, rec: 0.10091042, f1: 0.13465226
+Micro-average	 prec: 0.75641024, recall: 0.34853956, f1: 0.47719613
+Epoch 200/200 - 2.76s - loss: 0.064170584 - acc: 0.9843866 - batches: 169
+Quality on validation dataset (10.0%), validation examples = 2395 
+time to finish evaluation: 0.34s
+Macro-average	 prec: 0.20217678, rec: 0.10091042, f1: 0.13462622
+Micro-average	 prec: 0.7558719, recall: 0.34853956, f1: 0.47708893
+
 -t x (RoBERTa cross-language)
 
   Epoch 199/200 - 2.69s - loss: 0.060275123 - acc: 0.9851293 - batches: 169
