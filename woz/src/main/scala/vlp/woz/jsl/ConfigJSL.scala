@@ -6,7 +6,7 @@ case class ConfigJSL(
   executorCores: Int = 8, // Y ==> there are Y/X executors 
   executorMemory: String = "8g", // Z
   driverMemory: String = "16g", // D
-  language: String = "en", // {en, vi}
+  language: String = "vi", // {en, vi}
   mode: String = "eval",
   batchSize: Int = 128,
   learningRate: Double = 5E-4,

@@ -4,7 +4,8 @@ import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotator._
 import com.johnsnowlabs.nlp.functions._
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
-import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, XlmRoBertaEmbeddings}
+import com.johnsnowlabs.nlp.embeddings.SentenceEmbeddings
+import com.johnsnowlabs.nlp.embeddings.{DeBertaEmbeddings, DistilBertEmbeddings, XlnetEmbeddings}
 import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, RoBertaSentenceEmbeddings, XlmRoBertaSentenceEmbeddings, UniversalSentenceEncoder}
 import com.johnsnowlabs.nlp.Annotation
 import org.apache.spark.ml.{Pipeline, PipelineModel}
@@ -20,12 +21,13 @@ import org.json4s._
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
-
-
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
 /**
   * phuonglh, March 2023
+  * 
+  * Experiments with multiple pretrained models for sentence embeddings and their 
+  * effectiveness in dialogue act classification.
   * 
   */
 
@@ -42,13 +44,22 @@ object MultilabelClassifier {
       case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
       case "r" => RoBertaSentenceEmbeddings.pretrained().setInputCols("document").setOutputCol("embeddings") // this is for English only
       case "x" => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "d" => if (config.language == "vi")
+          DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("xs")
+        else 
+          DeBertaEmbeddings.pretrained("deberta_v3_base", "en").setInputCols("document", "token").setOutputCol("xs") 
       case _ => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
     }
+    var stages = Array(actVectorizer, document, tokenizer, embeddings)
+    val sentenceEmbedding = new SentenceEmbeddings().setInputCols("document", "xs").setOutputCol("embeddings")
+    if (Set("x").contains(config.modelType)) 
+      stages = stages ++ Array(sentenceEmbedding)
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("actNames")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
       .setThreshold(0.4f)
       .setValidationSplit(0.1f)
-    val pipeline = new Pipeline().setStages(Array(actVectorizer, document, tokenizer, embeddings, classifier)) 
+    stages = stages ++ Array(classifier)
+    val pipeline = new Pipeline().setStages(stages)
     val model = pipeline.fit(df)
     return model
   }

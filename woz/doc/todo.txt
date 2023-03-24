@@ -1,8 +1,10 @@
-TODO:
-  - experiments with BoA model
-  
-DONE:
+TODO:  
+  - DeBERTa and sequence labeling: experiments on NER 
 
+DONE:
+  - DeBERTa for sentence classification
+  - BERT, RoBERTa, Universal, XlmRoBerta for sentence classification
+  - experiments with BoA model and report results
   - construct a model which makes use of act history; first variant: BoA representation.
   - dataset transformation for history-based learning
   - improvement of the current model: word shapes (time, phone, number, etc)
