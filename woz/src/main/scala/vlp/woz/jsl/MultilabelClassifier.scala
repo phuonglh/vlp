@@ -60,7 +60,7 @@ object MultilabelClassifier {
       stages = stages ++ Array(sentenceEmbedding)
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("actNames")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
-      .setThreshold(0.4f)
+      .setThreshold(config.threshold)
       .setValidationSplit(0.1f)
     stages = stages ++ Array(classifier)
     val pipeline = new Pipeline().setStages(stages)

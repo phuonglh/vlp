@@ -10,6 +10,7 @@ case class ConfigJSL(
   mode: String = "eval",
   batchSize: Int = 128,
   learningRate: Double = 5E-4,
+  threshold: Float = 0.3f,
   epochs: Int = 200,
   modelPath: String = "bin/act/",
   trainPath: String = "dat/woz/act/train/",
