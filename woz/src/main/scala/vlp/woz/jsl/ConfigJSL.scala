@@ -10,11 +10,12 @@ case class ConfigJSL(
   mode: String = "eval",
   batchSize: Int = 128,
   learningRate: Double = 5E-4,
-  threshold: Float = 0.3f,
+  threshold: Float = 0.4f,
   epochs: Int = 200,
   modelPath: String = "bin/act/",
   trainPath: String = "dat/woz/act/train/",
   devPath: String = "dat/woz/act/dev/",
+  validPath: String = "dat/woz/act/val", // Parquet file of devPath
   testPath: String = "dat/woz/act/test/",
   outputPath: String = "dat/out/",
   scorePath: String = "dat/woz/act/scores.json",

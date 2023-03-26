@@ -34,7 +34,7 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 object MultilabelClassifier {
   implicit val formats = Serialization.formats(NoTypeHints)
 
-  def train(config: ConfigJSL, df: DataFrame): PipelineModel = {
+  def train(config: ConfigJSL, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
     // use a vectorizer to get label vocab
     val actVectorizer = new CountVectorizer().setInputCol("actNames").setOutputCol("ys")
     val document = new DocumentAssembler().setInputCol("utterance").setOutputCol("document")
@@ -61,11 +61,18 @@ object MultilabelClassifier {
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("actNames")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
       .setThreshold(config.threshold)
-      .setValidationSplit(0.1f)
+    // train a preprocessor 
+    val preprocessor = new Pipeline().setStages(stages)
+    val preprocessorModel = preprocessor.fit(trainingDF)
+    // use the preprocessor pipeline to transform the development set 
+    val df = preprocessorModel.transform(developmentDF)
+    df.write.mode("overwrite").parquet(config.validPath)
+    classifier.setTestDataset(config.validPath)
+    // train the whole pipeline and return a model
     stages = stages ++ Array(classifier)
     val pipeline = new Pipeline().setStages(stages)
-    val model = pipeline.fit(df)
-    return model
+    val model = pipeline.fit(trainingDF)
+    return model    
   }
 
   def predict(df: DataFrame, model: PipelineModel, config: ConfigJSL, split: String): DataFrame = {
@@ -136,28 +143,33 @@ object MultilabelClassifier {
         val sc = new SparkContext(conf)
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
         // sc.setLogLevel("ERROR")
-
-        val df = spark.read.json(config.trainPath)
-        df.show()
-        df.printSchema()
+        val Array(trainingDF, developmentDF, testDF) = if (config.language == "vi") {
+          val df = spark.read.json(config.trainPath)
+          df.randomSplit(Array(0.8, 0.1, 0.2))
+        } else {
+          Array(spark.read.json(config.trainPath), spark.read.json(config.devPath), spark.read.json(config.testPath))
+        }
+        testDF.show()
+        testDF.printSchema()
+        val modelPath = config.modelPath + "/" + config.language + "/" + config.modelType
         config.mode match {
           case "train" =>
-            val model = train(config, df)
-            val output = model.transform(df)
+            val model = train(config, trainingDF, developmentDF)
+            val output = model.transform(developmentDF)
             output.printSchema
             output.show()
-            model.write.overwrite.save(config.modelPath + "/" + config.modelType)
+            model.write.overwrite.save(modelPath)
           case "predict" =>
-            val model = PipelineModel.load(config.modelPath + "/" + config.modelType)
-            val ef = predict(df, model, config, "all")
+            val model = PipelineModel.load(modelPath)
+            val ef = predict(developmentDF, model, config, "valid")
             ef.show(false)
           case "eval" => 
-            val model = PipelineModel.load(config.modelPath + "/" + config.modelType)
+            val model = PipelineModel.load(modelPath)
             val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
             val labelIndex = labels.zipWithIndex.toMap.mapValues(_.toDouble)
-            val ef = predict(df, model, config, "all")
+            val ef = predict(developmentDF, model, config, "valid")
             ef.show(false)
-            val score = evaluate(ef, labelIndex, config, "all")
+            val score = evaluate(ef, labelIndex, config, "valid")
             println(Serialization.writePretty(score))
         }
 
