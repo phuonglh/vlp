@@ -4,9 +4,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.UnaryTransformer
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
-import org.apache.spark.ml.linalg.{Vector, Vectors}
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.{DataType, ArrayType, DoubleType}
 
 
 /**
@@ -16,7 +14,7 @@ import org.apache.spark.sql.types.DataType
   * phuonglh@gmail.com
   */
 class Sequencer(val uid: String, val dictionary: Map[String, Int]) 
-  extends UnaryTransformer[Seq[String], Vector, Sequencer] with DefaultParamsWritable {
+  extends UnaryTransformer[Seq[String], Seq[Double], Sequencer] with DefaultParamsWritable {
 
   var dictionaryBr: Option[Broadcast[Map[String, Int]]] = None
 
@@ -26,16 +24,15 @@ class Sequencer(val uid: String, val dictionary: Map[String, Int])
     dictionaryBr = Some(sparkContext.broadcast(dictionary))
   }
 
-  override protected def createTransformFunc: Seq[String] => Vector = {
-    def f(xs: Seq[String]): Vector = {
-      val a = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0).toDouble).toArray
-      Vectors.dense(a)
+  override protected def createTransformFunc: Seq[String] => Seq[Double] = {
+    def f(xs: Seq[String]): Seq[Double] = {
+      xs.map(x => dictionaryBr.get.value.getOrElse(x, 0).toDouble).toArray
     }
 
     f(_)
   }
 
-  override protected def outputDataType: DataType = VectorType
+  override protected def outputDataType: DataType = ArrayType(DoubleType, false)
 }
 
 object Sequencer extends DefaultParamsReadable[Sequencer] {
