@@ -14,7 +14,6 @@ import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.broadcast.Broadcast
 
 import vlp.woz.DialogReader
 
@@ -79,25 +78,18 @@ object MultilabelClassifier {
   def predict(df: DataFrame, model: PipelineModel, config: ConfigJSL, split: String): DataFrame = {
     val ef = model.transform(df)
     val ff = ef.mapAnnotationsCol("category", "prediction", "category", (a: Seq[Annotation]) => if (a.nonEmpty) a.map(_.result) else List.empty[String])
-    ff.select("actNames", "prediction")
+    ff.select("prediction", "actNames")
   }
 
-  def evaluate(result: DataFrame, labelIndexBr: Broadcast[Map[String, Double]], config: ConfigJSL, split: String): Score = {
-    // predict
+  def evaluate(result: DataFrame, config: ConfigJSL, split: String): Score = {
     val predictionsAndLabels = result.rdd.map { case row => 
-      (row.getAs[Seq[String]](1).toArray, row.getAs[Seq[String]](0).toArray)
+      (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
     }
-    // convert to Double value
-    val labelIndex = labelIndexBr.value
-    val zy = predictionsAndLabels.map { case (zs, ys) =>
-      (zs.map(labelIndex.getOrElse(_, 0d)), ys.map(labelIndex.getOrElse(_, 0d)))
-    }
-    val metrics = new MultilabelMetrics(zy)
-    val labelSize = 0 // TODO
-    val precisionByLabel = Array.fill(labelSize)(0d)
-    val recallByLabel = Array.fill(labelSize)(0d)
-    val fMeasureByLabel = Array.fill(labelSize)(0d)
+    val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
+    val precisionByLabel = Array.fill(ls.size)(0d)
+    val recallByLabel = Array.fill(ls.size)(0d)
+    val fMeasureByLabel = Array.fill(ls.size)(0d)
     println(ls.mkString(", "))
     ls.foreach { k => 
       precisionByLabel(k.toInt) = metrics.precision(k)
@@ -167,12 +159,15 @@ object MultilabelClassifier {
             ef.show(false)
           case "eval" => 
             val model = PipelineModel.load(modelPath)
+            val ef = predict(developmentDF, model, config, "valid")
             val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
             val labelIndex = labels.zipWithIndex.toMap.mapValues(_.toDouble)
-            val labelIndexBr = spark.sparkContext.broadcast(labelIndex)
-            val ef = predict(developmentDF, model, config, "valid")
-            ef.show(false)
-            val score = evaluate(ef, labelIndexBr, config, "valid")
+            val seq1 = new Sequencer(labelIndex).setInputCol("prediction").setOutputCol("zs")
+            val seq2 = new Sequencer(labelIndex).setInputCol("actNames").setOutputCol("ys")
+            val ff = seq2.transform(seq1.transform(ef))
+            ff.show()
+            val result = ff.select("zs", "ys")
+            val score = evaluate(result, config, "valid")
             println(Serialization.writePretty(score))
         }
 
