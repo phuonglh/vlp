@@ -14,6 +14,7 @@ import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.broadcast.Broadcast
 
 import vlp.woz.DialogReader
 
@@ -81,14 +82,15 @@ object MultilabelClassifier {
     ff.select("actNames", "prediction")
   }
 
-  def evaluate(result: DataFrame, labelIndex: Map[String, Double], config: ConfigJSL, split: String): Score = {
+  def evaluate(result: DataFrame, labelIndexBr: Broadcast[Map[String, Double]], config: ConfigJSL, split: String): Score = {
     // predict
     val predictionsAndLabels = result.rdd.map { case row => 
       (row.getAs[Seq[String]](1).toArray, row.getAs[Seq[String]](0).toArray)
     }
     // convert to Double value
+    val labelIndex = labelIndexBr.value
     val zy = predictionsAndLabels.map { case (zs, ys) =>
-      (zs.map(labelIndex(_)), ys.map(labelIndex(_)))
+      (zs.map(labelIndex.getOrElse(_, 0d)), ys.map(labelIndex.getOrElse(_, 0d)))
     }
     val metrics = new MultilabelMetrics(zy)
     val labelSize = 0 // TODO
@@ -145,7 +147,7 @@ object MultilabelClassifier {
         // sc.setLogLevel("ERROR")
         val Array(trainingDF, developmentDF, testDF) = if (config.language == "vi") {
           val df = spark.read.json(config.trainPath)
-          df.randomSplit(Array(0.8, 0.1, 0.2))
+          df.randomSplit(Array(0.8, 0.1, 0.1))
         } else {
           Array(spark.read.json(config.trainPath), spark.read.json(config.devPath), spark.read.json(config.testPath))
         }
@@ -167,9 +169,10 @@ object MultilabelClassifier {
             val model = PipelineModel.load(modelPath)
             val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
             val labelIndex = labels.zipWithIndex.toMap.mapValues(_.toDouble)
+            val labelIndexBr = spark.sparkContext.broadcast(labelIndex)
             val ef = predict(developmentDF, model, config, "valid")
             ef.show(false)
-            val score = evaluate(ef, labelIndex, config, "valid")
+            val score = evaluate(ef, labelIndexBr, config, "valid")
             println(Serialization.writePretty(score))
         }
 
