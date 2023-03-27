@@ -7,6 +7,7 @@ package vlp.woz.jsl
   *
   */
 case class Score(
+  language: String,
   modelType: String,
   split: String,
   accuracy: Double,

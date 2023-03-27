@@ -98,8 +98,10 @@ object MultilabelClassifier {
       fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
     }
     Score(
+      config.language,
       config.modelType, split,
-      metrics.accuracy, metrics.f1Measure, metrics.microF1Measure, metrics.microPrecision, metrics.microRecall,
+      metrics.accuracy, metrics.f1Measure, 
+      metrics.microF1Measure, metrics.microPrecision, metrics.microRecall,
       precisionByLabel, recallByLabel, fMeasureByLabel
     )
   }
@@ -107,6 +109,20 @@ object MultilabelClassifier {
   def saveScore(score: Score, path: String) = {
     var content = Serialization.writePretty(score) + ",\n"
     Files.write(Paths.get(path), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  }
+
+  def evaluate(df: DataFrame, model: PipelineModel, config: ConfigJSL, split: String): Unit = {
+    val ef = predict(df, model, config, split)
+    val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
+    val labelIndex = labels.zipWithIndex.toMap
+    val seq1 = new Sequencer(labelIndex).setInputCol("prediction").setOutputCol("zs")
+    val seq2 = new Sequencer(labelIndex).setInputCol("actNames").setOutputCol("ys")
+    val ff = seq2.transform(seq1.transform(ef))
+    ff.show()
+    val result = ff.select("zs", "ys")
+    val score = evaluate(result, config, split)
+    println(Serialization.writePretty(score))
+    saveScore(score, config.scorePath)
   }
 
   def main(args: Array[String]): Unit = {
@@ -154,23 +170,18 @@ object MultilabelClassifier {
             output.printSchema
             output.show()
             model.write.overwrite.save(modelPath)
+            evaluate(trainingDF, model, config, "train")
+            evaluate(developmentDF, model, config, "valid")
+            evaluate(testDF, model, config, "test")
           case "predict" =>
             val model = PipelineModel.load(modelPath)
             val ef = predict(developmentDF, model, config, "valid")
             ef.show(false)
           case "eval" => 
             val model = PipelineModel.load(modelPath)
-            val ef = predict(developmentDF, model, config, "valid")
-            ef.show()
-            val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
-            val labelIndex = labels.zipWithIndex.toMap
-            val seq1 = new Sequencer(labelIndex).setInputCol("prediction").setOutputCol("zs")
-            val seq2 = new Sequencer(labelIndex).setInputCol("actNames").setOutputCol("ys")
-            val ff = seq2.transform(seq1.transform(ef))
-            ff.show()
-            val result = ff.select("zs", "ys")
-            val score = evaluate(result, config, "valid")
-            println(Serialization.writePretty(score))
+            evaluate(trainingDF, model, config, "train")
+            evaluate(developmentDF, model, config, "valid")
+            evaluate(testDF, model, config, "test")
         }
 
         sc.stop()
