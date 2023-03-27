@@ -87,7 +87,7 @@ object MultilabelClassifier {
     }
     val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
-    val numLabels = ls.max.toInt
+    val numLabels = ls.max.toInt + 1 // zero-based labels
     val precisionByLabel = Array.fill(numLabels)(0d)
     val recallByLabel = Array.fill(numLabels)(0d)
     val fMeasureByLabel = Array.fill(numLabels)(0d)
