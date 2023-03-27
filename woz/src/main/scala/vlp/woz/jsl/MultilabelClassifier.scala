@@ -136,7 +136,7 @@ object MultilabelClassifier {
           .set("spark.driver.memory", config.driverMemory)
         val sc = new SparkContext(conf)
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
-        // sc.setLogLevel("ERROR")
+        sc.setLogLevel("ERROR")
         val Array(trainingDF, developmentDF, testDF) = if (config.language == "vi") {
           val df = spark.read.json(config.trainPath)
           df.randomSplit(Array(0.8, 0.1, 0.1))
@@ -160,8 +160,9 @@ object MultilabelClassifier {
           case "eval" => 
             val model = PipelineModel.load(modelPath)
             val ef = predict(developmentDF, model, config, "valid")
+            ef.show()
             val labels = model.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
-            val labelIndex = labels.zipWithIndex.toMap.mapValues(_.toDouble)
+            val labelIndex = labels.zipWithIndex.toMap
             val seq1 = new Sequencer(labelIndex).setInputCol("prediction").setOutputCol("zs")
             val seq2 = new Sequencer(labelIndex).setInputCol("actNames").setOutputCol("ys")
             val ff = seq2.transform(seq1.transform(ef))
