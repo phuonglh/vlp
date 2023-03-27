@@ -8,7 +8,9 @@ final case class Slot(
   value: String
 )
 
-final case class SlotValues()
+// final case class SlotValues() // empty for dialogue act experiments
+final case class SlotValues(  
+)
 
 final case class State(
   active_intent: String,

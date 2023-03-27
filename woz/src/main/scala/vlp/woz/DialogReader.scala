@@ -81,13 +81,13 @@ object DialogReader {
   }
 
   /**
-    * Reads WOZ dialogs writes splits out.
+    * Reads WOZ dialog acts and writes splits out.
     *
     * @param spark
     * @param save
-    * @return
+    * @return 3 dataframes
     */
-  def readDialogsWOZ(spark: SparkSession, save: Boolean = false): Seq[DataFrame] = {
+  def readDialogActsWOZ(spark: SparkSession, save: Boolean = false): Seq[DataFrame] = {
     val dfs = readDialogActs(spark, save)
     println(s"#(trainingSamples) = ${dfs(0).count}")
     println(s"     #(devSamples) = ${dfs(1).count}")
@@ -98,20 +98,20 @@ object DialogReader {
   }
 
   /**
-    * Reads FPT dialogs and writes out
+    * Reads FPT dialog acts and writes out
     *
     * @param spark
     * @param path
     * @param save
     */
-  def readDialogsFPT(spark: SparkSession, path: String, save: Boolean = false): DataFrame = {
+  def readDialogActsFPT(spark: SparkSession, path: String, save: Boolean = false): DataFrame = {
     val df = spark.read.format("com.databricks.spark.xml").option("rootTag", "TEI.DIALOG").option("rowTag", "utterance").load(path)
     df.printSchema()
     // extract the samples: (utteranceId, "utterance", Seq[communicativeFunction])
     val rdd = df.rdd.map { row => Row(
-      row.getAs[Row]("txt").getAs[Long]("_id").toString, row.getAs[Row]("txt").getAs[String]("_VALUE"), 
-      // use flatMap to flatten communicativeFunctions elements
-      row.getAs[Seq[Row]]("act").flatMap(_.getAs[Seq[String]]("communicativeFunction"))
+        row.getAs[Row]("txt").getAs[Long]("_id").toString, row.getAs[Row]("txt").getAs[String]("_VALUE"), 
+        // use flatMap to flatten communicativeFunctions elements
+        row.getAs[Seq[Row]]("act").flatMap(_.getAs[Seq[String]]("communicativeFunction"))
       )
     }
     val schema = StructType(Seq(
@@ -124,16 +124,37 @@ object DialogReader {
     ef
   }
 
+  def readDialogStatesWOZ(spark: SparkSession, split: String): DataFrame = {
+    import spark.implicits._
+    // We use a ScalaReflection hack to overcome a schema error of empty SlotValues type:
+    val scalaSchema = ScalaReflection.schemaFor[SlotValues].dataType.asInstanceOf[StructType]
+    val path = s"dat/woz/data/MultiWOZ_2.2/${split}"
+    // read the whole directory of the split (train/dev/test)
+    val df = spark.read.option("multiline", "true").json(path)
+    df.printSchema
+    val ef = df.as[Dialog]
+    // extract dialogId, turnId, utterance, and states
+    val ff = ef.flatMap { d => 
+      val services = d.services.toSet
+      d.turns.map { t => 
+        val states = t.frames.filter(f => services.contains(f.service)).map(_.state)
+        (d.dialogue_id, t.turn_id, t.utterance, states)
+      }
+    }
+    ff.toDF("dialogId", "turnId", "utterance", "states")
+  }
+
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
     val spark = SparkSession.builder.config(conf).getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
-    // val df = readDialogsWOZ(spark, false)
-    val df = readDialogsFPT(spark, "dat/fpt/", true)
+    // val df = readDialogActsWOZ(spark, false)
+    // val df = readDialogActsFPT(spark, "dat/fpt/", true)
+    val df = readDialogStatesWOZ(spark, "dev")
     df.show()
-    println("Number of utterances = " + df.count)
-    df.printSchema()
+    println(df.count())
+    df.select("states").show(false)
     spark.close()
   }
 }
