@@ -1,8 +1,8 @@
 package vlp.jsl
 
+import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotator._
 import com.johnsnowlabs.nlp.annotators.seq2seq.GPT2Transformer
-import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.pretrained.PretrainedPipeline
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.sql.SparkSession
@@ -13,7 +13,8 @@ object Starter {
 
   def main(args: Array[String]): Unit = {
     spark.sparkContext.setLogLevel("ERROR")
-    pretrainedPipeline()
+    // pretrainedPipeline()
+    gpt2()
     spark.stop()
   }
 
@@ -74,11 +75,10 @@ object Starter {
       )).toDF("id", "text")
 
     val pipeline = new PretrainedPipeline("explain_document_dl", lang = "en")
-    pipeline.transform(testData).select("entities").show(false)
+    val output = pipeline.transform(testData)
+    output.printSchema()
+    output.show(true)
     println(pipeline.annotate("Google has announced the release of a beta version of the popular TensorFlow machine learning library"))
-
-    val pipelineML = new PretrainedPipeline("explain_document_ml", lang = "en")
-    pipelineML.transform(testData).select("pos").show(false)
   }
 
   def pretrainedPipelineLD(args: Array[String]): Unit = {
