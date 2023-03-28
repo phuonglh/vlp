@@ -149,12 +149,12 @@ object DialogReader {
     val spark = SparkSession.builder.config(conf).getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
-    // val df = readDialogActsWOZ(spark, false)
+    val dfs = readDialogActsWOZ(spark, true)
     // val df = readDialogActsFPT(spark, "dat/fpt/", true)
-    val df = readDialogStatesWOZ(spark, "dev")
-    df.show()
-    println(df.count())
-    df.select("states").show(false)
+    // val df = readDialogStatesWOZ(spark, "dev")
+    // df.show()
+    // println(df.count())
+    // df.select("states").show(false)
     spark.close()
   }
 }

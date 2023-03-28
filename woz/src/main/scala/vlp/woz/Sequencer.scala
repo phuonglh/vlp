@@ -1,4 +1,4 @@
-package vlp.woz.jsl
+package vlp.woz
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.UnaryTransformer

@@ -1,4 +1,4 @@
-package vlp.woz.jsl
+package vlp.woz
 
 case class ConfigJSL(
   master: String = "local[*]",

@@ -1,4 +1,4 @@
-package vlp.woz.jsl
+package vlp.woz
 
 import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotator._
@@ -14,8 +14,6 @@ import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
-
-import vlp.woz.DialogReader
 
 import org.json4s._
 import org.json4s.jackson.Serialization
