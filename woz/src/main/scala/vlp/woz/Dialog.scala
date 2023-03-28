@@ -9,7 +9,38 @@ final case class Slot(
 )
 
 // final case class SlotValues() // empty for dialogue act experiments
-final case class SlotValues(  
+final case class SlotValues(
+  `attraction-area`: Array[String],
+  `attraction-name`: Array[String],
+  `attraction-type`: Array[String],
+  // `hospital-department`: Array[String], // only in dev split
+  `hotel-area`: Array[String],
+  `hotel-bookday`: Array[String],
+  `hotel-bookpeople`: Array[String],
+  `hotel-bookstay`: Array[String],
+  `hotel-internet`: Array[String],
+  `hotel-name`: Array[String],
+  `hotel-parking`: Array[String],
+  `hotel-pricerange`: Array[String],
+  `hotel-stars`: Array[String],
+  `hotel-type`: Array[String],
+  `restaurant-area`: Array[String],
+  `restaurant-bookday`: Array[String],
+  `restaurant-bookpeople`: Array[String],
+  `restaurant-booktime`: Array[String],
+  `restaurant-food`: Array[String],
+  `restaurant-name`: Array[String],
+  `restaurant-pricerange`: Array[String],
+  `taxi-arriveby`: Array[String],
+  `taxi-departure`: Array[String],
+  `taxi-destination`: Array[String],
+  `taxi-leaveat`: Array[String],
+  `train-arriveby`: Array[String],
+  `train-bookpeople`: Array[String],
+  `train-day`: Array[String],
+  `train-departure`: Array[String],
+  `train-destination`: Array[String],
+  `train-leaveat`: Array[String]
 )
 
 final case class State(

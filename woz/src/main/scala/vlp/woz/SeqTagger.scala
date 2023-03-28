@@ -5,7 +5,6 @@ import com.johnsnowlabs.nlp.annotator._
 import com.johnsnowlabs.nlp.functions._
 import com.johnsnowlabs.nlp.Annotation
 import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
