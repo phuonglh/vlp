@@ -31,8 +31,11 @@ object SeqTagger {
     // use a vectorizer to get label vocab
     val document = new DocumentAssembler().setInputCol("utterance").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
-    val classifier = RoBertaForTokenClassification.pretrained().setInputCols("document", "token").setOutputCol("label").setCaseSensitive(true) 
-    val pipeline = new Pipeline().setStages(Array(document, tokenizer, classifier))
+    val classifier = RoBertaForTokenClassification.pretrained().setInputCols("document", "token").setOutputCol("named_entity").setCaseSensitive(true) 
+    val nerConverter = new NerConverter().setInputCols("document", "token", "named_entity").setOutputCol("ner_converter")
+    val finisher = new Finisher().setInputCols("named_entity", "ner_converter").setCleanAnnotations(false)
+        
+    val pipeline = new Pipeline().setStages(Array(document, tokenizer, classifier, nerConverter, finisher))
     val model = pipeline.fit(trainingDF)
     return model    
   }
@@ -81,6 +84,7 @@ object SeqTagger {
             val output = model.transform(developmentDF)
             output.printSchema
             output.show()
+            output.select("finished_named_entity", "finished_ner_converter").show(false)
             // model.write.overwrite.save(modelPath)
             // evaluate(trainingDF, model, config, "train")
             // evaluate(developmentDF, model, config, "valid")
