@@ -12,7 +12,7 @@ object T5 {
   import spark.implicits._
 
   def main(args: Array[String]): Unit = {
-    spark.sparkContext.setLogLevel("ERROR")
+    // spark.sparkContext.setLogLevel("ERROR")
     val documentAssembler = new DocumentAssembler().setInputCol("text").setOutputCol("documents")
     val t5 = T5Transformer.pretrained("t5_envit5_translation", "xx") 
       .setInputCols(Array("documents"))
@@ -31,7 +31,7 @@ object T5 {
     result.printSchema
     result.show()
     result.select("generation.result").show(false)
-    
+
     spark.stop()
   }
 
