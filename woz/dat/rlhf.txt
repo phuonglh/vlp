@@ -1,0 +1,11 @@
+RLHF
+
+Học tăng cường (Reinforcement Learning) là lĩnh vực học tự động trong đó hệ thống AI có sự tương tác thường xuyên với môi trường (environment) và nhận phản hồi (feedback) từ môi trường để cải tiến dần hành vi (behavior), đáp ứng tốt hơn với mục tiêu (goal). Phản hồi được biểu diễn bởi một hàm toán học biểu diễn mức độ thưởng/phạt (reward) tương ứng với các hành vi. 
+
+Một cải tiến quan trọng gần đây là hàm thưởng/phạt thi thoảng được can thiệp bởi con người (Human) để giúp hệ thống AI dự báo mức độ thưởng phạt tốt hơn, từ đó mô hình hoá sát hơn với mục tiêu được thiết kế. 
+
+New Intent Detection: Khi chatbot nhận diện một ý định của câu nói, nó có thể phát hiện ra rằng ý định đó là mới, chưa từng gặp khi chatbot được huấn luyện (với một độ tin cậy nào đó). Khi đó, con người được gợi ý để xem xét và cho phản hồi.
+
+Response Geration: Khi chatbot sinh câu trả lời cho một câu hỏi, nó có thể đưa ra nhiều câu trả lời, ví dụ 5 câu khác nhau. Thi thoảng người dùng được hỏi để giúp xếp hạng độ tốt của 5 câu trả lời này và chatbot học từ thứ tự xếp hạng đó nhằm cải tiến chất lượng trả lời của nó theo thời gian. 
+
+
