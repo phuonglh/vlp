@@ -18,6 +18,6 @@ case class ConfigJSL(
   validPath: String = "dat/woz/act/val", // Parquet file of devPath
   testPath: String = "dat/woz/act/test/",
   outputPath: String = "dat/out/",
-  scorePath: String = "dat/scores.json",
+  scorePath: String = "dat/scores-jsl.json",
   modelType: String = "b", // {b, u, r, x}
 ) extends Serializable

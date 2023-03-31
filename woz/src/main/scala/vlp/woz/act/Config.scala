@@ -30,12 +30,13 @@ case class Config(
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
+  language: String = "en", // {en, vi}
   minFrequency: Int = 1,
   vocabSize: Int = 32768,
   batchSize: Int = 128,
   maxSequenceLength: Int = 30,
   learningRate: Double = 5E-4,
-  epochs: Int = 80,
+  epochs: Int = 50,
   embeddingSize: Int = 16,
   layers: Int = 1, // number of recurrent layers
   recurrentSize: Int = 32, // number of units in a recurrent layer
@@ -45,7 +46,7 @@ case class Config(
   devPath: String = "dat/woz/act/dev/",
   testPath: String = "dat/woz/act/test/",
   outputPath: String = "dat/out/",
-  scorePath: String = "dat/woz/act/scores.json",
+  scorePath: String = "dat/scores.json",
   verbose: Boolean = false,
   modelType: String = "lstm", 
   bert: ConfigBERT = ConfigBERT()

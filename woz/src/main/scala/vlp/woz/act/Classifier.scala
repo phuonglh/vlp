@@ -107,6 +107,7 @@ object Classifier {
       fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
     }
     Score(
+      config.language,
       config.modelType, split,
       if (config.modelType.startsWith("lstm")) config.embeddingSize else -1,
       if (config.modelType == "bert") config.bert.hiddenSize else config.recurrentSize,
@@ -135,6 +136,7 @@ object Classifier {
       opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 8g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
+      opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either en or vi")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Int]('e', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
@@ -163,9 +165,9 @@ object Classifier {
 
         // create a model
         val model = ModelFactory(config)
-        val prefix = s"${config.modelPath}/${config.modelType}"
-        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/")
-        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/")
+        val prefix = s"${config.modelPath}/${config.language}/${config.modelType}"
+        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/${config.language}")
+        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/${config.language}")
         // read train/dev datasets
         val (trainingDF0, validationDF0) = (spark.read.json(config.trainPath), spark.read.json(config.devPath))
         val testDF0 = spark.read.json(config.testPath)
@@ -184,7 +186,7 @@ object Classifier {
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val bigdl = train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
-            preprocessor.write.overwrite.save(s"${config.modelPath}/pre/")
+            preprocessor.write.overwrite.save(s"${prefix}/pre/")
             logger.info("Saving the model...")        
             bigdl.saveModel(prefix + "/act.bigdl", overWrite = true)
             val trainingAccuracy = trainingSummary.readScalar("Top1Accuracy")
@@ -215,8 +217,8 @@ object Classifier {
             logger.info(s"${Serialization.writePretty(testScore)}") 
             saveScore(testScore, config.scorePath)
           case "eval" => 
-            logger.info(s"Loading preprocessor ${config.modelPath}/pre/...")
-            val preprocessor = PipelineModel.load(s"${config.modelPath}/pre/")
+            logger.info(s"Loading preprocessor ${prefix}/pre/...")
+            val preprocessor = PipelineModel.load(s"${prefix}/pre/")
             logger.info(s"Loading model ${prefix}/act.bigdl...")
             var bigdl = Models.loadModel[Float](prefix + "/act.bigdl")
             // transform actNames to a sequence of labels

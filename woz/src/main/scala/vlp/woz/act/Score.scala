@@ -6,6 +6,7 @@ package vlp.woz.act
   *
   */
 case class Score(
+  language: String,
   modelType: String,
   split: String,
   embeddingSize: Int = -1,    // applicable only for Token Model with RNN

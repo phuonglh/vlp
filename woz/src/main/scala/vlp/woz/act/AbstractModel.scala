@@ -65,7 +65,8 @@ abstract class AbstractModel(config: Config) {
     }
     // run the prediction and return predicted labels as well as gold labels
     val ff = m.transform(cf)
-    val selector = new TopKSelector(2).setInputCol("prediction").setOutputCol("output")
+    // val selector = new TopKSelector(2).setInputCol("prediction").setOutputCol("output")
+    val selector = new ThresholdSelector().setInputCol("prediction").setOutputCol("output")
     val gf = selector.transform(ff)    
     return gf.select("output", "target")
   }
@@ -104,9 +105,10 @@ class TokenModel(config: Config) extends AbstractModel(config) {
       model.add(LSTM(outputDim = config.recurrentSize, returnSequences = true).setName(s"LSTM-$j"))
     model.add(LSTM(outputDim = config.recurrentSize).setName(s"LSTM-${config.layers-1}"))
     // add a dropout layer for regularization
-    model.add(Dropout(config.dropoutProbability).setName("dropout"))
-    // add the last layer for multi-class classification
-    model.add(Dense(labelSize, activation="softmax").setName("Dense"))    
+    model.add(Dropout(config.dropoutProbability).setName("Dropout"))
+    // add the last layer for BCE loss
+    // sigmoid for multi-label instead of softmax, which gives better performance
+    model.add(Dense(labelSize, activation="sigmoid").setName("Dense"))  
     return model
   }
 
@@ -149,8 +151,7 @@ class TokenModelBERT(config: Config) extends TokenModel(config) {
     // get the pooled output which processes the hidden state of the last layer with regard to the first
     //  token of the sequence. This would be useful for classification tasks.
     val bertOutput = SelectTable(1).setName("firstBlock").inputs(bertNode)
-    val dense = Dense(labelSize).setName("dense").inputs(bertOutput)
-    val output = SoftMax().setName("output").inputs(dense)
+    val output = Dense(labelSize, activation="sigmoid").setName("output").inputs(bertOutput)
     val model = Model(Array(inputIds, segmentIds, positionIds, masks), output)
     return model
   }
@@ -181,10 +182,9 @@ class TokenModelBOA(config: Config) extends AbstractModel(config) {
     // second recurrent layer
     val r1 = LSTM(outputDim = config.recurrentSize).setName("LSTM-1").inputs(r0)
     // concat the default last dimension
-    val concat = Merge(mode="concat").setName("concat").inputs(r1, ps)
+    val concat = Merge(mode="concat").setName("Concat").inputs(r1, ps)
     // output
-    val dense = Dense(labelSize).setName("dense").inputs(concat)
-    val output = SoftMax().setName("output").inputs(dense)
+    val output = Dense(labelSize, activation="sigmoid").setName("Output").inputs(concat)
     val model = Model(Array(xs, ps), output)
     return model
   }
