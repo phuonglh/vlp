@@ -34,6 +34,7 @@ object ClassifierFPT {
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
       opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 8g")
+      opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either en or vi")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('e', "embeddingSize").action((x, conf) => conf.copy(embeddingSize = x)).text("embedding size")
@@ -64,9 +65,9 @@ object ClassifierFPT {
 
         // create a model
         val model = ModelFactory(config)
-        val prefix = s"${config.modelPath}/vie/${config.modelType}"
-        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/vie/")
-        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/vie/")
+        val prefix = s"${config.modelPath}/vi/${config.modelType}"
+        val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/act/vi/")
+        val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/act/vi/")
         // read all the act
         val df = spark.read.json("dat/vie/act")
         val Array(trainingDF, validationDF, testDF) = df.randomSplit(Array(0.8, 0.1, 0.1), 220712L)
@@ -78,7 +79,7 @@ object ClassifierFPT {
             val (preprocessor, vocabulary, labels) = model.preprocessor(trainingDF)
             val bigdl = Classifier.train(model, config, trainingDF, validationDF, preprocessor, vocabulary, labels, trainingSummary, validationSummary)
             // save the model
-            preprocessor.write.overwrite.save(s"${config.modelPath}/vie/pre/")
+            preprocessor.write.overwrite.save(s"${config.modelPath}/vi/pre/")
             bigdl.saveModel(prefix + "/act.bigdl", overWrite = true)
             val trainingAccuracy = trainingSummary.readScalar("Top1Accuracy")
             val validationLoss = validationSummary.readScalar("Loss")
@@ -105,8 +106,8 @@ object ClassifierFPT {
             val testScore = Classifier.evaluate(test, labels.size, config, "test")
             Classifier.saveScore(testScore, config.scorePath)
           case "eval" => 
-            println(s"Loading preprocessor ${config.modelPath}/vie/pre/...")
-            val preprocessor = PipelineModel.load(s"${config.modelPath}/vie/pre/")
+            println(s"Loading preprocessor ${config.modelPath}/vi/pre/...")
+            val preprocessor = PipelineModel.load(s"${config.modelPath}/vi/pre/")
             println(s"Loading model ${prefix}/act.bigdl...")
             var bigdl = Models.loadModel[Float](prefix + "/act.bigdl")
             // transform actNames to a sequence of labels
