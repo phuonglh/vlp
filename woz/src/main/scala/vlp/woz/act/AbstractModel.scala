@@ -58,8 +58,9 @@ abstract class AbstractModel(config: Config) {
       val featureSize = Array(Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen), Array(maxSeqLen))
       println(bigdl.summary())
       NNModel(bigdl, featureSize)
-    } else {
-      val featureSize = Array(Array(config.maxSequenceLength), Array(vocabDict.size))
+    } else { // lstm-boa
+      val prevActs = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+      val featureSize = Array(Array(config.maxSequenceLength), Array(prevActs.size))
       println(bigdl.summary())
       NNModel(bigdl, featureSize)
     }
