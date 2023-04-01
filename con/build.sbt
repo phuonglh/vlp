@@ -1,6 +1,8 @@
 // phuonglh, December 26, 2022
 val sparkVersion = "3.1.2"
 val bigdlVersion = "2.1.0"
+val sparkNLPVersion = "4.3.2"
+
 
 javacOptions ++= Seq("-encoding", "UTF-8")
 scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-feature", "-unchecked",
@@ -16,8 +18,9 @@ lazy val commonSettings = Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
     "com.intel.analytics.bigdl" % "bigdl-dllib-spark_3.1.2" % bigdlVersion,
-     "com.google.protobuf" % "protobuf-java" % "3.21.9",
-    "com.github.scopt" %% "scopt" % "3.7.1"
+    "com.google.protobuf" % "protobuf-java" % "3.21.9",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "com.johnsnowlabs.nlp" %% "spark-nlp" % sparkNLPVersion,
   )
 )
 

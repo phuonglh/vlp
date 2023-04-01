@@ -6,6 +6,7 @@ import org.apache.spark.sql.functions._
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
+import java.io.FileWriter
 
 
 object DataReader {
@@ -29,7 +30,7 @@ object DataReader {
   }
 
   /**
-    * Reads a corpus in GED format (two column, *.tsv)
+    * Reads a corpus in GED format (two columns, *.tsv)
     * @param sc
     * @param dataPath
     * @return a data frame
@@ -47,7 +48,9 @@ object DataReader {
         val s = lines.slice(u, v)
         val tokens = s.map(line => {
           val parts = line.trim.split("""\t+""")
-          if (parts.size < 2) println(line)
+          if (parts.size < 2) {
+            println(line + " at position " + u)
+          }
           (parts(0), parts(1))
         })
         val x = tokens.map(_._1)
@@ -87,4 +90,31 @@ object DataReader {
     import spark.implicits._
     sc.parallelize(xs).toDF("x").withColumn("y", lit("NA"))
   }  
+
+  /**
+    * Converts 2-col format to 4-col format of CoNLL-2003.
+    *
+    * @param inputPath
+    * @param outputPath
+    */
+  def toCoNLL2003(inputPath: String, outputPath: String): Unit = {
+    val lines = Source.fromFile(inputPath, "UTF-8").getLines().toArray
+    val contents = lines.map { line =>
+      val ts = line.trim.split("""\t+""")
+      if (ts.size == 2) {
+        ts(0).trim + " NA NA " + ts(1).trim
+      } else {
+        if (line.isEmpty()) "" else {
+          println("ERR at line: " + line)
+        }
+      }
+    }
+    val fileWriter = new FileWriter(outputPath);
+    for (str <- contents) {
+      fileWriter.write(str + System.lineSeparator)
+    }
+    fileWriter.close()
+  }
 }
+
+// toCoNLL2003("/Users/phuonglh/vlp/con/dat/med/med_ner_syll.tsv", "/Users/phuonglh/vlp/con/dat/med/syll.txt")
