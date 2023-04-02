@@ -139,7 +139,7 @@ object NER {
       val prediction = row.getSeq[String](0)
       val target = row.getSeq[String](1)
       val lines = target.zip(prediction).map(p => p._1 + " " + p._2)
-      lines.mkString("\n")
+      lines.mkString("\n") + "\n"
     }.collect()
     val s = ss.mkString("\n")
     Files.write(Paths.get(s"${config.outputPath}/${config.modelType}-${split}.txt"), s.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
@@ -206,7 +206,7 @@ object NER {
             score = evaluate(validResult, config, "valid")
             saveScore(score, config.scorePath)
             validResult.show(5, false)
-            // export to CoNLL
+            // export to CoNLL format
             export(af.select("zs", "ys"), config, "train")
             export(bf.select("zs", "ys"), config, "valid")
         }
