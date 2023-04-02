@@ -18,6 +18,7 @@ import scopt.OptionParser
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import com.johnsnowlabs.nlp.training.CoNLL
 import scala.io.Source
+import org.apache.spark.mllib.evaluation.MultilabelMetrics
 
 case class ConfigNER(
   master: String = "local[*]",
@@ -35,6 +36,19 @@ case class ConfigNER(
   outputPath: String = "dat/out/",
   scorePath: String = "dat/scores-med.json",
   modelType: String = "d", 
+)
+
+case class ScoreNER(
+  modelType: String,
+  split: String,
+  accuracy: Double,
+  f1Measure: Double,
+  microF1Measure: Double, 
+  microPrecision: Double,
+  microRecall: Double,
+  precision: Array[Double],
+  recall: Array[Double],
+  fMeasure: Array[Double]
 )
 
 /**
@@ -80,6 +94,34 @@ object NER {
     return model
   }
 
+  def evaluate(result: DataFrame, config: ConfigNER, split: String): ScoreNER = {
+    val predictionsAndLabels = result.rdd.map { case row => 
+      (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
+    }
+    val metrics = new MultilabelMetrics(predictionsAndLabels)
+    val ls = metrics.labels
+    val numLabels = ls.max.toInt + 1 // zero-based labels
+    val precisionByLabel = Array.fill(numLabels)(0d)
+    val recallByLabel = Array.fill(numLabels)(0d)
+    val fMeasureByLabel = Array.fill(numLabels)(0d)
+    ls.foreach { k => 
+      precisionByLabel(k.toInt) = metrics.precision(k)
+      recallByLabel(k.toInt) = metrics.recall(k)
+      fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
+    }
+    ScoreNER(
+      config.modelType, split,
+      metrics.accuracy, metrics.f1Measure, 
+      metrics.microF1Measure, metrics.microPrecision, metrics.microRecall,
+      precisionByLabel, recallByLabel, fMeasureByLabel
+    )
+  }
+
+  def saveScore(score: ScoreNER, path: String) = {
+    var content = Serialization.writePretty(score) + ",\n"
+    Files.write(Paths.get(path), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  }
+
   def main(args: Array[String]): Unit = {
     val opts = new OptionParser[ConfigNER](getClass().getName()) {
       head(getClass().getName(), "1.0")
@@ -109,7 +151,7 @@ object NER {
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
         sc.setLogLevel("ERROR")
 
-        val df = CoNLL(conllLabelIndex = 1).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
+        val df = CoNLL(conllLabelIndex = 3).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
         println(s"Number of samples = ${df.count}")
         val Array(trainingDF, developmentDF) = df.randomSplit(Array(0.8, 0.2), 220712L)
         developmentDF.show()
@@ -121,9 +163,11 @@ object NER {
             val output = model.transform(developmentDF)
             output.printSchema
             output.show()
-            // model.write.overwrite.save(modelPath)
+            model.write.overwrite.save(modelPath)
           case "predict" =>
           case "eval" => 
+            val tf = trainingDF.withColumn("ys", col("label.result"))
+            val vf = developmentDF.withColumn("ys", col("label.result"))
         }
 
         sc.stop()
