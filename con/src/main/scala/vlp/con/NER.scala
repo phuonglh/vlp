@@ -19,6 +19,7 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 import com.johnsnowlabs.nlp.training.CoNLL
 import scala.io.Source
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
+import org.apache.spark.sql.functions._
 
 case class ConfigNER(
   master: String = "local[*]",
@@ -81,13 +82,12 @@ object NER {
     val tagger = new NerDLApproach().setInputCols(Array("document", "token", "embeddings"))
       .setLabelColumn("label").setOutputCol("ner")
       .setMaxEpochs(config.epochs)
-      .setLr(config.learningRate.toFloat)
-      .setPo(0.005f)
-      .setBatchSize(8)
-      .setRandomSeed(0)
+      .setLr(config.learningRate.toFloat).setPo(0.005f)
+      .setBatchSize(8).setRandomSeed(0)
       .setVerbose(0)
       .setValidationSplit(0.2f)
       .setEvaluationLogExtended(false).setEnableOutputLogs(false).setIncludeConfidence(true)
+      .setEnableMemoryOptimizer(true)
       .setTestDataset(config.validPath)
     val pipeline = new Pipeline().setStages(stages ++ Array(tagger))
     val model = pipeline.fit(trainingDF)
