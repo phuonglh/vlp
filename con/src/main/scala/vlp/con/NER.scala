@@ -62,7 +62,7 @@ object NER {
   implicit val formats = Serialization.formats(NoTypeHints)
   val labelIndex = Map[String, Int](
     "O" -> 0,
-    "B-problem" -> 1, "I-probelm" -> 2,
+    "B-problem" -> 1, "I-problem" -> 2,
     "B-treatment" -> 3, "I-treatment" -> 4,
     "B-test" -> 5, "I-test" -> 6
   )
@@ -174,7 +174,6 @@ object NER {
           case "eval" => 
             val model = PipelineModel.load(modelPath)
             val tf = model.transform(trainingDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))
-            tf.printSchema
             val sequencerPrediction = new SequencerNER(labelIndex).setInputCol("zs").setOutputCol("prediction")
             val sequencerTarget = new SequencerNER(labelIndex).setInputCol("ys").setOutputCol("target")
             // training result
