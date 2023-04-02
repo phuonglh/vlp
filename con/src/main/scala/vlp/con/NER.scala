@@ -18,8 +18,9 @@ import scopt.OptionParser
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import com.johnsnowlabs.nlp.training.CoNLL
 import scala.io.Source
-import org.apache.spark.mllib.evaluation.MultilabelMetrics
+import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql.functions._
+import org.apache.spark.mllib.linalg.Matrix
 
 case class ConfigNER(
   master: String = "local[*]",
@@ -29,13 +30,13 @@ case class ConfigNER(
   driverMemory: String = "16g", // D
   mode: String = "eval",
   batchSize: Int = 128,
-  epochs: Int = 10,
+  epochs: Int = 30,
   learningRate: Double = 5E-4, 
   modelPath: String = "bin/med/",
   trainPath: String = "dat/med/syll.txt",
   validPath: String = "dat/med/val/", // Parquet file of devPath
-  outputPath: String = "dat/out/",
-  scorePath: String = "dat/scores-med.json",
+  outputPath: String = "out/med/",
+  scorePath: String = "dat/med/scores-med.json",
   modelType: String = "d", 
 )
 
@@ -43,10 +44,7 @@ case class ScoreNER(
   modelType: String,
   split: String,
   accuracy: Double,
-  f1Measure: Double,
-  microF1Measure: Double, 
-  microPrecision: Double,
-  microRecall: Double,
+  confusionMatrix: Matrix,
   precision: Array[Double],
   recall: Array[Double],
   fMeasure: Array[Double]
@@ -71,8 +69,8 @@ object NER {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
-      case "b" => BertEmbeddings.pretrained().setInputCols("document").setOutputCol("embeddings")
-      case "x" => XlmRoBertaEmbeddings.pretrained().setInputCols("document").setOutputCol("embeddings")
+      case "b" => BertEmbeddings.pretrained("sent_bert_multi_cased", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "x" => XlmRoBertaEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
       case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
       case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
@@ -103,8 +101,8 @@ object NER {
   def evaluate(result: DataFrame, config: ConfigNER, split: String): ScoreNER = {
     val predictionsAndLabels = result.rdd.map { case row => 
       (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
-    }
-    val metrics = new MultilabelMetrics(predictionsAndLabels)
+    }.flatMap { case (prediction, label) => prediction.zip(label) }
+    val metrics = new MulticlassMetrics(predictionsAndLabels)
     val ls = metrics.labels
     val numLabels = ls.max.toInt + 1 // zero-based labels
     val precisionByLabel = Array.fill(numLabels)(0d)
@@ -113,12 +111,11 @@ object NER {
     ls.foreach { k => 
       precisionByLabel(k.toInt) = metrics.precision(k)
       recallByLabel(k.toInt) = metrics.recall(k)
-      fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
+      fMeasureByLabel(k.toInt) = metrics.fMeasure(k)
     }
     ScoreNER(
       config.modelType, split,
-      metrics.accuracy, metrics.f1Measure, 
-      metrics.microF1Measure, metrics.microPrecision, metrics.microRecall,
+      metrics.accuracy, metrics.confusionMatrix, 
       precisionByLabel, recallByLabel, fMeasureByLabel
     )
   }
@@ -126,6 +123,26 @@ object NER {
   def saveScore(score: ScoreNER, path: String) = {
     var content = Serialization.writePretty(score) + ",\n"
     Files.write(Paths.get(path), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  }
+
+  /**
+    * Exports result data frame (2-col format) into a text file of CoNLL-2003 format for 
+    * evaluation with CoNLL evaluation script (correct <space> prediction).
+    * @param result a data frame of two columns "prediction, target"
+    * @param config
+    * @param split
+    */
+  def export(result: DataFrame, config: ConfigNER, split: String) = {
+    val spark = SparkSession.getActiveSession.get
+    import spark.implicits._
+    val ss = result.map { row => 
+      val prediction = row.getSeq[String](0)
+      val target = row.getSeq[String](1)
+      val lines = target.zip(prediction).map(p => p._1 + " " + p._2)
+      lines.mkString("\n")
+    }.collect()
+    val s = ss.mkString("\n")
+    Files.write(Paths.get(s"${config.outputPath}/${config.modelType}-${split}.txt"), s.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 
   def main(args: Array[String]): Unit = {
@@ -155,6 +172,7 @@ object NER {
           .set("spark.driver.memory", config.driverMemory)
         val sc = new SparkContext(conf)
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
+        import spark.implicits._
         sc.setLogLevel("ERROR")
 
         val df = CoNLL(conllLabelIndex = 3).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
@@ -178,17 +196,19 @@ object NER {
             val sequencerTarget = new SequencerNER(labelIndex).setInputCol("ys").setOutputCol("target")
             // training result
             val af = sequencerTarget.transform(sequencerPrediction.transform(tf))
-            af.printSchema
-            af.show()
             val trainResult = af.select("prediction", "target")
             var score = evaluate(trainResult, config, "train")
             saveScore(score, config.scorePath)
-            // validation result
+            // validation result            
             val vf = model.transform(developmentDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))
             val bf = sequencerTarget.transform(sequencerPrediction.transform(vf))
             val validResult = bf.select("prediction", "target")
-            score = evaluate(validResult, config, "train")
+            score = evaluate(validResult, config, "valid")
             saveScore(score, config.scorePath)
+            validResult.show(5, false)
+            // export to CoNLL
+            export(trainResult, config, "train")
+            export(validResult, config, "valid")
         }
 
         sc.stop()
