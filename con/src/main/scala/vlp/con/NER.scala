@@ -60,6 +60,12 @@ case class ScoreNER(
 
 object NER {
   implicit val formats = Serialization.formats(NoTypeHints)
+  val labelIndex = Map[String, Int](
+    "O" -> 0,
+    "B-problem" -> 1, "I-probelm" -> 2,
+    "B-treatment" -> 3, "I-treatment" -> 4,
+    "B-test" -> 5, "I-test" -> 6
+  )
 
   def train(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
@@ -83,10 +89,10 @@ object NER {
       .setLabelColumn("label").setOutputCol("ner")
       .setMaxEpochs(config.epochs)
       .setLr(config.learningRate.toFloat).setPo(0.005f)
-      .setBatchSize(8).setRandomSeed(0)
+      .setBatchSize(config.batchSize).setRandomSeed(0)
       .setVerbose(0)
       .setValidationSplit(0.2f)
-      .setEvaluationLogExtended(false).setEnableOutputLogs(false).setIncludeConfidence(true)
+      // .setEvaluationLogExtended(false).setEnableOutputLogs(false).setIncludeConfidence(true)
       .setEnableMemoryOptimizer(true)
       .setTestDataset(config.validPath)
     val pipeline = new Pipeline().setStages(stages ++ Array(tagger))
@@ -166,8 +172,24 @@ object NER {
             model.write.overwrite.save(modelPath)
           case "predict" =>
           case "eval" => 
-            val tf = trainingDF.withColumn("ys", col("label.result"))
-            val vf = developmentDF.withColumn("ys", col("label.result"))
+            val model = PipelineModel.load(modelPath)
+            val tf = model.transform(trainingDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))
+            tf.printSchema
+            val sequencerPrediction = new SequencerNER(labelIndex).setInputCol("zs").setOutputCol("prediction")
+            val sequencerTarget = new SequencerNER(labelIndex).setInputCol("ys").setOutputCol("target")
+            // training result
+            val af = sequencerTarget.transform(sequencerPrediction.transform(tf))
+            af.printSchema
+            af.show()
+            val trainResult = af.select("prediction", "target")
+            var score = evaluate(trainResult, config, "train")
+            saveScore(score, config.scorePath)
+            // validation result
+            val vf = model.transform(developmentDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))
+            val bf = sequencerTarget.transform(sequencerPrediction.transform(vf))
+            val validResult = bf.select("prediction", "target")
+            score = evaluate(validResult, config, "train")
+            saveScore(score, config.scorePath)
         }
 
         sc.stop()
