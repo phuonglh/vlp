@@ -177,7 +177,7 @@ object NER {
 
         val df = CoNLL(conllLabelIndex = 3).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
         println(s"Number of samples = ${df.count}")
-        val Array(trainingDF, developmentDF) = df.randomSplit(Array(0.8, 0.2), 220712L)
+        val Array(trainingDF, developmentDF) = df.randomSplit(Array(0.9, 0.1), 220712L)
         developmentDF.show()
         developmentDF.printSchema()
         val modelPath = config.modelPath + "/" + config.modelType
@@ -207,8 +207,8 @@ object NER {
             saveScore(score, config.scorePath)
             validResult.show(5, false)
             // export to CoNLL
-            export(trainResult, config, "train")
-            export(validResult, config, "valid")
+            export(af.select("zs", "ys"), config, "train")
+            export(bf.select("zs", "ys"), config, "valid")
         }
 
         sc.stop()
