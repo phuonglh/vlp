@@ -59,10 +59,7 @@ case class ScoreNER(
 object NER {
   implicit val formats = Serialization.formats(NoTypeHints)
   val labelIndex = Map[String, Int](
-    "O" -> 0,
-    "B-problem" -> 1, "I-problem" -> 2,
-    "B-treatment" -> 3, "I-treatment" -> 4,
-    "B-test" -> 5, "I-test" -> 6
+    "O" -> 0, "B-problem" -> 1, "I-problem" -> 2, "B-treatment" -> 3, "I-treatment" -> 4, "B-test" -> 5, "I-test" -> 6
   )
 
   def train(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
@@ -70,7 +67,7 @@ object NER {
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
       case "b" => BertEmbeddings.pretrained("bert_base_multilingual_cased", "xx").setInputCols("document", "token").setOutputCol("embeddings")
-      case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
+      case "x" => XlmRoBertaEmbeddings.pretrained("xlmroberta_embeddings_afriberta_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
       case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
       case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
