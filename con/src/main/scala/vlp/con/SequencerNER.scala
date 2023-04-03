@@ -13,7 +13,7 @@ import org.apache.spark.sql.types.{DataType, ArrayType, DoubleType}
   *
   * phuonglh@gmail.com
   */
-class SequencerNER(val uid: String, val dictionary: Map[String, Int]) 
+class SequencerNER(val uid: String, val dictionary: Map[String, Int])
   extends UnaryTransformer[Seq[String], Seq[Double], SequencerNER] with DefaultParamsWritable {
 
   var dictionaryBr: Option[Broadcast[Map[String, Int]]] = None

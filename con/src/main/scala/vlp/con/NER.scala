@@ -63,12 +63,50 @@ object NER {
     "O" -> 0, "B-problem" -> 1, "I-problem" -> 2, "B-treatment" -> 3, "I-treatment" -> 4, "B-test" -> 5, "I-test" -> 6
   )
 
-  def train(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
+  /**
+    * Trains a NER model using the BigDL framework with user-defined model. This approach is more flexible than the [[#trainJSL()]] method.
+    *
+    * @param config
+    * @param trainingDF
+    * @param developmentDF
+    */
+  def trainBDL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
       case "b" => BertEmbeddings.pretrained("bert_base_multilingual_cased", "xx").setInputCols("document", "token").setOutputCol("embeddings")
       case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_large", "xx").setInputCols("document", "token").setOutputCol("embeddings") // _large / _base
+      case "m" => DeBertaEmbeddings.pretrained("mdeberta_v3_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
+      case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
+      case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
+      case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
+    }
+    val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(true).setCleanAnnotations(false)
+    // the input data frames (trainingDF and developmentDF) has the `label` column, we transform it to an array of NER labels
+    val tdf = trainingDF.withColumn("ys", col("label.result"))
+    val ddf = developmentDF.withColumn("ys", col("label.result"))
+    // use a label sequencer to transform `label.result` into sequences of integers (one-based, for BigDL to work)
+    val oneBasedLabelIndex = labelIndex.mapValues(v => v + 1)
+    val sequencer = new SequencerNER(oneBasedLabelIndex).setInputCol("ys").setOutputCol("target")
+    // TODO: Add estimator
+    var stages = Array(document, tokenizer, embeddings, finisher, sequencer)    
+    val pipeline = new Pipeline().setStages(stages)
+    val model = pipeline.fit(tdf)
+    return model
+  }
+
+  /**
+    * Trains a NER model using the JohnSnowLab [[NerDLApproach]]. This is a CNN-BiLSTM-CRF network model, which is readily usable but not 
+    * flexible enough.
+    *
+    * @param config
+    * @param trainingDF
+    * @param developmentDF
+    */
+  def trainJSL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
+    val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
+    val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
+    val embeddings = config.modelType match {
       case "m" => DeBertaEmbeddings.pretrained("mdeberta_v3_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
       case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
       case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
@@ -173,7 +211,7 @@ object NER {
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
         import spark.implicits._
         sc.setLogLevel("ERROR")
-
+        // read the df using the CoNLL format of Spark-NLP, which provides some columns, including [text, label] columns.
         val df = CoNLL(conllLabelIndex = 3).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
         println(s"Number of samples = ${df.count}")
         val Array(trainingDF, developmentDF) = df.randomSplit(Array(0.9, 0.1), 220712L)
@@ -182,7 +220,7 @@ object NER {
         val modelPath = config.modelPath + "/" + config.modelType
         config.mode match {
           case "train" =>
-            val model = train(config, trainingDF, developmentDF)
+            val model = trainJSL(config, trainingDF, developmentDF)
             val output = model.transform(developmentDF)
             output.printSchema
             output.show()
