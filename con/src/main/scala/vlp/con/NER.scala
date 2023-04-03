@@ -69,8 +69,8 @@ object NER {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
-      case "b" => BertEmbeddings.pretrained("bert_base_multilingual_cased", "xx").setInputCols("document").setOutputCol("embeddings")
-      case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "b" => BertEmbeddings.pretrained("bert_base_multilingual_cased", "xx").setInputCols("document", "token").setOutputCol("embeddings")
+      case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
       case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
       case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
