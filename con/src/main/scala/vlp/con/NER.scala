@@ -53,6 +53,7 @@ case class ScoreNER(
 /**
   * phuonglh, April 2023
   * 
+  * An implementation of Vietnamese NER on a medical data set using pretrained models. 
   * 
   */
 
@@ -67,10 +68,11 @@ object NER {
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
       case "b" => BertEmbeddings.pretrained("bert_base_multilingual_cased", "xx").setInputCols("document", "token").setOutputCol("embeddings")
-      case "x" => XlmRoBertaEmbeddings.pretrained("xlmroberta_embeddings_afriberta_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
-      case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
+      case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_large", "xx").setInputCols("document", "token").setOutputCol("embeddings") // _large / _base
+      case "m" => DeBertaEmbeddings.pretrained("mdeberta_v3_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
+      case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
       case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
-      case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings")
+      case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
     }
     // val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(true).setCleanAnnotations(false)
     var stages = Array(document, tokenizer, embeddings)
