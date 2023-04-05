@@ -155,6 +155,78 @@ object NewsIndexer {
     urls.toSet
   }
 
+  def vnEconomy: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = List(
+      "tieu-diem.htm", "dau-tu.htm", "tai-chinh.htm", "kinh-te-so.htm", "thi-truong.htm", "nhip-cau-doanh-nghiep.htm", "dia-oc.htm",
+      "ha-tang-dau-tu.htm", "khung-phap-ly-dau-tu.htm", "dau-tu-du-an.htm", "nha-dau-tu.htm", "dau-tu-dia-phuong.htm",
+      "tai-chinh-ngan-hang.htm", "thi-truong-von-tai-chinh.htm", "thue-tai-chhinh.htm", "bao-hiem-tai-chinh.htm",
+      "san-pham-thi-truong-kinh-te-so.htm", "fintech.htm", "dich-vu-so.htm", "start-up.htm", "quan-tri-so.htm",
+      "kin-te-thi-truong.htm", "thi-truong-nong-san.htm", "khung-phap-ly-thi-truong.htm", "thi-truong-cong-nghiep.htm", "thi-truong-xuat-nhap-khau.htm",
+      "doanh-nhan.htm", "cong-ty-doanh-nghiep.htm", "chuyen-dong-doanh-nghiep.htm", "doi-thoai-doanh-nghiep.htm", "ket-noi-doanh-nghiep.htm",
+      "chung-khoan.htm"
+    )
+    categories.foreach { category => 
+      urls ++= extractURLs("https://vneconomy.vn", category, "/[\\p{Alnum}/-]+\\.htm", (s: String) => s.contains("-"))
+    }
+    logger.info("vneconomy.vn => " + urls.size)
+    urls.toSet
+  }
+
+  def cafeF: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = List("thi-truong-chung-khoan.chn", "bat-dong-san.chn", "doanh-nghiep.chn", "tai-chinh-ngan-hang.chn", 
+      "tai-chinh-quoc-te.chn", "vi-mo-dau-tu.chn", "kinh-te-so.chn", "thi-truong.chn"
+    )
+    categories.foreach { category => 
+      urls ++= extractURLs("https://cafef.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.chn", (s: String) => s.contains("-"))
+    }
+    logger.info("cafef.vn => " + urls.size)
+    urls.toSet
+  }
+
+  def cafeBiz: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = List("vi-mo.chn", "cau-chuyen-kinh-doanh.chn", "cau-chuyen-kinh-doanh/bat-dong-san.chn", 
+      "cau-chuyen-kinh-doanh/tai-chinh.chn", "cau-chuyen-kinh-doanh/startup.chn", "cau-chuyen-kinh-doanh/quan-tri.chn",
+      "cau-chuyen-kinh-doanh/nhan-vat.chn", "cau-chuyen-kinh-doanh/nghe-nghiep.chn", "cau-chuyen-kinh-doanh/thuong-hieu.chn",
+    )
+    categories.foreach { category => 
+      urls ++= extractURLs("https://cafebiz.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.chn", (s: String) => s.contains("-"))
+    }
+    logger.info("cafebiz.vn => " + urls.size)
+    urls.toSet
+  }
+
+  def bnews: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = List("doanh-nghiep/6/trang-1.html", "tai-chinh-ngan-hang/3/trang-1.html", "thi-truong/4/trang-1.html",
+      "chuyen-dong-dn/24/trang-1.html", "dn-can-biet/25/trang-1.html", "ho-so-doanh-nghiep/26/trang-1.html", "phan-tich-doanh-nghiep/41/trang-1.html",
+      "tai-chinh/17/trang-1.html", "ngan-hang/18/trang-1.html", "chung-khoan/33/trang-1.html", "hang-hoa/20/trang-1.html",
+      "bat-dong-san/21/trang-1.html", "gia-vang/32/trang-1.html"
+    )
+    categories.foreach { category => 
+      urls ++= extractURLs("https://bnews.vn/", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
+    }
+    logger.info("bnews.vn => " + urls.size)
+    urls.toSet
+  }
+
+  def theSaigonTimes: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = List("tai-chinh-ngan-hang/", "kinh-doanh/", "doanh-nhan-doanh-nghiep/", "dia-oc/", 
+      "tai-chinh-ngan-hang/ngan-hang/", "tai-chinh-ngan-hang/chung-khoan/", "tai-chinh-ngan-hang/bao-hiem/",
+      "kinh-doanh/thuong-mai-dich-vu/", "kinh-doanh/cong-nong-nghiep/", "kinh-doanh/thuong-mai-dien-tu/",
+      "doanh-nhan-doanh-nghiep/chuyen-lam-an/", "doanh-nhan-doanh-nghiep/guong-mat-khoi-nghiep/", "doanh-nhan-doanh-nghiep/chuyen-quan-tri/",
+      "dia-oc/thi-truong-nha-dat/", "dia-oc/quy-hoach-ha-tang/"
+    )
+    categories.foreach { category => 
+      urls ++= extractURLs("https://thesaigontimes.vn", category, "/[\\p{Alnum}-]+/", (s: String) => s.contains("-"))
+    }
+    logger.info("thesaigontimes.vn => " + urls.size)
+    urls.toSet
+  }
+
   def runWithTimeout[T](timeout: Long)(f: => T): Option[T] = {
     try {
       Some(Await.result(Future(f), timeout.seconds))
@@ -175,8 +247,13 @@ object NewsIndexer {
     urls ++= vietnamnet
     urls ++= pioneer
     urls ++= sggp
+    urls ++= vnEconomy
+    urls ++= cafeF
+    urls ++= cafeBiz
+    urls ++= bnews
+    urls ++= theSaigonTimes
 
-    logger.info(s"#(totalURLs) = ${urls.size}")
+    println(s"#(totalURLs) = ${urls.size}")
 
     val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
     val news = urls.par.map(url => {
