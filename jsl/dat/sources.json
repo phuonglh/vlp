@@ -1,0 +1,83 @@
+[
+  {
+    "site": "https://vnexpress.net",
+    "category": ["kinh-doanh", "quoc-te", "doanh-nghiep", "chung-khoan", "bat-dong-san", "ebank", "vi-mo", "tien-cua-toi", "hang-hoa", "bao-hiem"],
+    "pattern" : "/[\\p{Alnum}/-]+(\\d{4,})\\.html",
+    "exclude" : ["error.html"]
+  },
+  {
+    "site": "https://vtv.vn",
+    "category": ["bat-dong-san.htm", "tai-chinh.htm", "thi-truong.htm", "goc-doanh-nghiep.htm"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.htm",
+    "exclude": ["404.htm"]
+  },
+  {
+    "site": "https://tuoitre.vn",
+    "category": ["tai-chinh.htm", "doanh-nghiep.htm", "mua-sam.htm", "dau-tu.htm"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.htm",
+    "exclude": ["?"]
+  },
+  {
+    "site": "https://vietnamnet.vn",
+    "category": ["kinh-doanh/tai-chinh", "kinh-doanh/dau-tu", "kinh-doanh/thi-truong", "kinh-doanh/doanh-nhan", "kinh-doanh/tu-van-tai-chinh"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.html",
+    "exclude": ["/en/"]
+  },
+  {
+    "site": "https://www.sggp.org.vn",
+    "category": ["thitruongkt/", "xaydungdiaoc/", "nganhangchungkhoan/", "nongnghiepkt/", "thong-tin-kinh-te/", "dautukt/"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.html",
+    "exclude": []
+  },
+  {
+    "site": "https://www.tienphong.vn",
+    "category": ["kinh-te-doanh-nghiep/", "kinh-te-doanh-nhan/", "kinh-te-chung-khoan/", "do-thi/", "thi-truong/", "nha-dep/"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.tpo",
+    "exclude": []
+  },
+  {
+    "site": "https://vneconomy.vn",
+    "category": ["tieu-diem.htm", "dau-tu.htm", "tai-chinh.htm", "kinh-te-so.htm", "thi-truong.htm", "nhip-cau-doanh-nghiep.htm", "dia-oc.htm",
+      "ha-tang-dau-tu.htm", "khung-phap-ly-dau-tu.htm", "dau-tu-du-an.htm", "nha-dau-tu.htm", "dau-tu-dia-phuong.htm",
+      "tai-chinh-ngan-hang.htm", "thi-truong-von-tai-chinh.htm", "thue-tai-chhinh.htm", "bao-hiem-tai-chinh.htm",
+      "san-pham-thi-truong-kinh-te-so.htm", "fintech.htm", "dich-vu-so.htm", "start-up.htm", "quan-tri-so.htm",
+      "kin-te-thi-truong.htm", "thi-truong-nong-san.htm", "khung-phap-ly-thi-truong.htm", "thi-truong-cong-nghiep.htm", "thi-truong-xuat-nhap-khau.htm",
+      "doanh-nhan.htm", "cong-ty-doanh-nghiep.htm", "chuyen-dong-doanh-nghiep.htm", "doi-thoai-doanh-nghiep.htm", "ket-noi-doanh-nghiep.htm",
+      "chung-khoan.htm"],
+    "pattern": "/[\\p{Alnum}/-]+\\.htm",
+    "exclude": []
+  },
+  {
+    "site": "https://cafef.vn",
+    "category": ["thi-truong-chung-khoan.chn", "bat-dong-san.chn", "doanh-nghiep.chn", "tai-chinh-ngan-hang.chn", "tai-chinh-quoc-te.chn", "vi-mo-dau-tu.chn", "kinh-te-so.chn", "thi-truong.chn"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.chn",
+    "exclude": []
+  },
+  {
+    "site": "https://cafebiz.vn",
+    "category": ["vi-mo.chn", "cau-chuyen-kinh-doanh.chn", "cau-chuyen-kinh-doanh/bat-dong-san.chn", 
+      "cau-chuyen-kinh-doanh/tai-chinh.chn", "cau-chuyen-kinh-doanh/startup.chn", "cau-chuyen-kinh-doanh/quan-tri.chn",
+      "cau-chuyen-kinh-doanh/nhan-vat.chn", "cau-chuyen-kinh-doanh/nghe-nghiep.chn", "cau-chuyen-kinh-doanh/thuong-hieu.chn"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.chn",
+    "exclude": []
+  },
+  {
+    "site": "https://bnews.vn",
+    "category": ["doanh-nghiep/6/trang-1.html", "tai-chinh-ngan-hang/3/trang-1.html", "thi-truong/4/trang-1.html",
+      "chuyen-dong-dn/24/trang-1.html", "dn-can-biet/25/trang-1.html", "ho-so-doanh-nghiep/26/trang-1.html", "phan-tich-doanh-nghiep/41/trang-1.html",
+      "tai-chinh/17/trang-1.html", "ngan-hang/18/trang-1.html", "chung-khoan/33/trang-1.html", "hang-hoa/20/trang-1.html",
+      "bat-dong-san/21/trang-1.html", "gia-vang/32/trang-1.html"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.html",
+    "exclude": []
+  },
+  {
+    "site": "https://thesaigontimes.vn",
+    "category": ["tai-chinh-ngan-hang/", "kinh-doanh/", "doanh-nhan-doanh-nghiep/", "dia-oc/", 
+      "tai-chinh-ngan-hang/ngan-hang/", "tai-chinh-ngan-hang/chung-khoan/", "tai-chinh-ngan-hang/bao-hiem/",
+      "kinh-doanh/thuong-mai-dich-vu/", "kinh-doanh/cong-nong-nghiep/", "kinh-doanh/thuong-mai-dien-tu/",
+      "doanh-nhan-doanh-nghiep/chuyen-lam-an/", "doanh-nhan-doanh-nghiep/guong-mat-khoi-nghiep/", "doanh-nhan-doanh-nghiep/chuyen-quan-tri/",
+      "dia-oc/thi-truong-nha-dat/", "dia-oc/quy-hoach-ha-tang/"],
+    "pattern": "/[\\p{Alnum}-]+/",
+    "exclude": []
+  }
+]

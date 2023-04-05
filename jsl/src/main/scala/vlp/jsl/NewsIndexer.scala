@@ -2,7 +2,6 @@ package vlp.jsl
 
 import java.io.IOException
 import java.net.{MalformedURLException, URL}
-import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.regex.Pattern
@@ -15,9 +14,11 @@ import org.xml.sax.InputSource
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
+import scala.util.parsing.json._
 import org.json4s.jackson.Serialization
 import org.json4s._
 import java.nio.file.{Paths, Files, StandardOpenOption}
+import java.nio.charset.StandardCharsets
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -92,148 +93,6 @@ object NewsIndexer {
     urls.toSet
   }
 
-  def vnExpress: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("kinh-doanh", "quoc-te", "doanh-nghiep", "chung-khoan", "bat-dong-san", "ebank", "vi-mo", "tien-cua-toi", "hang-hoa", "bao-hiem")
-    categories.foreach { category =>
-      urls ++= extractURLs("https://vnexpress.net", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => !s.contains("error.html"))
-    }
-    println("vnExpress.vn/kinh-doanh => " + urls.size)
-    urls.toSet
-  }
-
-  def vtv(date: String): Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("bat-dong-san.htm", "tai-chinh.htm", "thi-truong.htm", "goc-doanh-nghiep.htm")
-    categories.foreach { category => 
-      urls ++= extractURLs("https://vtv.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.htm", (s: String) => s.contains(date) && !s.contains("404.htm"))
-    }
-    println("suckhoe.vtv.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def youth(date: String): Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("tai-chinh.htm", "doanh-nghiep.htm", "mua-sam.htm", "dau-tu.htm")
-    categories.foreach { category => 
-      urls ++= extractURLs("https://tuoitre.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.htm", (s: String) => s.contains(date) && !s.contains("?"))
-    }
-    println("tuoitre.vn => " + urls.size)
-    urls.toSet
-  }
-  
-  def vietnamnet: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("kinh-doanh/tai-chinh", "kinh-doanh/dau-tu", "kinh-doanh/thi-truong", "kinh-doanh/doanh-nhan", "kinh-doanh/tu-van-tai-chinh")
-    categories.foreach { category => 
-      urls ++= extractURLs("https://vietnamnet.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
-    }
-    println("vietnamnet.vn => " + urls.size)
-    urls.toSet.filterNot(_.contains("/en/"))
-  }
-
-  def sggp: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("thitruongkt/", "xaydungdiaoc/", "nganhangchungkhoan/", "nongnghiepkt/", "thong-tin-kinh-te/", "dautukt/")
-    categories.foreach { category =>
-      urls ++= extractURLs("https://www.sggp.org.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
-    }
-    println("sggp.org.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def pioneer: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("kinh-te-doanh-nghiep/", "kinh-te-doanh-nhan/", "kinh-te-chung-khoan/", "do-thi/", "thi-truong/", "nha-dep/")
-    categories.foreach { category => 
-      urls ++= extractURLs("https://www.tienphong.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.tpo", (s: String) => s.contains("-"))
-    }
-    println("tienphong.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def vnEconomy: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List(
-      "tieu-diem.htm", "dau-tu.htm", "tai-chinh.htm", "kinh-te-so.htm", "thi-truong.htm", "nhip-cau-doanh-nghiep.htm", "dia-oc.htm",
-      "ha-tang-dau-tu.htm", "khung-phap-ly-dau-tu.htm", "dau-tu-du-an.htm", "nha-dau-tu.htm", "dau-tu-dia-phuong.htm",
-      "tai-chinh-ngan-hang.htm", "thi-truong-von-tai-chinh.htm", "thue-tai-chhinh.htm", "bao-hiem-tai-chinh.htm",
-      "san-pham-thi-truong-kinh-te-so.htm", "fintech.htm", "dich-vu-so.htm", "start-up.htm", "quan-tri-so.htm",
-      "kin-te-thi-truong.htm", "thi-truong-nong-san.htm", "khung-phap-ly-thi-truong.htm", "thi-truong-cong-nghiep.htm", "thi-truong-xuat-nhap-khau.htm",
-      "doanh-nhan.htm", "cong-ty-doanh-nghiep.htm", "chuyen-dong-doanh-nghiep.htm", "doi-thoai-doanh-nghiep.htm", "ket-noi-doanh-nghiep.htm",
-      "chung-khoan.htm"
-    )
-    categories.foreach { category => 
-      urls ++= extractURLs("https://vneconomy.vn", category, "/[\\p{Alnum}/-]+\\.htm", (s: String) => s.contains("-"))
-    }
-    println("vneconomy.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def cafeF: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("thi-truong-chung-khoan.chn", "bat-dong-san.chn", "doanh-nghiep.chn", "tai-chinh-ngan-hang.chn", 
-      "tai-chinh-quoc-te.chn", "vi-mo-dau-tu.chn", "kinh-te-so.chn", "thi-truong.chn"
-    )
-    categories.foreach { category => 
-      urls ++= extractURLs("https://cafef.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.chn", (s: String) => s.contains("-"))
-    }
-    println("cafef.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def cafeBiz: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("vi-mo.chn", "cau-chuyen-kinh-doanh.chn", "cau-chuyen-kinh-doanh/bat-dong-san.chn", 
-      "cau-chuyen-kinh-doanh/tai-chinh.chn", "cau-chuyen-kinh-doanh/startup.chn", "cau-chuyen-kinh-doanh/quan-tri.chn",
-      "cau-chuyen-kinh-doanh/nhan-vat.chn", "cau-chuyen-kinh-doanh/nghe-nghiep.chn", "cau-chuyen-kinh-doanh/thuong-hieu.chn",
-    )
-    categories.foreach { category => 
-      urls ++= extractURLs("https://cafebiz.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.chn", (s: String) => s.contains("-"))
-    }
-    println("cafebiz.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def bnews: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("doanh-nghiep/6/trang-1.html", "tai-chinh-ngan-hang/3/trang-1.html", "thi-truong/4/trang-1.html",
-      "chuyen-dong-dn/24/trang-1.html", "dn-can-biet/25/trang-1.html", "ho-so-doanh-nghiep/26/trang-1.html", "phan-tich-doanh-nghiep/41/trang-1.html",
-      "tai-chinh/17/trang-1.html", "ngan-hang/18/trang-1.html", "chung-khoan/33/trang-1.html", "hang-hoa/20/trang-1.html",
-      "bat-dong-san/21/trang-1.html", "gia-vang/32/trang-1.html"
-    )
-    categories.foreach { category => 
-      urls ++= extractURLs("https://bnews.vn/", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
-    }
-    println("bnews.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def theSaigonTimes: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("tai-chinh-ngan-hang/", "kinh-doanh/", "doanh-nhan-doanh-nghiep/", "dia-oc/", 
-      "tai-chinh-ngan-hang/ngan-hang/", "tai-chinh-ngan-hang/chung-khoan/", "tai-chinh-ngan-hang/bao-hiem/",
-      "kinh-doanh/thuong-mai-dich-vu/", "kinh-doanh/cong-nong-nghiep/", "kinh-doanh/thuong-mai-dien-tu/",
-      "doanh-nhan-doanh-nghiep/chuyen-lam-an/", "doanh-nhan-doanh-nghiep/guong-mat-khoi-nghiep/", "doanh-nhan-doanh-nghiep/chuyen-quan-tri/",
-      "dia-oc/thi-truong-nha-dat/", "dia-oc/quy-hoach-ha-tang/"
-    )
-    categories.foreach { category => 
-      urls ++= extractURLs("https://thesaigontimes.vn", category, "/[\\p{Alnum}-]+/", (s: String) => s.contains("-"))
-    }
-    println("thesaigontimes.vn => " + urls.size)
-    urls.toSet
-  }
-
-  def labor: Set[String] = {
-    val urls = mutable.Set[String]()
-    val categories = List("kinh-doanh", "tien-te-dau-tu", "thi-truong", "doanh-nghiep-doanh-nhan")
-    categories.foreach { category => 
-      urls ++= extractURLs("https://laodong.vn", category, """/[\p{Alnum}/-]+(\d{4,})\.ldo""", (s: String) => s.contains("-"))
-    }
-    println("laodong.vn => " + urls.size)
-    urls.toSet
-  }
-
   def runWithTimeout[T](timeout: Long)(f: => T): Option[T] = {
     try {
       Some(Await.result(Future(f), timeout.seconds))
@@ -242,24 +101,24 @@ object NewsIndexer {
     }
   }
 
-  def run(date: String): Unit = {
+  def run(jsonSource: String): Unit = {
     System.setProperty("http.agent", "Chrome")
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
 
     import scala.collection.JavaConversions._
     val urls = mutable.Set[String]()
-    urls ++= vnExpress
-    urls ++= vtv(date)
-    urls ++= youth(date)
-    urls ++= vietnamnet
-    urls ++= pioneer
-    urls ++= sggp
-    urls ++= vnEconomy
-    urls ++= cafeF
-    urls ++= cafeBiz
-    urls ++= bnews
-    urls ++= theSaigonTimes
-    // urls ++= labor
+    // parse the sources.json file and run extraction
+    val s = scala.io.Source.fromFile(jsonSource).getLines().toList.mkString("\n")
+    val sites = JSON.parseFull(s).get.asInstanceOf[List[Map[String,Any]]]
+    sites.foreach { site => 
+      val source = site("site").asInstanceOf[String]
+      val categories = site("category").asInstanceOf[List[String]]
+      val pattern = site("pattern").asInstanceOf[String]
+      val exclude = site("exclude").asInstanceOf[List[String]]
+      categories.foreach { category => 
+        urls ++= extractURLs(source, category, pattern, (s: String) => !exclude.exists(e => s.contains(e)))
+      }
+    }
 
     println(s"#(totalURLs) = ${urls.size}")
 
@@ -279,18 +138,14 @@ object NewsIndexer {
     if (news.nonEmpty) {
       implicit val formats = Serialization.formats(NoTypeHints)
       val content = Serialization.writePretty(news)
-      Files.write(Paths.get(System.getProperty("user.dir"), "dat", date + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+      val dateFormat = new SimpleDateFormat("yyyyMMdd")
+      val currentDate = dateFormat.format(new Date())
+      Files.write(Paths.get(System.getProperty("user.dir"), "dat", currentDate + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
     }
   }
 
   def main(args: Array[String]): Unit = {
-    if (args.size >= 1) {
-      run(args(0))
-    } else {
-      val dateFormat = new SimpleDateFormat("yyyyMMdd")
-      val currentDate = dateFormat.format(new Date())
-      run(currentDate)
-    }
+    run("dat/sources.json")
   }
 
 }
