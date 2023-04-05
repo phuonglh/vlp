@@ -145,7 +145,9 @@ object NewsIndexer {
   }
 
   def main(args: Array[String]): Unit = {
-    run("dat/sources.json")
+    if (args.size > 0) {
+      run(args(0))
+    } else run("dat/sources.json")
   }
 
 }

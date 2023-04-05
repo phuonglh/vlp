@@ -79,5 +79,11 @@
       "dia-oc/thi-truong-nha-dat/", "dia-oc/quy-hoach-ha-tang/"],
     "pattern": "/[\\p{Alnum}-]+/",
     "exclude": []
+  },
+  {
+    "site": "https://viettimes.vn",
+    "category": ["chuyen-doi-so/", "kinh-te-so/"],
+    "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.html",
+    "exclude": []
   }
 ]
