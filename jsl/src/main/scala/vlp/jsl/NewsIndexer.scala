@@ -15,9 +15,6 @@ import org.xml.sax.InputSource
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-import org.apache.log4j.{Level, Logger}
-import org.slf4j.LoggerFactory
-
 import org.json4s.jackson.Serialization
 import org.json4s._
 import java.nio.file.{Paths, Files, StandardOpenOption}
@@ -38,7 +35,6 @@ case class Page(url: String, content: String, date: Date)
   *
   */
 object NewsIndexer {
-  final val logger = LoggerFactory.getLogger(getClass.getName)
   /**
     * Extracts the main content of a news URL.
     *
@@ -53,10 +49,10 @@ object NewsIndexer {
       is.setByteStream(path.openStream)
       ArticleExtractor.INSTANCE.getText(is)
     } catch {
-      case e: MalformedURLException => logger.error(e.getMessage); ""
-      case e: BoilerpipeProcessingException => logger.error(e.getMessage); ""
-      case e: IOException => logger.error(e.getMessage); ""
-      case _: Exception => logger.error("Other exception"); ""
+      case e: MalformedURLException => System.err.println(e.getMessage); ""
+      case e: BoilerpipeProcessingException => System.err.println(e.getMessage); ""
+      case e: IOException => System.err.println(e.getMessage); ""
+      case _: Exception => System.err.println("Other exception"); ""
     }
   }
 
@@ -90,7 +86,7 @@ object NewsIndexer {
     } catch {
       case e: IOException => e.printStackTrace()
       case e: Exception => 
-        logger.error(site + "/" + category)
+        System.err.println(site + "/" + category)
         e.printStackTrace()
     } 
     urls.toSet
@@ -100,9 +96,9 @@ object NewsIndexer {
     val urls = mutable.Set[String]()
     val categories = List("kinh-doanh", "quoc-te", "doanh-nghiep", "chung-khoan", "bat-dong-san", "ebank", "vi-mo", "tien-cua-toi", "hang-hoa", "bao-hiem")
     categories.foreach { category =>
-      urls ++= extractURLs("https://vnexpress.net", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => true)
+      urls ++= extractURLs("https://vnexpress.net", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => !s.contains("error.html"))
     }
-    logger.info("vnExpress.vn/kinh-doanh => " + urls.size)
+    println("vnExpress.vn/kinh-doanh => " + urls.size)
     urls.toSet
   }
 
@@ -110,9 +106,9 @@ object NewsIndexer {
     val urls = mutable.Set[String]()
     val categories = List("bat-dong-san.htm", "tai-chinh.htm", "thi-truong.htm", "goc-doanh-nghiep.htm")
     categories.foreach { category => 
-      urls ++= extractURLs("https://vtv.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.htm", (s: String) => s.contains(date))
+      urls ++= extractURLs("https://vtv.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.htm", (s: String) => s.contains(date) && !s.contains("404.htm"))
     }
-    logger.info("suckhoe.vtv.vn => " + urls.size)
+    println("suckhoe.vtv.vn => " + urls.size)
     urls.toSet
   }
 
@@ -122,7 +118,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://tuoitre.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.htm", (s: String) => s.contains(date) && !s.contains("?"))
     }
-    logger.info("tuoitre.vn => " + urls.size)
+    println("tuoitre.vn => " + urls.size)
     urls.toSet
   }
   
@@ -132,6 +128,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://vietnamnet.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
     }
+    println("vietnamnet.vn => " + urls.size)
     urls.toSet.filterNot(_.contains("/en/"))
   }
 
@@ -141,7 +138,7 @@ object NewsIndexer {
     categories.foreach { category =>
       urls ++= extractURLs("https://www.sggp.org.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
     }
-    logger.info("sggp.org.vn => " + urls.size)
+    println("sggp.org.vn => " + urls.size)
     urls.toSet
   }
 
@@ -151,7 +148,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://www.tienphong.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.tpo", (s: String) => s.contains("-"))
     }
-    logger.info("tienphong.vn => " + urls.size)
+    println("tienphong.vn => " + urls.size)
     urls.toSet
   }
 
@@ -169,7 +166,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://vneconomy.vn", category, "/[\\p{Alnum}/-]+\\.htm", (s: String) => s.contains("-"))
     }
-    logger.info("vneconomy.vn => " + urls.size)
+    println("vneconomy.vn => " + urls.size)
     urls.toSet
   }
 
@@ -181,7 +178,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://cafef.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.chn", (s: String) => s.contains("-"))
     }
-    logger.info("cafef.vn => " + urls.size)
+    println("cafef.vn => " + urls.size)
     urls.toSet
   }
 
@@ -194,7 +191,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://cafebiz.vn", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.chn", (s: String) => s.contains("-"))
     }
-    logger.info("cafebiz.vn => " + urls.size)
+    println("cafebiz.vn => " + urls.size)
     urls.toSet
   }
 
@@ -208,7 +205,7 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://bnews.vn/", category, "/[\\p{Alnum}/-]+(\\d{4,})\\.html", (s: String) => s.contains("-"))
     }
-    logger.info("bnews.vn => " + urls.size)
+    println("bnews.vn => " + urls.size)
     urls.toSet
   }
 
@@ -223,7 +220,17 @@ object NewsIndexer {
     categories.foreach { category => 
       urls ++= extractURLs("https://thesaigontimes.vn", category, "/[\\p{Alnum}-]+/", (s: String) => s.contains("-"))
     }
-    logger.info("thesaigontimes.vn => " + urls.size)
+    println("thesaigontimes.vn => " + urls.size)
+    urls.toSet
+  }
+
+  def labor: Set[String] = {
+    val urls = mutable.Set[String]()
+    val categories = List("kinh-doanh", "tien-te-dau-tu", "thi-truong", "doanh-nghiep-doanh-nhan")
+    categories.foreach { category => 
+      urls ++= extractURLs("https://laodong.vn", category, """/[\p{Alnum}/-]+(\d{4,})\.ldo""", (s: String) => s.contains("-"))
+    }
+    println("laodong.vn => " + urls.size)
     urls.toSet
   }
 
@@ -252,12 +259,13 @@ object NewsIndexer {
     urls ++= cafeBiz
     urls ++= bnews
     urls ++= theSaigonTimes
+    // urls ++= labor
 
     println(s"#(totalURLs) = ${urls.size}")
 
     val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
     val news = urls.par.map(url => {
-      logger.info(url)
+      println(url)
       val content = runWithTimeout(5000)(extract(url)).get
       if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && !content.contains("script")) {
         kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content))
