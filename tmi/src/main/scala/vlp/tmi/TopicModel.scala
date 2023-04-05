@@ -18,7 +18,9 @@ import vlp.tpm.ConfigLDA
 import vlp.tpm.TermIndexToString
 import vlp.tpm.Converter
 import vlp.tpm.StopWords
-import vlp.tpm.News
+
+
+case class News(url: String, sentences: List[String])
 
 /**
   * phuonglh, April 2021
