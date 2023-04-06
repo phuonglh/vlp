@@ -6,21 +6,37 @@ import com.johnsnowlabs.nlp.functions._
 import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, XlnetEmbeddings}
 import com.johnsnowlabs.nlp.{Annotation, DocumentAssembler, EmbeddingsFinisher}
 import com.johnsnowlabs.nlp.annotators.ner.dl.NerDLApproach
-import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.{SparkConf, SparkContext}
+import com.johnsnowlabs.nlp.training.CoNLL
+import scala.io.Source
 
 import org.json4s._
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
 import java.nio.file.{Files, Paths, StandardOpenOption}
-import com.johnsnowlabs.nlp.training.CoNLL
-import scala.io.Source
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
+import org.apache.spark.ml.{Pipeline, PipelineModel}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.functions._
 import org.apache.spark.mllib.linalg.Matrix
+
+import com.intel.analytics.bigdl.numeric.NumericFloat
+import com.intel.analytics.bigdl.dllib.keras.{Sequential, Model}
+import com.intel.analytics.bigdl.dllib.keras.models.KerasNet
+import com.intel.analytics.bigdl.dllib.keras.layers._
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+import com.intel.analytics.bigdl.dllib.utils.Shape
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
+import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
+import com.intel.analytics.bigdl.dllib.utils.Engine
+import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
+import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
+import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
+import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
+import com.intel.analytics.bigdl.dllib.optim.{Loss, Trigger}
+
 
 case class ConfigNER(
   master: String = "local[*]",
@@ -30,14 +46,15 @@ case class ConfigNER(
   driverMemory: String = "16g", // D
   mode: String = "eval",
   batchSize: Int = 128,
+  maxSeqLen: Int = 80,
   epochs: Int = 30,
   learningRate: Double = 5E-4, 
   modelPath: String = "bin/med/",
-  trainPath: String = "dat/med/syll.txt",
+  trainPath: String = "dat/med/syll-small.txt",
   validPath: String = "dat/med/val/", // Parquet file of devPath
   outputPath: String = "out/med/",
   scorePath: String = "dat/med/scores-med.json",
-  modelType: String = "d", 
+  modelType: String = "s", 
 )
 
 case class ScoreNER(
@@ -75,24 +92,49 @@ object NER {
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
       case "b" => BertEmbeddings.pretrained("bert_base_multilingual_cased", "xx").setInputCols("document", "token").setOutputCol("embeddings")
-      case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_large", "xx").setInputCols("document", "token").setOutputCol("embeddings") // _large / _base
-      case "m" => DeBertaEmbeddings.pretrained("mdeberta_v3_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
       case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
+      case "m" => DeBertaEmbeddings.pretrained("mdeberta_v3_base", "xx").setInputCols("document", "token").setOutputCol("embeddings")
       case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("embeddings")
+      case "x" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_large", "xx").setInputCols("document", "token").setOutputCol("embeddings") // _large / _base
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
     }
-    val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(true).setCleanAnnotations(false)
+    val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(false) // output as arrays
     // the input data frames (trainingDF and developmentDF) has the `label` column, we transform it to an array of NER labels
     val tdf = trainingDF.withColumn("ys", col("label.result"))
     val ddf = developmentDF.withColumn("ys", col("label.result"))
     // use a label sequencer to transform `label.result` into sequences of integers (one-based, for BigDL to work)
-    val oneBasedLabelIndex = labelIndex.mapValues(v => v + 1)
+    val oneBasedLabelIndex = labelIndex//.mapValues(v => v + 1)
     val sequencer = new SequencerNER(oneBasedLabelIndex).setInputCol("ys").setOutputCol("target")
-    // TODO: Add estimator
-    var stages = Array(document, tokenizer, embeddings, finisher, sequencer)    
+    var stages = Array(document, tokenizer, embeddings, finisher, sequencer)
     val pipeline = new Pipeline().setStages(stages)
-    val model = pipeline.fit(tdf)
-    return model
+    val preprocessor = pipeline.fit(tdf)
+    val (af, bf) = (preprocessor.transform(tdf).withColumn("features", flatten(col("xs"))), preprocessor.transform(ddf).withColumn("features", flatten(col("xs"))))
+    af.select("xs").printSchema
+    af.select("xs").show
+    // create a BigDL model
+    val bigdl = Sequential()
+    bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen, 768), "input"))
+    bigdl.add(Reshape(targetShape=Array(config.maxSeqLen, 768)).setName("Reshape"))
+    bigdl.add(LSTM(outputDim = 32, returnSequences = true).setName("LSTM"))
+    bigdl.add(Dropout(0.1).setName("dropout"))
+    bigdl.add(TimeDistributed(
+      Dense(labelIndex.size, activation="softmax").setName("Dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+    )
+    val (featureSize, labelSize) = (Array(config.maxSeqLen*768), Array(config.maxSeqLen))
+    val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput=false), true), featureSize, labelSize)
+    val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/med/")
+    val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/med/")
+    estimator.setLabelCol("target").setFeaturesCol("features")
+      .setBatchSize(config.batchSize)
+      .setOptimMethod(new Adam(config.learningRate))
+      .setMaxEpoch(config.epochs)
+      .setTrainSummary(trainingSummary)
+      .setValidationSummary(validationSummary)
+      .setValidation(Trigger.everyEpoch, bf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+    // TODO: paddingValue ?
+    val model = estimator.fit(af)
+    // TODO: 
+    return preprocessor
   }
 
   /**
@@ -208,6 +250,7 @@ object NER {
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.driver.memory", config.driverMemory)
         val sc = new SparkContext(conf)
+        Engine.init
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
         import spark.implicits._
         sc.setLogLevel("ERROR")
@@ -220,7 +263,8 @@ object NER {
         val modelPath = config.modelPath + "/" + config.modelType
         config.mode match {
           case "train" =>
-            val model = trainJSL(config, trainingDF, developmentDF)
+            // val model = trainJSL(config, trainingDF, developmentDF)
+            val model = trainBDL(config, trainingDF, developmentDF)
             val output = model.transform(developmentDF)
             output.printSchema
             output.show()
