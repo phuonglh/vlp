@@ -33,9 +33,12 @@ case class Page(url: String, content: String, date: Date)
 /**
   * Extractor of health news content for a given day from some large online newswire. 
   * The news are sent to a Apache Kafka server.
-  *
+  * 
+  * (C) phuonglh@gmail.com
   */
 object NewsIndexer {
+  val specialUnicodePattern = Pattern.compile("""[\u0000]+""")
+
   /**
     * Extracts the main content of a news URL.
     *
@@ -79,9 +82,7 @@ object NewsIndexer {
         val matcher = pattern.matcher(line)
         while (matcher.find()) {
           val url = matcher.group()
-          if (filter(url)) {
-            urls += (site + url)
-          }
+          urls += (site + url)
         }
       }
     } catch {
@@ -90,7 +91,7 @@ object NewsIndexer {
         System.err.println(site + "/" + category)
         e.printStackTrace()
     } 
-    urls.toSet
+    urls.toSet.filter(filter(_))
   }
 
   def runWithTimeout[T](timeout: Long)(f: => T): Option[T] = {
@@ -120,13 +121,12 @@ object NewsIndexer {
       }
     }
 
-    println(s"#(totalURLs) = ${urls.size}")
-
     val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
     val news = urls.par.map(url => {
       println(url)
       val content = runWithTimeout(5000)(extract(url)).get
-      if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && !content.contains("script")) {
+      if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && 
+        !content.contains("script") && !specialUnicodePattern.matcher(content).find()) {
         kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content))
         Page(url, content, new Date())
       } else {
@@ -142,6 +142,7 @@ object NewsIndexer {
       val currentDate = dateFormat.format(new Date())
       Files.write(Paths.get(System.getProperty("user.dir"), "dat", currentDate + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
     }
+    println(s"#(totalURLs) = ${urls.size}")
   }
 
   def main(args: Array[String]): Unit = {
