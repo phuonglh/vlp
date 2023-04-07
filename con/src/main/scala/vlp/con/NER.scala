@@ -100,14 +100,13 @@ object NER {
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
     }
     val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(false) // output as arrays
-    // the input data frames (trainingDF and developmentDF) has the `label` column, we transform it to an array of NER labels
-    val tdf = trainingDF.withColumn("ys", col("label.result"))
-    val ddf = developmentDF.withColumn("ys", col("label.result"))
-    // use a label sequencer to transform `label.result` into sequences of integers (one-based, for BigDL to work)
+    // use a label sequencer to transform `ys` into sequences of integers (one-based, for BigDL to work)
     val sequencer = new Sequencer(labelIndex, config.maxSeqLen, -1f).setInputCol("ys").setOutputCol("target")
     val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, finisher, sequencer))
-    val preprocessor = pipeline.fit(tdf)
-    val (af, bf) = (preprocessor.transform(tdf).withColumn("as", flatten(col("xs"))), preprocessor.transform(ddf).withColumn("as", flatten(col("xs"))))
+    val preprocessor = pipeline.fit(trainingDF)
+    // flatten the `xs` column
+    val af = preprocessor.transform(trainingDF).withColumn("as", flatten(col("xs")))
+    val bf = preprocessor.transform(developmentDF).withColumn("as", flatten(col("xs")))
     // use a feature padder to pad/truncate `xs`
     val featurePadder = new FeaturePadder(config.maxSeqLen*768, 0f).setInputCol("as").setOutputCol("features")
     val (uf, vf) = (featurePadder.transform(af), featurePadder.transform(bf))
@@ -256,8 +255,9 @@ object NER {
         sc.setLogLevel("ERROR")
         // read the df using the CoNLL format of Spark-NLP, which provides some columns, including [text, label] columns.
         val df = CoNLL(conllLabelIndex = 3).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
+        val af = df.withColumn("ys", col("label.result"))
         println(s"Number of samples = ${df.count}")
-        val Array(trainingDF, developmentDF) = df.randomSplit(Array(0.9, 0.1), 220712L)
+        val Array(trainingDF, developmentDF) = af.randomSplit(Array(0.9, 0.1), 220712L)
         developmentDF.show()
         developmentDF.printSchema()
         val modelPath = config.modelPath + "/" + config.modelType
