@@ -102,16 +102,11 @@ object NER {
     val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(false) // output as arrays
     // use a label sequencer to transform `ys` into sequences of integers (one-based, for BigDL to work)
     val sequencer = new Sequencer(labelIndex, config.maxSeqLen, -1f).setInputCol("ys").setOutputCol("target")
-    val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, finisher, sequencer))
+    val flattener = new FeatureFlattener().setInputCol("xs").setOutputCol("as")
+    val padder = new FeaturePadder(config.maxSeqLen*768, 0f).setInputCol("as").setOutputCol("features")
+    val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, finisher, sequencer, flattener, padder))
     val preprocessor = pipeline.fit(trainingDF)
-    // flatten the `xs` column
-    val af = preprocessor.transform(trainingDF).withColumn("as", flatten(col("xs")))
-    val bf = preprocessor.transform(developmentDF).withColumn("as", flatten(col("xs")))
-    // use a feature padder to pad/truncate `xs`
-    val featurePadder = new FeaturePadder(config.maxSeqLen*768, 0f).setInputCol("as").setOutputCol("features")
-    val (uf, vf) = (featurePadder.transform(af), featurePadder.transform(bf))
-    uf.select("as", "features").printSchema
-    vf.select("as", "features").show
+    val (uf, vf) = (preprocessor.transform(trainingDF), preprocessor.transform(developmentDF))
     // create a BigDL model
     val bigdl = Sequential()
     bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen*768), "input"))
