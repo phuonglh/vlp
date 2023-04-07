@@ -77,7 +77,7 @@ case class ScoreNER(
 object NER {
   implicit val formats = Serialization.formats(NoTypeHints)
   val labelIndex = Map[String, Int](
-    "O" -> 0, "B-problem" -> 1, "I-problem" -> 2, "B-treatment" -> 3, "I-treatment" -> 4, "B-test" -> 5, "I-test" -> 6
+    "O" -> 1, "B-problem" -> 2, "I-problem" -> 3, "B-treatment" -> 4, "I-treatment" -> 5, "B-test" -> 6, "I-test" -> 7
   )
 
   /**
@@ -86,8 +86,9 @@ object NER {
     * @param config
     * @param trainingDF
     * @param developmentDF
+    * @return a preprocessor and a BigDL model
     */
-  def trainBDL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
+  def trainBDL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): (PipelineModel, KerasNet[Float]) = {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
@@ -103,17 +104,18 @@ object NER {
     val tdf = trainingDF.withColumn("ys", col("label.result"))
     val ddf = developmentDF.withColumn("ys", col("label.result"))
     // use a label sequencer to transform `label.result` into sequences of integers (one-based, for BigDL to work)
-    val oneBasedLabelIndex = labelIndex//.mapValues(v => v + 1)
-    val sequencer = new SequencerNER(oneBasedLabelIndex).setInputCol("ys").setOutputCol("target")
-    var stages = Array(document, tokenizer, embeddings, finisher, sequencer)
-    val pipeline = new Pipeline().setStages(stages)
+    val sequencer = new Sequencer(labelIndex, config.maxSeqLen, -1f).setInputCol("ys").setOutputCol("target")
+    val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, finisher, sequencer))
     val preprocessor = pipeline.fit(tdf)
-    val (af, bf) = (preprocessor.transform(tdf).withColumn("features", flatten(col("xs"))), preprocessor.transform(ddf).withColumn("features", flatten(col("xs"))))
-    af.select("xs").printSchema
-    af.select("xs").show
+    val (af, bf) = (preprocessor.transform(tdf).withColumn("as", flatten(col("xs"))), preprocessor.transform(ddf).withColumn("as", flatten(col("xs"))))
+    // use a feature padder to pad/truncate `xs`
+    val featurePadder = new FeaturePadder(config.maxSeqLen*768, 0f).setInputCol("as").setOutputCol("features")
+    val (uf, vf) = (featurePadder.transform(af), featurePadder.transform(bf))
+    uf.select("as", "features").printSchema
+    vf.select("as", "features").show
     // create a BigDL model
     val bigdl = Sequential()
-    bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen, 768), "input"))
+    bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen*768), "input"))
     bigdl.add(Reshape(targetShape=Array(config.maxSeqLen, 768)).setName("Reshape"))
     bigdl.add(LSTM(outputDim = 32, returnSequences = true).setName("LSTM"))
     bigdl.add(Dropout(0.1).setName("dropout"))
@@ -130,11 +132,9 @@ object NER {
       .setMaxEpoch(config.epochs)
       .setTrainSummary(trainingSummary)
       .setValidationSummary(validationSummary)
-      .setValidation(Trigger.everyEpoch, bf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-    // TODO: paddingValue ?
-    val model = estimator.fit(af)
-    // TODO: 
-    return preprocessor
+      .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+    val model = estimator.fit(uf)
+    return (preprocessor, bigdl)
   }
 
   /**
@@ -264,11 +264,14 @@ object NER {
         config.mode match {
           case "train" =>
             // val model = trainJSL(config, trainingDF, developmentDF)
-            val model = trainBDL(config, trainingDF, developmentDF)
-            val output = model.transform(developmentDF)
+            val (preprocessor, bigdl) = trainBDL(config, trainingDF, developmentDF)
+            preprocessor.write.overwrite.save(modelPath)
+            bigdl.saveModel(modelPath + "/ner.bigdl", overWrite = true)
+            val model = NNModel(bigdl)
+            val vf = preprocessor.transform(developmentDF)
+            val output = model.transform(vf)
             output.printSchema
             output.show()
-            model.write.overwrite.save(modelPath)
           case "predict" =>
           case "eval" => 
             val model = PipelineModel.load(modelPath)
