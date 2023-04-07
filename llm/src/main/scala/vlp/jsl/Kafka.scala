@@ -8,6 +8,7 @@ import java.time.Duration
 /**
   * Kafka producer and consumer for sending/receving extracted articles.
   * <p>
+  * 
   * phuonglh@gmail.com
   */
 object Kafka {
