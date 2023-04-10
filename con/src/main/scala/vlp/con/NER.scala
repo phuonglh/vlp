@@ -24,7 +24,7 @@ import org.apache.spark.mllib.linalg.Matrix
 
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Sequential, Model}
-import com.intel.analytics.bigdl.dllib.keras.models.KerasNet
+import com.intel.analytics.bigdl.dllib.keras.models.{Models, KerasNet}
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Shape
@@ -47,10 +47,11 @@ case class ConfigNER(
   mode: String = "eval",
   batchSize: Int = 128,
   maxSeqLen: Int = 80,
+  hiddenSize: Int = 64,
   epochs: Int = 30,
   learningRate: Double = 5E-4, 
   modelPath: String = "bin/med/",
-  trainPath: String = "dat/med/syll-small.txt",
+  trainPath: String = "dat/med/syll.txt",
   validPath: String = "dat/med/val/", // Parquet file of devPath
   outputPath: String = "out/med/",
   scorePath: String = "dat/med/scores-med.json",
@@ -100,21 +101,20 @@ object NER {
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
     }
     val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(false) // output as arrays
-    // use a label sequencer to transform `ys` into sequences of integers (one-based, for BigDL to work)
-    val sequencer = new Sequencer(labelIndex, config.maxSeqLen, -1f).setInputCol("ys").setOutputCol("target")
-    val flattener = new FeatureFlattener().setInputCol("xs").setOutputCol("as")
-    val padder = new FeaturePadder(config.maxSeqLen*768, 0f).setInputCol("as").setOutputCol("features")
-    val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, finisher, sequencer, flattener, padder))
+    val pipeline = new Pipeline().setStages(Array(document, tokenizer, embeddings, finisher))
     val preprocessor = pipeline.fit(trainingDF)
-    val (uf, vf) = (preprocessor.transform(trainingDF), preprocessor.transform(developmentDF))
+    val (af, bf) = (preprocessor.transform(trainingDF), preprocessor.transform(developmentDF))
+    // supplement pipeline for BigDL
+    val bigdlPreprocessor = pipelineBigDL(config).fit(af)
+    val (uf, vf) = (bigdlPreprocessor.transform(af), bigdlPreprocessor.transform(bf))
     // create a BigDL model
     val bigdl = Sequential()
-    bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen*768), "input"))
-    bigdl.add(Reshape(targetShape=Array(config.maxSeqLen, 768)).setName("Reshape"))
-    bigdl.add(LSTM(outputDim = 32, returnSequences = true).setName("LSTM"))
+    bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen*768)).setName("input"))
+    bigdl.add(Reshape(targetShape=Array(config.maxSeqLen, 768)).setName("reshape"))
+    bigdl.add(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM"))
     bigdl.add(Dropout(0.1).setName("dropout"))
     bigdl.add(TimeDistributed(
-      Dense(labelIndex.size, activation="softmax").setName("Dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+      Dense(labelIndex.size, activation="softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]]).setName("timeDistributed")
     )
     val (featureSize, labelSize) = (Array(config.maxSeqLen*768), Array(config.maxSeqLen))
     val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput=false), true), featureSize, labelSize)
@@ -129,6 +129,19 @@ object NER {
       .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
     val model = estimator.fit(uf)
     return (preprocessor, bigdl)
+  }
+
+  /**
+    * Builds a pipeline for BigDL model: sequencer -> flattener -> padder
+    *
+    * @param config
+    */
+  def pipelineBigDL(config: ConfigNER): Pipeline = {
+    // use a label sequencer to transform `ys` into sequences of integers (one-based, for BigDL to work)
+    val sequencer = new Sequencer(labelIndex, config.maxSeqLen, -1f).setInputCol("ys").setOutputCol("target")
+    val flattener = new FeatureFlattener().setInputCol("xs").setOutputCol("as")
+    val padder = new FeaturePadder(config.maxSeqLen*768, 0f).setInputCol("as").setOutputCol("features")
+    new Pipeline().setStages(Array(sequencer, flattener, padder))
   }
 
   /**
@@ -218,6 +231,20 @@ object NER {
     Files.write(Paths.get(s"${config.outputPath}/${config.modelType}-${split}.txt"), s.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 
+  def predict(preprocessor: PipelineModel, bigdl: KerasNet[Float], df: DataFrame, config: ConfigNER): DataFrame = {
+    val bf = preprocessor.transform(df)
+    val bigdlPreprocessor = pipelineBigDL(config).fit(bf)
+    val vf = bigdlPreprocessor.transform(bf)
+    // convert bigdl to sequential model
+    val sequential = bigdl.asInstanceOf[Sequential[Float]]
+    // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
+    sequential.add(ArgMaxLayer())
+    println(sequential.summary())
+    // wrap to a Spark model and run prediction
+    val model = NNModel(sequential)
+    model.transform(vf)
+  }
+
   def main(args: Array[String]): Unit = {
     val opts = new OptionParser[ConfigNER](getClass().getName()) {
       head(getClass().getName(), "1.0")
@@ -228,6 +255,7 @@ object NER {
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 16g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, predict}")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
+      opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("encoder hidden size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-4")
       opt[String]('d', "trainPath").action((x, conf) => conf.copy(trainPath = x)).text("training data directory")
@@ -262,13 +290,16 @@ object NER {
             val (preprocessor, bigdl) = trainBDL(config, trainingDF, developmentDF)
             preprocessor.write.overwrite.save(modelPath)
             bigdl.saveModel(modelPath + "/ner.bigdl", overWrite = true)
-            val model = NNModel(bigdl)
-            val vf = preprocessor.transform(developmentDF)
-            val output = model.transform(vf)
-            output.printSchema
-            output.show()
+            val output = predict(preprocessor, bigdl, developmentDF, config)
+            output.show
           case "predict" =>
-          case "eval" => 
+          case "evalBDL" => 
+            val preprocessor = PipelineModel.load(modelPath)
+            val bigdl = Models.loadModel[Float](modelPath + "/ner.bigdl")
+            val output = predict(preprocessor, bigdl, developmentDF, config)
+            output.show
+            output.printSchema
+          case "evalJSL" => 
             val model = PipelineModel.load(modelPath)
             val tf = model.transform(trainingDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))
             val sequencerPrediction = new SequencerNER(labelIndex).setInputCol("zs").setOutputCol("prediction")
