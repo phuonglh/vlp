@@ -318,7 +318,7 @@ object NER {
             score = evaluate(validResult, config, "valid")
             saveScore(score, config.scorePath)
             // convert "prediction" column to human-readable label column "zs"
-            val sequencerPrediction = new SequencerDouble(labelDict).setInputCol("zs").setOutputCol("prediction")
+            val sequencerPrediction = new SequencerDouble(labelDict).setInputCol("prediction").setOutputCol("zs")
             val af = sequencerPrediction.transform(outputTrain)
             val bf = sequencerPrediction.transform(outputValid)
             // export to CoNLL format
