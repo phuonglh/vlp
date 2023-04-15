@@ -189,7 +189,12 @@ object NER {
 
   def evaluate(result: DataFrame, config: ConfigNER, split: String): ScoreNER = {
     val predictionsAndLabels = result.rdd.map { case row => 
-      (row.getAs[Seq[Float]](0).map(_.toDouble).toArray, row.getAs[DenseVector](1).toArray)
+      val zs = row.getAs[Seq[Float]](0).map(_.toDouble).toArray
+      val ys = row.getAs[DenseVector](1).toArray
+      var j = ys.indexOf(-1f) // first padding value in the label sequence
+      if (j < 0) j = ys.size
+      val i = Math.min(config.maxSeqLen, j)
+      (zs.take(i), ys.take(i))
     }.flatMap { case (prediction, label) => prediction.zip(label) }
     val metrics = new MulticlassMetrics(predictionsAndLabels)
     val ls = metrics.labels
@@ -314,9 +319,11 @@ object NER {
             saveScore(score, config.scorePath)
             // convert "prediction" column to human-readable label column "zs"
             val sequencerPrediction = new SequencerDouble(labelDict).setInputCol("zs").setOutputCol("prediction")
+            val af = sequencerPrediction.transform(outputTrain)
+            val bf = sequencerPrediction.transform(outputValid)
             // export to CoNLL format
-            export(outputTrain.select("zs", "ys"), config, "train")
-            export(outputValid.select("zs", "ys"), config, "valid")
+            export(af.select("zs", "ys"), config, "train")
+            export(bf.select("zs", "ys"), config, "valid")
           case "evalJSL" => 
             val model = PipelineModel.load(modelPath)
             val tf = model.transform(trainingDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))
