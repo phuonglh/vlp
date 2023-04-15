@@ -21,6 +21,8 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.functions._
 import org.apache.spark.mllib.linalg.Matrix
+import org.apache.spark.ml.linalg.DenseVector
+
 
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Sequential, Model}
@@ -80,6 +82,7 @@ object NER {
   val labelIndex = Map[String, Int](
     "O" -> 1, "B-problem" -> 2, "I-problem" -> 3, "B-treatment" -> 4, "I-treatment" -> 5, "B-test" -> 6, "I-test" -> 7
   )
+  lazy val labelDict = labelIndex.keys.map(k => (labelIndex(k).toDouble, k)).toMap
 
   /**
     * Trains a NER model using the BigDL framework with user-defined model. This approach is more flexible than the [[#trainJSL()]] method.
@@ -186,7 +189,7 @@ object NER {
 
   def evaluate(result: DataFrame, config: ConfigNER, split: String): ScoreNER = {
     val predictionsAndLabels = result.rdd.map { case row => 
-      (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
+      (row.getAs[Seq[Float]](0).map(_.toDouble).toArray, row.getAs[DenseVector](1).toArray)
     }.flatMap { case (prediction, label) => prediction.zip(label) }
     val metrics = new MulticlassMetrics(predictionsAndLabels)
     val ls = metrics.labels
@@ -296,9 +299,24 @@ object NER {
           case "evalBDL" => 
             val preprocessor = PipelineModel.load(modelPath)
             val bigdl = Models.loadModel[Float](modelPath + "/ner.bigdl")
-            val output = predict(preprocessor, bigdl, developmentDF, config)
-            output.show
-            output.printSchema
+            // training result
+            val outputTrain = predict(preprocessor, bigdl, trainingDF, config)
+            outputTrain.show
+            outputTrain.printSchema
+            val trainResult = outputTrain.select("prediction", "target")
+            var score = evaluate(trainResult, config, "train")
+            saveScore(score, config.scorePath)
+            // validation result
+            val outputValid = predict(preprocessor, bigdl, developmentDF, config)
+            outputValid.show
+            val validResult = outputValid.select("prediction", "target")
+            score = evaluate(validResult, config, "valid")
+            saveScore(score, config.scorePath)
+            // convert "prediction" column to human-readable label column "zs"
+            val sequencerPrediction = new SequencerDouble(labelDict).setInputCol("zs").setOutputCol("prediction")
+            // export to CoNLL format
+            export(outputTrain.select("zs", "ys"), config, "train")
+            export(outputValid.select("zs", "ys"), config, "valid")
           case "evalJSL" => 
             val model = PipelineModel.load(modelPath)
             val tf = model.transform(trainingDF).withColumn("zs", col("ner.result")).withColumn("ys", col("label.result"))

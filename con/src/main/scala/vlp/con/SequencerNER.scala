@@ -8,7 +8,7 @@ import org.apache.spark.sql.types.{DataType, ArrayType, DoubleType}
 
 
 /**
-  * A sequence vectorizer transforms a sequence of labels into a sequence of indices
+  * A sequence vectorizer transforms a sequence of string labels into a sequence of double indices
   * using a dictionary. No padding is applied.
   *
   * phuonglh@gmail.com
