@@ -82,7 +82,7 @@ object NER {
   val labelIndex = Map[String, Int](
     "O" -> 1, "B-problem" -> 2, "I-problem" -> 3, "B-treatment" -> 4, "I-treatment" -> 5, "B-test" -> 6, "I-test" -> 7
   )
-  lazy val labelDict = labelIndex.keys.map(k => (labelIndex(k).toDouble, k)).toMap
+  val labelDict = labelIndex.keys.map(k => (labelIndex(k).toDouble, k)).toMap
 
   /**
     * Trains a NER model using the BigDL framework with user-defined model. This approach is more flexible than the [[#trainJSL()]] method.
@@ -239,14 +239,15 @@ object NER {
     Files.write(Paths.get(s"${config.outputPath}/${config.modelType}-${split}.txt"), s.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 
-  def predict(preprocessor: PipelineModel, bigdl: KerasNet[Float], df: DataFrame, config: ConfigNER): DataFrame = {
+  def predict(preprocessor: PipelineModel, bigdl: KerasNet[Float], df: DataFrame, config: ConfigNER, argmax: Boolean=true): DataFrame = {
     val bf = preprocessor.transform(df)
     val bigdlPreprocessor = pipelineBigDL(config).fit(bf)
     val vf = bigdlPreprocessor.transform(bf)
     // convert bigdl to sequential model
     val sequential = bigdl.asInstanceOf[Sequential[Float]]
     // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
-    sequential.add(ArgMaxLayer())
+    if (argmax)
+      sequential.add(ArgMaxLayer())
     println(sequential.summary())
     // wrap to a Spark model and run prediction
     val model = NNModel(sequential)
@@ -305,14 +306,14 @@ object NER {
             val preprocessor = PipelineModel.load(modelPath)
             val bigdl = Models.loadModel[Float](modelPath + "/ner.bigdl")
             // training result
-            val outputTrain = predict(preprocessor, bigdl, trainingDF, config)
+            val outputTrain = predict(preprocessor, bigdl, trainingDF.sample(0.1), config, true)
             outputTrain.show
             outputTrain.printSchema
             val trainResult = outputTrain.select("prediction", "target")
             var score = evaluate(trainResult, config, "train")
             saveScore(score, config.scorePath)
             // validation result
-            val outputValid = predict(preprocessor, bigdl, developmentDF, config)
+            val outputValid = predict(preprocessor, bigdl, developmentDF, config, false)
             outputValid.show
             val validResult = outputValid.select("prediction", "target")
             score = evaluate(validResult, config, "valid")
