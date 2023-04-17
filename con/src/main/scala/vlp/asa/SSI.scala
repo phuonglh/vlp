@@ -2,7 +2,7 @@ package vlp.asa
 
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.ml.feature.{Tokenizer, CountVectorizer, StringIndexer}
+import org.apache.spark.ml.feature._
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
@@ -34,6 +34,16 @@ case class Sample(
 
 case class Instance(postText: String, postSentiments: Array[String], commentText: String, commentSentiments: Array[String])
 
+case class ConfigSSI(
+  vocabSize: Int = 1300,
+  hiddenSize: Int = 256,
+  batchSize: Int = 32,
+  maxIter: Int = 30,
+  delimiters: String = """([\s,'")(;!”“*>\]\[=•]+|[\.,:?]+\s+|([\-_]{2,}))""",
+  minDF: Int = 2,
+  modelPath: String = "bin/ssi/"
+)
+
 object SSI {
 
   /**
@@ -60,24 +70,36 @@ object SSI {
     df.filter(col("commentSentiment") =!= "NA").filter(col("commentSentiment") =!= "unrelated")
   }
 
-  def fit(df: DataFrame) = {
+  def fit(df: DataFrame, config: ConfigSSI) = {
     val labelIndexer = new StringIndexer().setInputCol("commentSentiment").setOutputCol("label")
-    val tokenizer = new Tokenizer().setInputCol("text").setOutputCol("tokens")
-    val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("features").setVocabSize(512)
-    val classifier = new MultilayerPerceptronClassifier().setLayers(Array(512, 64, 3)).setBlockSize(32).setSeed(1234L).setMaxIter(50)
-    val pipeline = new Pipeline().setStages(Array(labelIndexer, tokenizer, vectorizer, classifier))
-    val model = pipeline.fit(df)
+    val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(config.delimiters)
+    val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("counts").setVocabSize(config.vocabSize).setMinDF(config.minDF)
+    val idf = new IDF().setInputCol("counts").setOutputCol("features")
+    val classifier = new MultilayerPerceptronClassifier().setLayers(Array(config.vocabSize, config.hiddenSize, 3)).setBlockSize(config.batchSize).setMaxIter(config.maxIter).setSeed(1234L)
+    val pipeline = new Pipeline().setStages(Array(labelIndexer, tokenizer, vectorizer, idf, classifier))
+    pipeline.fit(df)
+  }
+
+  /**
+    * Evaluates the model on a data frame. The default metric is "weightedFMeasure" (beta=1.0)
+    *
+    * @param model
+    * @param df
+    * @param metricName
+    * @return a double
+    */
+  def evaluate(model: PipelineModel, df: DataFrame, metricName: String="f1"): Double = {
     val result = model.transform(df)
     result.show
     val predictionAndLabels = result.select("prediction", "label")
-    val evaluator = new MulticlassClassificationEvaluator().setMetricName("f1")
-    println(s"f1 = ${evaluator.evaluate(predictionAndLabels)}")
+    val evaluator = new MulticlassClassificationEvaluator().setMetricName(metricName)
+    evaluator.evaluate(predictionAndLabels)
   }
 
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[*]")
     val sc = new SparkContext(conf)
-    sc.setLogLevel("INFO")
+    sc.setLogLevel("WARN")
     val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
     val path = "dat/ssi/project-28-at-2023-02-21-10-28-518a1b2d.json-formatted-4.json"
     val af = readData(spark, path)
@@ -85,7 +107,15 @@ object SSI {
     bf.show
     // concatenate two text columns
     val df = bf.withColumn("text", concat(col("postText"), col("commentText")))
-    fit(df)
+    val Array(trainDF, validDF) = df.randomSplit(Array(0.8, 0.2), 220712L)
+    val model = fit(trainDF, ConfigSSI())
+    val trainF1 = evaluate(model, trainDF)
+    val validF1 = evaluate(model, validDF)
+    println(s"trainF1 = $trainF1, validF1 = $validF1")
+    val vocab = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+    println("\t Top 50 tokens: " + vocab.take(50).mkString(" "))
+    println("\tLast 50 tokens: " + vocab.takeRight(50).mkString(" "))
+    println(s"vocabSize = ${vocab.size}")
     spark.stop()
   }
 }
