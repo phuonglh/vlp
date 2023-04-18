@@ -2,7 +2,7 @@ package vlp.asa
 
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.ml.feature._
+import org.apache.spark.ml.feature.{RegexTokenizer, CountVectorizer, StringIndexer, IDF, CountVectorizerModel}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
@@ -10,6 +10,14 @@ import org.apache.spark.sql.{SparkSession, DataFrame}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.functions._
 
+import com.johnsnowlabs.nlp.base._
+import com.johnsnowlabs.nlp.annotator._
+import com.johnsnowlabs.nlp.functions._
+import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
+import com.johnsnowlabs.nlp.embeddings.SentenceEmbeddings
+import com.johnsnowlabs.nlp.embeddings.{DeBertaEmbeddings, DistilBertEmbeddings, XlnetEmbeddings}
+import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, RoBertaSentenceEmbeddings, XlmRoBertaSentenceEmbeddings, UniversalSentenceEncoder}
+import com.johnsnowlabs.nlp.Annotation
 
 
 case class Entity(text: String, start: Long, end: Long, labels: Array[String], reference: String)
@@ -35,13 +43,16 @@ case class Sample(
 case class Instance(postText: String, postSentiments: Array[String], commentText: String, commentSentiments: Array[String])
 
 case class ConfigSSI(
+  modelType: String = "d",
   vocabSize: Int = 1300,
+  learningRate: Float = 5E-4f,
   hiddenSize: Int = 256,
   batchSize: Int = 32,
   maxIter: Int = 30,
   delimiters: String = """([\s,'")(;!”“*>\]\[=•]+|[\.,:?]+\s+|([\-_]{2,}))""",
   minDF: Int = 2,
-  modelPath: String = "bin/ssi/"
+  modelPath: String = "bin/ssi/",
+  validPath: String = "dat/ssi/val/"
 )
 
 object SSI {
@@ -70,7 +81,7 @@ object SSI {
     df.filter(col("commentSentiment") =!= "NA").filter(col("commentSentiment") =!= "unrelated")
   }
 
-  def fit(df: DataFrame, config: ConfigSSI) = {
+  def fitMLP(df: DataFrame, config: ConfigSSI) = {
     val labelIndexer = new StringIndexer().setInputCol("commentSentiment").setOutputCol("label")
     val tokenizer = new RegexTokenizer().setInputCol("text").setOutputCol("tokens").setPattern(config.delimiters)
     val vectorizer = new CountVectorizer().setInputCol("tokens").setOutputCol("counts").setVocabSize(config.vocabSize).setMinDF(config.minDF)
@@ -78,6 +89,40 @@ object SSI {
     val classifier = new MultilayerPerceptronClassifier().setLayers(Array(config.vocabSize, config.hiddenSize, 3)).setBlockSize(config.batchSize).setMaxIter(config.maxIter).setSeed(1234L)
     val pipeline = new Pipeline().setStages(Array(labelIndexer, tokenizer, vectorizer, idf, classifier))
     pipeline.fit(df)
+  }
+
+  def fitJSL(trainingDF: DataFrame, developmentDF: DataFrame, config: ConfigSSI): PipelineModel = {
+    // use a vectorizer to get label vocab
+    val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
+    val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
+    val embeddings = config.modelType match {
+      case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "r" => RoBertaSentenceEmbeddings.pretrained().setInputCols("document").setOutputCol("embeddings") // this is for English only
+      case "x" => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "d" => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("xs")
+      case "s" => DistilBertEmbeddings.pretrained("distilbert_base_cased", "vi").setInputCols("document", "token").setOutputCol("xs")
+      case _ => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
+    }
+    var stages = Array(document, tokenizer, embeddings)
+    val sentenceEmbedding = new SentenceEmbeddings().setInputCols("document", "xs").setOutputCol("embeddings")
+    if (Set("d", "s").contains(config.modelType)) 
+      stages = stages ++ Array(sentenceEmbedding)
+    val classifier = new ClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("commentSentiment").setBatchSize(config.batchSize).setMaxEpochs(config.maxIter).setLr(config.learningRate)
+    // train a preprocessor 
+    val preprocessor = new Pipeline().setStages(stages)
+    val preprocessorModel = preprocessor.fit(trainingDF)
+    // use the preprocessor pipeline to transform the development set 
+    val df = preprocessorModel.transform(developmentDF)
+    df.write.mode("overwrite").parquet(config.validPath)
+    classifier.setTestDataset(config.validPath)
+    // train the whole pipeline and return a model
+    stages = stages ++ Array(classifier)
+    val pipeline = new Pipeline().setStages(stages)
+    val model = pipeline.fit(trainingDF)
+    val validPrediction = model.transform(developmentDF)
+    validPrediction.select("commentSentiment", "category.result").show(false)
+    return model    
   }
 
   /**
@@ -108,14 +153,24 @@ object SSI {
     // concatenate two text columns
     val df = bf.withColumn("text", concat(col("postText"), col("commentText")))
     val Array(trainDF, validDF) = df.randomSplit(Array(0.8, 0.2), 220712L)
-    val model = fit(trainDF, ConfigSSI())
-    val trainF1 = evaluate(model, trainDF)
-    val validF1 = evaluate(model, validDF)
-    println(s"trainF1 = $trainF1, validF1 = $validF1")
-    val vocab = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
-    println("\t Top 50 tokens: " + vocab.take(50).mkString(" "))
-    println("\tLast 50 tokens: " + vocab.takeRight(50).mkString(" "))
-    println(s"vocabSize = ${vocab.size}")
+    val opt = args(0)
+    if (opt == "mlp") { // Spark MLP
+      val model = fitMLP(trainDF, ConfigSSI())
+      val trainF1 = evaluate(model, trainDF)
+      val validF1 = evaluate(model, validDF)
+      println(s"trainF1 = $trainF1, validF1 = $validF1")
+      val vocab = model.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+      println("\t Top 50 tokens: " + vocab.take(50).mkString(" "))
+      println("\tLast 50 tokens: " + vocab.takeRight(50).mkString(" "))
+      println(s"vocabSize = ${vocab.size}")
+    } else if (opt == "jsl") { // JohnSnowLab
+      val model = fitJSL(trainDF, validDF, ConfigSSI())
+    } else {
+      println("Specify a method to run: mlp/jsl")
+    }
+    // print some stats about training data
+    val countDF = trainDF.groupBy("commentSentiment").count
+    countDF.show
     spark.stop()
   }
 }
