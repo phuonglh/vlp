@@ -1,6 +1,6 @@
 package vlp.con
 
-import com.intel.analytics.bigdl.dllib.tensor.{IntType, Tensor}
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.{NumericWildcard, TensorNumeric}
 
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, TensorModule}

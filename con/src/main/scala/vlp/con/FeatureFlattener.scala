@@ -1,9 +1,7 @@
 package vlp.con
 
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.UnaryTransformer
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.{DataType, ArrayType, FloatType}
 
 

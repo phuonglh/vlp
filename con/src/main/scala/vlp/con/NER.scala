@@ -1,10 +1,8 @@
 package vlp.con
 
-import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotator._
-import com.johnsnowlabs.nlp.functions._
-import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings, XlnetEmbeddings}
-import com.johnsnowlabs.nlp.{Annotation, DocumentAssembler, EmbeddingsFinisher}
+import com.johnsnowlabs.nlp.embeddings.{BertEmbeddings, DeBertaEmbeddings, DistilBertEmbeddings}
+import com.johnsnowlabs.nlp.{DocumentAssembler, EmbeddingsFinisher}
 import com.johnsnowlabs.nlp.annotators.ner.dl.NerDLApproach
 import com.johnsnowlabs.nlp.training.CoNLL
 import scala.io.Source
@@ -25,19 +23,19 @@ import org.apache.spark.ml.linalg.DenseVector
 
 
 import com.intel.analytics.bigdl.numeric.NumericFloat
-import com.intel.analytics.bigdl.dllib.keras.{Sequential, Model}
+import com.intel.analytics.bigdl.dllib.keras.Sequential
 import com.intel.analytics.bigdl.dllib.keras.models.{Models, KerasNet}
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Shape
-import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.Activity
 import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.utils.Engine
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.dllib.nnframes.{NNModel, NNEstimator}
 import com.intel.analytics.bigdl.dllib.nn.{TimeDistributedCriterion, ClassNLLCriterion}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.optim.{Loss, Trigger}
+import com.intel.analytics.bigdl.dllib.optim.Trigger
 
 
 case class ConfigNER(
@@ -78,21 +76,21 @@ case class ScoreNER(
   */
 
 object NER {
-  implicit val formats = Serialization.formats(NoTypeHints)
-  val labelIndex = Map[String, Int](
+  implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
+  private val labelIndex = Map[String, Int](
     "O" -> 1, "B-problem" -> 2, "I-problem" -> 3, "B-treatment" -> 4, "I-treatment" -> 5, "B-test" -> 6, "I-test" -> 7
   )
-  val labelDict = labelIndex.keys.map(k => (labelIndex(k).toDouble, k)).toMap
+  val labelDict: Map[Double, String] = labelIndex.keys.map(k => (labelIndex(k).toDouble, k)).toMap
 
   /**
-    * Trains a NER model using the BigDL framework with user-defined model. This approach is more flexible than the [[#trainJSL()]] method.
+    * Trains a NER model using the BigDL framework with user-defined model. This approach is more flexible than the [[trainJSL()]] method.
     *
-    * @param config
-    * @param trainingDF
-    * @param developmentDF
+    * @param config a config
+    * @param trainingDF a training df
+    * @param developmentDF a development df
     * @return a preprocessor and a BigDL model
     */
-  def trainBDL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): (PipelineModel, KerasNet[Float]) = {
+  private def trainBDL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): (PipelineModel, KerasNet[Float]) = {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
@@ -120,7 +118,7 @@ object NER {
       Dense(labelIndex.size, activation="softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]]).setName("timeDistributed")
     )
     val (featureSize, labelSize) = (Array(config.maxSeqLen*768), Array(config.maxSeqLen))
-    val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput=false), true), featureSize, labelSize)
+    val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput=false), sizeAverage = true), featureSize, labelSize)
     val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/med/")
     val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/med/")
     estimator.setLabelCol("target").setFeaturesCol("features")
@@ -130,16 +128,16 @@ object NER {
       .setTrainSummary(trainingSummary)
       .setValidationSummary(validationSummary)
       .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-    val model = estimator.fit(uf)
-    return (preprocessor, bigdl)
+    estimator.fit(uf)
+    (preprocessor, bigdl)
   }
 
   /**
     * Builds a pipeline for BigDL model: sequencer -> flattener -> padder
     *
-    * @param config
+    * @param config config
     */
-  def pipelineBigDL(config: ConfigNER): Pipeline = {
+  private def pipelineBigDL(config: ConfigNER): Pipeline = {
     // use a label sequencer to transform `ys` into sequences of integers (one-based, for BigDL to work)
     val sequencer = new Sequencer(labelIndex, config.maxSeqLen, -1f).setInputCol("ys").setOutputCol("target")
     val flattener = new FeatureFlattener().setInputCol("xs").setOutputCol("as")
@@ -151,11 +149,11 @@ object NER {
     * Trains a NER model using the JohnSnowLab [[NerDLApproach]]. This is a CNN-BiLSTM-CRF network model, which is readily usable but not 
     * flexible enough.
     *
-    * @param config
-    * @param trainingDF
-    * @param developmentDF
+    * @param config a config
+    * @param trainingDF a df
+    * @param developmentDF a df
     */
-  def trainJSL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
+  private def trainJSL(config: ConfigNER, trainingDF: DataFrame, developmentDF: DataFrame): PipelineModel = {
     val document = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenizer = new Tokenizer().setInputCols(Array("document")).setOutputCol("token")
     val embeddings = config.modelType match {
@@ -165,7 +163,7 @@ object NER {
       case _ => DeBertaEmbeddings.pretrained("deberta_embeddings_vie_small", "vie").setInputCols("document", "token").setOutputCol("embeddings").setCaseSensitive(true)
     }
     // val finisher = new EmbeddingsFinisher().setInputCols("embeddings").setOutputCols("xs").setOutputAsVector(true).setCleanAnnotations(false)
-    var stages = Array(document, tokenizer, embeddings)
+    val stages = Array(document, tokenizer, embeddings)
     // train a preprocessor 
     val preprocessor = new Pipeline().setStages(stages)
     val preprocessorModel = preprocessor.fit(trainingDF)
@@ -184,15 +182,15 @@ object NER {
       .setTestDataset(config.validPath)
     val pipeline = new Pipeline().setStages(stages ++ Array(tagger))
     val model = pipeline.fit(trainingDF)
-    return model
+    model
   }
 
   def evaluate(result: DataFrame, config: ConfigNER, split: String): ScoreNER = {
-    val predictionsAndLabels = result.rdd.map { case row => 
+    val predictionsAndLabels = result.rdd.map { row =>
       val zs = row.getAs[Seq[Float]](0).map(_.toDouble).toArray
       val ys = row.getAs[DenseVector](1).toArray
       var j = ys.indexOf(-1f) // first padding value in the label sequence
-      if (j < 0) j = ys.size
+      if (j < 0) j = ys.length
       val i = Math.min(config.maxSeqLen, j)
       (zs.take(i), ys.take(i))
     }.flatMap { case (prediction, label) => prediction.zip(label) }
@@ -214,8 +212,8 @@ object NER {
     )
   }
 
-  def saveScore(score: ScoreNER, path: String) = {
-    var content = Serialization.writePretty(score) + ",\n"
+  private def saveScore(score: ScoreNER, path: String) = {
+    val content = Serialization.writePretty(score) + ",\n"
     Files.write(Paths.get(path), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   }
 
@@ -223,10 +221,10 @@ object NER {
     * Exports result data frame (2-col format) into a text file of CoNLL-2003 format for 
     * evaluation with CoNLL evaluation script (correct <space> prediction).
     * @param result a data frame of two columns "prediction, target"
-    * @param config
-    * @param split
+    * @param config a config
+    * @param split a split name
     */
-  def export(result: DataFrame, config: ConfigNER, split: String) = {
+  private def export(result: DataFrame, config: ConfigNER, split: String) = {
     val spark = SparkSession.getActiveSession.get
     import spark.implicits._
     val ss = result.map { row => 
@@ -236,7 +234,7 @@ object NER {
       lines.mkString("\n") + "\n"
     }.collect()
     val s = ss.mkString("\n")
-    Files.write(Paths.get(s"${config.outputPath}/${config.modelType}-${split}.txt"), s.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+    Files.write(Paths.get(s"${config.outputPath}/${config.modelType}-$split.txt"), s.getBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 
   def predict(preprocessor: PipelineModel, bigdl: KerasNet[Float], df: DataFrame, config: ConfigNER, argmax: Boolean=true): DataFrame = {
@@ -255,8 +253,8 @@ object NER {
   }
 
   def main(args: Array[String]): Unit = {
-    val opts = new OptionParser[ConfigNER](getClass().getName()) {
-      head(getClass().getName(), "1.0")
+    val opts = new OptionParser[ConfigNER](getClass.getName) {
+      head(getClass.getName, "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
@@ -275,7 +273,7 @@ object NER {
     }
     opts.parse(args, ConfigNER()) match {
       case Some(config) =>
-        val conf = new SparkConf().setAppName(getClass().getName()).setMaster(config.master)
+        val conf = new SparkConf().setAppName(getClass.getName).setMaster(config.master)
           .set("spark.executor.cores", config.executorCores.toString)
           .set("spark.cores.max", config.totalCores.toString)
           .set("spark.executor.memory", config.executorMemory)
@@ -283,7 +281,6 @@ object NER {
         val sc = new SparkContext(conf)
         Engine.init
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
-        import spark.implicits._
         sc.setLogLevel("ERROR")
         // read the df using the CoNLL format of Spark-NLP, which provides some columns, including [text, label] columns.
         val df = CoNLL(conllLabelIndex = 3).readDatasetFromLines(Source.fromFile(config.trainPath, "UTF-8").getLines.toArray, spark).toDF
@@ -306,14 +303,14 @@ object NER {
             val preprocessor = PipelineModel.load(modelPath)
             val bigdl = Models.loadModel[Float](modelPath + "/ner.bigdl")
             // training result
-            val outputTrain = predict(preprocessor, bigdl, trainingDF.sample(0.1), config, true)
+            val outputTrain = predict(preprocessor, bigdl, trainingDF.sample(0.1), config)
             outputTrain.show
             outputTrain.printSchema
             val trainResult = outputTrain.select("prediction", "target")
             var score = evaluate(trainResult, config, "train")
             saveScore(score, config.scorePath)
             // validation result
-            val outputValid = predict(preprocessor, bigdl, developmentDF, config, false)
+            val outputValid = predict(preprocessor, bigdl, developmentDF, config, argmax = false)
             outputValid.show
             val validResult = outputValid.select("prediction", "target")
             score = evaluate(validResult, config, "valid")
@@ -341,14 +338,14 @@ object NER {
             val validResult = bf.select("prediction", "target")
             score = evaluate(validResult, config, "valid")
             saveScore(score, config.scorePath)
-            validResult.show(5, false)
+            validResult.show(5, truncate = false)
             // export to CoNLL format
             export(af.select("zs", "ys"), config, "train")
             export(bf.select("zs", "ys"), config, "valid")
         }
 
         sc.stop()
-      case None => {}
+      case None =>
     }
 
   }
