@@ -1,4 +1,4 @@
-package vlp.con
+package vlp.vsc
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SparkSession, DataFrame}

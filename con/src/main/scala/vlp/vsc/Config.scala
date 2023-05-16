@@ -1,4 +1,4 @@
-package vlp.con
+package vlp.vsc
 
 /**
  * @param hiddenSize size of the encoder layers (embeddingSize)

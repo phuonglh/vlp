@@ -1,0 +1,67 @@
+[
+  {
+    "id": "c0801851e59fe95e6b8b14b7faa0992a",
+    "target": [
+      {
+        "aspect": "HPG",
+        "sentiment": "positive"
+      },
+      {
+        "aspect": "HSG",
+        "sentiment": "positive"
+      },
+      {
+        "aspect": "NKG",
+        "sentiment": "positive"
+      }
+    ],
+    "prediction": [
+      {
+        "aspect": "HPG",
+        "sentiment": "negative"
+      },
+      {
+        "aspect": "HSG",
+        "sentiment": "neutral"
+      },
+      {
+        "aspect": "NKG",
+        "sentiment": "positive"
+      }
+    ]
+  },
+  {
+    "id": "b0e484065103824bcd7167168dbf63ad",
+    "target": [
+      {
+        "aspect": "HPG",
+        "sentiment": "neutral"
+      },
+      {
+        "aspect": "HSG",
+        "sentiment": "neutral"
+      },
+      {
+        "aspect": "NKG",
+        "sentiment": "neutral"
+      }
+    ],
+    "prediction": [
+      {
+        "aspect": "HPG",
+        "reference": null,
+        "sentiment": "positive"
+      },
+      {
+        "aspect": "HSG",
+        "reference": null,
+        "sentiment": "negative"
+      },
+      {
+        "aspect": "NKG",
+        "reference": null,
+        "sentiment": "neutral"
+      }
+    ]
+  }
+]

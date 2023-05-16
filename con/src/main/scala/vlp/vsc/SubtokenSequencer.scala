@@ -1,4 +1,4 @@
-package vlp.con
+package vlp.vsc
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.UnaryTransformer

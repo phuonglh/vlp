@@ -1,4 +1,4 @@
-package vlp.con
+package vlp.vsc
 
 import com.intel.analytics.bigdl.dllib.NNContext
 import com.intel.analytics.bigdl.numeric.NumericFloat
@@ -31,6 +31,7 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 
+import vlp.con.{Sequencer, CharSequencer, Sequencer4BERT, TimeDistributedTop1Accuracy}
 
 
 object VSC {

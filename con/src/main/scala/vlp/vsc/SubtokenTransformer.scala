@@ -1,4 +1,4 @@
-package vlp.con
+package vlp.vsc
 
 import org.apache.spark.ml.UnaryTransformer
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}

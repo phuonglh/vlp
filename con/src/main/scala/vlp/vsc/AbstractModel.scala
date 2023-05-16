@@ -1,4 +1,4 @@
-package vlp.con
+package vlp.vsc
 
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.{Sequential, Model}
@@ -14,6 +14,9 @@ import com.intel.analytics.bigdl.dllib.nnframes.NNModel
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.feature.{Tokenizer, RegexTokenizer, CountVectorizer, CountVectorizerModel, StringIndexer}
+
+import vlp.con.{Sequencer, CharSequencer, Sequencer4BERT, ArgMaxLayer}
+
 
 /**
  * Spelling error detection model.
