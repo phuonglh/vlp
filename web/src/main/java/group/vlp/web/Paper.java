@@ -1,5 +1,7 @@
 package group.vlp.web;
 
+import java.util.List;
+
 public class Paper {
 	private String[] authors;
 	private String title;
@@ -8,6 +10,7 @@ public class Paper {
 	private boolean firstAuthor;
 	private String publisher;
 	private String url;
+	private List<String> keywords;
 	
 	public Paper(String[] authors, String title, String venue, int year, boolean firstAuthor, String publisher) {
 		this.authors = authors;
@@ -44,5 +47,13 @@ public class Paper {
 	
 	public String getPublisher() {
 		return publisher;
+	}
+	
+	public List<String> getKeywords() {
+		return keywords;
+	}
+	
+	public void setKeywords(List<String> keywords) {
+		this.keywords = keywords;
 	}
 }
