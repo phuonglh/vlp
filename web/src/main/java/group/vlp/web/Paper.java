@@ -2,11 +2,19 @@ package group.vlp.web;
 
 import java.util.List;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+
+@Entity
 public class Paper {
+	@Id
+	@GeneratedValue
+	protected int id;
 	private String[] authors;
 	private String title;
 	private String venue; 
-	private int year;
+	private int publishedYear;
 	private boolean firstAuthor;
 	private String publisher;
 	private String url;
@@ -16,7 +24,7 @@ public class Paper {
 		this.authors = authors;
 		this.title = title;
 		this.venue = venue;
-		this.year = year;
+		this.publishedYear = year;
 		this.firstAuthor = firstAuthor;
 		this.publisher = publisher;
 	}
@@ -33,8 +41,8 @@ public class Paper {
 	public boolean isFirstAuthor() {
 		return firstAuthor;
 	}	
-	public int getYear() {
-		return year;
+	public int getPublishedYear() {
+		return publishedYear;
 	}
 	
 	public void setUrl(String url) {
@@ -55,5 +63,9 @@ public class Paper {
 	
 	public void setKeywords(List<String> keywords) {
 		this.keywords = keywords;
+	}
+	
+	public int getId() {
+		return id;
 	}
 }

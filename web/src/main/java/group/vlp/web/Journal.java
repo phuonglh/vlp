@@ -1,5 +1,8 @@
 package group.vlp.web;
 
+import jakarta.persistence.Entity;
+
+@Entity
 public class Journal extends Paper {
 	private int volume;
 	private int number;

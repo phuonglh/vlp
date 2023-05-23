@@ -1,5 +1,8 @@
 package group.vlp.web;
 
+import jakarta.persistence.Entity;
+
+@Entity
 public class Conference extends Paper {
 	private String place;
 	
