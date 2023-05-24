@@ -26,7 +26,10 @@ libraryDependencies ++= {
     "org.apache.kafka" % "kafka-clients" % "2.6.0",
     "de.l3s.boilerpipe" % "boilerpipe" % "1.1.0",
     "xerces" % "xercesImpl" % "2.11.0",
-    "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22"
+    "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22",
+    "org.apache.spark" % "spark-core_2.12" % "3.4.0",
+    "org.apache.spark" % "spark-sql_2.12" % "3.4.0",
+    "org.apache.spark" % "spark-mllib_2.12" % "3.4.0"
   )
 }
 
