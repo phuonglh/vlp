@@ -44,4 +44,4 @@ assembly / assemblyMergeStrategy := {
 }
 
 assembly / assemblyJarName := "llm.jar"
-assembly / mainClass := Some("vlp.llm.NewsIndexer")
+assembly / mainClass := Some("vlp.llm.OSCAR")
