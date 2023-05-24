@@ -1,4 +1,4 @@
-package vlp.jsl
+package vlp.llm
 
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.sql.{SaveMode, SparkSession}
