@@ -13,13 +13,14 @@ import org.apache.spark.sql.functions._
 object OSCAR {
   def main(args: Array[String]): Unit = {
     val pathInp = if (args.size > 0) args(0) else "/mnt/nfs/dataset/OSCAR/23"
-    val pathOut = if (args.size > 1) args(1) else pathInp
+    val pathOut = if (args.size > 1) args(1) else "/mnt/nfs/dataset/OSCAR/23-raw"
     val spark = SparkSession.builder().master("local").appName("OSCAR").getOrCreate()
     val df = spark.read.option("inferSchema", "true").json(pathInp).select("content")
     // filter all documents having more than 80 tokens
     val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
     val ef = tokenizer.transform(df)
     val ff = ef.withColumn("size", size(col("tokens"))).filter(col("size") >= 80)
+    print(s"Number of documents = ${ff.count}")
     ff.select("content").repartition(20).write.mode(SaveMode.Overwrite).json(pathOut)
     spark.stop()
   }
