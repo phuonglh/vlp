@@ -284,7 +284,7 @@ There is also a common option for verbose mode (`-v`) and for using the classifi
 
 ## 8. Diacritics Generator
 
-- TODO
+This module implements 3 models for diacritics generation. The first model `vlp.vdg.M1` is a simple character-based one which uses a bidirectional LSTM network architecture.
 
 ## 9. Zoo 
 

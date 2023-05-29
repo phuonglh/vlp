@@ -307,14 +307,3 @@ lazy val frl = (project in file("frl"))
         "org.scalatest" %% "scalatest" % "3.1.1" % "test"
       )
     )
-
-// MultiWoZ experiments
-lazy val woz = (project in file("woz"))
-    .settings(
-      assemblyJarName in assembly := "woz.jar",
-      libraryDependencies ++= Seq(
-        "org.slf4j" % "slf4j-simple" % "1.7.36",
-        "org.scalatest" %% "scalatest" % "3.1.1" % "test"
-      )
-    )
-  

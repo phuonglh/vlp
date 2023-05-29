@@ -10,16 +10,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controller for papers. 
+ * Controller for beans and entities. 
  * <p/>
  * @author phuonglh
  *
  */
 @RestController
-public class PaperController {
+public class Controller {
 	static List<Paper> papers = new LinkedList<>();
+	static List<Book> books = new LinkedList<>();
 	
 	static {
+		// 0. papers
 		Paper j1 = new Journal(new String[]{"Phuong Le-Hong", "Erik Cambria"}, 
 				"A Semantics-Aware Approach for Multilingual Natural Language Inference", 
 				"Language Resources and Evaluation",
@@ -39,6 +41,11 @@ public class PaperController {
 		c1.setKeywords(Arrays.asList(new String[] {"kse", "nlu", "platform", "fpt"}));
 		papers.add(c1);
 		
+		// 2. books
+		Book b1 = new Book("Tim Marshal", "Phan Linh Lan", "Prisoners of Geography", 2020);
+		books.add(b1);
+		Book b2 = new Book("Tim Marshal", "Trần Trọng Hải Minh", "Divided - Why We're Living in an Age of Walls", 2021);
+		books.add(b2);
 	}
 	
 	/**
@@ -59,5 +66,10 @@ public class PaperController {
 	public List<Paper> getPapers(@PathVariable String keyword) {
 		Predicate<? super Paper> predicate = paper -> paper.getKeywords().contains(keyword);
 		return papers.stream().filter(predicate).toList();
+	}
+	
+	@GetMapping(path = "/books")
+	public List<Book> getBooks() {
+		return books;
 	}
 }
