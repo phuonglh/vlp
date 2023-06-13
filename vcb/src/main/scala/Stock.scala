@@ -22,7 +22,7 @@ case class ConfigStock(
   recurrentSize: Int = 64,
   batchSize: Int = 32,
   learningRate: Float = 1E-3f,
-  epochs: Int = 40,
+  epochs: Int = 10,
   executorCores: String = "4",
   totalCores: String = "8",
   executorMemory: String = "4g",
