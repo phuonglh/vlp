@@ -1,3 +1,5 @@
+package vlp.vcb
+
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
@@ -17,25 +19,39 @@ import com.intel.analytics.bigdl.dllib.keras.metrics.{MSE, MAE}
 
 import org.apache.spark.SparkContext
 
+import org.json4s._
+import org.json4s.jackson.Serialization
+import scopt.OptionParser
+
 case class ConfigStock(
   lead: Int = 10,
-  recurrentSize: Int = 64,
+  hiddenSize: Int = 64,
   batchSize: Int = 32,
   learningRate: Float = 1E-3f,
   epochs: Int = 10,
+  master: String = "local[*]",
   executorCores: String = "4",
   totalCores: String = "8",
   executorMemory: String = "4g",
-  driverMemory: String = "4g"
+  driverMemory: String = "4g",
+  dataPath: String = "dat/HOSE_2008_2022_vnstock.csv",
+  stock: String = "VNM",
+  mode: String = "train"
 )
 
+/**
+ * An LSTM-based model for stock price prediction. We use a fix number of previous dates (called lead) to predict the close price of
+ * a given stock. Five input features open, high, low, close and volume are normalized to have mean 0 and deviation 1.
+ * The target variable (close price) is scaled by 1000.
+ *
+ */
 object Stock {
 
   private def preprocess(af: DataFrame, config: ConfigStock): DataFrame = {
     val assembler = new VectorAssembler().setInputCols(Array("Open", "High", "Low", "Close", "Volume")).setOutputCol("xRaw").setHandleInvalid("skip")
     val scalerX = new StandardScaler().setInputCol("xRaw").setOutputCol("x0")
     val pipeline = new Pipeline().setStages(Array(assembler, scalerX))
-    val pipelineModel = pipeline.fit(af) // TODO: save params for later re-scaling
+    val pipelineModel = pipeline.fit(af)
     val bf = pipelineModel.transform(af)
     // add "Date" column
     val cf = bf.withColumn("Date", to_date(col("TradingDate"), "yyy-MM-dd"))
@@ -49,15 +65,13 @@ object Stock {
     df.show(false)
     val colNames = (0 until config.lead).map(k => s"x$k").toArray
     val concat = new VectorAssembler().setInputCols(colNames).setOutputCol("x").setHandleInvalid("skip")
-    concat.transform(ef).select("x", "yRaw")
-      .filter(not(isnull(col("yRaw"))))
-      .withColumn("y", col("yRaw")/1000)
+    concat.transform(ef).select("x", "yRaw").filter(not(isnull(col("yRaw")))).withColumn("y", col("yRaw")/1000)
   }
 
   def createModel(config: ConfigStock): KerasNet[Float] = {
     val model = Sequential()
     model.add(Reshape(Array(config.lead, 5), inputShape = Shape(5*config.lead)))
-    model.add(LSTM(outputDim = config.recurrentSize, returnSequences = false))
+    model.add(LSTM(outputDim = config.hiddenSize, returnSequences = false))
     model.add(Dense(outputDim = 1))
     model
   }
@@ -78,41 +92,63 @@ object Stock {
   }
 
   def main(args: Array[String]): Unit = {
-    val config = ConfigStock()
-    val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster("local[*]")
-      .set("spark.executor.cores", config.executorCores)
-      .set("spark.cores.max", config.totalCores)
-      .set("spark.executor.memory", config.executorMemory)
-      .set("spark.driver.memory", config.driverMemory)
-    val sc = new SparkContext(conf)
-    Engine.init
+    val opts = new OptionParser[ConfigStock](getClass.getName) {
+      head(getClass.getName, "1.0")
+      opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[String]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
+      opt[String]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
+      opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
+      opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 16g")
+      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, predict}")
+      opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
+      opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("encoder hidden size")
+      opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
+      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x.toFloat)).text("learning rate")
+      opt[String]('d', "dataPath").action((x, conf) => conf.copy(dataPath = x)).text("training data path")
+    }
+    opts.parse(args, ConfigStock()) match {
+      case Some(config) =>
+        implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
+        println(Serialization.writePretty(config))
+        val conf = Engine.createSparkConf().setAppName(getClass().getName()).setMaster("local[*]")
+          .set("spark.executor.cores", config.executorCores)
+          .set("spark.cores.max", config.totalCores)
+          .set("spark.executor.memory", config.executorMemory)
+          .set("spark.driver.memory", config.driverMemory)
+        val sc = new SparkContext(conf)
+        Engine.init
 
-    val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
-    spark.sparkContext.setLogLevel("ERROR")
+        val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
+        spark.sparkContext.setLogLevel("ERROR")
 
-    val af = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("dat/HOSE_2008_2022_vnstock.csv")
-      .filter(col("Stock") === "VNM")
-    af.show(false)
-    println(af.count())
-    val df = preprocess(af, config)
-    df.show(false)
-    df.printSchema()
-    println(df.count())
+        // read the data and filter the stock symbol in interest
+        val af = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(config.dataPath).filter(col("Stock") === config.stock)
+        af.show(false)
+        println(af.count())
+        val df = preprocess(af, config)
+        df.show(false)
+        df.printSchema()
+        println(df.count())
 
-    val bigdl = createModel(config)
-    val trainingSummary = TrainSummary(appName = "stock", logDir = "sum")
-    val validationSummary = ValidationSummary(appName = "stock", logDir = "sum")
-    val estimator = NNEstimator(bigdl, MSECriterion(), Array(5*config.lead), Array(1))
-    estimator.setLabelCol("y").setFeaturesCol("x")
-      .setBatchSize(config.batchSize)
-      .setOptimMethod(new Adam(config.learningRate))
-      .setMaxEpoch(config.epochs)
-      .setTrainSummary(trainingSummary)
-      .setValidationSummary(validationSummary)
-      .setValidation(Trigger.everyEpoch, df, Array(new MSE(), new MAE()), config.batchSize)
-    estimator.fit(df)
-
-    spark.stop
+        config.mode match {
+          case "train" =>
+            val bigdl = createModel(config)
+            val trainingSummary = TrainSummary(appName = "stock", logDir = "sum")
+            val validationSummary = ValidationSummary(appName = "stock", logDir = "sum")
+            val estimator = NNEstimator(bigdl, MSECriterion(), Array(5 * config.lead), Array(1))
+            estimator.setLabelCol("y").setFeaturesCol("x")
+              .setBatchSize(config.batchSize)
+              .setOptimMethod(new Adam(config.learningRate))
+              .setMaxEpoch(config.epochs)
+              .setTrainSummary(trainingSummary)
+              .setValidationSummary(validationSummary)
+              .setValidation(Trigger.everyEpoch, df, Array(new MSE(), new MAE()), config.batchSize)
+            estimator.fit(df)
+          case "eval" =>
+          case _ =>
+        }
+        spark.stop()
+      case _ => println("No config. Do nothing.")
+    }
   }
 }
