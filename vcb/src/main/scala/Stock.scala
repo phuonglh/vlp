@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{col, isnull, lead, not, to_date}
+import org.apache.spark.sql.functions.{col, isnull, lead, not, to_date, element_at}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.Sequential
 import com.intel.analytics.bigdl.dllib.keras.models.{KerasNet, Models}
@@ -66,12 +66,21 @@ object Stock {
     concat.transform(ef).select("x", "yRaw").filter(not(isnull(col("yRaw")))).withColumn("y", col("yRaw")/1000)
   }
 
-  def createModel(config: ConfigStock): KerasNet[Float] = {
+  private def createModel(config: ConfigStock): KerasNet[Float] = {
     val model = Sequential()
     model.add(Reshape(Array(config.lead, 5), inputShape = Shape(5*config.lead)))
     model.add(LSTM(outputDim = config.hiddenSize, returnSequences = false))
     model.add(Dense(outputDim = 1))
     model
+  }
+
+  private def predict(bigdl: KerasNet[Float], df: DataFrame, config: ConfigStock): DataFrame = {
+    val sequential = bigdl.asInstanceOf[Sequential[Float]]
+    val model = NNModel(sequential).setFeaturesCol("x").setBatchSize(config.batchSize)
+    val ef = model.transform(df)
+    // "prediction" column contains 1-element array, we extract that only element to a new column "z"
+    val ff = ef.withColumn("z", element_at(col("prediction"), 1))
+    ff.select("y", "z").repartition(1)
   }
 
   def main(args: Array[String]): Unit = {
@@ -104,10 +113,10 @@ object Stock {
 
         // read the data and filter the stock symbol of interest
         val af = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(config.dataPath).filter(col("Stock") === config.stock)
-        af.show(false)
+        af.show()
         println(af.count())
         val df = preprocess(af, config)
-        df.show(false)
+        df.show()
         df.printSchema()
         println(s"Number of samples = ${df.count()}")
         val Array(trainingDF, validationDF) = df.randomSplit(Array(0.8, 0.2), 1234)
@@ -131,6 +140,12 @@ object Stock {
           case "eval" =>
             val bigdl = Models.loadModel[Float](s"${config.modelPath}/${config.stock}.bigdl")
             println(bigdl.summary())
+            // 1. validation set
+            val vf = predict(bigdl, validationDF, config)
+            vf.write.option("overwrite", true).csv(s"${config.modelPath}/${config.stock}-valid.csv")
+            // 2. training set
+            val tf = predict(bigdl, trainingDF, config)
+            tf.write.option("overwrite", true).csv(s"${config.modelPath}/${config.stock}-train.csv")
           case _ =>
         }
         spark.stop()
