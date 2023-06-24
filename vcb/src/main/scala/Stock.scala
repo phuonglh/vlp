@@ -142,10 +142,10 @@ object Stock {
             println(bigdl.summary())
             // 1. validation set
             val vf = predict(bigdl, validationDF, config)
-            vf.write.option("overwrite", true).csv(s"${config.modelPath}/${config.stock}-valid.csv")
+            vf.write.option("overwrite", true).csv(s"${config.modelPath}/${config.stock}-valid")
             // 2. training set
             val tf = predict(bigdl, trainingDF, config)
-            tf.write.option("overwrite", true).csv(s"${config.modelPath}/${config.stock}-train.csv")
+            tf.write.option("overwrite", true).csv(s"${config.modelPath}/${config.stock}-train")
           case _ =>
         }
         spark.stop()
