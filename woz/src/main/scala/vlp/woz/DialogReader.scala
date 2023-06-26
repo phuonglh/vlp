@@ -57,7 +57,7 @@ object DialogReader {
   }
 
   /**
-    * For each turn in a df (read by the [[#readDialogActs()]] method), concat the act history at previous 3 turns.
+    * For each turn in a df (read by the [[readDialogActs()]] method), concat the act history at previous 3 turns.
     * First, we use the `concat_ws()` function to flatten the `actNames` column (say, turn an array `[Hotel-Inform, Hotel-Select]`
     * to a space-delimited string `Hotel-Inform Hotel-Select`). 
     * 
@@ -109,7 +109,8 @@ object DialogReader {
     df.printSchema()
     // extract the samples: (utteranceId, "utterance", Seq[communicativeFunction])
     val rdd = df.rdd.map { row => Row(
-        row.getAs[Row]("txt").getAs[Long]("_id").toString, row.getAs[Row]("txt").getAs[String]("_VALUE"), 
+        row.getAs[Row]("txt").getAs[Long]("_id").toString,
+        row.getAs[Row]("txt").getAs[String]("_VALUE"),
         // use flatMap to flatten communicativeFunctions elements
         row.getAs[Seq[Row]]("act").flatMap(_.getAs[Seq[String]]("communicativeFunction"))
       )
