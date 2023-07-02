@@ -18,10 +18,14 @@ object Extractor {
         row.getAs[Row]("txt").getAs[String]("_VALUE"),
         row.getAs[Seq[Row]]("act").map(_.getAs[String]("domain")),
         row.getAs[Seq[Row]]("act").flatMap(_.getAs[Seq[String]]("communicativeFunction")),
-        row.getAs[Seq[Row]]("act").map { row =>
+        row.getAs[Seq[Row]]("act").flatMap { row =>
           val j = row.fieldIndex("slot")
-          if (!row.isNullAt(j)) "{" + row.getAs[String](j).trim.replaceAll("""\s+""", " ") + "}" else ""
-        }.filterNot(_.isEmpty)
+          if (!row.isNullAt(j)) row.getAs[String](j).trim
+            .replaceAll("""\s+""", " ")
+            .replaceAll("\"", "")
+            .split(",")
+          else List.empty[String]
+        }
       )
     }
     val schema = StructType(Seq(
@@ -36,6 +40,19 @@ object Extractor {
     ef
   }
 
+  /**
+   * Groups slot types into a map.
+   * @param a slot element
+   * @return a map of slotType -> Seq(slotValues)
+   */
+  private val groupSlots: Array[String] => Map[String, Seq[String]] = (a: Array[String]) => {
+    a.map { c =>
+      val d = c.split(":")
+      if (d.nonEmpty) (d(0).trim, d(1).trim) else ("", "")
+    }.groupBy(_._1).mapValues(_.map(_._2))
+  }
+  val f = udf(groupSlots)
+
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
     val spark = SparkSession.builder.config(conf).getOrCreate()
@@ -45,6 +62,10 @@ object Extractor {
     df.show()
     df.printSchema()
     println(df.count())
+    df.select("slots").show(false)
+    val ef = df.withColumn("state", f(col("slots")))
+    ef.select("turnId", "state").show(false)
+    ef.printSchema()
 //    val schema = StructType(Seq(
 //      StructField("productName", StringType, true),
 //      StructField("productProvider", StringType, true),
