@@ -9,7 +9,7 @@ import org.apache.spark.sql.functions._
  * <p/>
  * This utility reads OSCAR-23 json file(s) into a data frame, tokenizes the content field, filters all documents
  * containing less than 80 syllables, flat map the contents into lines, filters line of length more than 40 characters
- * and less than 1024 characters; and writes the result into a text directory (20 partitions).
+ * and less than 2048 characters; and writes the result into a text directory (20 partitions).
  *
  *
  * <p/>
@@ -31,7 +31,7 @@ object OSCAR {
     import spark.implicits._
     val gf = ff.select("content").flatMap(row => row.getAs[String]("content").split("""\n+""")).toDF("line")
     // filter lines based on their length
-    val hf = gf.withColumn("length", length(col("line"))).filter(col("length") >= 40 && col("length") <= 1024)
+    val hf = gf.withColumn("length", length(col("line"))).filter(col("length") >= 40 && col("length") <= 2048)
     print(s"Number of filtered lines = ${hf.count}\n")
     hf.select("line").repartition(20).write.mode(SaveMode.Overwrite).text(pathOut)
     spark.stop()
