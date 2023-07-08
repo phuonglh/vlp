@@ -10,5 +10,5 @@ case class Config(
   mode: String = "eval",
   batchSize: Int = 32,
   epochs: Int = 20,
-  learningRate: Double = 1E-4
+  learningRate: Double = 5E-5
 )

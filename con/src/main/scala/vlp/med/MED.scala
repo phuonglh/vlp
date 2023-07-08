@@ -1,6 +1,6 @@
 package vlp.med
 
-import com.johnsnowlabs.nlp.DocumentAssembler
+import com.johnsnowlabs.nlp.{Annotation, DocumentAssembler}
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
 import com.johnsnowlabs.nlp.embeddings.XlmRoBertaSentenceEmbeddings
 import org.apache.spark.ml.{Pipeline, PipelineModel}
@@ -12,6 +12,8 @@ import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
 import java.nio.file.{Files, Paths}
+import com.johnsnowlabs.nlp.functions._
+
 
 object MED {
   def readCorpus(spark: SparkSession, language: String): DataFrame = {
@@ -27,8 +29,9 @@ object MED {
       val trainId = line.substring(0, j).toDouble
       val text = line.substring(j+1, n-43)
       val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
-      val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(_._2.toString)
-      (trainId, text, if (labels.length > 0) labels else Array("NA"))
+      // convert to 23 labels [0, 1, 2,..., 22]. The zero vector corresponds to 0. Other labels are shifted by their index by 1.
+      val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(p => (p._2 + 1).toString)
+      (trainId, text, if (labels.length > 0) labels else Array("0"))
     }.toDF("id", "text", "ys")
   }
 
@@ -95,9 +98,12 @@ object MED {
         println(s"Number of samples = ${df.count}")
         val model = createPipeline(df, config)
         val ef = model.transform(df)
-        ef.show()
-        ef.printSchema()
-        val score = evaluate(ef, config, "train")
+        // convert the "category" column to the the prediction column with a list of Double for evaluation
+        val ff = ef.mapAnnotationsCol("category", "prediction", "category",
+          (a: Seq[Annotation]) => if (a.nonEmpty) a.map(_.result.toDouble) else List.empty[Double])
+        ff.show()
+        ff.printSchema()
+        val score = evaluate(ff.select("prediction", "ys"), config, "train")
         println(Serialization.writePretty(score))
 
         spark.stop()
