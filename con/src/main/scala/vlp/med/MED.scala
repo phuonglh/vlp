@@ -27,7 +27,7 @@ object MED {
       val trainId = line.substring(0, j).toDouble
       val text = line.substring(j+1, n-43)
       val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
-      val labels = ys.split(",").zipWithIndex.map(_._2.toString)
+      val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(_._2.toString)
       (trainId, text, labels)
     }.toDF("id", "text", "ys")
   }
@@ -85,7 +85,7 @@ object MED {
     opts.parse(args, Config()) match {
       case Some(config) =>
         val spark = SparkSession.builder().config("spark.driver.memory", config.driverMemory).master(config.master).appName("MED").getOrCreate()
-        spark.sparkContext.setLogLevel("INFO")
+        spark.sparkContext.setLogLevel("WARN")
 
         implicit val formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
