@@ -6,7 +6,7 @@ import com.johnsnowlabs.nlp.embeddings.XlmRoBertaSentenceEmbeddings
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{col, length, not, trim}
+import org.apache.spark.sql.functions.{col, length, not, trim, udf}
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
@@ -29,7 +29,7 @@ object MED {
       val trainId = line.substring(0, j).toDouble
       val text = line.substring(j+1, n-43)
       val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
-      // convert to 23 labels [0, 1, 2,..., 22]. The zero vector corresponds to 0. Other labels are shifted by their index by 1.
+      // convert to 23 labels [0, 1, 2,..., 22]. The zero vector corresponds to "0". Other labels are shifted by their index by 1.
       val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(p => (p._2 + 1).toString)
       (trainId, text, if (labels.length > 0) labels else Array("0"))
     }.toDF("id", "text", "ys")
@@ -59,7 +59,7 @@ object MED {
     }
     val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
-    val numLabels = ls.max.toInt + 1 // zero-based labels
+    val numLabels = ls.length
     val precisionByLabel = Array.fill(numLabels)(0d)
     val recallByLabel = Array.fill(numLabels)(0d)
     val fMeasureByLabel = Array.fill(numLabels)(0d)
@@ -98,12 +98,15 @@ object MED {
         println(s"Number of samples = ${df.count}")
         val model = createPipeline(df, config)
         val ef = model.transform(df)
-        // convert the "category" column to the the prediction column with a list of Double for evaluation
+        // convert the "category" column (of type Array[String]) to the the "prediction" column of type List[Double] for evaluation
         val ff = ef.mapAnnotationsCol("category", "prediction", "category",
           (a: Seq[Annotation]) => if (a.nonEmpty) a.map(_.result.toDouble) else List.empty[Double])
-        ff.show()
-        ff.printSchema()
-        val score = evaluate(ff.select("prediction", "ys"), config, "train")
+        // convert the "ys" column (of type Array[String]) to the  "label" column of type List[Double] for evaluation
+        val f = udf((ys: List[String]) => ys.map(_.toDouble))
+        val gf = ff.withColumn("label", f(col("ys")))
+        gf.show()
+        gf.printSchema()
+        val score = evaluate(gf.select("prediction", "label"), config, "train")
         println(Serialization.writePretty(score))
 
         spark.stop()
