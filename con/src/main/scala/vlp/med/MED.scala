@@ -1,10 +1,10 @@
 package vlp.med
 
 import com.johnsnowlabs.nlp.DocumentAssembler
-import com.johnsnowlabs.nlp.annotators.classifier.dl.{ClassifierDLApproach, MultiClassifierDLApproach}
+import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
 import com.johnsnowlabs.nlp.embeddings.XlmRoBertaSentenceEmbeddings
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.mllib.evaluation.{MulticlassMetrics, MultilabelMetrics}
+import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{col, length, not, trim}
 import org.json4s.NoTypeHints
@@ -25,9 +25,10 @@ object MED {
       if (j <= 1 || j > 8) println("ERROR: " + line)
       val n = line.length
       val trainId = line.substring(0, j).toDouble
-      val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
       val text = line.substring(j+1, n-43)
-      (trainId, text, ys)
+      val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
+      val labels = ys.split(",").zipWithIndex.map(_._2.toString)
+      (trainId, text, labels)
     }.toDF("id", "text", "ys")
   }
 
@@ -35,7 +36,7 @@ object MED {
     val documentAssembler = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenEmbeddings = XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
 //    val labelIndexer = new StringIndexer().setInputCol("ys").setOutputCol("label")
-    val classifier = new ClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys")
+    val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
     val validPath = s"dat/med/${config.language}"
     if (!Files.exists(Paths.get(validPath))) {
@@ -53,7 +54,7 @@ object MED {
     val predictionsAndLabels = result.rdd.map { case row =>
       (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
     }
-    val metrics = new MulticlassMetrics(predictionsAndLabels)
+    val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
     val numLabels = ls.max.toInt + 1 // zero-based labels
     val precisionByLabel = Array.fill(numLabels)(0d)
@@ -63,9 +64,9 @@ object MED {
     ls.foreach { k =>
       precisionByLabel(k.toInt) = metrics.precision(k)
       recallByLabel(k.toInt) = metrics.recall(k)
-      fMeasureByLabel(k.toInt) = metrics.fMeasure(k)
+      fMeasureByLabel(k.toInt) = metrics.f1Measure(k)
     }
-    Score(config.language, split, metrics.accuracy, metrics.weightedFMeasure, precisionByLabel, recallByLabel, fMeasureByLabel)
+    Score(config.language, split, metrics.accuracy, metrics.f1Measure, precisionByLabel, recallByLabel, fMeasureByLabel)
   }
 
   def main(args: Array[String]): Unit = {
@@ -89,11 +90,13 @@ object MED {
         implicit val formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
         val df = readCorpus(spark, config.language)
-        df.show
+        df.show()
         df.printSchema()
         println(s"Number of samples = ${df.count}")
         val model = createPipeline(df, config)
         val ef = model.transform(df)
+        ef.show()
+        ef.printSchema()
         val score = evaluate(ef, config, "train")
         println(Serialization.writePretty(score))
 
