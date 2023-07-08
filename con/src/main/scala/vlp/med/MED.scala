@@ -3,18 +3,18 @@ package vlp.med
 import com.johnsnowlabs.nlp.DocumentAssembler
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
 import com.johnsnowlabs.nlp.embeddings.XlmRoBertaSentenceEmbeddings
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{col, length, not, trim}
-import org.json4s.NoTypeHints
+import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
 import java.nio.file.{Files, Paths}
 
 object MED {
-  private def readCorpus(spark: SparkSession, language: String): DataFrame = {
+  def readCorpus(spark: SparkSession, language: String): DataFrame = {
     val trainPath = s"dat/med/ntcir17_mednlp-sc_sm_train_26_06_23/${language}.csv"
     import spark.implicits._
     val df = spark.read.text(trainPath).filter(length(trim(col("value"))) > 0)
@@ -28,14 +28,14 @@ object MED {
       val text = line.substring(j+1, n-43)
       val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
       val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(_._2.toString)
-      (trainId, text, labels)
+      (trainId, text, if (labels.length > 0) labels else Array("NA"))
     }.toDF("id", "text", "ys")
   }
 
-  def createPipeline(df: DataFrame, config: Config) = {
+  def createPipeline(df: DataFrame, config: Config): PipelineModel = {
     val documentAssembler = new DocumentAssembler().setInputCol("text").setOutputCol("document")
     val tokenEmbeddings = XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
-//    val labelIndexer = new StringIndexer().setInputCol("ys").setOutputCol("label")
+    //    val labelIndexer = new StringIndexer().setInputCol("ys").setOutputCol("label")
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
     val validPath = s"dat/med/${config.language}"
@@ -51,7 +51,7 @@ object MED {
   }
 
   def evaluate(result: DataFrame, config: Config, split: String): Score = {
-    val predictionsAndLabels = result.rdd.map { case row =>
+    val predictionsAndLabels = result.rdd.map { row =>
       (row.getAs[Seq[Double]](0).toArray, row.getAs[Seq[Double]](1).toArray)
     }
     val metrics = new MultilabelMetrics(predictionsAndLabels)
@@ -70,8 +70,8 @@ object MED {
   }
 
   def main(args: Array[String]): Unit = {
-    val opts = new OptionParser[Config](getClass().getName()) {
-      head(getClass().getName(), "1.0")
+    val opts = new OptionParser[Config](getClass.getName) {
+      head(getClass.getName, "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
@@ -87,7 +87,7 @@ object MED {
         val spark = SparkSession.builder().config("spark.driver.memory", config.driverMemory).master(config.master).appName("MED").getOrCreate()
         spark.sparkContext.setLogLevel("WARN")
 
-        implicit val formats = Serialization.formats(NoTypeHints)
+        implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
         val df = readCorpus(spark, config.language)
         df.show()

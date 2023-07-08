@@ -9,6 +9,6 @@ case class Config(
   driverMemory: String = "8g", // D
   mode: String = "eval",
   batchSize: Int = 32,
-  epochs: Int = 1,
+  epochs: Int = 20,
   learningRate: Double = 1E-4
 )
