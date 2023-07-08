@@ -69,9 +69,6 @@ object MED {
   }
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().config("spark.driver.memory", "8g").master("local[4]").appName("MED").getOrCreate()
-    spark.sparkContext.setLogLevel("INFO")
-
     val opts = new OptionParser[Config](getClass().getName()) {
       head(getClass().getName(), "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
@@ -86,6 +83,9 @@ object MED {
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
+        val spark = SparkSession.builder().config("spark.driver.memory", config.driverMemory).master(config.master).appName("MED").getOrCreate()
+        spark.sparkContext.setLogLevel("INFO")
+
         implicit val formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
         val df = readCorpus(spark, config.language)
@@ -96,8 +96,9 @@ object MED {
         val ef = model.transform(df)
         val score = evaluate(ef, config, "train")
         println(Serialization.writePretty(score))
+
+        spark.stop()
       case None =>
     }
-    spark.stop()
   }
 }
