@@ -8,8 +8,10 @@ case class Config(
   executorMemory: String = "8g", // Z
   driverMemory: String = "8g", // D
   mode: String = "eval",
+  modelType: String = "x",
   batchSize: Int = 32,
   fraction: Double = 1.0f,
+  threshold: Float = 0.5f,
   epochs: Int = 20,
-  learningRate: Double = 5E-5
+  learningRate: Double = 1E-4
 )

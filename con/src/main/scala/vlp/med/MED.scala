@@ -2,7 +2,7 @@ package vlp.med
 
 import com.johnsnowlabs.nlp.{Annotation, DocumentAssembler}
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
-import com.johnsnowlabs.nlp.embeddings.XlmRoBertaSentenceEmbeddings
+import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, UniversalSentenceEncoder, XlmRoBertaSentenceEmbeddings}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -37,10 +37,15 @@ object MED {
 
   def createPipeline(df: DataFrame, config: Config): PipelineModel = {
     val documentAssembler = new DocumentAssembler().setInputCol("text").setOutputCol("document")
-    val tokenEmbeddings = XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
+    val tokenEmbeddings = config.modelType match {
+      case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx").setInputCols("document").setOutputCol("embeddings")
+      case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
+      case _ => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
+    }
     //    val labelIndexer = new StringIndexer().setInputCol("ys").setOutputCol("label")
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
+      .setThreshold(config.threshold)
     val validPath = s"dat/med/${config.language}"
     if (!Files.exists(Paths.get(validPath))) {
       val preprocessor = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings))
@@ -59,11 +64,11 @@ object MED {
     }
     val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
+    println("List of all labels: " + ls.mkString(", "))
     val numLabels = ls.length
     val precisionByLabel = Array.fill(numLabels)(0d)
     val recallByLabel = Array.fill(numLabels)(0d)
     val fMeasureByLabel = Array.fill(numLabels)(0d)
-    println(ls.mkString(", "))
     ls.foreach { k =>
       precisionByLabel(k.toInt) = metrics.precision(k)
       recallByLabel(k.toInt) = metrics.recall(k)
@@ -82,6 +87,7 @@ object MED {
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 8g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/test")
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either en/fr/de/ja")
+      opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("embedding model type, either b/u/x")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('n', "fraction").action((x, conf) => conf.copy(fraction = x)).text("percentage of the dataset to use")
@@ -93,7 +99,7 @@ object MED {
 
         implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
-        val df = readCorpus(spark, config.language).sample(config.fraction)
+        val df = readCorpus(spark, config.language).sample(config.fraction).filter(col("ys") =!= Array("0"))
         df.show()
         df.printSchema()
         println(s"Number of samples = ${df.count}")
