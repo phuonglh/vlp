@@ -84,6 +84,7 @@ object MED {
       opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language, either en/fr/de/ja")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
+      opt[Double]('n', "fraction").action((x, conf) => conf.copy(fraction = x)).text("percentage of the dataset to use")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
@@ -92,12 +93,13 @@ object MED {
 
         implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
-        val df = readCorpus(spark, config.language)
+        val df = readCorpus(spark, config.language).sample(config.fraction)
         df.show()
         df.printSchema()
         println(s"Number of samples = ${df.count}")
         val model = createPipeline(df, config)
         val ef = model.transform(df)
+        ef.show()
         // convert the "category" column (of type Array[String]) to the the "prediction" column of type List[Double] for evaluation
         val ff = ef.mapAnnotationsCol("category", "prediction", "category",
           (a: Seq[Annotation]) => if (a.nonEmpty) a.map(_.result.toDouble) else List.empty[Double])
