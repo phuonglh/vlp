@@ -11,7 +11,7 @@ case class Config(
   modelType: String = "x",
   batchSize: Int = 32,
   fraction: Double = 1.0f,
-  threshold: Float = 0.5f,
+  threshold: Float = 0.3f,
   epochs: Int = 20,
   learningRate: Double = 1E-4
 )

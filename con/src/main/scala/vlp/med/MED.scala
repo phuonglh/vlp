@@ -65,7 +65,7 @@ object MED {
     val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
     println("List of all labels: " + ls.mkString(", "))
-    val numLabels = ls.max.toInt + 1 // [0, 1, ..., 22] => 23 positions; [1, 2,...,22] => 23 positions
+    val numLabels = if (ls.isEmpty) 0 else (ls.max.toInt + 1) // [0, 1, ..., 22] => 23 positions; [1, 2,...,22] => 23 positions
     val precisionByLabel = Array.fill(numLabels)(0d)
     val recallByLabel = Array.fill(numLabels)(0d)
     val fMeasureByLabel = Array.fill(numLabels)(0d)
@@ -91,6 +91,7 @@ object MED {
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('n', "fraction").action((x, conf) => conf.copy(fraction = x)).text("percentage of the dataset to use")
+      opt[Double]('e', "threshold").action((x, conf) => conf.copy(threshold = x.toFloat)).text("the minimum threshold for each label to be accepted")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
@@ -99,7 +100,7 @@ object MED {
 
         implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
-        val df = readCorpus(spark, config.language).sample(config.fraction, 220712L).filter(col("ys") =!= Array("0"))
+        val df = readCorpus(spark, config.language).sample(config.fraction, 220712L)// .filter(col("ys") =!= Array("0"))
         df.show()
         df.printSchema()
         println(s"Number of samples = ${df.count}")
