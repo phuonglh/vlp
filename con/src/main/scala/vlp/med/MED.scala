@@ -42,18 +42,18 @@ object MED {
       case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols("document").setOutputCol("embeddings")
       case _ => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx").setInputCols("document").setOutputCol("embeddings")
     }
-    //    val labelIndexer = new StringIndexer().setInputCol("ys").setOutputCol("label")
-    val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys")
-      .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
-      .setThreshold(config.threshold)
     val validPath = s"dat/med/${config.language}"
     if (!Files.exists(Paths.get(validPath))) {
       val preprocessor = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings))
       val preprocessorModel = preprocessor.fit(df)
       val ef = preprocessorModel.transform(df)
-      ef.write.save(validPath)
+      ef.write.parquet(validPath)
     }
-    classifier.setTestDataset(validPath)
+    val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys")
+      .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
+      .setThreshold(config.threshold)
+      .setValidationSplit(0.1f)
+      .setTestDataset(validPath)
     val pipeline = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings, classifier))
     pipeline.fit(df)
   }
@@ -65,7 +65,7 @@ object MED {
     val metrics = new MultilabelMetrics(predictionsAndLabels)
     val ls = metrics.labels
     println("List of all labels: " + ls.mkString(", "))
-    val numLabels = ls.length
+    val numLabels = ls.max.toInt + 1 // [0, 1, ..., 22] => 23 positions; [1, 2,...,22] => 23 positions
     val precisionByLabel = Array.fill(numLabels)(0d)
     val recallByLabel = Array.fill(numLabels)(0d)
     val fMeasureByLabel = Array.fill(numLabels)(0d)
@@ -99,7 +99,7 @@ object MED {
 
         implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
-        val df = readCorpus(spark, config.language).sample(config.fraction).filter(col("ys") =!= Array("0"))
+        val df = readCorpus(spark, config.language).sample(config.fraction, 220712L).filter(col("ys") =!= Array("0"))
         df.show()
         df.printSchema()
         println(s"Number of samples = ${df.count}")
