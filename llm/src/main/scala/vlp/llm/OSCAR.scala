@@ -20,7 +20,7 @@ object OSCAR {
   def main(args: Array[String]): Unit = {
     val pathInp = if (args.size > 0) args(0) else "dat/23"
     val pathOut = if (args.size > 1) args(1) else "pre/23"
-    val spark = SparkSession.builder().master("local").config("spark.driver.memory", "12g").appName("OSCAR").getOrCreate()
+    val spark = SparkSession.builder().master("local[*]").config("spark.driver.memory", "12g").appName("OSCAR").getOrCreate()
     val df = spark.read.option("inferSchema", "true").json(pathInp).select("content")
     // filter all documents having more than 80 tokens
     val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
