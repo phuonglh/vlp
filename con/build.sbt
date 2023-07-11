@@ -26,7 +26,7 @@ lazy val commonSettings = Seq(
 
 lazy val con = (project in file("."))
     .settings(commonSettings, 
-      assembly / mainClass := Some("vlp.con.Parser"),
+      assembly / mainClass := Some("vlp.con.MED"),
       assembly / assemblyJarName := "con.jar",
       libraryDependencies ++= Seq(),
    run / fork := true
