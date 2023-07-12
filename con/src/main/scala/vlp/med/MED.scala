@@ -83,7 +83,7 @@ object MED {
       val preprocessor = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings))
       val preprocessorModel = preprocessor.fit(df)
       preprocessorModel.transform(df)
-        .mapAnnotationsCol(s"embeddings:$lang", "e:$lang", "embeddings", (a: Seq[Annotation]) => a.head.embeddings)
+        .mapAnnotationsCol(s"embeddings:$lang", s"e:$lang", "embeddings", (a: Seq[Annotation]) => a.head.embeddings)
     }
     // join all the data frames of the four languages
     val bf = cfs.reduce((cf1, cf2) => cf1.join(cf2, "id"))
