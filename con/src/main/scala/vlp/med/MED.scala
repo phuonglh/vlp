@@ -6,14 +6,13 @@ import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, UniversalSentenc
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{col, length, not, trim, udf}
+import org.apache.spark.sql.functions.{col, element_at, length, not, trim, udf}
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
 import java.nio.file.{Files, Paths}
 import com.johnsnowlabs.nlp.functions._
-import org.apache.spark.ml.linalg.Vectors
 
 
 object MED {
@@ -63,8 +62,7 @@ object MED {
     }
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn(s"ys:${config.language}")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
-      .setThreshold(config.threshold)
-      .setValidationSplit(0.1f)
+      .setThreshold(config.threshold.toFloat)
       .setTestDataset(validPath)
     val pipeline = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings, classifier))
     pipeline.fit(df)
@@ -72,25 +70,38 @@ object MED {
 
   def createPipelineMulti(df: DataFrame, config: Config): PipelineModel = {
     val languages = Array("en", "fr", "de", "ja")
-    val documentAssemblers = languages.map(lang => new DocumentAssembler().setInputCol(s"text:$lang").setOutputCol(s"document:$lang"))
-    val tokenEmbeddings = config.modelType match {
-      case "b" => languages.map(lang => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx")
-        .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang"))
-      case "u" => languages.map(lang => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx")
-        .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang"))
-      case _ => languages.map(lang => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx")
-        .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang"))
+    val cfs = languages.map { lang =>
+      val documentAssembler = new DocumentAssembler().setInputCol(s"text:$lang").setOutputCol(s"document:$lang")
+      val tokenEmbeddings = config.modelType match {
+        case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx")
+          .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
+        case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols(s"document:$lang")
+          .setOutputCol(s"embeddings:$lang")
+        case _ => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx")
+          .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
+      }
+      val preprocessor = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings))
+      val preprocessorModel = preprocessor.fit(df)
+      preprocessorModel.transform(df)
+        .mapAnnotationsCol(s"embeddings:$lang", "e:$lang", "embeddings", (a: Seq[Annotation]) => a.head.embeddings)
     }
-    val preprocessor = new Pipeline().setStages(documentAssemblers ++ tokenEmbeddings)
-    val preprocessorModel = preprocessor.fit(df)
+    // join all the data frames of the four languages
+    val bf = cfs.reduce((cf1, cf2) => cf1.join(cf2, "id"))
+    bf.printSchema()
     // compute the average embeddings of the four languages
     val average = udf((e: Array[Float], f: Array[Float], d: Array[Float], j: Array[Float]) => {
       val result = Array.fill[Float](e.size)(0f)
-      for (k <- 0 until e.size) result(k) = (e(k) + f(k) + d(k) + j(k)) / 4
+      for (k <- 0 until e.size)
+        result(k) = (e(k) + f(k) + d(k) + j(k))/4
       result
     })
-    val ef = preprocessorModel.transform(df).withColumn("embeddings",
-      average(col("embeddings:en"), col("embeddings:fr"), col("embeddings:de"), col("embeddings:ja"))
+    val ef = bf.withColumn("embeddings",
+      average(
+        element_at(col("e:en"), 0),
+        element_at(col("e:fr"), 0),
+        element_at(col("e:de"), 0),
+        element_at(col("e:ja"), 0)
+      )
     )
     val validPath = s"dat/med/4"
     if (!Files.exists(Paths.get(validPath))) {
@@ -98,10 +109,9 @@ object MED {
     }
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys:en")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
-      .setThreshold(config.threshold)
-      .setValidationSplit(0.1f)
+      .setThreshold(config.threshold.toFloat)
       .setTestDataset(validPath)
-    val pipeline = new Pipeline().setStages(documentAssemblers ++ tokenEmbeddings ++ Array(classifier))
+    val pipeline = new Pipeline().setStages(Array(classifier))
     pipeline.fit(df)
   }
 
@@ -138,7 +148,7 @@ object MED {
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('n', "fraction").action((x, conf) => conf.copy(fraction = x)).text("percentage of the dataset to use")
-      opt[Double]('e', "threshold").action((x, conf) => conf.copy(threshold = x.toFloat)).text("the minimum threshold for each label to be accepted")
+      opt[Double]('e', "threshold").action((x, conf) => conf.copy(threshold = x)).text("the minimum threshold for each label to be accepted")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
