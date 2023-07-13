@@ -5,18 +5,32 @@ import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
 import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, UniversalSentenceEncoder, XlmRoBertaSentenceEmbeddings}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{col, length, not, trim, udf}
+import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
+import org.apache.spark.sql.functions.{col, flatten, length, not, size, trim, udf}
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
 import java.nio.file.{Files, Paths}
 import com.johnsnowlabs.nlp.functions._
+import com.intel.analytics.bigdl.dllib.keras.layers.{Dense, Dropout, Reshape}
+import com.intel.analytics.bigdl.numeric.NumericFloat
+import com.intel.analytics.bigdl.dllib.keras.{Model, Sequential}
+import com.intel.analytics.bigdl.dllib.keras.models.{KerasNet, Models}
+import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
+import com.intel.analytics.bigdl.dllib.keras.metrics.CategoricalAccuracy
+import com.intel.analytics.bigdl.dllib.optim.{MAE, Trigger}
+import com.intel.analytics.bigdl.dllib.utils.{Engine, Shape}
+import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
+import com.intel.analytics.bigdl.dllib.nnframes.{NNEstimator, NNModel}
+import com.intel.analytics.bigdl.dllib.nn.BCECriterion
+import com.johnsnowlabs.nlp.base.EmbeddingsFinisher
+import org.apache.spark.SparkContext
+import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 
 
 object MED {
-  def readCorpus(spark: SparkSession, language: String): DataFrame = {
+  def readCorpusSingle(spark: SparkSession, language: String): DataFrame = {
     val trainPath = s"dat/med/ntcir17_mednlp-sc_sm_train_26_06_23/${language}.csv"
     import spark.implicits._
     val df = spark.read.text(trainPath).filter(length(trim(col("value"))) > 0)
@@ -29,7 +43,7 @@ object MED {
       val trainId = line.substring(0, j).toDouble
       var text = line.substring(j+1, n-43)
       // remove quotes at the beginning or the end of the text if there are
-      if (text.startsWith("\"")) text = text.substring(1, text.size-1)
+      if (text.startsWith("\"")) text = text.substring(1, text.length-1)
       val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
       // convert to 23 labels [0, 1, 2,..., 22]. The zero vector corresponds to "0". Other labels are shifted by their index by 1.
       val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(p => (p._2 + 1).toString)
@@ -37,9 +51,33 @@ object MED {
     }.toDF("id", s"text:${language}", s"ys:${language}")
   }
 
-  def readCorpus(spark: SparkSession): DataFrame = {
+  def readCorpusMulti(spark: SparkSession, language: String): DataFrame = {
+    val trainPath = s"dat/med/ntcir17_mednlp-sc_sm_train_26_06_23/${language}.csv"
+    import spark.implicits._
+    val df = spark.read.text(trainPath).filter(length(trim(col("value"))) > 0)
+    val header = df.first().get(0)
+    df.filter(not(col("value").contains(header))).map { row =>
+      val line = row.getAs[String](0)
+      val j = line.indexOf(",")
+      if (j <= 1 || j > 8) println("ERROR: " + line)
+      val n = line.length
+      val trainId = line.substring(0, j).toDouble
+      var text = line.substring(j + 1, n - 43)
+      // remove quotes at the beginning or the end of the text if there are
+      if (text.startsWith("\"")) text = text.substring(1, text.length - 1)
+      val ys = line.substring(n - 43) // 22 binary labels, plus 21 commas
+      // convert 23 labels into a multi-hot vector
+      val labels = Vectors.dense(ys.split(",").map(_.toDouble))
+      (trainId, text, labels)
+    }.toDF("id", s"text:${language}", s"ys:${language}")
+  }
+
+
+  def readCorpus(spark: SparkSession, sparseLabel: Boolean): DataFrame = {
     val languages = List("de", "fr", "en", "ja")
-    val dfs = languages.map(readCorpus(spark, _))
+    val dfs = languages.map { lang =>
+      if (sparseLabel) readCorpusSingle(spark, lang) else readCorpusMulti(spark, lang)
+    }
     dfs.reduce((df1, df2) => df1.join(df2, "id"))
   }
 
@@ -68,49 +106,56 @@ object MED {
     pipeline.fit(df)
   }
 
-  def createPipelineMulti(df: DataFrame, config: Config): PipelineModel = {
-    val languages = Array("en", "fr", "de", "ja")
-    val cfs = languages.map { lang =>
-      val documentAssembler = new DocumentAssembler().setInputCol(s"text:$lang").setOutputCol(s"document:$lang")
-      val tokenEmbeddings = config.modelType match {
-        case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx")
-          .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
-        case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx").setInputCols(s"document:$lang")
-          .setOutputCol(s"embeddings:$lang")
-        case _ => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx")
-          .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
-      }
-      val preprocessor = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings))
-      val preprocessorModel = preprocessor.fit(df)
-      preprocessorModel.transform(df)
-        .mapAnnotationsCol(s"embeddings:$lang", s"e:$lang", "embeddings", (a: Seq[Annotation]) => a.head.embeddings)
-        .select("id", s"document:$lang", s"e:$lang")
+  private def exportEmbeddings(df: DataFrame, modelType: String, lang: String, outputPath: String): Unit = {
+    val documentAssembler = new DocumentAssembler().setInputCol(s"text:$lang").setOutputCol(s"document:$lang")
+    val tokenEmbeddings = modelType match {
+      case "u" => UniversalSentenceEncoder.pretrained("tfhub_use_multi", "xx")
+        .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
+      case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx")
+        .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
+      case _ => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx")
+        .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
     }
-    // join all the data frames of the four languages
-    val bf = cfs.reduce((cf1, cf2) => cf1.join(cf2, "id"))
-    bf.printSchema()
-    // compute the average embeddings of the four languages
-    val average = udf((e: Array[Float], f: Array[Float], d: Array[Float], j: Array[Float]) => {
-      val result = Array.fill[Float](e.size)(0f)
-      for (k <- 0 until e.size)
-        result(k) = (e(k) + f(k) + d(k) + j(k))/4
-      result
-    })
-    val ef = bf.withColumn("embeddings",
-      average(col("e:en"), col("e:fr"), col("e:de"), col("e:ja"))
-    )
-    val ff = df.join(ef, "id")
-    ff.printSchema()
-    val validPath = s"dat/med/4"
-    if (!Files.exists(Paths.get(validPath))) {
-      ff.write.parquet(validPath)
+    val embeddingsFinisher = new EmbeddingsFinisher().setInputCols(s"embeddings:$lang").setOutputCols(s"$lang")
+    val pipeline = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings, embeddingsFinisher))
+    val model = pipeline.fit(df)
+    val outputCol = lang.substring(0, 1)
+    val ef = model.transform(df)
+      .withColumn(outputCol, flatten(col(s"$lang")))
+      .select("id", outputCol, s"ys:$lang")
+    ef.write.mode(SaveMode.Overwrite).parquet(s"$outputPath/$lang/$modelType")
+  }
+  def createPipelineMulti(df: DataFrame, config: Config): NNModel[Float] = {
+    // the MultiClassifierDLApproach of Spark-NLP expects a SentenceEmbedding as input column.
+    // Here, we use a simple vector as feature, so we develop a BigDL model to plug-in
+    def createModel(featureSize: Int, labelSize: Int): KerasNet[Float] = {
+      val model = Sequential()
+      model.add(Dense(outputDim = config.hiddenSize, inputShape = Shape(featureSize)).setName(s"Dense-${config.modelType}"))
+      model.add(Dropout(config.dropoutProbability).setName("Dropout"))
+      // add the last layer for BCE loss
+      // sigmoid for multi-label instead of softmax, which gives better performance
+      model.add(Dense(labelSize, activation = "sigmoid").setName("Dense-output"))
+      model
     }
-    val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys:en")
-      .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
-      .setThreshold(config.threshold.toFloat)
-      .setTestDataset(validPath)
-    val pipeline = new Pipeline().setStages(Array(classifier))
-    pipeline.fit(ff)
+
+    val featureSize: Int = config.modelType match {
+      case "u" => 512
+      case _ => 768
+    }
+
+    val bigdl = createModel(featureSize, 22)
+    val estimator = NNEstimator(bigdl, BCECriterion(), Array(featureSize), Array(22))
+    val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/med/")
+    val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/med/")
+
+    estimator.setLabelCol("ys:en").setFeaturesCol("features")
+      .setBatchSize(config.batchSize)
+      .setOptimMethod(new Adam(config.learningRate))
+      .setMaxEpoch(config.epochs)
+      .setTrainSummary(trainingSummary)
+      .setValidationSummary(validationSummary)
+      .setValidation(Trigger.everyEpoch, df, Array(new CategoricalAccuracy(), new MAE()), config.batchSize)
+    estimator.fit(df)
   }
 
   def evaluate(result: DataFrame, config: Config, split: String): Score = {
@@ -147,17 +192,25 @@ object MED {
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('n', "fraction").action((x, conf) => conf.copy(fraction = x)).text("percentage of the dataset to use")
       opt[Double]('e', "threshold").action((x, conf) => conf.copy(threshold = x)).text("the minimum threshold for each label to be accepted")
+      opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("hidden size")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
-        val spark = SparkSession.builder().config("spark.driver.memory", config.driverMemory).master(config.master).appName("MED").getOrCreate()
+        val conf = Engine.createSparkConf().setAppName(getClass.getName).setMaster(config.master)
+          .set("spark.executor.cores", config.executorCores.toString)
+          .set("spark.cores.max", config.totalCores.toString)
+          .set("spark.executor.memory", config.executorMemory)
+          .set("spark.driver.memory", config.driverMemory)
+        val sc = new SparkContext(conf)
+        Engine.init
+        val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
         spark.sparkContext.setLogLevel("WARN")
 
         implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
         println(Serialization.writePretty(config))
         config.mode match {
           case "train" =>
-            val df = readCorpus(spark, config.language).sample(config.fraction, 220712L)
+            val df = readCorpusSingle(spark, config.language).sample(config.fraction, 220712L)
               .filter(col(s"ys:${config.language}") =!= Array("0"))
             df.show()
             df.printSchema()
@@ -175,23 +228,53 @@ object MED {
             val score = evaluate(gf.select("prediction", "label"), config, "train")
             println(Serialization.writePretty(score))
           case "trainMulti" =>
-            val df = readCorpus(spark)
-              .filter(col(s"ys:${config.language}") =!= Array("0"))
-            println("Number of samples = " + df.count)
-            df.printSchema()
-            df.select("id", "text:en", "text:fr", "text:de", "text:ja", "ys:en", "ys:fr", "ys:de", "ys:ja").show()
-            val model = createPipelineMulti(df, config)
-            val ef = model.transform(df)
-            // convert the "category" column (of type Array[String]) to the the "prediction" column of type List[Double] for evaluation
-            val ff = ef.mapAnnotationsCol("category", "prediction", "category", (a: Seq[Annotation]) => if (a.nonEmpty) a.map(_.result.toDouble) else List.empty[Double])
-            // convert the "ys" column (of type Array[String]) to the  "label" column of type List[Double] for evaluation
-            val f = udf((ys: List[String]) => ys.map(_.toDouble))
-            val gf = ff.withColumn("label", f(col(s"ys:${config.language}")))
-            gf.show()
-            gf.printSchema()
-            val score = evaluate(gf.select("prediction", "label"), config, "train")
+            val languages = Array("en", "de", "fr", "ja")
+            val dfs = languages.map(lang => spark.read.parquet(s"${config.embeddingPath}/$lang/${config.modelType}"))
+            val df = dfs.reduce((df1, df2) => df1.join(df2, "id"))
+            // compute the average embeddings of the four languages
+            val average = udf((e: Array[Float], f: Array[Float], d: Array[Float], j: Array[Float]) => {
+              val result = Array.fill[Float](e.length)(0f)
+              for (k <- e.indices)
+                result(k) = (e(k) + f(k) + d(k) + j(k)) / 4
+              result
+            })
+            val ef = df.withColumn("features",
+              average(col("e"), col("d"), col("f"), col("j"))
+            ).select("id", "features", "ys:en")
+            ef.printSchema()
+            ef.show()
+            ef.withColumn("size", size(col("features"))).show()
+
+            val model = createPipelineMulti(ef, config)
+            val ff = model.transform(ef)
+            ff.show()
+            ff.printSchema()
+            // evaluation using Spark
+            val sparsifyVector = udf((target: DenseVector) => {
+              val x = target.toArray.zipWithIndex.filter(_._1 == 1.0).map(_._2.toDouble)
+              if (x.isEmpty) Array(0d) else x
+            })
+            val sparsifyArray = udf((target: Array[Float]) => {
+              val x = target.zipWithIndex.filter(_._1 >= config.threshold).map(_._2.toDouble)
+              if (x.isEmpty) Array(0d) else x
+            })
+            val gf = ff.withColumn("target", sparsifyVector(col("ys:en")))
+              .withColumn("output", sparsifyArray(col("prediction")))
+            val score = evaluate(gf.select("output", "target"), config, "train")
             println(Serialization.writePretty(score))
+            // save result to CSV file for submission
+            val binarize = udf((prediction: Array[Float]) =>
+              prediction.map(e => if (e >= config.threshold) 1 else 0).mkString(",")
+            )
+            val output = ff.withColumn("output", binarize(col("prediction")))
+            output.printSchema()
+            output.select("id", "output").repartition(1)
+              .write.mode(SaveMode.Overwrite).csv(s"dat/out/${config.modelType}")
           case "eval" =>
+          case "export" =>
+            val df = readCorpus(spark, sparseLabel = false)
+            val languages = Array("en", "de", "fr", "ja")
+            languages.foreach(exportEmbeddings(df, config.modelType, _, config.embeddingPath))
           case _ =>
         }
         spark.stop()

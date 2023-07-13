@@ -9,9 +9,13 @@ case class Config(
   driverMemory: String = "8g", // D
   mode: String = "eval",
   modelType: String = "u",
-  batchSize: Int = 32,
+  batchSize: Int = 64,
   fraction: Double = 1.0f,
   threshold: Double = 0.1,
-  epochs: Int = 20,
-  learningRate: Double = 1E-4
+  epochs: Int = 100,
+  learningRate: Double = 5E-4,
+  sparseLabel: Boolean = false,
+  hiddenSize: Int = 64,
+  dropoutProbability: Double = 0.1,
+  embeddingPath: String = "dat/med"
 )
