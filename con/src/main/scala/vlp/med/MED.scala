@@ -6,7 +6,7 @@ import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, UniversalSentenc
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{col, element_at, length, not, trim, udf}
+import org.apache.spark.sql.functions.{col, length, not, trim, udf}
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
@@ -84,6 +84,7 @@ object MED {
       val preprocessorModel = preprocessor.fit(df)
       preprocessorModel.transform(df)
         .mapAnnotationsCol(s"embeddings:$lang", s"e:$lang", "embeddings", (a: Seq[Annotation]) => a.head.embeddings)
+        .select("id", s"document:$lang", s"e:$lang")
     }
     // join all the data frames of the four languages
     val bf = cfs.reduce((cf1, cf2) => cf1.join(cf2, "id"))
@@ -96,23 +97,20 @@ object MED {
       result
     })
     val ef = bf.withColumn("embeddings",
-      average(
-        element_at(col("e:en"), 0),
-        element_at(col("e:fr"), 0),
-        element_at(col("e:de"), 0),
-        element_at(col("e:ja"), 0)
-      )
+      average(col("e:en"), col("e:fr"), col("e:de"), col("e:ja"))
     )
+    val ff = df.join(ef, "id")
+    ff.printSchema()
     val validPath = s"dat/med/4"
     if (!Files.exists(Paths.get(validPath))) {
-      ef.write.parquet(validPath)
+      ff.write.parquet(validPath)
     }
     val classifier = new MultiClassifierDLApproach().setInputCols("embeddings").setOutputCol("category").setLabelColumn("ys:en")
       .setBatchSize(config.batchSize).setMaxEpochs(config.epochs).setLr(config.learningRate.toFloat)
       .setThreshold(config.threshold.toFloat)
       .setTestDataset(validPath)
     val pipeline = new Pipeline().setStages(Array(classifier))
-    pipeline.fit(df)
+    pipeline.fit(ff)
   }
 
   def evaluate(result: DataFrame, config: Config, split: String): Score = {
