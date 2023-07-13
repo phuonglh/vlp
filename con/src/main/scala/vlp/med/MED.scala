@@ -2,7 +2,7 @@ package vlp.med
 
 import com.johnsnowlabs.nlp.{Annotation, DocumentAssembler}
 import com.johnsnowlabs.nlp.annotators.classifier.dl.MultiClassifierDLApproach
-import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, UniversalSentenceEncoder, XlmRoBertaSentenceEmbeddings}
+import com.johnsnowlabs.nlp.embeddings.{BertSentenceEmbeddings, DeBertaEmbeddings, SentenceEmbeddings, UniversalSentenceEncoder, XlmRoBertaEmbeddings, XlmRoBertaSentenceEmbeddings}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.mllib.evaluation.MultilabelMetrics
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
@@ -25,6 +25,7 @@ import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSu
 import com.intel.analytics.bigdl.dllib.nnframes.{NNEstimator, NNModel}
 import com.intel.analytics.bigdl.dllib.nn.BCECriterion
 import com.johnsnowlabs.nlp.base.EmbeddingsFinisher
+import com.johnsnowlabs.nlp.annotators.Tokenizer
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 
@@ -113,11 +114,21 @@ object MED {
         .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
       case "b" => BertSentenceEmbeddings.pretrained("sent_bert_multi_cased", "xx")
         .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
+      case "d" => DeBertaEmbeddings.pretrained("mdeberta_v3_base", "xx")
+        .setInputCols (s"document:$lang", s"token:$lang").setOutputCol (s"token:embeddings:$lang")
+      case "r" => XlmRoBertaEmbeddings.pretrained("xlm_roberta_large", "xx")
+        .setInputCols (s"document:$lang", s"token:$lang").setOutputCol (s"token:embeddings:$lang")
       case _ => XlmRoBertaSentenceEmbeddings.pretrained("sent_xlm_roberta_base", "xx")
         .setInputCols(s"document:$lang").setOutputCol(s"embeddings:$lang")
     }
     val embeddingsFinisher = new EmbeddingsFinisher().setInputCols(s"embeddings:$lang").setOutputCols(s"$lang")
-    val pipeline = new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings, embeddingsFinisher))
+    val pipeline = if (Set("d", "r").contains(modelType)) {
+      val tokenizer = new Tokenizer().setInputCols(Array(s"document:$lang")).setOutputCol(s"token:$lang")
+      val sentenceEmbedding = new SentenceEmbeddings().setInputCols(s"document:$lang", s"token:embeddings:$lang").setOutputCol(s"embeddings:$lang")
+      new Pipeline().setStages(Array(documentAssembler, tokenizer, tokenEmbeddings, sentenceEmbedding, embeddingsFinisher))
+    } else {
+      new Pipeline().setStages(Array(documentAssembler, tokenEmbeddings, embeddingsFinisher))
+    }
     val model = pipeline.fit(df)
     val outputCol = lang.substring(0, 1)
     val ef = model.transform(df)
