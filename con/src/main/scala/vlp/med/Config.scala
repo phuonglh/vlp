@@ -15,6 +15,6 @@ case class Config(
   epochs: Int = 100,
   learningRate: Double = 5E-4,
   sparseLabel: Boolean = false,
-  hiddenSize: Int = 128,
+  hiddenSize: Int = 256,
   concat: Boolean = false
 )

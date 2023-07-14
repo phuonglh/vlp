@@ -183,7 +183,7 @@ object MED {
       .setValidationSummary(validationSummary)
       .setValidation(Trigger.everyEpoch, df, Array(new CategoricalAccuracy(), new MAE()), config.batchSize)
     val model = estimator.fit(df)
-    bigdl.saveModel(s"out/${config.modelType}.bigdl", overWrite = true)
+    bigdl.saveModel(s"dat/out/${config.modelType}.bigdl", overWrite = true)
     model
   }
 
@@ -329,43 +329,6 @@ object MED {
               writer.close()
             }
           case "eval" =>
-            val bigdl = Models.loadModel[Float](s"out/${config.modelType}.bigdl")
-            val languages = Array("en", "de", "fr", "ja")
-            val dfs = languages.map(lang => spark.read.parquet(s"dat/med/test/$lang/${config.modelType}"))
-            val df = dfs.reduce((df1, df2) => df1.join(df2, "id"))
-            val ef = if (config.concat) {
-              df.withColumn("features", concatenate(col("e"), col("d"), col("f"), col("j")))
-            } else {
-              df.withColumn("features", average(col("e"), col("d"), col("f"), col("j")))
-            }.select("id", "features", "ys:en")
-            ef.printSchema()
-            ef.withColumn("size", size(col("features"))).show()
-
-            val ff = predict(ef, bigdl)
-            ff.show()
-            ff.printSchema()
-            // save result to CSV file for submission
-            val binarize = udf((prediction: Array[Float]) =>
-              prediction.map(e => if (e >= config.threshold) 1 else 0).mkString(",")
-            )
-            val output = ff.withColumn("output", binarize(col("prediction")))
-            output.printSchema()
-            languages.foreach { lang =>
-              val sf = readCorpusMono(spark, lang, "test").select("id", s"text:$lang")
-              val uf = sf.join(output, "id")
-              val result = uf.select("id", s"text:$lang", "output").repartition(1)
-              val lines = result.collect().map { row =>
-                val id = row.getAs[Double](0)
-                val text = row.getAs[String](1)
-                val labels = row.getAs[String](2)
-                id + ",\"" + text + "\"," + labels
-              }
-              val pathOut = s"dat/out/${config.modelType}/ntcir17_mednlp-sc_sm_${lang}_test_1.csv"
-              val writer = new PrintWriter(new File(pathOut))
-              writer.println(headerMap(s"$lang"))
-              lines.foreach(line => writer.println(line))
-              writer.close()
-            }
           case "exportEmbeddingTrain" =>
             val df = readCorpus(spark, sparseLabel = false, "train")
             val languages = Array("en", "de", "fr", "ja")
@@ -376,6 +339,74 @@ object MED {
             df.count()
             val languages = Array("en", "fr", "de", "ja")
             languages.foreach(exportEmbeddings(df, config.modelType, _, "dat/med/test"))
+          case "submit" =>
+            // perform training and prediction at the same time (the BigDL load method has a bug!)
+            val languages = Array("en", "de", "fr", "ja")
+            val dfs = languages.map(lang => spark.read.parquet(s"dat/med/train/$lang/${config.modelType}"))
+            val df = dfs.reduce((df1, df2) => df1.join(df2, "id"))
+            val dfsTest = languages.map(lang => spark.read.parquet(s"dat/med/test/$lang/${config.modelType}"))
+            val dfTest = dfsTest.reduce((df1, df2) => df1.join(df2, "id"))
+            val ef = if (config.concat) {
+              df.withColumn("features", concatenate(col("e"), col("d"), col("f"), col("j")))
+            } else {
+              df.withColumn("features", average(col("e"), col("d"), col("f"), col("j")))
+            }.select("id", "features", "ys:en")
+            ef.printSchema()
+            ef.withColumn("size", size(col("features"))).show()
+            val efTest = if (config.concat) {
+              dfTest.withColumn("features", concatenate(col("e"), col("d"), col("f"), col("j")))
+            } else {
+              dfTest.withColumn("features", average(col("e"), col("d"), col("f"), col("j")))
+            }.select("id", "features", "ys:en")
+
+            val model = createPipelineMany(ef, config)
+            val ff = model.transform(ef)
+            ff.show()
+            ff.printSchema()
+            val ffTest = model.transform(efTest)
+            val gf = ff.withColumn("target", sparsifyVector(col("ys:en")))
+              .withColumn("output", sparsifyArray(col("prediction"), lit(config.threshold)))
+            val score = evaluate(gf.select("output", "target"), config, "train")
+            println(Serialization.writePretty(score))
+            // save result to CSV file for submission
+            val binarize = udf((prediction: Array[Float]) =>
+              prediction.map(e => if (e >= config.threshold) 1 else 0).mkString(",")
+            )
+            val output = ff.withColumn("output", binarize(col("prediction")))
+            output.printSchema()
+            val outputTest = ffTest.withColumn("output", binarize(col("prediction")))
+            languages.foreach { lang =>
+              // write train result
+              val sf = readCorpusMono(spark, lang, "train").select("id", s"text:$lang")
+              val uf = sf.join(output, "id")
+              val result = uf.select("id", s"text:$lang", "output").repartition(1)
+              val lines = result.collect().map { row =>
+                val id = row.getAs[Double](0)
+                val text = row.getAs[String](1)
+                val labels = row.getAs[String](2)
+                id + ",\"" + text + "\"," + labels
+              }
+              val pathOut = s"dat/out/${config.modelType}/ntcir17_mednlp-sc_sm_${lang}_train_1.csv"
+              val writer = new PrintWriter(new File(pathOut))
+              writer.println(headerMap(s"$lang"))
+              lines.foreach(line => writer.println(line))
+              writer.close()
+              // write test result
+              val sfTest = readCorpusMono(spark, lang, "test").select("id", s"text:$lang")
+              val ufTest = sfTest.join(outputTest, "id")
+              val resultTest = ufTest.select("id", s"text:$lang", "output").repartition(1)
+              val linesTest = resultTest.collect().map { row =>
+                val id = row.getAs[Double](0)
+                val text = row.getAs[String](1)
+                val labels = row.getAs[String](2)
+                id + ",\"" + text + "\"," + labels
+              }
+              val pathOutTest = s"dat/out/${config.modelType}/ntcir17_mednlp-sc_sm_${lang}_test_1.csv"
+              val writerTest = new PrintWriter(new File(pathOutTest))
+              writerTest.println(headerMap(s"$lang"))
+              linesTest.foreach(line => writerTest.println(line))
+              writerTest.close()
+            }
           case _ =>
         }
         spark.stop()
