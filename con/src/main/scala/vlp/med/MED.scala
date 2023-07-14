@@ -11,7 +11,7 @@ import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import scopt.OptionParser
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, OpenOption, Paths, StandardOpenOption}
 import com.johnsnowlabs.nlp.functions._
 import com.intel.analytics.bigdl.dllib.keras.layers.{Dense, Dropout, Reshape}
 import com.intel.analytics.bigdl.numeric.NumericFloat
@@ -29,13 +29,19 @@ import com.johnsnowlabs.nlp.annotators.Tokenizer
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 
+import java.io.PrintWriter
+import java.io.File
+
 
 object MED {
+  val headerMap = scala.collection.mutable.Map[String, String]()
+
   def readCorpusSingle(spark: SparkSession, language: String): DataFrame = {
     val trainPath = s"dat/med/ntcir17_mednlp-sc_sm_train_26_06_23/${language}.csv"
     import spark.implicits._
     val df = spark.read.text(trainPath).filter(length(trim(col("value"))) > 0)
     val header = df.first().get(0)
+    headerMap += (language -> header.toString)
     df.filter(not(col("value").contains(header))).map { row =>
       val line = row.getAs[String](0)
       val j = line.indexOf(",")
@@ -44,7 +50,7 @@ object MED {
       val trainId = line.substring(0, j).toDouble
       var text = line.substring(j+1, n-43)
       // remove quotes at the beginning or the end of the text if there are
-      if (text.startsWith("\"")) text = text.substring(1, text.length-1)
+      if (text.startsWith("\"")) text = text.substring(1, text.length - 2) // account for 1 comma
       val ys = line.substring(n-43) // 22 binary labels, plus 21 commas
       // convert to 23 labels [0, 1, 2,..., 22]. The zero vector corresponds to "0". Other labels are shifted by their index by 1.
       val labels = ys.split(",").zipWithIndex.filter(_._1 == "1").map(p => (p._2 + 1).toString)
@@ -57,6 +63,7 @@ object MED {
     import spark.implicits._
     val df = spark.read.text(trainPath).filter(length(trim(col("value"))) > 0)
     val header = df.first().get(0)
+    headerMap += (language -> header.toString)
     df.filter(not(col("value").contains(header))).map { row =>
       val line = row.getAs[String](0)
       val j = line.indexOf(",")
@@ -65,7 +72,7 @@ object MED {
       val trainId = line.substring(0, j).toDouble
       var text = line.substring(j + 1, n - 43)
       // remove quotes at the beginning or the end of the text if there are
-      if (text.startsWith("\"")) text = text.substring(1, text.length - 1)
+      if (text.startsWith("\"")) text = text.substring(1, text.length - 2)
       val ys = line.substring(n - 43) // 22 binary labels, plus 21 commas
       // convert 23 labels into a multi-hot vector
       val labels = Vectors.dense(ys.split(",").map(_.toDouble))
@@ -224,6 +231,7 @@ object MED {
           case "train" =>
             val df = readCorpusSingle(spark, config.language).sample(config.fraction, 220712L)
               .filter(col(s"ys:${config.language}") =!= Array("0"))
+            println(headerMap)
             df.show()
             df.printSchema()
             println (s"Number of samples = ${df.count}")
@@ -280,8 +288,22 @@ object MED {
             )
             val output = ff.withColumn("output", binarize(col("prediction")))
             output.printSchema()
-            output.select("id", "output").repartition(1)
-              .write.mode(SaveMode.Overwrite).csv(s"dat/out/${config.modelType}")
+            languages.foreach { lang =>
+              val sf = readCorpusSingle(spark, lang).select("id", s"text:$lang")
+              val uf = sf.join(output, "id")
+              val result = uf.select("id", s"text:$lang", "output").repartition(1)
+              val lines = result.collect().map { row =>
+                val id = row.getAs[Double](0)
+                val text = row.getAs[String](1)
+                val labels = row.getAs[String](2)
+                id + ",\"" + text + "\"," + labels
+              }
+              val pathOut = s"dat/out/${config.modelType}/ntcir17_mednlp-sc_sm_${lang}_train_1.csv"
+              val writer = new PrintWriter(new File(pathOut))
+              writer.println(headerMap(s"$lang"))
+              lines.foreach(line => writer.println(line))
+              writer.close()
+            }
           case "eval" =>
           case "export" =>
             val df = readCorpus(spark, sparseLabel = false)
