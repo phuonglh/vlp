@@ -151,6 +151,7 @@ object MED {
 
     val featureSize: Int = config.modelType match {
       case "u" => 512
+      case "r" => 1024
       case _ => 768
     }
 
