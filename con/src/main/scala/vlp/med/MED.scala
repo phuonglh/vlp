@@ -26,6 +26,7 @@ import com.intel.analytics.bigdl.dllib.nnframes.{NNEstimator, NNModel}
 import com.intel.analytics.bigdl.dllib.nn.BCECriterion
 import com.johnsnowlabs.nlp.base.EmbeddingsFinisher
 import com.johnsnowlabs.nlp.annotators.Tokenizer
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, StopWordsRemover, VectorAssembler, Tokenizer => TokenizerSpark}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 
@@ -34,7 +35,7 @@ import java.io.File
 
 
 object MED {
-  val headerMap = scala.collection.mutable.Map[String, String]()
+  private val headerMap = scala.collection.mutable.Map[String, String]()
 
   def readCorpusMono(spark: SparkSession, language: String, split: String): DataFrame = {
     val path = if (split == "train") {
@@ -151,18 +152,19 @@ object MED {
       .select("id", outputCol, s"ys:$lang")
     ef.write.mode(SaveMode.Overwrite).parquet(s"$outputPath/$lang/$modelType")
   }
-  def createPipelineMany(df: DataFrame, config: Config): NNModel[Float] = {
-    // the MultiClassifierDLApproach of Spark-NLP expects a SentenceEmbedding as input column.
-    // Here, we use a simple vector as feature, so we develop a BigDL model to plug-in
-    def createModel(featureSize: Int, labelSize: Int): KerasNet[Float] = {
-      val model = Sequential()
-      model.add(Dense(outputDim = config.hiddenSize, inputShape = Shape(featureSize), activation = "relu").setName(s"Dense-${config.modelType}"))
-      // add the last layer for BCE loss
-      // sigmoid for multi-label instead of softmax, which gives better performance
-      model.add(Dense(labelSize, activation = "sigmoid").setName("Dense-output"))
-      model
-    }
 
+  // the MultiClassifierDLApproach of Spark-NLP expects a SentenceEmbedding as input column.
+  // Here, we use a simple vector as feature, so we develop a BigDL model to plug-in
+  private def createModel(featureSize: Int, hiddenSize: Int, labelSize: Int): KerasNet[Float] = {
+    val model = Sequential()
+    model.add(Dense(outputDim = hiddenSize, inputShape = Shape(featureSize), activation = "relu").setName(s"Dense"))
+    // add the last layer for BCE loss
+    // sigmoid for multi-label instead of softmax, which gives better performance
+    model.add(Dense(labelSize, activation = "sigmoid").setName("Dense-output"))
+    model
+  }
+
+  def createPipelineMany(df: DataFrame, config: Config): NNModel[Float] = {
     var featureSize: Int = config.modelType match {
       case "u" => 512
       case "r" => 1024
@@ -170,7 +172,7 @@ object MED {
     }
     if (config.concat) featureSize = featureSize * 4
 
-    val bigdl = createModel(featureSize, 22)
+    val bigdl = createModel(featureSize, config.hiddenSize, 22)
     val estimator = NNEstimator(bigdl, BCECriterion(), Array(featureSize), Array(22))
     val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/med/")
     val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/med/")
@@ -185,6 +187,53 @@ object MED {
     val model = estimator.fit(df)
     bigdl.saveModel(s"dat/out/${config.modelType}.bigdl", overWrite = true)
     model
+  }
+
+  def createPipelineDiscrete(df: DataFrame, config: Config): (PipelineModel, NNModel[Float]) = {
+    // English
+    val tokenizerEn = new TokenizerSpark().setInputCol("text:en").setOutputCol("token:en")
+    val stopWordsRemoverEn = new StopWordsRemover().setInputCol("token:en").setOutputCol("word:en")
+    val countVectorizerEn = new CountVectorizer().setInputCol("word:en").setOutputCol("e").setBinary(true).setMinDF(2)
+    // French
+    val tokenizerFr = new TokenizerSpark().setInputCol("text:fr").setOutputCol("token:fr")
+    val stopWordsRemoverFr = new StopWordsRemover().setInputCol("token:fr").setOutputCol("word:fr")
+      .setStopWords(StopWordsRemover.loadDefaultStopWords("french"))
+    val countVectorizerFr = new CountVectorizer().setInputCol("word:fr").setOutputCol("f").setBinary(true).setMinDF(2)
+    // German
+    val tokenizerDe = new TokenizerSpark().setInputCol("text:de").setOutputCol("token:de")
+    val stopWordsRemoverDe = new StopWordsRemover().setInputCol("token:de").setOutputCol("word:de")
+      .setStopWords(StopWordsRemover.loadDefaultStopWords("german"))
+    val countVectorizerDe = new CountVectorizer().setInputCol("word:de").setOutputCol("d").setBinary(true).setMinDF(2)
+    //
+    val assembler = new VectorAssembler().setInputCols(Array("e", "f", "d")).setOutputCol("features")
+    val preprocessorPipeline = new Pipeline().setStages(Array(
+      tokenizerEn, stopWordsRemoverEn, countVectorizerEn,
+      tokenizerFr, stopWordsRemoverFr, countVectorizerFr,
+      tokenizerDe, stopWordsRemoverDe, countVectorizerDe,
+      assembler
+    ))
+    val preprocessor = preprocessorPipeline.fit(df)
+    val featureSize = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size +
+      preprocessor.stages(5).asInstanceOf[CountVectorizerModel].vocabulary.size +
+      preprocessor.stages(8).asInstanceOf[CountVectorizerModel].vocabulary.size
+    println(s"featureSize = $featureSize")
+
+    val ef = preprocessor.transform(df)
+    val bigdl = createModel(featureSize, config.hiddenSize, 22)
+    val estimator = NNEstimator(bigdl, BCECriterion(), Array(featureSize), Array(22))
+    val trainingSummary = TrainSummary(appName = "discrete", logDir = s"sum/med/")
+    val validationSummary = ValidationSummary(appName = "discrete", logDir = s"sum/med/")
+
+    estimator.setLabelCol("ys:en").setFeaturesCol("features")
+      .setBatchSize(config.batchSize)
+      .setOptimMethod(new Adam(config.learningRate))
+      .setMaxEpoch(config.epochs)
+      .setTrainSummary(trainingSummary)
+      .setValidationSummary(validationSummary)
+      .setValidation(Trigger.everyEpoch, ef, Array(new CategoricalAccuracy(), new MAE()), config.batchSize)
+    val model = estimator.fit(ef)
+    bigdl.saveModel(s"dat/out/discrete.bigdl", overWrite = true)
+    (preprocessor, model)
   }
 
   def evaluate(result: DataFrame, config: Config, split: String): Score = {
@@ -269,7 +318,7 @@ object MED {
         config.mode match {
           case "trainMono" =>
             val df = readCorpusMono(spark, config.language, "train").sample(config.fraction, 220712L)
-              .filter(col(s"ys:${config.language}") =!= Array("0"))
+//              .filter(col(s"ys:${config.language}") =!= Array("0"))
             println(headerMap)
             df.show()
             df.printSchema()
@@ -402,6 +451,42 @@ object MED {
                 id + ",\"" + text + "\"," + labels
               }
               val pathOutTest = s"dat/out/${config.modelType}/ntcir17_mednlp-sc_sm_${lang}_test_1.csv"
+              val writerTest = new PrintWriter(new File(pathOutTest))
+              writerTest.println(headerMap(s"$lang"))
+              linesTest.foreach(line => writerTest.println(line))
+              writerTest.close()
+            }
+          case "trainDiscrete" =>
+            val df = readCorpus(spark, false, "train")
+            val (preprocessor, model) = createPipelineDiscrete(df, config)
+            val ef = preprocessor.transform(df)
+            val ff = model.transform(ef)
+            val gf = ff.withColumn("target", sparsifyVector(col("ys:en")))
+              .withColumn("output", sparsifyArray(col("prediction"), lit(config.threshold)))
+            val score = evaluate(gf.select("output", "target"), config, "train")
+            println(Serialization.writePretty(score))
+            ff.show()
+            val dfTest = readCorpus(spark, false, "test")
+            val efTest = preprocessor.transform(dfTest)
+            val binarize = udf((prediction: Array[Float]) =>
+              prediction.map(e => if (e >= config.threshold) 1 else 0).mkString(",")
+            )
+            val ffTest = model.transform(efTest).withColumn("output", binarize(col("prediction")))
+
+            val languages = Array("en", "fr", "de", "ja")
+            languages.foreach { lang =>
+              val sfTest = readCorpusMono(spark, lang, "test").select("id")
+              val ufTest = sfTest.join(ffTest, "id")
+              ufTest.show()
+              // write test result
+              val resultTest = ufTest.select("id", s"text:$lang", "output").repartition(1)
+              val linesTest = resultTest.collect().map { row =>
+                val id = row.getAs[Double](0)
+                val text = row.getAs[String](1)
+                val labels = row.getAs[String](2)
+                id + ",\"" + text + "\"," + labels
+              }
+              val pathOutTest = s"dat/out/discrete/ntcir17_mednlp-sc_sm_${lang}_test_1.csv"
               val writerTest = new PrintWriter(new File(pathOutTest))
               writerTest.println(headerMap(s"$lang"))
               linesTest.foreach(line => writerTest.println(line))
