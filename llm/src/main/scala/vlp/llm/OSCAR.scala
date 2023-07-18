@@ -34,7 +34,7 @@ object OSCAR {
     val gf = ffUnique.map { row =>
       row.getAs[String]("content").split("""\n+""")
         .filter(line => line.size >= 40 && line.size <= 2048)
-    }.toDF("lines")
+    }.toDF("lines").filter(row => row.getAs[Seq[String]](0).size > 0)
     gf.select("lines").repartition(10).write.mode(SaveMode.Overwrite).json(pathOut)
     spark.stop()
   }
