@@ -18,22 +18,24 @@ import org.apache.spark.sql.functions._
  */
 object OSCAR {
   def main(args: Array[String]): Unit = {
-    val pathInp = if (args.size > 0) args(0) else "dat/23"
-    val pathOut = if (args.size > 1) args(1) else "pre/23"
+    val pathInp = if (args.size > 0) args(0) else "dat/23/9"
+    val pathOut = if (args.size > 1) args(1) else "pre/23/9"
     val spark = SparkSession.builder().master("local[*]").config("spark.driver.memory", "12g").appName("OSCAR").getOrCreate()
-    val df = spark.read.option("inferSchema", "true").json(pathInp).select("content")
+    val df = spark.read.option("inferSchema", true).json(pathInp).select("content")
     // filter all documents having more than 80 tokens
     val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
     val ef = tokenizer.transform(df)
     val ff = ef.withColumn("size", size(col("tokens"))).filter(col("size") >= 80)
     print(s"Number of filtered documents = ${ff.count}\n")
+    // dedup the document (whole document level)
+    val ffUnique = ff.select("content").distinct()
     // split the documents by the new-line character
     import spark.implicits._
-    val gf = ff.select("content").flatMap(row => row.getAs[String]("content").split("""\n+""")).toDF("line")
-    // filter lines based on their length
-    val hf = gf.withColumn("length", length(col("line"))).filter(col("length") >= 40 && col("length") <= 2048)
-    print(s"Number of filtered lines = ${hf.count}\n")
-    hf.select("line").distinct().repartition(10).write.mode(SaveMode.Overwrite).text(pathOut)
+    val gf = ffUnique.map { row =>
+      row.getAs[String]("content").split("""\n+""")
+        .filter(line => line.size >= 40 && line.size <= 2048)
+    }.toDF("lines")
+    gf.select("lines").repartition(10).write.mode(SaveMode.Overwrite).json(pathOut)
     spark.stop()
   }
 }
