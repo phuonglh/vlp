@@ -21,7 +21,9 @@ object OSCAR {
     val pathInp = if (args.size > 0) args(0) else "dat/23/9"
     val pathOut = if (args.size > 1) args(1) else "pre/23/9"
     val spark = SparkSession.builder().master("local[*]").config("spark.driver.memory", "16g").appName("OSCAR").getOrCreate()
-    val df = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(pathInp).select("content")
+    val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(pathInp).select("content")
+    // filter all documents containing toxic contents: "sex"
+    val df = cf.filter(not(col("content").contains("sex")))
     // filter all documents having more than 80 tokens
     val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
     val ef = tokenizer.transform(df)
