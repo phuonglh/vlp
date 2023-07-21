@@ -32,7 +32,7 @@ case class Config(
 object OSCAR {
 
   def f21(spark: SparkSession, cf: DataFrame): Unit = {
-    
+
   }
 
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
