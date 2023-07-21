@@ -1,8 +1,9 @@
 package vlp.llm
 
 import org.apache.spark.ml.feature.Tokenizer
-import org.apache.spark.sql.{SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.functions._
+import scopt.OptionParser
 
 /**
  * OSCAR-2301 document extractor.
@@ -16,12 +17,25 @@ import org.apache.spark.sql.functions._
  * phuonglh, May 24, 2023
  *
  */
+
+case class Config(
+   master: String = "local[*]",
+   totalCores: Int = 8, // X
+   executorCores: Int = 8, // Y ==> there are Y/X executors
+   executorMemory: String = "8g", // Z
+   driverMemory: String = "8g", // D
+   version: String = "23",
+   inputPath: String = "dat/23",
+   outputPath: String = "pre/23"
+)
+
 object OSCAR {
-  def main(args: Array[String]): Unit = {
-    val pathInp = if (args.size > 0) args(0) else "dat/23/9"
-    val pathOut = if (args.size > 1) args(1) else "pre/23/9"
-    val spark = SparkSession.builder().master("local[*]").config("spark.driver.memory", "64g").appName("OSCAR").getOrCreate()
-    val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(pathInp).select("content")
+
+  def f21(spark: SparkSession, cf: DataFrame): Unit = {
+    
+  }
+
+  def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
     // filter all documents containing toxic contents: "sex"
     val df = cf.filter(not(col("content").contains("sex")))
     // filter all documents having more than 80 tokens
@@ -33,11 +47,42 @@ object OSCAR {
     val ffUnique = ff.select("content").distinct()
     // split the documents by the new-line character
     import spark.implicits._
-    val gf = ffUnique.map { row =>
+    ffUnique.map { row =>
       row.getAs[String]("content").split("""\n+""")
         .filter(line => line.size >= 40 && line.size <= 2048)
     }.toDF("lines").filter(row => row.getAs[Seq[String]](0).size > 0)
-    gf.select("lines").repartition(10).write.mode(SaveMode.Overwrite).json(pathOut)
-    spark.stop()
+  }
+
+  def main(args: Array[String]): Unit = {
+
+    val opts = new OptionParser[Config](getClass().getName()) {
+      head(getClass().getName(), "1.0")
+      opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
+      opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
+      opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores")
+      opt[String]('v', "version").action((x, conf) => conf.copy(version = x)).text("version 23/22/21")
+      opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path (file/folder)")
+      opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path (file/folder)")
+    }
+    opts.parse(args, Config()) match {
+      case Some(config) =>
+        val spark = SparkSession.builder().master("local[*]")
+          .config("spark.driver.memory", config.driverMemory)
+          .appName("OSCAR").getOrCreate()
+        config.version match {
+          case "23" =>
+            val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(config.inputPath).select("content")
+            val gf = f22(spark, cf)
+            gf.select ("lines").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
+          case "21" =>
+            val cf = spark.read.option("recursiveFileLookup", true).text(config.inputPath).toDF("content")
+            println(cf.count)
+            val df = cf.filter(length(trim(col("content"))) === 0)
+            println(df.count)
+          case _ =>
+        }
+        spark.stop()
+      case _ => println("Invalid options")
+    }
   }
 }

@@ -29,7 +29,8 @@ libraryDependencies ++= {
     "net.sourceforge.nekohtml" % "nekohtml" % "1.9.22",
     "org.apache.spark" % "spark-core_2.12" % "3.4.0",
     "org.apache.spark" % "spark-sql_2.12" % "3.4.0",
-    "org.apache.spark" % "spark-mllib_2.12" % "3.4.0"
+    "org.apache.spark" % "spark-mllib_2.12" % "3.4.0",
+    "com.github.scopt" %% "scopt" % "3.7.1"
   )
 }
 
