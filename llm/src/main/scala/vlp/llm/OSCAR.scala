@@ -1,6 +1,7 @@
 package vlp.llm
 
 import org.apache.spark.ml.feature.Tokenizer
+import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.functions._
 import scopt.OptionParser
@@ -31,8 +32,32 @@ case class Config(
 
 object OSCAR {
 
-  def f21(spark: SparkSession, cf: DataFrame): Unit = {
-
+  def f21(spark: SparkSession, cf: DataFrame): DataFrame = {
+    val pairRDD = cf.rdd.zipWithIndex()
+    val n = cf.count()
+    val emptyLineIdx = pairRDD.map { case (row, id) =>
+      val line = row.getAs[String](0).trim
+      (line.size, id)
+    }.filter(_._1 == 0).map(_._2.toInt).collect()
+    // fill an index array for grouping consecutive lines into a document
+    val ids = Array.fill[Int](n.toInt)(0)
+    var start = 0
+    for (i <- 0 until emptyLineIdx.size) {
+      val k = emptyLineIdx(i)
+      (start until k).foreach(j => ids(j) = i)
+      start = k
+    }
+    // zip the pairRDD with ids
+    val idsRDD = spark.sparkContext.parallelize(ids).zipWithIndex()
+    import spark.implicits._
+    val pairDF = pairRDD.map(p => (p._1.getAs[String](0), p._2)).toDF("content", "lineIdx")
+    val idsDF = idsRDD.toDF("docIdx", "lineIdx")
+    val df = pairDF.join(idsDF, "lineIdx")
+    df.show(20)
+    val window = Window.partitionBy("docIdx").orderBy("lineIdx")
+    val ef = df.withColumn("sentences", collect_list(col("content")).over(window))
+      .withColumn("text", array_join(col("sentences"), "\n"))
+    ef
   }
 
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
@@ -45,12 +70,11 @@ object OSCAR {
     print(s"Number of filtered documents = ${ff.count}\n")
     // dedup the document (whole document level)
     val ffUnique = ff.select("content").distinct()
-    // split the documents by the new-line character
     import spark.implicits._
     ffUnique.map { row =>
       row.getAs[String]("content").split("""\n+""")
-        .filter(line => line.size >= 40 && line.size <= 2048)
-    }.toDF("lines").filter(row => row.getAs[Seq[String]](0).size > 0)
+        .filter(line => line.size >= 40 && line.size <= 2048).filter(_.trim.nonEmpty).mkString("\n")
+    }.toDF("text")
   }
 
   def main(args: Array[String]): Unit = {
@@ -73,12 +97,12 @@ object OSCAR {
           case "23" =>
             val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(config.inputPath).select("content")
             val gf = f22(spark, cf)
-            gf.select ("lines").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
+            gf.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
           case "21" =>
             val cf = spark.read.option("recursiveFileLookup", true).text(config.inputPath).toDF("content")
             println(cf.count)
-            val df = cf.filter(length(trim(col("content"))) === 0)
-            println(df.count)
+            val df = f21(spark, cf)
+            df.show(20)
           case _ =>
         }
         spark.stop()
