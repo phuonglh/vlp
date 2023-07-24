@@ -38,7 +38,8 @@ object OSCAR {
     val emptyLineIdx = pairRDD.map { case (row, id) =>
       val line = row.getAs[String](0).trim
       (line.size, id)
-    }.filter(_._1 == 0).map(_._2.toInt).collect()
+    }.filter(_._1 == 0).map(_._2.toInt).collect() ++ Array(n.toInt)
+    println(emptyLineIdx.mkString(", "))
     // fill an index array for grouping consecutive lines into a document
     val ids = Array.fill[Int](n.toInt)(0)
     var start = 0
@@ -47,17 +48,18 @@ object OSCAR {
       (start until k).foreach(j => ids(j) = i)
       start = k
     }
-    // zip the pairRDD with ids
-    val idsRDD = spark.sparkContext.parallelize(ids).zipWithIndex()
+    println(ids.mkString(", "))
     import spark.implicits._
     val pairDF = pairRDD.map(p => (p._1.getAs[String](0), p._2)).toDF("content", "lineIdx")
+      .filter(length(trim(col("content"))) > 0)
+    // zip the pairRDD with ids
+    val idsRDD = spark.sparkContext.parallelize(ids).zipWithIndex()
     val idsDF = idsRDD.toDF("docIdx", "lineIdx")
     val df = pairDF.join(idsDF, "lineIdx")
-    df.show(20)
-    val window = Window.partitionBy("docIdx").orderBy("lineIdx")
-    val ef = df.withColumn("sentences", collect_list(col("content")).over(window))
-      .withColumn("text", array_join(col("sentences"), "\n"))
-    ef
+      .withColumn("pair", concat_ws(";", col("lineIdx"), col("content")))
+    df.show(50)
+    df.groupBy("docIdx").agg(collect_list(col("pair")).alias("pairs"))
+      .withColumn("text", array_sort(col("pairs")))
   }
 
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
@@ -93,6 +95,7 @@ object OSCAR {
         val spark = SparkSession.builder().master("local[*]")
           .config("spark.driver.memory", config.driverMemory)
           .appName("OSCAR").getOrCreate()
+        spark.sparkContext.setLogLevel("ERROR")
         config.version match {
           case "23" =>
             val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(config.inputPath).select("content")
@@ -102,7 +105,8 @@ object OSCAR {
             val cf = spark.read.option("recursiveFileLookup", true).text(config.inputPath).toDF("content")
             println(cf.count)
             val df = f21(spark, cf)
-            df.show(20)
+            df.show(5)
+            df.select("text").head.getAs[Seq[String]](0).foreach(println)
           case _ =>
         }
         spark.stop()
