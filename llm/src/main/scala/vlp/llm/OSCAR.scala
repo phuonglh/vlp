@@ -1,7 +1,6 @@
 package vlp.llm
 
 import org.apache.spark.ml.feature.Tokenizer
-import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.functions._
 import scopt.OptionParser
@@ -23,7 +22,7 @@ case class Config(
    master: String = "local[*]",
    totalCores: Int = 8, // X
    executorCores: Int = 8, // Y ==> there are Y/X executors
-   executorMemory: String = "8g", // Z
+   executorMemory: String = "8g", // E
    driverMemory: String = "8g", // D
    version: String = "23",
    inputPath: String = "dat/23",
@@ -39,7 +38,6 @@ object OSCAR {
       val line = row.getAs[String](0).trim
       (line.size, id)
     }.filter(_._1 == 0).map(_._2.toInt).collect() ++ Array(n.toInt)
-    println(emptyLineIdx.mkString(", "))
     // fill an index array for grouping consecutive lines into a document
     val ids = Array.fill[Int](n.toInt)(0)
     var start = 0
@@ -48,7 +46,6 @@ object OSCAR {
       (start until k).foreach(j => ids(j) = i)
       start = k
     }
-    println(ids.mkString(", "))
     import spark.implicits._
     val pairDF = pairRDD.map(p => (p._1.getAs[String](0), p._2)).toDF("content", "lineIdx")
       .filter(length(trim(col("content"))) > 0)
@@ -57,9 +54,17 @@ object OSCAR {
     val idsDF = idsRDD.toDF("docIdx", "lineIdx")
     val df = pairDF.join(idsDF, "lineIdx")
       .withColumn("pair", concat_ws(";", col("lineIdx"), col("content")))
-    df.show(50)
-    df.groupBy("docIdx").agg(collect_list(col("pair")).alias("pairs"))
-      .withColumn("text", array_sort(col("pairs")))
+    val ef = df.groupBy("docIdx").agg(collect_list(col("pair")).alias("pairs"))
+      .withColumn("xs", array_sort(col("pairs")))
+    // sort a list of index-prepended sentences by their index
+    val sorter = udf((xs: Seq[String]) => {
+      xs.map { x =>
+        val j = x.indexOf(";")
+        (x.substring(0, j).toInt, x.substring(j+1))
+      }.sortBy(_._1).map(_._2)
+    })
+    ef.withColumn("ys", sorter(col("xs")))
+      .withColumn("text", concat_ws("\n", col("ys")))
   }
 
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
@@ -86,6 +91,8 @@ object OSCAR {
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
       opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
       opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores")
+      opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory")
+      opt[String]('E', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory")
       opt[String]('v', "version").action((x, conf) => conf.copy(version = x)).text("version 23/22/21")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path (file/folder)")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path (file/folder)")
@@ -94,6 +101,9 @@ object OSCAR {
       case Some(config) =>
         val spark = SparkSession.builder().master("local[*]")
           .config("spark.driver.memory", config.driverMemory)
+          .config("spark.executor.memory", config.executorMemory)
+          .config("spark.executor.cores", config.executorCores)
+          .config("spark.deploy.defaultCores", config.totalCores)
           .appName("OSCAR").getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
         config.version match {
@@ -103,10 +113,9 @@ object OSCAR {
             gf.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
           case "21" =>
             val cf = spark.read.option("recursiveFileLookup", true).text(config.inputPath).toDF("content")
-            println(cf.count)
             val df = f21(spark, cf)
-            df.show(5)
-            df.select("text").head.getAs[Seq[String]](0).foreach(println)
+            df.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
+            println(s"There are ${df.count()} documents.")
           case _ =>
         }
         spark.stop()
