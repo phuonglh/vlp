@@ -2,7 +2,7 @@ package vlp.llm
 
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import org.apache.spark.sql.functions._
+import org.apache.spark.sql.functions.{not, _}
 import scopt.OptionParser
 
 /**
@@ -63,8 +63,9 @@ object OSCAR {
         (x.substring(0, j).toInt, x.substring(j+1))
       }.sortBy(_._1).map(_._2)
     })
-    ef.withColumn("ys", sorter(col("xs")))
+    val ff = ef.withColumn("ys", sorter(col("xs")))
       .withColumn("text", concat_ws("\n", col("ys")))
+    ff.select("text").distinct()
   }
 
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
