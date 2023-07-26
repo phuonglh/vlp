@@ -57,15 +57,16 @@ object OSCAR {
     val ef = df.groupBy("docIdx").agg(collect_list(col("pair")).alias("pairs"))
       .withColumn("xs", array_sort(col("pairs")))
     // sort a list of index-prepended sentences by their index
+    // use parallel processing for speed-up
     val sorter = udf((xs: Seq[String]) => {
-      xs.map { x =>
+      xs.par.map { x =>
         val j = x.indexOf(";")
         (x.substring(0, j).toInt, x.substring(j+1))
-      }.sortBy(_._1).map(_._2)
+      }.toList.sortBy(_._1).map(_._2)
     })
     val ff = ef.withColumn("ys", sorter(col("xs")))
       .withColumn("text", concat_ws("\n", col("ys")))
-    ff.select("text").distinct()
+    ff.select("text").filter(not(col("text").contains("sex"))).distinct()
   }
 
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
