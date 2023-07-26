@@ -120,7 +120,7 @@ object OSCAR {
             println(s"There are ${df.count()} documents.")
           case "c4" =>
             val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath).select("text")
-            val ef = df.distinct()
+            val ef = df.filter(not(col("text").contains("sex"))).distinct()
             ef.repartition(10).write.mode(SaveMode.Overwrite).json(config.outputPath)
             println(s"There are ${ef.count()} documents.")
           case _ =>
