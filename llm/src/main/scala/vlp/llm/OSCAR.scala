@@ -108,7 +108,7 @@ object OSCAR {
           .appName("OSCAR").getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
         config.version match {
-          case "23" =>
+          case "23" => // same for 22
             val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(config.inputPath).select("content")
             val gf = f22(spark, cf)
             gf.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
@@ -117,7 +117,13 @@ object OSCAR {
             val df = f21(spark, cf)
             df.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
             println(s"There are ${df.count()} documents.")
+          case "c4" =>
+            val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath).select("text")
+            val ef = df.distinct()
+            ef.repartition(10).write.mode(SaveMode.Overwrite).json(config.outputPath)
+            println(s"There are ${ef.count()} documents.")
           case _ =>
+            println("Require a version: [23, 21, c4]")
         }
         spark.stop()
       case _ => println("Invalid options")
