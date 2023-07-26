@@ -4,8 +4,6 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SparkSession, DataFrame, Row}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.catalyst.ScalaReflection
 
 object Extractor {
   def readFPT(spark: SparkSession, path: String, save: Boolean = false): DataFrame = {
@@ -20,11 +18,12 @@ object Extractor {
         row.getAs[Seq[Row]]("act").flatMap(_.getAs[Seq[String]]("communicativeFunction")),
         row.getAs[Seq[Row]]("act").flatMap { row =>
           val j = row.fieldIndex("slot")
-          if (!row.isNullAt(j)) row.getAs[String](j).trim
-            .replaceAll("""\s+""", " ")
+          val ss = if (!row.isNullAt(j)) row.getAs[String](j).trim else ""
+          if (ss.nonEmpty) ss.replaceAll("""[^\S\r\n]+""", " ") // all spaces but not newline character
             .replaceAll("\"", "")
-            .split(",")
-          else List.empty[String]
+            .split(",$") // the comma at the end of a line is for separating slot/value pairs
+          else
+            List.empty[String]
         }
       )
     }
@@ -54,7 +53,7 @@ object Extractor {
   val f = udf(groupSlots)
 
   def main(args: Array[String]): Unit = {
-    val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[2]")
+    val conf = new SparkConf().setAppName(getClass().getName()).setMaster("local[4]")
     val spark = SparkSession.builder.config(conf).getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
@@ -64,8 +63,16 @@ object Extractor {
     println(df.count())
     df.select("slots").show(false)
     val ef = df.withColumn("state", f(col("slots")))
-    ef.select("turnId", "state").show(false)
+    ef.select("turnId", "utterance", "state").show()
     ef.printSchema()
+    // get all different slot types of the dataset
+    import spark.implicits._
+    val states = ef.select("state").flatMap { row =>
+      val kv = row.getAs[Map[String, Array[String]]](0)
+      kv.keys.toList
+    }.toDF("slotTypes").distinct()
+    states.show(false)
+    println(s"Number of different slot types = ${states.count}.")
 //    val schema = StructType(Seq(
 //      StructField("productName", StringType, true),
 //      StructField("productProvider", StringType, true),
