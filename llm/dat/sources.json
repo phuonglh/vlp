@@ -56,7 +56,7 @@
     },
     {
       "site": "https://cafebiz.vn",
-      "category": ["vi-mo.chn", "cau-chuyen-kinh-doanh.chn", "cau-chuyen-kinh-doanh/bat-dong-san.chn", 
+      "category": ["vi-mo.chn", "cau-chuyen-kinh-doanh.chn", "cau-chuyen-kinh-doanh/bat-dong-san.chn",
         "cau-chuyen-kinh-doanh/tai-chinh.chn", "cau-chuyen-kinh-doanh/startup.chn", "cau-chuyen-kinh-doanh/quan-tri.chn",
         "cau-chuyen-kinh-doanh/nhan-vat.chn", "cau-chuyen-kinh-doanh/nghe-nghiep.chn", "cau-chuyen-kinh-doanh/thuong-hieu.chn"],
       "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.chn",
@@ -73,7 +73,7 @@
     },
     {
       "site": "https://thesaigontimes.vn",
-      "category": ["tai-chinh-ngan-hang/", "kinh-doanh/", "doanh-nhan-doanh-nghiep/", "dia-oc/", 
+      "category": ["tai-chinh-ngan-hang/", "kinh-doanh/", "doanh-nhan-doanh-nghiep/", "dia-oc/",
         "tai-chinh-ngan-hang/ngan-hang/", "tai-chinh-ngan-hang/chung-khoan/", "tai-chinh-ngan-hang/bao-hiem/",
         "kinh-doanh/thuong-mai-dich-vu/", "kinh-doanh/cong-nong-nghiep/", "kinh-doanh/thuong-mai-dien-tu/",
         "doanh-nhan-doanh-nghiep/chuyen-lam-an/", "doanh-nhan-doanh-nghiep/guong-mat-khoi-nghiep/", "doanh-nhan-doanh-nghiep/chuyen-quan-tri/",
@@ -85,6 +85,13 @@
       "site": "https://viettimes.vn",
       "category": ["chuyen-doi-so/", "kinh-te-so/"],
       "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.html",
+      "exclude": []
+    },
+    {
+      "site": "https://vietstock.vn",
+      "category": ["chung-khoan.htm/", "doanh-nghiep.htm/", "bat-dong-san.htm/", "tai-chinh.htm/", "hang-hoa.htm/",
+        "kinh-te.htm/", "the-gioi.htm/", "tai-chinh-ca-nhan.htm/", "nhan-dinh-phan-tich.htm/", "dong-duong.htm/"],
+      "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.htm",
       "exclude": []
     }
   ]

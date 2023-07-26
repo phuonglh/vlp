@@ -139,7 +139,7 @@ object NewsIndexer {
       val content = Serialization.writePretty(news)
       val dateFormat = new SimpleDateFormat("yyyyMMdd")
       val currentDate = dateFormat.format(new Date())
-      Files.write(Paths.get(System.getProperty("user.dir"), "dat", currentDate + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+      Files.write(Paths.get(System.getProperty("user.dir"), "dat/idx", currentDate + ".json"), content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
     }
     println(s"#(totalURLs) = ${urls.size}")
   }
