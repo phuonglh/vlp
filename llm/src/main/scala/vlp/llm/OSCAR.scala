@@ -26,7 +26,8 @@ case class Config(
    driverMemory: String = "8g", // D
    version: String = "23",
    inputPath: String = "dat/23",
-   outputPath: String = "pre/23"
+   outputPath: String = "pre/23",
+   tempPath: String = "/tmp"
 )
 
 object OSCAR {
@@ -98,6 +99,7 @@ object OSCAR {
       opt[String]('v', "version").action((x, conf) => conf.copy(version = x)).text("version 23/22/21")
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path (file/folder)")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path (file/folder)")
+      opt[String]('t', "tempPath").action((x, conf) => conf.copy(tempPath = x)).text("temporary directory of Spark")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
@@ -106,6 +108,7 @@ object OSCAR {
           .config("spark.executor.memory", config.executorMemory)
           .config("spark.executor.cores", config.executorCores)
           .config("spark.deploy.defaultCores", config.totalCores)
+          .config("spark.local.dir", config.tempPath)
           .appName("OSCAR").getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
         config.version match {
