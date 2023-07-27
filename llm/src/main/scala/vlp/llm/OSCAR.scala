@@ -123,6 +123,11 @@ object OSCAR {
             val ef = df.filter(not(col("text").contains("sex"))).distinct()
             ef.repartition(10).write.mode(SaveMode.Overwrite).json(config.outputPath)
             println(s"There are ${ef.count()} documents.")
+          case "combine" =>
+            // combine and dedup all the 3 preprocessed folders (21, 22, 23)
+            val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath)
+            val ef = df.distinct().repartition(10)
+            ef.write.option("compression", "gzip").json(config.outputPath)
           case _ =>
             println("Require a version: [23, 21, c4]")
         }
