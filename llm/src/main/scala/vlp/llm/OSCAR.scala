@@ -119,7 +119,7 @@ object OSCAR {
           case "21" =>
             val cf = spark.read.option("recursiveFileLookup", true).text(config.inputPath).toDF("content")
             val df = f21(spark, cf)
-            df.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
+            df.select ("text").repartition (10).write.mode(SaveMode.Overwrite).json(config.outputPath)
             println(s"There are ${df.count()} documents.")
           case "c4" =>
             val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath).select("text")
@@ -130,7 +130,7 @@ object OSCAR {
             // combine and dedup all the 3 preprocessed folders (21, 22, 23)
             val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath)
             val ef = df.distinct().repartition(1)
-            ef.write.option("compression", "gzip").json(config.outputPath)
+            ef.write.mode(SaveMode.Overwrite).option("compression", "gzip").json(config.outputPath)
           case _ =>
             println("Require a version: [23, 21, c4]")
         }
