@@ -2,7 +2,7 @@ package vlp.llm
 
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import org.apache.spark.sql.functions.{not, _}
+import org.apache.spark.sql.functions._
 import scopt.OptionParser
 
 /**
@@ -21,10 +21,11 @@ import scopt.OptionParser
 case class Config(
    master: String = "local[*]",
    totalCores: Int = 8, // X
-   executorCores: Int = 8, // Y ==> there are Y/X executors
+   executorCores: Int = 4, // Y ==> there are Y/X executors
    executorMemory: String = "8g", // E
    driverMemory: String = "8g", // D
    version: String = "23",
+   numPartitions: Int = 10,
    inputPath: String = "dat/23",
    outputPath: String = "pre/23",
    tempPath: String = "/tmp"
@@ -32,6 +33,27 @@ case class Config(
 
 object OSCAR {
 
+  /**
+   * Given a data frame, we remove all rows containing bad content (sex, code/script)
+   * @param df
+   * @param colName
+   * @return a filtered data frame
+   */
+  def filterBadRows(df: DataFrame, colName: String): DataFrame = {
+    df.filter(not(col(colName).contains("sex")))
+      .filter(not(col(colName).contains("<div")))
+      .filter(not(col(colName).contains("class=")))
+      .filter(not(col(colName).contains("script")))
+      .filter(not(col(colName).contains("\u0000")))
+  }
+
+  /**
+   * The OSCAR 21 dataset contains plain text documents, each document is separated by a newline. We need
+   * to combine consecutive lines into a document.
+   * @param spark
+   * @param cf
+   * @return
+   */
   def f21(spark: SparkSession, cf: DataFrame): DataFrame = {
     val pairRDD = cf.rdd.zipWithIndex()
     val n = cf.count()
@@ -67,12 +89,17 @@ object OSCAR {
     })
     val ff = ef.withColumn("ys", sorter(col("xs")))
       .withColumn("text", concat_ws("\n", col("ys")))
-    ff.select("text").filter(not(col("text").contains("sex"))).distinct()
+    filterBadRows(ff, "text").distinct()
   }
 
+  /**
+   * The OSCAR 22/23 datasets contain JSONL documents.
+   * @param spark
+   * @param cf
+   * @return
+   */
   def f22(spark: SparkSession, cf: DataFrame): DataFrame = {
-    // filter all documents containing toxic contents: "sex"
-    val df = cf.filter(not(col("content").contains("sex")))
+    val df = filterBadRows(cf, "content")
     // filter all documents having more than 80 tokens
     val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
     val ef = tokenizer.transform(df)
@@ -85,6 +112,17 @@ object OSCAR {
       row.getAs[String]("content").split("""\n+""")
         .filter(line => line.size >= 40 && line.size <= 2048).filter(_.trim.nonEmpty).mkString("\n")
     }.toDF("text")
+  }
+
+  def paragraphDedup(spark: SparkSession, df: DataFrame, colName: String): DataFrame = {
+    import spark.implicits._
+    val pf = df.select(colName).rdd.zipWithIndex().flatMap { case (row, docId) =>
+      val text = row.getAs[String](0)
+      val lines = text.split("\n+").map(_.trim)
+      val pairs = lines.zipWithIndex
+      pairs.map { case (line, lineId) => ((docId.toInt, lineId), line) }
+    }
+    pf.toDF("id", "paragraph")
   }
 
   def main(args: Array[String]): Unit = {
@@ -100,6 +138,7 @@ object OSCAR {
       opt[String]('i', "inputPath").action((x, conf) => conf.copy(inputPath = x)).text("input path (file/folder)")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path (file/folder)")
       opt[String]('t', "tempPath").action((x, conf) => conf.copy(tempPath = x)).text("temporary directory of Spark")
+      opt[Int]('n', "numPartitions").action((x, conf) => conf.copy(numPartitions = x)).text("number of partitions for output")
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
@@ -115,19 +154,22 @@ object OSCAR {
           case "23" => // same for 22
             val cf = spark.read.option("inferSchema", true).option("recursiveFileLookup", true).json(config.inputPath).select("content")
             val gf = f22(spark, cf)
-            gf.select ("text").repartition (10).write.mode (SaveMode.Overwrite).json(config.outputPath)
+            gf.select("text").repartition(config.numPartitions).write.option("compression", "gzip")
+              .mode(SaveMode.Overwrite).json(config.outputPath)
           case "21" =>
             val cf = spark.read.option("recursiveFileLookup", true).text(config.inputPath).toDF("content")
             val df = f21(spark, cf)
-            df.select ("text").repartition (10).write.mode(SaveMode.Overwrite).json(config.outputPath)
+            df.select ("text").repartition(config.numPartitions).write.option("compression", "gzip")
+              .mode(SaveMode.Overwrite).json(config.outputPath)
             println(s"There are ${df.count()} documents.")
           case "c4" =>
             val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath).select("text")
-            val ef = df.filter(not(col("text").contains("sex"))).distinct()
-            ef.repartition(10).write.mode(SaveMode.Overwrite).json(config.outputPath)
+            val ef = filterBadRows(df, "text").distinct()
+            ef.repartition(config.numPartitions).write.option("compression", "gzip")
+              .mode(SaveMode.Overwrite).json(config.outputPath)
             println(s"There are ${ef.count()} documents.")
           case "combine" =>
-            // combine and dedup all the 3 preprocessed folders (21, 22, 23)
+            // combine and dedup all the 3 preprocessed subfolders (21, 22, 23) in an inputPath)
             val df = spark.read.option("recursiveFileLookup", true).json(config.inputPath)
             val ef = df.distinct().repartition(1)
             ef.write.mode(SaveMode.Overwrite).option("compression", "gzip").json(config.outputPath)

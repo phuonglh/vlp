@@ -46,7 +46,7 @@
         "doanh-nhan.htm", "cong-ty-doanh-nghiep.htm", "chuyen-dong-doanh-nghiep.htm", "doi-thoai-doanh-nghiep.htm", "ket-noi-doanh-nghiep.htm",
         "chung-khoan.htm"],
       "pattern": "/[\\p{Alnum}/-]+\\.htm",
-      "exclude": []
+      "exclude": ["rss.htm"]
     },
     {
       "site": "https://cafef.vn",
@@ -79,7 +79,7 @@
         "doanh-nhan-doanh-nghiep/chuyen-lam-an/", "doanh-nhan-doanh-nghiep/guong-mat-khoi-nghiep/", "doanh-nhan-doanh-nghiep/chuyen-quan-tri/",
         "dia-oc/thi-truong-nha-dat/", "dia-oc/quy-hoach-ha-tang/"],
       "pattern": "/[\\p{Alnum}-]+/",
-      "exclude": []
+      "exclude": ["/fonts/", "/photo-gallery/", "/ajax/", "/assets/", "/wp-includes/", "/image/", "/dist/", "/logo/", "/schema/", "/pagead/"]
     },
     {
       "site": "https://viettimes.vn",
@@ -91,6 +91,19 @@
       "site": "https://vietstock.vn",
       "category": ["chung-khoan.htm/", "doanh-nghiep.htm/", "bat-dong-san.htm/", "tai-chinh.htm/", "hang-hoa.htm/",
         "kinh-te.htm/", "the-gioi.htm/", "tai-chinh-ca-nhan.htm/", "nhan-dinh-phan-tich.htm/", "dong-duong.htm/"],
+      "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.htm",
+      "exclude": []
+    },
+    {
+      "site": "https://kenh14.vn",
+      "category": ["money-z.chn"],
+      "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.chn",
+      "exclude": []
+    },
+    {
+      "site": "https://baochinhphu.vn",
+      "category": ["kinh-te.htm", "kinh-te/ngan-hang.htm", "kinh-te/chung-khoan.htm", "kinh-te/thi-truong.htm",
+        "kinh-te/doanh-nghiep.htm", "kinh-te/khoi-nghiep.htm"],
       "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.htm",
       "exclude": []
     }
