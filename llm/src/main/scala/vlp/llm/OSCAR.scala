@@ -3,6 +3,7 @@ package vlp.llm
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import scopt.OptionParser
 
 /**
@@ -122,7 +123,21 @@ object OSCAR {
       val pairs = lines.zipWithIndex
       pairs.map { case (line, lineId) => ((docId.toInt, lineId), line) }
     }
-    pf.toDF("id", "paragraph")
+    // create a data frame where each paragraph has an id = (docId, lineId)
+    val ef = pf.toDF("id", "paragraph")
+    println(s"Number of paragraphs = ${ef.count}")
+    // group the paragraphs by their content and collect their ids
+    val gf = ef.groupBy("paragraph").agg(collect_list("id").as("ids"))
+    // the ids columns contains an array of id, each id is a struct {docId, lineId}.
+    // there are duplicates if the size of ids is greater than 1. We separate the head element out of the tail elements
+    // note that the element starts from index 1, the "tailIds" column contains duplicated ids of the "headId" column
+    val hf = gf.withColumn("id", element_at(col("ids"), 1))
+      .withColumn("tailIds", slice(col("ids"), lit(2), size(col("ids"))))
+      .select("id")
+    // the hf data frame contains a single column of "id" that are unique. We then join it with the original ef data frame
+    val jf = hf.join(ef, "id")
+    println(s"Number of deduplicated paragraphs = ${jf.count}")
+    jf
   }
 
   def main(args: Array[String]): Unit = {
