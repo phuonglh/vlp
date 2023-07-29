@@ -115,6 +115,15 @@ object OSCAR {
     }.toDF("text")
   }
 
+  /**
+   * Deduplicate documents at the paragraph level. Each document is split into a number of paragraphs.
+   * Then these paragraphs are deduplicated. Unique paragraphs and merged back into document with the same
+   * order. We need to label each paragraph with its document id and its own sequential id.
+   * @param spark
+   * @param df
+   * @param colName
+   * @return
+   */
   def paragraphDedup(spark: SparkSession, df: DataFrame, colName: String): DataFrame = {
     import spark.implicits._
     val pf = df.select(colName).rdd.zipWithIndex().flatMap { case (row, docId) =>
@@ -136,8 +145,13 @@ object OSCAR {
       .select("id")
     // the hf data frame contains a single column of "id" that are unique. We then join it with the original ef data frame
     val jf = hf.join(ef, "id")
-    println(s"Number of deduplicated paragraphs = ${jf.count}")
-    jf
+    println(s"Number of unique paragraphs = ${jf.count}")
+    // after deduplication, we split out the docId and lineId into separate columns
+    val cf = jf.withColumn("docId", col("id._1")).withColumn("lineId", col("id._2"))
+    // sort and group lines into list of paragraphs
+    val bf = cf.sort("lineId").groupBy("docId").agg(collect_list("paragraph").as("lines"))
+    // concat lines back into a newline-separated document
+    bf.withColumn("text", concat_ws("\n", col("lines"))).select("text")
   }
 
   def main(args: Array[String]): Unit = {

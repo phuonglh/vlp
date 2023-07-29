@@ -79,7 +79,7 @@
         "doanh-nhan-doanh-nghiep/chuyen-lam-an/", "doanh-nhan-doanh-nghiep/guong-mat-khoi-nghiep/", "doanh-nhan-doanh-nghiep/chuyen-quan-tri/",
         "dia-oc/thi-truong-nha-dat/", "dia-oc/quy-hoach-ha-tang/"],
       "pattern": "/[\\p{Alnum}-]+/",
-      "exclude": ["/fonts/", "/photo-gallery/", "/ajax/", "/assets/", "/wp-includes/", "/image/", "/dist/", "/logo/", "/schema/", "/pagead/"]
+      "exclude": ["/fonts/", "/photo-gallery/", "/ajax/", "/assets/", "/wp-includes/", "/image/", "/dist/", "/logo/", "/schema/", "/pagead/", "/feed/"]
     },
     {
       "site": "https://viettimes.vn",
@@ -105,6 +105,12 @@
       "category": ["kinh-te.htm", "kinh-te/ngan-hang.htm", "kinh-te/chung-khoan.htm", "kinh-te/thi-truong.htm",
         "kinh-te/doanh-nghiep.htm", "kinh-te/khoi-nghiep.htm"],
       "pattern": "/[\\p{Alnum}/-]+(\\d{4,})\\.htm",
+      "exclude": []
+    },
+    {
+      "site": "https://forbes.vn",
+      "category": ["kinh-doanh/", "doanh-nghiep/", "cong-nghe/"],
+      "pattern": "/[\\p{Alnum}/-]+",
       "exclude": []
     }
   ]

@@ -42,6 +42,7 @@ case class Sites(sites: List[Site])
   */
 object NewsIndexer {
   val specialUnicodePattern = Pattern.compile("""[\u0000]+""")
+  val useKafka: Boolean = false
 
   /**
     * Extracts the main content of a news URL.
@@ -110,7 +111,6 @@ object NewsIndexer {
     System.setProperty("http.agent", "Chrome")
     System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
 
-    import scala.collection.JavaConversions._
     val urls = mutable.Set[String]()
     val s = scala.io.Source.fromFile(jsonSource).getLines().toList.mkString("\n")
     implicit val formats: Formats = Serialization.formats(ShortTypeHints(List(classOf[Site])))
@@ -120,19 +120,32 @@ object NewsIndexer {
         urls ++= extractURLs(site.site, category, site.pattern, (s: String) => !site.exclude.exists(e => s.contains(e)))
       }
     }
-
-    val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
-    val news = urls.par.map(url => {
-      println(url)
-      val content = runWithTimeout(5000)(extract(url)).get
-      if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && !content.contains("script") && !specialUnicodePattern.matcher(content).find()) {
-        kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content))
-        Page(url, content, new Date())
-      } else {
-        Page(url, "", new Date())
-      }
-    }).toList
-    kafkaProducer.close()
+    // extract articles using parallelism
+    val news = if (useKafka) {
+      val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
+      val ns = urls.par.map(url => {
+        println(url)
+        val content = runWithTimeout(4000)(extract(url)).get
+        if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && !content.contains("script") && !specialUnicodePattern.matcher(content).find()) {
+          kafkaProducer.send(new ProducerRecord[String, String](Kafka.GROUP_ID, url, content))
+          Page(url, content, new Date())
+        } else {
+          Page(url, "", new Date())
+        }
+      }).toList.filter(_.content.nonEmpty)
+      kafkaProducer.close()
+      ns
+    } else {
+      urls.par.map(url => {
+        println(url)
+        val content = runWithTimeout(4000)(extract(url)).get
+        if (content.size >= 500 && !content.contains("div") && !content.contains("class=") && !content.contains("script") && !specialUnicodePattern.matcher(content).find()) {
+          Page(url, content, new Date())
+        } else {
+          Page(url, "", new Date())
+        }
+      }).toList.filter(_.content.nonEmpty)
+    }
 
     if (news.nonEmpty) {
       implicit val formats: Formats = Serialization.formats(NoTypeHints)
