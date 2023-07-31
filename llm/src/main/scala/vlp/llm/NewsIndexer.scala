@@ -103,7 +103,9 @@ object NewsIndexer {
     try {
       Some(Await.result(Future(f), timeout.seconds))
     } catch {
-      case e: TimeoutException => None
+      case _: TimeoutException =>
+        println("Timeout exception!")
+        None
     }
   }
 
@@ -120,7 +122,7 @@ object NewsIndexer {
         urls ++= extractURLs(site.site, category, site.pattern, (s: String) => !site.exclude.exists(e => s.contains(e)))
       }
     }
-    // extract articles using parallelism
+    // extract articles in parallel
     val news = if (useKafka) {
       val kafkaProducer = Kafka.createProducer(Kafka.SERVERS)
       val ns = urls.par.map(url => {
