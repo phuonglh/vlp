@@ -209,10 +209,7 @@ object OSCAR {
                 println("Require a version: [23, 21, 2x, c4]")
             }
           case "p" =>
-            val colName = config.version match {
-              case "c4" => "text"
-              case _ => "content"
-            }
+            val colName = "text"
             val cf = spark.read.options(Map("recursiveFileLookup" -> "true", "multiline" -> "true")).json(config.inputPath).select(colName)
             println(s"Number of input documents = ${cf.count()}")
             val df = distinctParagraph(spark, cf, colName)
