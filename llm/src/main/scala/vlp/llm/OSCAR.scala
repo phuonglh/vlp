@@ -210,7 +210,7 @@ object OSCAR {
             }
           case "p" =>
             val colName = "text"
-            val cf = spark.read.options(Map("recursiveFileLookup" -> "true", "multiline" -> "true")).json(config.inputPath).select(colName)
+            val cf = spark.read.options(Map("recursiveFileLookup" -> "true")).json(config.inputPath).select(colName)
             println(s"Number of input documents = ${cf.count()}")
             val df = distinctParagraph(spark, cf, colName)
             println(s"Number of output documents = ${df.count()}")
