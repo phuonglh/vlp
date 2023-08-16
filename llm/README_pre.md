@@ -112,3 +112,14 @@ To combine all 21, 22, 23 p-level documents into one big chunk on A100-NLP (192G
 # Tokenization
 
     `spm_train --input=/home/phuonglh/vlp/llm/pre/23/part-00000-*.txt --model_prefix=oscar --vocab_size=30000 --character_coverage=1.0 --model_type=bpe`
+
+# Excrawl Stats:
+
+Forum:
+    Number of input documents = 158031
+    Unique d-level documents = 121287
+    Number of input paragraphs = 1264352
+    Number of output paragraphs = 857545
+    Unique p-level documents  = 111996
+    Good p-level documents = 111662
+
