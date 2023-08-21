@@ -12,10 +12,12 @@ import org.apache.spark.sql.types.DataType
 /**
   * A sequence vectorizer transforms a sequence of tokens into 4 sequences of indices for use 
   * in a BERT model. This transformer pads or truncate long sentence to a given `maxSequenceLength`.
-  *
+  * A dictionary is needed to convert tokens into indices. The output is a vector if length 4 x 'maxSequenceLength".
+  * See the BERT paper for detail.
+ *
   * phuonglh@gmail.com
   */
-class Sequencer4BERT(val uid: String, val dictionary: Map[String, Int], maxSequenceLength: Int, padding: Float) 
+class Sequencer4BERT(val uid: String, val dictionary: Map[String, Int], val maxSequenceLength: Int, val padding: Float)
   extends UnaryTransformer[Seq[String], Vector, Sequencer4BERT] with DefaultParamsWritable {
 
   var dictionaryBr: Option[Broadcast[Map[String, Int]]] = None
@@ -42,6 +44,7 @@ class Sequencer4BERT(val uid: String, val dictionary: Map[String, Int], maxSeque
       for (j <- 0 until n)
         positions(j) = j
       // attention masks with indices in [0, 1]
+      // It's a mask to be used if the input sequence length is smaller than maxSeqLen
       val masks = Array.fill[Double](n)(1)
 
       // truncate or pad
@@ -51,7 +54,7 @@ class Sequencer4BERT(val uid: String, val dictionary: Map[String, Int], maxSeque
         val a = tokens    ++ Array.fill[Double](maxSeqLen - xs.size)(pad)
         val b = types     ++ Array.fill[Double](maxSeqLen - xs.size)(0)
         val c = positions ++ Array.fill[Double](maxSeqLen - xs.size)(pad)
-        val d = masks     ++ Array.fill[Double](maxSeqLen - xs.size)(1)
+        val d = masks     ++ Array.fill[Double](maxSeqLen - xs.size)(0) // fix a bug: should 0 instead of 1 for padded tokens
         Vectors.dense(a ++ b ++ c ++ d)
       }
     }
