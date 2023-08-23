@@ -1,10 +1,13 @@
 package vlp.llm
 
-import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import org.apache.spark.sql.functions._
 import scopt.OptionParser
 
+/**
+ * phuonglh9@fpt.com
+ *
+ * Preprocessor of the excrawl datasets.
+ */
 object Excrawl {
   def main(args: Array[String]): Unit = {
 
@@ -47,3 +50,5 @@ object Excrawl {
   }
 
 }
+
+// -- -i /mnt/data/excrawl/forum -o pre/excrawl/forum -n 1

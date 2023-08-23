@@ -7,7 +7,7 @@ name := "llm"
 scalaVersion := "2.12.15"
 val scalaTestVersion = "3.2.14"
 
-javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
+javacOptions ++= Seq("-source", "11", "-target", "11")
 
 licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0"))
 
