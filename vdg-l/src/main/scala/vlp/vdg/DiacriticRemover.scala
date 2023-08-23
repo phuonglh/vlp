@@ -7,7 +7,7 @@ import org.apache.spark.sql.types.{DataType, StringType}
 /**
   * phuonglh, 10/13/18, 10:45
   *
-  * Diacritic remover. Convert characters to lowercase if specified.
+  * Diacritic remover. Convert characters to lowercase.
   */
 class DiacriticRemover(val uid: String) extends UnaryTransformer[String, String, DiacriticRemover] with DefaultParamsWritable {
 

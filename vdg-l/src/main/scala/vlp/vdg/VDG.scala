@@ -24,7 +24,7 @@ import org.apache.spark.sql.RowFactory
 /**
   * Vietnamese Diacritics Generation
   *
-  * On Spark good configuration. Suppose that we 6 nodes, each node has 20 cores and 64g of RAM.
+  * On Spark good configuration. Suppose that we have 6 nodes, each node has 20 cores and 64g of RAM.
   *
   * Option 1:
   *

@@ -8,7 +8,7 @@ scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-feature", "-unchecke
 )
 
 lazy val commonSettings = Seq(
-  name := "vdg-l",
+  name := "vdg",
   organization := "phuonglh.com",
   version := "1.0.0",
   libraryDependencies ++= Seq(
@@ -21,7 +21,7 @@ lazy val commonSettings = Seq(
   )
 )
 
-lazy val root = (project in file("."))
+lazy val vdg = (project in file("."))
     .settings(commonSettings, 
       assembly / mainClass := Some("vlp.vdg.VDG"),
       assembly / assemblyJarName := "vdgl.jar",

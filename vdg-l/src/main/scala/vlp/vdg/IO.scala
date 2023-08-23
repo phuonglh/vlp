@@ -12,8 +12,6 @@ import org.apache.log4j.{Level, Logger}
 
 import com.intel.analytics.bigdl.dllib.visualization.ValidationSummary
 
-case class News(url: String, sentences: List[String])
-
 object IO {
   /**
     * Reads text files from a directory or from a text file, ignore all URL lines.
@@ -36,6 +34,8 @@ object IO {
     * @return a DataFrame with a single field with header 'text'.
     */
   def readJsonFiles(sparkContext: SparkContext, path: String): DataFrame = {
+    case class News(url: String, sentences: List[String])
+
     val lines = sparkContext.textFile(path).map(_.trim).filter(_.nonEmpty).collect()
     implicit val formats = Serialization.formats(NoTypeHints)
     val jsons = lines.map(json => Serialization.read[News](json))
@@ -57,7 +57,7 @@ object IO {
   def extractAccuracySummary(tag: String = "validation", epochs: Int): Array[Float] = {
     val summary = ValidationSummary(appName = "VDG", logDir = "/tmp/")
     val accuracy = summary.readScalar("TimeDistributedTop1Accuracy").map(_._2).takeRight(epochs)
-    val outputPath = "/tmp/VDG/" + tag + "accuracy.txt"
+    val outputPath = "/tmp/vdg/" + tag + "accuracy.txt"
     import scala.collection.JavaConverters._
     Files.write(Paths.get(outputPath), accuracy.map(_.toString).toList.asJava, StandardCharsets.UTF_8)
     accuracy
