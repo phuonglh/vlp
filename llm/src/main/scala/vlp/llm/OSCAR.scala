@@ -173,7 +173,7 @@ object OSCAR {
     }
     opts.parse(args, Config()) match {
       case Some(config) =>
-        val spark = SparkSession.builder().master("local[*]")
+        val spark = SparkSession.builder().master(config.master)
           .config("spark.driver.memory", config.driverMemory)
           .config("spark.executor.memory", config.executorMemory)
           .config("spark.executor.cores", config.executorCores)

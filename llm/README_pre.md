@@ -108,6 +108,11 @@ To combine all 21, 22, 23 p-level documents into one big chunk on A100-NLP (192G
 
 `bloop run -p llm -m vlp.llm.OSCAR -- -l d -v 2x -i par/ -o par-2x -X 64 -Y 32 -D 64g -E 45g`
 
+To dedup all the C4 results (second times) from the Spark Cluster using 10 executors
+
+`bloop run -p llm -m vlp.llm.OSCAR -- -l p -i /mnt/a100-llm/llm-corpora/c4-par -o /mnt/a100-llm/llm-corpora/c4-par-all -M spark://103.176.147.153:7077 -X 60 -Y 240 -D 320g -E 240g`
+
+
     
 # Tokenization
 
