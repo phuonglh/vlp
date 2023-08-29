@@ -179,6 +179,7 @@ object OSCAR {
           .config("spark.executor.cores", config.executorCores)
           .config("spark.deploy.defaultCores", config.totalCores)
           .config("spark.local.dir", config.tempPath)
+          .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
           .appName("OSCAR").getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
         config.level match {
