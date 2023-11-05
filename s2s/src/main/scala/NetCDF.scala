@@ -40,12 +40,12 @@ object NetCDF {
 
   def readSLP(path: String, lat: Double, lon: Double): List[Float] = {
     val ncFile = NetcdfFiles.open(path)
-    println(ncFile.getDetailInfo)
-    val variables = ncFile.getVariables
-    variables.forEach(println(_))
+//    println(ncFile.getDetailInfo)
+//    val variables = ncFile.getVariables
+//    variables.forEach(println(_))
     // read the slp variable
     val slp = ncFile.findVariable("slp")
-    // filter the Vietnam region
+    // filter values at the station
     val (latId, lonId) = index(lat, lon)
     val data = slp.read(s":,$latId,$lonId").reduce() // [time, lat, lon]
 //    val st = Ncdump.printArray(data, "slp", null)
@@ -57,8 +57,13 @@ object NetCDF {
     xs.toList
   }
 
+  def readSLP(startYear: Int, endYear: Int, lat: Double, lon: Double): List[Float] = {
+    val paths = (startYear to endYear).map(year => s"dat/slp/slp.$year.nc")
+    paths.flatMap(path => readSLP(path, lat, lon)).toList
+  }
+
   /**
-   * Extracts two geopotential levels at H850 and H500 at every day. List[(H850, H500)].
+   * Extracts two geopotential levels at H850 and H500 at every day. List[[H850, H500]].
    * @param path
    * @param lat
    * @param lon
@@ -109,11 +114,20 @@ object NetCDF {
     //    println("Length of xs = " + xs.size)
     //    xs.take(10).foreach(a => println(a.mkString(" ")))
 
-    val xs = readHGT(1980, 1999, stations.head._1, stations.head._2)
+    // 1. HGT
+//    val xs = readHGT(1980, 1999, stations.head._1, stations.head._2)
+//    println("Length of xs = " + xs.size)
+//    val outputPath = Path.of("dat/geo.80-99.csv")
+//    val st = xs.map(x => x.mkString(","))
+//    import scala.jdk.CollectionConverters._
+//    Files.write(outputPath, st.prepended("H850,H500").asJava, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    // 2. SLP
+    val xs = readSLP(1980, 1999, stations.head._1, stations.head._2)
     println("Length of xs = " + xs.size)
-    val outputPath = Path.of("dat/geo.80-99.csv")
-    val st = xs.map(x => x.mkString(","))
+    val outputPath = Path.of("dat/slp.80-99.csv")
+    val st = xs.map(_.toString)
     import scala.jdk.CollectionConverters._
-    Files.write(outputPath, st.prepended("H850,H500").asJava, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+    Files.write(outputPath, st.prepended("SLP").asJava, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
   }
 }
