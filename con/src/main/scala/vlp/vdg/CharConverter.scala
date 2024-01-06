@@ -1,6 +1,5 @@
 package vlp.vdg
 
-import vlp.tok.WordShape
 import org.apache.spark.ml.UnaryTransformer
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
