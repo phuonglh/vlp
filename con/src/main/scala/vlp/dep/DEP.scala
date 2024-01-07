@@ -1,15 +1,13 @@
 package vlp.dep
 
-import com.intel.analytics.bigdl.dllib.utils.Engine
-import com.johnsnowlabs.nlp.DocumentAssembler
-import com.johnsnowlabs.nlp.annotator.{DependencyParserModel, PerceptronModel, SentenceDetector, Tokenizer, TypedDependencyParserApproach}
-import org.apache.spark.sql.SparkSession
+import com.intel.analytics.bigdl.dllib.NNContext
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
 
 import scala.io.Source
-import com.johnsnowlabs.nlp.training.CoNLL
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 
 
 case class ConfigDEP(
@@ -25,14 +23,29 @@ case class ConfigDEP(
     epochs: Int = 30,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/",
-    trainPath: String = "dat/dep/eng/en_ewt-ud-dev.conllu",
-    validPath: String = "dat/med/val/", // Parquet file of devPath
-    outputPath: String = "out/med/",
-    scorePath: String = "dat/med/scores-med.json",
+    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-dev.conllu",
+    validPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
+    outputPath: String = "out/dep/",
+    scorePath: String = "dat/dep/scores.json",
     modelType: String = "s",
 )
 
 object DEP {
+
+  /**
+   * Linearize a graph into 4 seqs: Seq[word], Seq[PoS], Seq[labels], Seq[offsets].
+   * @param graph
+   * @return a sequence of sequences.
+   */
+  def linearize(graph: Graph): Seq[Seq[String]] = {
+    val tokens = graph.sentence.tokens.tail // remove the ROOT token at the beginning
+    val words = tokens.map(_.word)
+    val partsOfSpeech = tokens.map(_.partOfSpeech)
+    val labels = tokens.map(_.dependencyLabel)
+    val offsets = tokens.map(token => (token.head.toInt - token.id.toInt).toString) // offset from the head
+    Seq(words, partsOfSpeech, labels, offsets)
+  }
+
   def main(args: Array[String]): Unit = {
     val opts = new OptionParser[ConfigDEP](getClass.getName) {
       head(getClass.getName, "1.0")
@@ -59,38 +72,24 @@ object DEP {
           .set("spark.cores.max", config.totalCores.toString)
           .set("spark.executor.memory", config.executorMemory)
           .set("spark.driver.memory", config.driverMemory)
-        val sc = new SparkContext(conf)
-        Engine.init
-        val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
+        // Creates or gets SparkContext with optimized configuration for BigDL performance.
+        // The method will also initialize the BigDL engine.
+        val sc = NNContext.initNNContext(conf)
         sc.setLogLevel("ERROR")
+        val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
         import spark.implicits._
-
-        val documentAssembler = new DocumentAssembler().setInputCol("text").setOutputCol("document")
-        val sentence = new SentenceDetector().setInputCols("document").setOutputCol("sentence")
-        val tokenizer = new Tokenizer().setInputCols("sentence").setOutputCol("token")
-        val posTagger = PerceptronModel.pretrained().setInputCols("sentence", "token").setOutputCol("pos")
-        val dependencyParser = DependencyParserModel.pretrained().setInputCols("sentence", "pos", "token").setOutputCol("dependency")
-        val typedDependencyParser = new TypedDependencyParserApproach()
-          .setInputCols("dependency", "pos", "token")
-          .setOutputCol("dependency_type")
-          .setConllU(config.trainPath)
-          .setNumberOfIterations(1)
-
-        val pipeline = new Pipeline().setStages(Array(
-          documentAssembler,
-          sentence,
-          tokenizer,
-          posTagger,
-          dependencyParser,
-          typedDependencyParser
+        val graphs = GraphReader.read(config.trainPath)
+        val xs = graphs.map { graph => Row(linearize(graph):_*) } // need to scroll out the parts with :_*
+        val schema = StructType(Array(
+          StructField("tokens", ArrayType(StringType, true)),
+          StructField("partsOfSpeech", ArrayType(StringType, true)),
+          StructField("labels", ArrayType(StringType, true)),
+          StructField("offsets", ArrayType(StringType, true))
         ))
+        val df = spark.createDataFrame(sc.parallelize(xs), schema)
+        println(df.count)
+        df.show(5, false)
 
-        // Additional training data is not needed, the dependency parser relies on CoNLL-U only.
-        val emptyDataSet = Seq.empty[String].toDF("text")
-        val pipelineModel = pipeline.fit(emptyDataSet)
-        val df = pipelineModel.transform(emptyDataSet)
-        pipelineModel.save(config.modelPath)
-        df.show()
         spark.stop()
       case None =>
 
