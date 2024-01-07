@@ -134,35 +134,36 @@ object DEP {
         // pad the output vector, use the paddingValue -1f
         val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
         val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
-        gf.show()
-        gf.printSchema()
-        // create a BigDL model
-        // 1. Sequential
-//        val bigdl = Sequential()
-//        bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
-//        bigdl.add(Embedding(numVocab+1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
-//        bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
-//        bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense"))
-//        val (featureSize, labelSize) = (Array(config.maxSeqLen), Array(config.maxSeqLen))
-//        val featureColName = "t"
-//        bigdl.summary()
-
-        // 2. Model of multiple inputs
-        // assemble the two input vectors into one of double maxSeqLen
+        // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
         val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
         hf.show()
 
-        val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
-        val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
-        val embeddingT = Embedding(numVocab+1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
-        val embeddingP = Embedding(numPartsOfSpeech+1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
-        val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
-        val rnn = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")).inputs(merge)
-        val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
-        val bigdl = Model[Float](Array(inputT, inputP), output)
-        val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
-        val featureColName = "t+p"
-
+        // create a BigDL model
+        val (bigdl, featureSize, labelSize, featureColName) = if (config.modelType == "s") {
+          // 1. Sequential
+          val bigdl = Sequential()
+          bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
+          bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
+          bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
+          bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense"))
+          val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
+          val featureColName = "t"
+          bigdl.summary()
+          (bigdl, featureSize, labelSize, featureColName)
+        } else {
+          // 2. Model of multiple inputs
+          val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
+          val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
+          val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
+          val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
+          val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
+          val rnn = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")).inputs(merge)
+          val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
+          val bigdl = Model[Float](Array(inputT, inputP), output)
+          val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+          val featureColName = "t+p"
+          (bigdl, featureSize, labelSize, featureColName)
+        }
         // create an estimator: use either gf or hf
         val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
         val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
