@@ -1,14 +1,25 @@
 package vlp.dep
 
 import com.intel.analytics.bigdl.dllib.NNContext
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
-
-import scala.io.Source
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, VectorAssembler}
+import org.apache.spark.ml.linalg.SparseVector
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
-
+import com.intel.analytics.bigdl.dllib.keras.layers._
+import com.intel.analytics.bigdl.dllib.keras.models._
+import com.intel.analytics.bigdl.dllib.utils.Shape
+import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
+import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedCriterion}
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.Activity
+import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
+import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
+import com.intel.analytics.bigdl.dllib.optim.Trigger
+import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
+import vlp.con.TimeDistributedTop1Accuracy
 
 case class ConfigDEP(
     master: String = "local[*]",
@@ -17,13 +28,15 @@ case class ConfigDEP(
     executorMemory: String = "8g", // Z
     driverMemory: String = "16g", // D
     mode: String = "eval",
+    maxVocabSize: Int = 32768,
+    tokenEmbeddingSize: Int = 32,
     batchSize: Int = 128,
-    maxSeqLen: Int = 80,
+    maxSeqLen: Int = 30,
     hiddenSize: Int = 64,
-    epochs: Int = 30,
+    epochs: Int = 40,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/",
-    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-dev.conllu",
+    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-train.conllu",
     validPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
@@ -44,6 +57,17 @@ object DEP {
     val labels = tokens.map(_.dependencyLabel)
     val offsets = tokens.map(token => (token.head.toInt - token.id.toInt).toString) // offset from the head
     Seq(words, partsOfSpeech, labels, offsets)
+  }
+
+  def createPipeline(df: DataFrame, config: ConfigDEP) = {
+    val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
+    val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
+    val vectorizerPoS = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
+    val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPoS))
+    val model = pipeline.fit(df)
+//    model.transform(df).printSchema()
+//    model.write.overwrite().save(config.modelPath)
+    model
   }
 
   def main(args: Array[String]): Unit = {
@@ -77,8 +101,11 @@ object DEP {
         val sc = NNContext.initNNContext(conf)
         sc.setLogLevel("ERROR")
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
-        import spark.implicits._
+        // read graphs and remove too-long sentences
         val graphs = GraphReader.read(config.trainPath)
+          .filter(_.sentence.tokens.size <= config.maxSeqLen)
+          .filter(_.sentence.tokens.size >= 5)
+        // linearize the graph
         val xs = graphs.map { graph => Row(linearize(graph):_*) } // need to scroll out the parts with :_*
         val schema = StructType(Array(
           StructField("tokens", ArrayType(StringType, true)),
@@ -87,8 +114,54 @@ object DEP {
           StructField("offsets", ArrayType(StringType, true))
         ))
         val df = spark.createDataFrame(sc.parallelize(xs), schema)
+        df.show(5)
         println(df.count)
-        df.show(5, false)
+        val preprocessor = createPipeline(df, config)
+        val ef = preprocessor.transform(df)
+        val numOffsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary.size
+
+        import org.apache.spark.sql.functions._
+        val f = udf((v: SparseVector) => v.indices.sorted.map(_ + 1f))
+        val ff = ef.withColumn("tokIdx+1", f(col("tok")))
+          .withColumn("posIdx+1", f(col("pos")))
+          .withColumn("offIdx+1", f(col("off")))
+        ff.show()
+        ff.printSchema()
+        // pad the vector to the same maximum length
+        val padderT = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("t")
+        val padderP = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("p")
+        val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
+        val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
+        gf.show()
+        gf.printSchema()
+//        // assemble the two input vectors into one of double maxSeqLen
+//        val assembler = new VectorAssembler().setInputCols(Array("t", "p")).setOutputCol("x")
+//        val hf = assembler.transform(gf.select("t", "p"))
+//        hf.show()
+        // create a BigDL model
+        import com.intel.analytics.bigdl.numeric.NumericFloat
+        val bigdl = Sequential()
+        bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
+        bigdl.add(Embedding(config.maxVocabSize, config.tokenEmbeddingSize))
+        bigdl.add(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM"))
+        bigdl.add(Dropout(0.1).setName("dropout"))
+        bigdl.add(TimeDistributed(
+          Dense(numOffsets, activation = "softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]]).setName("timeDistributed")
+        )
+        val (featureSize, labelSize) = (Array(config.maxSeqLen), Array(config.maxSeqLen))
+        val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
+        val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
+        val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
+        estimator.setLabelCol("o").setFeaturesCol("t")
+          .setBatchSize(config.batchSize)
+          .setOptimMethod(new Adam(config.learningRate))
+          .setMaxEpoch(config.epochs)
+          .setTrainSummary(trainingSummary)
+          .setValidationSummary(validationSummary)
+          .setValidation(Trigger.everyEpoch, gf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+        estimator.fit(gf)
+
+        bigdl.summary()
 
         spark.stop()
       case None =>
