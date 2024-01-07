@@ -10,6 +10,8 @@ import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric
   * 
   * @param paddingValue
   * @param ev
+ *
+ * Note: 1-based label index
   */
 class TimeDistributedTop1Accuracy(paddingValue: Int = -1)(implicit ev: TensorNumeric[Float]) extends ValidationMethod[Float] {
   override def apply(output: Activity, target: Activity): ValidationResult = {

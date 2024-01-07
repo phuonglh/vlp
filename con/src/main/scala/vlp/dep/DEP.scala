@@ -1,6 +1,7 @@
 package vlp.dep
 
 import com.intel.analytics.bigdl.dllib.NNContext
+import com.intel.analytics.bigdl.dllib.keras.Sequential
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
@@ -8,8 +9,9 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, VectorAssembler}
 import org.apache.spark.ml.linalg.SparseVector
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
+import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.layers._
-import com.intel.analytics.bigdl.dllib.keras.models._
+import com.intel.analytics.bigdl.dllib.keras.models.{KerasNet, Model, Models}
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedCriterion}
@@ -30,13 +32,14 @@ case class ConfigDEP(
     mode: String = "eval",
     maxVocabSize: Int = 32768,
     tokenEmbeddingSize: Int = 32,
+    partsOfSpeechEmbeddingSize: Int = 16,
     batchSize: Int = 128,
     maxSeqLen: Int = 30,
     hiddenSize: Int = 64,
     epochs: Int = 40,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/",
-    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-train.conllu",
+    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-dev.conllu",
     validPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
@@ -61,7 +64,7 @@ object DEP {
 
   def createPipeline(df: DataFrame, config: ConfigDEP) = {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
-    val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
+    val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)//.setMinDF(2)
     val vectorizerPoS = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
     val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPoS))
     val model = pipeline.fit(df)
@@ -119,6 +122,8 @@ object DEP {
         val preprocessor = createPipeline(df, config)
         val ef = preprocessor.transform(df)
         val numOffsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary.size
+        val numVocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.size
+        val numPartsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
 
         import org.apache.spark.sql.functions._
         val f = udf((v: SparseVector) => v.indices.sorted.map(_ + 1f))
@@ -127,41 +132,53 @@ object DEP {
           .withColumn("offIdx+1", f(col("off")))
         ff.show()
         ff.printSchema()
-        // pad the vector to the same maximum length
+        // pad the input vectors to the same maximum length
         val padderT = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("t")
         val padderP = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("p")
+        // pad the output vector, use the paddingValue -1f
         val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
         val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
         gf.show()
         gf.printSchema()
-//        // assemble the two input vectors into one of double maxSeqLen
-//        val assembler = new VectorAssembler().setInputCols(Array("t", "p")).setOutputCol("x")
-//        val hf = assembler.transform(gf.select("t", "p"))
-//        hf.show()
         // create a BigDL model
-        import com.intel.analytics.bigdl.numeric.NumericFloat
-        val bigdl = Sequential()
-        bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
-        bigdl.add(Embedding(config.maxVocabSize, config.tokenEmbeddingSize))
-        bigdl.add(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM"))
-        bigdl.add(Dropout(0.1).setName("dropout"))
-        bigdl.add(TimeDistributed(
-          Dense(numOffsets, activation = "softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]]).setName("timeDistributed")
-        )
-        val (featureSize, labelSize) = (Array(config.maxSeqLen), Array(config.maxSeqLen))
+        // 1. Sequential
+//        val bigdl = Sequential()
+//        bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
+//        bigdl.add(Embedding(numVocab+1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
+//        bigdl.add(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM"))
+//        bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+//        val (featureSize, labelSize) = (Array(config.maxSeqLen), Array(config.maxSeqLen))
+//        val featureColName = "t"
+//        bigdl.summary()
+
+        // 2. Model of multiple inputs
+        // assemble the two input vectors into one of double maxSeqLen
+        val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
+        hf.show()
+
+        val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
+        val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
+        val embeddingT = Embedding(numVocab+1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
+        val embeddingP = Embedding(numPartsOfSpeech+1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
+        val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
+        val rnn = LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM").inputs(merge)
+        val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
+        val bigdl = Model[Float](Array(inputT, inputP), output)
+        val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+        val featureColName = "t+p"
+
+        // create an estimator: use either gf or hf
         val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
         val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
-        estimator.setLabelCol("o").setFeaturesCol("t")
+        estimator.setLabelCol("o").setFeaturesCol(featureColName)
           .setBatchSize(config.batchSize)
           .setOptimMethod(new Adam(config.learningRate))
           .setMaxEpoch(config.epochs)
           .setTrainSummary(trainingSummary)
           .setValidationSummary(validationSummary)
-          .setValidation(Trigger.everyEpoch, gf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        estimator.fit(gf)
-
-        bigdl.summary()
+          .setValidation(Trigger.everyEpoch, hf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+        estimator.fit(hf)
 
         spark.stop()
       case None =>
