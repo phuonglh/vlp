@@ -112,11 +112,9 @@ object NER {
     val bigdl = Sequential()
     bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen*768)).setName("input"))
     bigdl.add(Reshape(targetShape=Array(config.maxSeqLen, 768)).setName("reshape"))
-    bigdl.add(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM"))
+    bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
     bigdl.add(Dropout(0.1).setName("dropout"))
-    bigdl.add(TimeDistributed(
-      Dense(labelIndex.size, activation="softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]]).setName("timeDistributed")
-    )
+    bigdl.add(Dense(labelIndex.size, activation="softmax").setName("dense"))
     val (featureSize, labelSize) = (Array(config.maxSeqLen*768), Array(config.maxSeqLen))
     val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput=false), sizeAverage = true), featureSize, labelSize)
     val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/med/")

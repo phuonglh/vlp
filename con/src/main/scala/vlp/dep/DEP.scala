@@ -6,18 +6,15 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, VectorAssembler}
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
 import org.apache.spark.ml.linalg.SparseVector
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.layers._
-import com.intel.analytics.bigdl.dllib.keras.models.{KerasNet, Model, Models}
+import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedCriterion}
-import com.intel.analytics.bigdl.dllib.tensor.Tensor
-import com.intel.analytics.bigdl.dllib.nn.abstractnn.Activity
-import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
@@ -39,7 +36,7 @@ case class ConfigDEP(
     epochs: Int = 40,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/",
-    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-dev.conllu",
+    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-train.conllu",
     validPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
@@ -68,8 +65,7 @@ object DEP {
     val vectorizerPoS = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
     val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPoS))
     val model = pipeline.fit(df)
-//    model.transform(df).printSchema()
-//    model.write.overwrite().save(config.modelPath)
+    model.write.overwrite().save(config.modelPath)
     model
   }
 
@@ -134,7 +130,7 @@ object DEP {
         ff.printSchema()
         // pad the input vectors to the same maximum length
         val padderT = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("t")
-        val padderP = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("p")
+        val padderP = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("posIdx+1").setOutputCol("p")
         // pad the output vector, use the paddingValue -1f
         val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
         val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
@@ -145,8 +141,8 @@ object DEP {
 //        val bigdl = Sequential()
 //        bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
 //        bigdl.add(Embedding(numVocab+1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
-//        bigdl.add(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM"))
-//        bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense").asInstanceOf[KerasLayer[Activity, Tensor[Float], Float]])
+//        bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
+//        bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense"))
 //        val (featureSize, labelSize) = (Array(config.maxSeqLen), Array(config.maxSeqLen))
 //        val featureColName = "t"
 //        bigdl.summary()
@@ -161,7 +157,7 @@ object DEP {
         val embeddingT = Embedding(numVocab+1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
         val embeddingP = Embedding(numPartsOfSpeech+1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
         val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
-        val rnn = LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM").inputs(merge)
+        val rnn = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")).inputs(merge)
         val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
         val bigdl = Model[Float](Array(inputT, inputP), output)
         val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
