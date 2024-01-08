@@ -23,8 +23,8 @@ import vlp.con.TimeDistributedTop1Accuracy
 case class ConfigDEP(
     master: String = "local[*]",
     totalCores: Int = 8,    // X
-    executorCores: Int = 8, // Y ==> there are X/Y executors
-    executorMemory: String = "8g", // Z
+    executorCores: Int = 4, // Y ==> there are X/Y executors
+    executorMemory: String = "4g", // Z
     driverMemory: String = "16g", // D
     mode: String = "eval",
     maxVocabSize: Int = 32768,
@@ -33,14 +33,15 @@ case class ConfigDEP(
     batchSize: Int = 128,
     maxSeqLen: Int = 30,
     hiddenSize: Int = 64,
-    epochs: Int = 40,
+    epochs: Int = 50,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/",
     trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-train.conllu",
-    validPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
+    validPath: String = "dat/dep/eng/2.7/en_ewt-ud-dev.conllu",
+    testPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
-    modelType: String = "s",
+    modelType: String = "s", // [s, g]
 )
 
 object DEP {
@@ -55,10 +56,41 @@ object DEP {
     val words = tokens.map(_.word)
     val partsOfSpeech = tokens.map(_.partOfSpeech)
     val labels = tokens.map(_.dependencyLabel)
-    val offsets = tokens.map(token => (token.head.toInt - token.id.toInt).toString) // offset from the head
+    // compute the offset value to the head for each token
+    val offsets = tokens.map { token =>
+      val o = if (token.head.toInt == 0) 0 else (token.head.toInt - token.id.toInt)
+      o.toString
+    }
     Seq(words, partsOfSpeech, labels, offsets)
   }
 
+  /**
+   * Read graphs from a corpus, filter too long or too short graphs and convert them to a df.
+   * @param spark
+   * @param path
+   * @param maxSeqLen
+   * @return
+   */
+  def readGraphs(spark: SparkSession, path: String, maxSeqLen: Int) = {
+    // read graphs and remove too-long sentences
+    val graphs = GraphReader.read(path).filter(_.sentence.tokens.size <= maxSeqLen).filter(_.sentence.tokens.size >= 5)
+    // linearize the graph
+    val xs = graphs.map { graph => Row(linearize(graph): _*) } // need to scroll out the parts with :_*
+    val schema = StructType(Array(
+      StructField("tokens", ArrayType(StringType, true)),
+      StructField("partsOfSpeech", ArrayType(StringType, true)),
+      StructField("labels", ArrayType(StringType, true)),
+      StructField("offsets", ArrayType(StringType, true))
+    ))
+    spark.createDataFrame(spark.sparkContext.parallelize(xs), schema)
+  }
+
+  /**
+   * Create a preprocessing pipeline
+   * @param df
+   * @param config
+   * @return a pipeline model
+   */
   def createPipeline(df: DataFrame, config: ConfigDEP) = {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
     val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)//.setMinDF(2)
@@ -100,47 +132,44 @@ object DEP {
         val sc = NNContext.initNNContext(conf)
         sc.setLogLevel("ERROR")
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
-        // read graphs and remove too-long sentences
-        val graphs = GraphReader.read(config.trainPath)
-          .filter(_.sentence.tokens.size <= config.maxSeqLen)
-          .filter(_.sentence.tokens.size >= 5)
-        // linearize the graph
-        val xs = graphs.map { graph => Row(linearize(graph):_*) } // need to scroll out the parts with :_*
-        val schema = StructType(Array(
-          StructField("tokens", ArrayType(StringType, true)),
-          StructField("partsOfSpeech", ArrayType(StringType, true)),
-          StructField("labels", ArrayType(StringType, true)),
-          StructField("offsets", ArrayType(StringType, true))
-        ))
-        val df = spark.createDataFrame(sc.parallelize(xs), schema)
-        df.show(5)
-        println(df.count)
+
+        // read training data, train a preprocessor and use it to transform training/dev data sets
+        val df = readGraphs(spark, config.trainPath, config.maxSeqLen)
         val preprocessor = createPipeline(df, config)
         val ef = preprocessor.transform(df)
+        // read validation data set
+        val dfV = readGraphs(spark, config.validPath, config.maxSeqLen)
+        val efV = preprocessor.transform(dfV)
+        efV.show(5)
+
         val numOffsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numVocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numPartsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
-
+        // extract token, pos and offset indices (plus 1 to use in BigDL)
         import org.apache.spark.sql.functions._
         val f = udf((v: SparseVector) => v.indices.sorted.map(_ + 1f))
         val ff = ef.withColumn("tokIdx+1", f(col("tok")))
           .withColumn("posIdx+1", f(col("pos")))
           .withColumn("offIdx+1", f(col("off")))
-        ff.show()
-        ff.printSchema()
+        val ffV = efV.withColumn("tokIdx+1", f(col("tok")))
+          .withColumn("posIdx+1", f(col("pos")))
+          .withColumn("offIdx+1", f(col("off")))
+
         // pad the input vectors to the same maximum length
         val padderT = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("t")
         val padderP = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("posIdx+1").setOutputCol("p")
         // pad the output vector, use the paddingValue -1f
         val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
         val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
+        val gfV = padderO.transform(padderP.transform(padderT.transform(ffV)))
         // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
         val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
-        hf.show()
+        val hfV = gfV.withColumn("t+p", concat(col("t"), col("p")))
+        hfV.select("t+p", "o").show(5)
 
         // create a BigDL model
         val (bigdl, featureSize, labelSize, featureColName) = if (config.modelType == "s") {
-          // 1. Sequential
+          // 1. Sequential model for a single input
           val bigdl = Sequential()
           bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
           bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
@@ -151,7 +180,7 @@ object DEP {
           bigdl.summary()
           (bigdl, featureSize, labelSize, featureColName)
         } else {
-          // 2. Model of multiple inputs
+          // 2. Graph model for multiple inputs
           val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
           val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
           val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
@@ -174,7 +203,7 @@ object DEP {
           .setMaxEpoch(config.epochs)
           .setTrainSummary(trainingSummary)
           .setValidationSummary(validationSummary)
-          .setValidation(Trigger.everyEpoch, hf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+          .setValidation(Trigger.everyEpoch, hfV, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
         estimator.fit(hf)
 
         spark.stop()
