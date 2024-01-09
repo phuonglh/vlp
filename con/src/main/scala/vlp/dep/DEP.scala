@@ -20,6 +20,8 @@ import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import vlp.con.TimeDistributedTop1Accuracy
 
+import com.intel.analytics.bigdl.dllib.nn.{Transformer, Linear, SoftMax, Sequential => SequentialNN, Echo, LookupTable}
+
 case class ConfigDEP(
     master: String = "local[*]",
     totalCores: Int = 8,    // X
@@ -35,10 +37,10 @@ case class ConfigDEP(
     hiddenSize: Int = 64,
     epochs: Int = 50,
     learningRate: Double = 5E-4,
-    modelPath: String = "bin/dep/",
-    trainPath: String = "dat/dep/eng/2.7/en_ewt-ud-train.conllu",
-    validPath: String = "dat/dep/eng/2.7/en_ewt-ud-dev.conllu",
-    testPath: String = "dat/dep/eng/2.7/en_ewt-ud-test.conllu",
+    modelPath: String = "bin/dep/eng/",
+    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
+    validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
+    testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
     modelType: String = "s", // [s, g]
@@ -165,33 +167,49 @@ object DEP {
         // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
         val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
         val hfV = gfV.withColumn("t+p", concat(col("t"), col("p")))
+        hfV.select("t").show(5, false)
         hfV.select("t+p", "o").show(5)
 
         // create a BigDL model
-        val (bigdl, featureSize, labelSize, featureColName) = if (config.modelType == "s") {
-          // 1. Sequential model for a single input
-          val bigdl = Sequential()
-          bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
-          bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
-          bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
-          bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense"))
-          val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
-          val featureColName = "t"
-          bigdl.summary()
-          (bigdl, featureSize, labelSize, featureColName)
-        } else {
-          // 2. Graph model for multiple inputs
-          val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
-          val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
-          val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
-          val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
-          val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
-          val rnn = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")).inputs(merge)
-          val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
-          val bigdl = Model[Float](Array(inputT, inputP), output)
-          val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
-          val featureColName = "t+p"
-          (bigdl, featureSize, labelSize, featureColName)
+        val (bigdl, featureSize, labelSize, featureColName) = config.modelType  match {
+          case "s" =>
+            // 1. Sequential model for a single input
+            val bigdl = Sequential()
+            bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
+            bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
+            bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
+            bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense"))
+            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val featureColName = "t"
+            bigdl.summary()
+            (bigdl, featureSize, labelSize, featureColName)
+          case "g" =>
+            // 2. Graph model for multiple inputs
+            val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
+            val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
+            val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
+            val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
+            val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
+            val rnn = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")).inputs(merge)
+            val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
+            val bigdl = Model[Float](Array(inputT, inputP), output)
+            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val featureColName = "t+p"
+            (bigdl, featureSize, labelSize, featureColName)
+          case "t" =>
+            // 3. Transformer model for a single input (non-Keras style)
+            val bigdl = SequentialNN()
+//            bigdl.add(Transformer(vocabSize = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, numHeads = 2,
+//              filterSize = config.hiddenSize, numHiddenlayers = 2, embeddingDropout = 0f, attentionDropout = 0f, ffnDropout = 0f, paddingValue = 0f))
+//            bigdl.add(Linear(config.hiddenSize, numOffsets))
+//            bigdl.add(SoftMax())
+            bigdl.add(Echo())
+            bigdl.add(LookupTable(numVocab, config.tokenEmbeddingSize))
+            bigdl.add(Echo())
+            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val featureColName = "t"
+            print(bigdl.toString())
+            (bigdl, featureSize, labelSize, featureColName)
         }
         // create an estimator: use either gf or hf
         val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)

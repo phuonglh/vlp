@@ -1,4 +1,4 @@
-val sparkVersion = "3.5.0"
+val sparkVersion = "3.1.2"
 val bigdlVersion = "2.1.0"
 val sparkNLPVersion = "4.3.2"
 
