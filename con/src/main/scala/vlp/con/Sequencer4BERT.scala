@@ -48,7 +48,7 @@ class Sequencer4BERT(val uid: String, val dictionary: Map[String, Int], val maxS
       val masks = Array.fill[Double](n)(1)
 
       // truncate or pad
-      if (xs.size >= maxSeqLen) {
+      if (n >= maxSeqLen) {
         Vectors.dense(tokens.take(maxSeqLen) ++ types.take(maxSeqLen) ++ positions.take(maxSeqLen) ++ masks.take(maxSeqLen))
       } else {
         val a = tokens    ++ Array.fill[Double](maxSeqLen - xs.size)(pad)

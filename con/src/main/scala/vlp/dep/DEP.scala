@@ -7,7 +7,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
-import org.apache.spark.ml.linalg.SparseVector
+import org.apache.spark.ml.linalg.{SparseVector, Vectors}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.layers._
@@ -19,8 +19,7 @@ import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import vlp.con.TimeDistributedTop1Accuracy
-
-import com.intel.analytics.bigdl.dllib.nn.{Transformer, Linear, SoftMax, Sequential => SequentialNN, Echo, LookupTable}
+import com.intel.analytics.bigdl.dllib.nn.{Echo, Linear, LookupTable, Transformer, Sequential => SequentialNN}
 
 case class ConfigDEP(
     master: String = "local[*]",
@@ -38,7 +37,7 @@ case class ConfigDEP(
     epochs: Int = 50,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/eng/",
-    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
+    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
     validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
     testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
@@ -164,12 +163,41 @@ object DEP {
         val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
         val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
         val gfV = padderO.transform(padderP.transform(padderT.transform(ffV)))
-        // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
-        val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
-        val hfV = gfV.withColumn("t+p", concat(col("t"), col("p")))
-        hfV.select("t").show(5, false)
-        hfV.select("t+p", "o").show(5)
 
+        val (uf, vf) = config.modelType match {
+          case "s" => (gf, gfV)
+          case "t" => (gf, gfV)
+          case "g" =>
+            // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
+            val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
+            val hfV = gfV.withColumn("t+p", concat(col("t"), col("p")))
+            hfV.select("t").show(5, false)
+            hfV.select("t+p", "o").show(5)
+            (hf, hfV)
+          case "b" =>
+            // first, create a UDF g to make BERT input of size 4 x maxSeqLen
+            val g = udf((v: Seq[Float]) => {
+              // token type, all are 0 (0 for sentence A, 1 for sentence B -- here we have only one sentence)
+              val types = Array.fill[Double](v.size)(0)
+              // positions, start from 0
+              val positions = Array.fill[Double](v.size)(0)
+              for (j <- 0 until v.size)
+                positions(j) = j
+              // attention mask with indices in [0, 1]
+              // It's a mask to be used if the input sequence length is smaller than maxSeqLen
+              val i = v.indexOf(0f) // 0f is the padded value (of tokens and partsOfSpeech)
+              val n = if (i >= 0) i else v.size // the actual length of the un-padded sequence
+              val masks = Array.fill[Double](v.size)(1)
+              // padded positions have a mask value of 0
+              for (j <- n until v.size) {
+                masks(j) = 0
+              }
+              Vectors.dense(v.toArray.map(_.toDouble) ++ types ++ positions ++ masks)
+            })
+            val hf = gf.withColumn("tb", g(col("t")))
+            val hfV = gfV.withColumn("tb", g(col("t")))
+            (hf, hfV)
+        }
         // create a BigDL model
         val (bigdl, featureSize, labelSize, featureColName) = config.modelType  match {
           case "s" =>
@@ -210,6 +238,24 @@ object DEP {
             val featureColName = "t"
             print(bigdl.toString())
             (bigdl, featureSize, labelSize, featureColName)
+          case "b" =>
+            // 4. BERT model for a single input
+            val inputIds = Input(inputShape = Shape(config.maxSeqLen), "inputIds")
+            val segmentIds = Input(inputShape = Shape(config.maxSeqLen), "segmentIds")
+            val positionIds = Input(inputShape = Shape(config.maxSeqLen), "positionIds")
+            val masks = Input(inputShape = Shape(config.maxSeqLen), "masks")
+            val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("reshape").inputs(masks)
+            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = 4, nHead = 4, maxPositionLen = config.maxSeqLen,
+              intermediateSize = config.hiddenSize, outputAllBlock = false).setName("bert")
+            val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
+            val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
+            val dense = Dense(numOffsets).setName("dense").inputs(bertOutput)
+            val output = SoftMax().setName("output").inputs(dense)
+            val bigdl = Model(Array(inputIds, segmentIds, positionIds, masks), output)
+            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val featureColName = "tb"
+            print(bigdl.toString())
+            (bigdl, featureSize, labelSize, featureColName)
         }
         // create an estimator: use either gf or hf
         val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
@@ -221,8 +267,8 @@ object DEP {
           .setMaxEpoch(config.epochs)
           .setTrainSummary(trainingSummary)
           .setValidationSummary(validationSummary)
-          .setValidation(Trigger.everyEpoch, hfV, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        estimator.fit(hf)
+          .setValidation(Trigger.everyEpoch, uf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+        estimator.fit(vf)
 
         spark.stop()
       case None =>
