@@ -142,6 +142,8 @@ object DEP {
         val dfV = readGraphs(spark, config.validPath, config.maxSeqLen)
         val efV = preprocessor.transform(dfV)
         efV.show(5)
+        println("#(trainGraphs) = " + df.count())
+        println("#(validGraphs) = " + dfV.count())
 
         val numOffsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numVocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.size
@@ -194,6 +196,7 @@ object DEP {
               }
               Vectors.dense(v.toArray.map(_.toDouble) ++ types ++ positions ++ masks)
             })
+            // then transform the token indext column
             val hf = gf.withColumn("tb", g(col("t")))
             val hfV = gfV.withColumn("tb", g(col("t")))
             (hf, hfV)
@@ -254,7 +257,6 @@ object DEP {
             val bigdl = Model(Array(inputIds, segmentIds, positionIds, masks), output)
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "tb"
-            print(bigdl.toString())
             (bigdl, featureSize, labelSize, featureColName)
         }
         // create an estimator: use either gf or hf
@@ -267,8 +269,8 @@ object DEP {
           .setMaxEpoch(config.epochs)
           .setTrainSummary(trainingSummary)
           .setValidationSummary(validationSummary)
-          .setValidation(Trigger.everyEpoch, uf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        estimator.fit(vf)
+          .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+        estimator.fit(uf)
 
         spark.stop()
       case None =>
