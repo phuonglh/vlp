@@ -19,7 +19,6 @@ import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import vlp.con.TimeDistributedTop1Accuracy
-import com.intel.analytics.bigdl.dllib.nn.{Echo, Linear, LookupTable, Transformer, Sequential => SequentialNN}
 
 case class ConfigDEP(
     master: String = "local[*]",
@@ -92,9 +91,9 @@ object DEP {
    * @param config
    * @return a pipeline model
    */
-  def createPipeline(df: DataFrame, config: ConfigDEP) = {
+  private def createPipeline(df: DataFrame, config: ConfigDEP) = {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
-    val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)//.setMinDF(2)
+    val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
     val vectorizerPoS = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
     val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPoS))
     val model = pipeline.fit(df)
@@ -215,7 +214,7 @@ object DEP {
             bigdl.summary()
             (bigdl, featureSize, labelSize, featureColName)
           case "g" =>
-            // 2. Graph model for multiple inputs
+            // 2. Graph model for multiple inputs (token + partsOfSpeech)
             val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
             val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
             val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
@@ -227,20 +226,6 @@ object DEP {
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "t+p"
             (bigdl, featureSize, labelSize, featureColName)
-          case "t" =>
-            // 3. Transformer model for a single input (non-Keras style)
-            val bigdl = SequentialNN()
-//            bigdl.add(Transformer(vocabSize = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, numHeads = 2,
-//              filterSize = config.hiddenSize, numHiddenlayers = 2, embeddingDropout = 0f, attentionDropout = 0f, ffnDropout = 0f, paddingValue = 0f))
-//            bigdl.add(Linear(config.hiddenSize, numOffsets))
-//            bigdl.add(SoftMax())
-            bigdl.add(Echo())
-            bigdl.add(LookupTable(numVocab, config.tokenEmbeddingSize))
-            bigdl.add(Echo())
-            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
-            val featureColName = "t"
-            print(bigdl.toString())
-            (bigdl, featureSize, labelSize, featureColName)
           case "b" =>
             // 4. BERT model for a single input
             val inputIds = Input(inputShape = Shape(config.maxSeqLen), "inputIds")
@@ -248,7 +233,7 @@ object DEP {
             val positionIds = Input(inputShape = Shape(config.maxSeqLen), "positionIds")
             val masks = Input(inputShape = Shape(config.maxSeqLen), "masks")
             val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("reshape").inputs(masks)
-            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = 4, nHead = 4, maxPositionLen = config.maxSeqLen,
+            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = 1, nHead = 4, maxPositionLen = config.maxSeqLen,
               intermediateSize = config.hiddenSize, outputAllBlock = false).setName("bert")
             val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
             val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
@@ -259,7 +244,7 @@ object DEP {
             val featureColName = "tb"
             (bigdl, featureSize, labelSize, featureColName)
         }
-        // create an estimator: use either gf or hf
+        // create an estimator
         val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
         val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
         val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
@@ -269,7 +254,7 @@ object DEP {
           .setMaxEpoch(config.epochs)
           .setTrainSummary(trainingSummary)
           .setValidationSummary(validationSummary)
-          .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+          .setValidation(Trigger.everyEpoch, uf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
         estimator.fit(uf)
 
         spark.stop()
