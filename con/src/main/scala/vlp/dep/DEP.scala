@@ -283,10 +283,11 @@ object DEP {
             // run prediction
             val prediction = bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
             import spark.implicits._
-            val zf = prediction.select("z").map { row =>
-              val o = row.getSeq[Float](0)
-              o.map(v => offsets(v.toInt-1))
-            }.toDF("prediction")
+            val zf = prediction.select("offsets", "z").map { row =>
+              val o = row.getSeq[String](0)
+              val p = row.getSeq[Float](1).take(o.size)
+              (o, p.map(v => offsets(v.toInt-1)))
+            }.toDF("offsets", "prediction")
             zf.show(10, false)
         }
         spark.stop()
