@@ -2,23 +2,24 @@ package vlp.dep
 
 import com.intel.analytics.bigdl.dllib.NNContext
 import com.intel.analytics.bigdl.dllib.keras.Sequential
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.apache.spark.{SparkConf, SparkContext}
-import scopt.OptionParser
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
-import org.apache.spark.ml.linalg.{SparseVector, Vectors}
-import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
-import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
-import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedCriterion}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
+import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
-import vlp.con.TimeDistributedTop1Accuracy
+import com.intel.analytics.bigdl.numeric.NumericFloat
+import org.apache.spark.SparkConf
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
+import org.apache.spark.ml.linalg.{SparseVector, Vectors}
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import scopt.OptionParser
+import vlp.con.{ArgMaxLayer, TimeDistributedTop1Accuracy}
 
 case class ConfigDEP(
     master: String = "local[*]",
@@ -144,7 +145,9 @@ object DEP {
         println("#(trainGraphs) = " + df.count())
         println("#(validGraphs) = " + dfV.count())
 
-        val numOffsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary.size
+        val offsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
+        val offsetsMap = offsets.zipWithIndex.toMap
+        val numOffsets = offsetsMap.size
         val numVocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numPartsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
         // extract token, pos and offset indices (plus 1 to use in BigDL)
@@ -246,8 +249,18 @@ object DEP {
         }
         config.mode match {
           case "train" =>
+            // compute label weights for the loss function
+            import spark.implicits._
+            val xf = df.select("offsets").flatMap(row => row.getSeq[String](0))
+            val yf = xf.groupBy("value").count()
+            val labelFreq = yf.select("value", "count").collect().map(row => (offsetsMap(row.getString(0)), row.getLong(1)))
+            val total = labelFreq.map(_._2).sum.toFloat
+            val ws = labelFreq.map(_._2 / total)
+            val tensor = Tensor[Float](ws.size)
+            for (j <- 0 until ws.size)
+              tensor(j+1) = ws(j)
             // create an estimator
-            val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
+            val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights = tensor, logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
             estimator.setLabelCol("o").setFeaturesCol(featureColName)
@@ -260,13 +273,21 @@ object DEP {
             // train
             estimator.fit(uf)
             // save the model
-          bigdl.saveModel(config.modelPath + "-bdl", overWrite = true)
+          bigdl.saveModel(config.modelPath, overWrite = true)
           case "eval" =>
-            val bigdl = Models.loadModel(config.modelPath + "-bdl")
-            bigdl.summary()
+            val bigdl = Models.loadModel(config.modelPath)
+            val sequential = bigdl.asInstanceOf[Sequential[Float]]
+            // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
+            sequential.add(ArgMaxLayer())
+            sequential.summary()
+            // run prediction
             val prediction = bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
-            prediction.select("z").show(10, false)
-            bigdl.evaluate(vf, batchSize = config.batchSize, featureCols = Array(featureColName), labelCols = Array("o"))
+            import spark.implicits._
+            val zf = prediction.select("z").map { row =>
+              val o = row.getSeq[Float](0)
+              o.map(v => offsets(v.toInt-1))
+            }.toDF("prediction")
+            zf.show(10, false)
         }
         spark.stop()
       case None =>

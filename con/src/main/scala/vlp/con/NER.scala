@@ -244,7 +244,7 @@ object NER {
     // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
     if (argmax)
       sequential.add(ArgMaxLayer())
-    println(sequential.summary())
+    sequential.summary()
     // wrap to a Spark model and run prediction
     val model = NNModel(sequential)
     model.transform(vf)
