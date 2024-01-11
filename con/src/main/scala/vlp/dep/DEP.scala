@@ -35,7 +35,7 @@ case class ConfigDEP(
     hiddenSize: Int = 64,
     epochs: Int = 50,
     learningRate: Double = 5E-4,
-    modelPath: String = "bin/dep/eng/",
+    modelPath: String = "bin/dep/eng",
     trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
     validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
     testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
@@ -97,7 +97,7 @@ object DEP {
     val vectorizerPoS = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
     val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPoS))
     val model = pipeline.fit(df)
-    model.write.overwrite().save(config.modelPath)
+    model.write.overwrite().save(config.modelPath + "-pre")
     model
   }
 
@@ -244,19 +244,30 @@ object DEP {
             val featureColName = "tb"
             (bigdl, featureSize, labelSize, featureColName)
         }
-        // create an estimator
-        val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
-        val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
-        val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
-        estimator.setLabelCol("o").setFeaturesCol(featureColName)
-          .setBatchSize(config.batchSize)
-          .setOptimMethod(new Adam(config.learningRate))
-          .setMaxEpoch(config.epochs)
-          .setTrainSummary(trainingSummary)
-          .setValidationSummary(validationSummary)
-          .setValidation(Trigger.everyEpoch, uf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
-        estimator.fit(uf)
-
+        config.mode match {
+          case "train" =>
+            // create an estimator
+            val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
+            val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
+            val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
+            estimator.setLabelCol("o").setFeaturesCol(featureColName)
+              .setBatchSize(config.batchSize)
+              .setOptimMethod(new Adam(config.learningRate))
+              .setMaxEpoch(config.epochs)
+              .setTrainSummary(trainingSummary)
+              .setValidationSummary(validationSummary)
+              .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+            // train
+            estimator.fit(uf)
+            // save the model
+          bigdl.saveModel(config.modelPath + "-bdl", overWrite = true)
+          case "eval" =>
+            val bigdl = Models.loadModel(config.modelPath + "-bdl")
+            bigdl.summary()
+            val prediction = bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
+            prediction.select("z").show(10, false)
+            bigdl.evaluate(vf, batchSize = config.batchSize, featureCols = Array(featureColName), labelCols = Array("o"))
+        }
         spark.stop()
       case None =>
 
