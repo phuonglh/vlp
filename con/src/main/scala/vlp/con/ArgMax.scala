@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
 
 /**
   * A customized ArgMax layer that operates on tensor rather than on Table of the BigDL lib. 
-  * Currently, the argmax on the last dimension is assumed.
+  * Currently, the argmax on the last dimension is assumed. Note that the index is started from 1 in BigDL.
   * 
   * @author phuonglh@gmail.com
   *

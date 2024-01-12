@@ -29,12 +29,13 @@ case class ConfigDEP(
     driverMemory: String = "16g", // D
     mode: String = "eval",
     maxVocabSize: Int = 32768,
-    tokenEmbeddingSize: Int = 32,
-    partsOfSpeechEmbeddingSize: Int = 16,
+    tokenEmbeddingSize: Int = 16,
+    partsOfSpeechEmbeddingSize: Int = 8,
+    layers: Int = 2, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
-    maxSeqLen: Int = 30,
-    hiddenSize: Int = 64,
-    epochs: Int = 50,
+    maxSeqLen: Int = 20,
+    hiddenSize: Int = 32,
+    epochs: Int = 40,
     learningRate: Double = 5E-4,
     modelPath: String = "bin/dep/eng",
     trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
@@ -112,6 +113,7 @@ object DEP {
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 16g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, predict}")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
+      opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of RNN layers or Transformer blocks")
       opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("encoder hidden size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-4")
@@ -208,10 +210,11 @@ object DEP {
           case "s" =>
             // 1. Sequential model for a single input
             val bigdl = Sequential()
-            bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)).setName("input"))
-            bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokenEmbedding"))
-            bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")))
-            bigdl.add(Dense(numOffsets, activation = "softmax").setName("dense"))
+            bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)))
+            bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize))
+            for (j <- 1 to config.layers)
+              bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true)))
+            bigdl.add(Dense(numOffsets, activation = "softmax"))
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "t"
             bigdl.summary()
@@ -280,15 +283,20 @@ object DEP {
             // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
             sequential.add(ArgMaxLayer())
             sequential.summary()
-            // run prediction
-            val prediction = bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
+            // run prediction on the training set and validation set
+            val predictions = Array(
+              bigdl.predict(uf, featureCols = Array(featureColName), predictionCol = "z"),
+              bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
+            )
             import spark.implicits._
-            val zf = prediction.select("offsets", "z").map { row =>
-              val o = row.getSeq[String](0)
-              val p = row.getSeq[Float](1).take(o.size)
-              (o, p.map(v => offsets(v.toInt-1)))
-            }.toDF("offsets", "prediction")
-            zf.show(10, false)
+            for (prediction <- predictions) {
+              val zf = prediction.select("offsets", "z").map { row =>
+                val o = row.getSeq[String](0)
+                val p = row.getSeq[Float](1).take(o.size)
+                (o, p.map(v => offsets(v.toInt - 1)))
+              }.toDF("offsets", "prediction")
+              zf.show(10, false)
+            }
         }
         spark.stop()
       case None =>
