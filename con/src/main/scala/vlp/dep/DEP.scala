@@ -29,14 +29,14 @@ case class ConfigDEP(
     driverMemory: String = "16g", // D
     mode: String = "eval",
     maxVocabSize: Int = 32768,
-    tokenEmbeddingSize: Int = 16,
-    partsOfSpeechEmbeddingSize: Int = 8,
-    layers: Int = 2, // number of LSTM layers or Transformer blocks
+    tokenEmbeddingSize: Int = 32, // 100
+    partsOfSpeechEmbeddingSize: Int = 25,
+    layers: Int = 1, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
     maxSeqLen: Int = 20,
     hiddenSize: Int = 32,
     epochs: Int = 40,
-    learningRate: Double = 5E-4,
+    learningRate: Double = 5E-3,
     modelPath: String = "bin/dep/eng",
     trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
     validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
@@ -96,8 +96,8 @@ object DEP {
   private def createPipeline(df: DataFrame, config: ConfigDEP) = {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
     val vectorizerToken = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
-    val vectorizerPoS = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
-    val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPoS))
+    val vectorizerPartsOfSpeech = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos")
+    val pipeline = new Pipeline().setStages(Array(vectorizerOffsets, vectorizerToken, vectorizerPartsOfSpeech))
     val model = pipeline.fit(df)
     model.write.overwrite().save(config.modelPath + "-pre")
     model
@@ -147,20 +147,27 @@ object DEP {
         println("#(trainGraphs) = " + df.count())
         println("#(validGraphs) = " + dfV.count())
 
+        // array of offset labels, index -> label: offsets[i] is the label at index i:
         val offsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
+        // map of label -> index: offsetsMap(label) = i
         val offsetsMap = offsets.zipWithIndex.toMap
+        println(offsetsMap)
         val numOffsets = offsetsMap.size
         val numVocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.size
         val numPartsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
+        println("#(labels) = " + numOffsets)
+        println(" #(vocab) = " + numVocab)
+        println("   #(PoS) = " + numPartsOfSpeech)
         // extract token, pos and offset indices (plus 1 to use in BigDL)
         import org.apache.spark.sql.functions._
+        // convert a sparse vector into an array of non-zero 1-based indices for BigDL
         val f = udf((v: SparseVector) => v.indices.sorted.map(_ + 1f))
         val ff = ef.withColumn("tokIdx+1", f(col("tok")))
           .withColumn("posIdx+1", f(col("pos")))
-          .withColumn("offIdx+1", f(col("off")))
+          .withColumn("offIdx+1", f(col("off"))) // the target sequence for BigDL to train
         val ffV = efV.withColumn("tokIdx+1", f(col("tok")))
           .withColumn("posIdx+1", f(col("pos")))
-          .withColumn("offIdx+1", f(col("off")))
+          .withColumn("offIdx+1", f(col("off"))) // the target sequence for BigDL to validate
 
         // pad the input vectors to the same maximum length
         val padderT = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("t")
@@ -212,8 +219,9 @@ object DEP {
             val bigdl = Sequential()
             bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)))
             bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize))
-            for (j <- 1 to config.layers)
+            for (_ <- 1 to config.layers)
               bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true)))
+            bigdl.add(Dropout(0.5))
             bigdl.add(Dense(numOffsets, activation = "softmax"))
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "t"
@@ -226,8 +234,10 @@ object DEP {
             val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
             val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
             val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
-            val rnn = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM")).inputs(merge)
-            val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(rnn)
+            val rnn1 = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM-1")).inputs(merge)
+            val rnn2 = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM-2")).inputs(rnn1)
+            val dropout = Dropout(0.5).inputs(rnn2)
+            val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(dropout)
             val bigdl = Model[Float](Array(inputT, inputP), output)
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "t+p"
@@ -239,7 +249,7 @@ object DEP {
             val positionIds = Input(inputShape = Shape(config.maxSeqLen), "positionIds")
             val masks = Input(inputShape = Shape(config.maxSeqLen), "masks")
             val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("reshape").inputs(masks)
-            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = 1, nHead = 4, maxPositionLen = config.maxSeqLen,
+            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = config.layers, nHead = 4, maxPositionLen = config.maxSeqLen,
               intermediateSize = config.hiddenSize, outputAllBlock = false).setName("bert")
             val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
             val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
@@ -257,6 +267,7 @@ object DEP {
             val xf = df.select("offsets").flatMap(row => row.getSeq[String](0))
             val yf = xf.groupBy("value").count()
             val labelFreq = yf.select("value", "count").collect().map(row => (offsetsMap(row.getString(0)), row.getLong(1)))
+            println(labelFreq)
             val total = labelFreq.map(_._2).sum.toFloat
             val ws = labelFreq.map(_._2 / total)
             val tensor = Tensor[Float](ws.size)
@@ -293,7 +304,7 @@ object DEP {
               val zf = prediction.select("offsets", "z").map { row =>
                 val o = row.getSeq[String](0)
                 val p = row.getSeq[Float](1).take(o.size)
-                (o, p.map(v => offsets(v.toInt - 1)))
+                (o, p.map(v => offsets(v.toInt - 1))) // convert 1-based index to offset label
               }.toDF("offsets", "prediction")
               zf.show(10, false)
             }
