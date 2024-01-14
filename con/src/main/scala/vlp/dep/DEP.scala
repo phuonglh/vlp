@@ -7,7 +7,7 @@ import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedCriterion}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
-import com.intel.analytics.bigdl.dllib.optim.Trigger
+import com.intel.analytics.bigdl.dllib.optim.{Top1Accuracy, Trigger}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
@@ -29,8 +29,8 @@ case class ConfigDEP(
     driverMemory: String = "16g", // D
     mode: String = "eval",
     maxVocabSize: Int = 32768,
-    tokenEmbeddingSize: Int = 32, // 100
-    partsOfSpeechEmbeddingSize: Int = 25,
+    tokenEmbeddingSize: Int = 16, // 100
+    partsOfSpeechEmbeddingSize: Int = 8, // 25
     layers: Int = 1, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
     maxSeqLen: Int = 20,
@@ -43,7 +43,7 @@ case class ConfigDEP(
     testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
-    modelType: String = "s", // [s, g]
+    modelType: String = "s", // [s, g, b]
 )
 
 object DEP {
@@ -103,6 +103,39 @@ object DEP {
     model
   }
 
+  /**
+   * Evaluate a model on training data frame (uf) and validation data frame (vf) which have been preprocessed
+   * by the training pipeline.
+   * @param modelPath
+   * @param uf
+   * @param vf
+   * @param featureColName
+   * @param labels
+   */
+  private def eval(modelPath: String, uf: DataFrame, vf: DataFrame, featureColName: String, labels: Array[String]) = {
+    val bigdl = Models.loadModel(modelPath)
+    val sequential = bigdl.asInstanceOf[Sequential[Float]]
+    // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
+    sequential.add(ArgMaxLayer())
+    sequential.summary()
+    // run prediction on the training set and validation set
+    val predictions = Array(
+      bigdl.predict(uf, featureCols = Array(featureColName), predictionCol = "z"),
+      bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
+    )
+    val spark = SparkSession.getActiveSession.get
+    import spark.implicits._
+    for (prediction <- predictions) {
+      val zf = prediction.select("offsets", "z").map { row =>
+        val o = row.getSeq[String](0)
+        val p = row.getSeq[Float](1).take(o.size)
+        (o, p.map(v => labels(v.toInt - 1))) // convert 1-based index to offset label
+      }.toDF("offsets", "prediction")
+      zf.show(15, false)
+    }
+
+  }
+
   def main(args: Array[String]): Unit = {
     val opts = new OptionParser[ConfigDEP](getClass.getName) {
       head(getClass.getName, "1.0")
@@ -113,10 +146,12 @@ object DEP {
       opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 16g")
       opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, predict}")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
+      opt[Int]('n', "maxSeqLength").action((x, conf) => conf.copy(maxSeqLen = x)).text("max sequence length")
       opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of RNN layers or Transformer blocks")
+      opt[Int]('w', "tokenEmbeddingSize").action((x, conf) => conf.copy(tokenEmbeddingSize = x)).text("token embedding size")
       opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("encoder hidden size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
-      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-4")
+      opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-3")
       opt[String]('d', "trainPath").action((x, conf) => conf.copy(trainPath = x)).text("training data directory")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
@@ -217,8 +252,7 @@ object DEP {
           case "s" =>
             // 1. Sequential model for a single input
             val bigdl = Sequential()
-            bigdl.add(InputLayer(inputShape = Shape(config.maxSeqLen)))
-            bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize))
+            bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize, inputLength = config.maxSeqLen))
             for (_ <- 1 to config.layers)
               bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true)))
             bigdl.add(Dropout(0.5))
@@ -274,7 +308,8 @@ object DEP {
             for (j <- 0 until ws.size)
               tensor(j+1) = ws(j)
             // create an estimator
-            val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights = tensor, logProbAsInput = false), sizeAverage = true), featureSize, labelSize)
+            // it is necessary to set sizeAverage of ClassNLLCriterion to false in non-batch mode
+            val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(weights = tensor, sizeAverage = false, logProbAsInput = false, paddingValue = -1)), featureSize, labelSize)
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
             estimator.setLabelCol("o").setFeaturesCol(featureColName)
@@ -283,31 +318,15 @@ object DEP {
               .setMaxEpoch(config.epochs)
               .setTrainSummary(trainingSummary)
               .setValidationSummary(validationSummary)
-              .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(paddingValue = -1)), config.batchSize)
+              .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(-1)), config.batchSize)
             // train
             estimator.fit(uf)
             // save the model
-          bigdl.saveModel(config.modelPath, overWrite = true)
+            bigdl.saveModel(config.modelPath, overWrite = true)
+            // evaluate the model
+            eval(config.modelPath, uf, vf, featureColName, offsets)
           case "eval" =>
-            val bigdl = Models.loadModel(config.modelPath)
-            val sequential = bigdl.asInstanceOf[Sequential[Float]]
-            // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
-            sequential.add(ArgMaxLayer())
-            sequential.summary()
-            // run prediction on the training set and validation set
-            val predictions = Array(
-              bigdl.predict(uf, featureCols = Array(featureColName), predictionCol = "z"),
-              bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
-            )
-            import spark.implicits._
-            for (prediction <- predictions) {
-              val zf = prediction.select("offsets", "z").map { row =>
-                val o = row.getSeq[String](0)
-                val p = row.getSeq[Float](1).take(o.size)
-                (o, p.map(v => offsets(v.toInt - 1))) // convert 1-based index to offset label
-              }.toDF("offsets", "prediction")
-              zf.show(10, false)
-            }
+            eval(config.modelPath, uf, vf, featureColName, offsets)
         }
         spark.stop()
       case None =>

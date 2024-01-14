@@ -116,7 +116,8 @@ object NER {
     bigdl.add(Dropout(0.1).setName("dropout"))
     bigdl.add(Dense(labelIndex.size, activation="softmax").setName("dense"))
     val (featureSize, labelSize) = (Array(config.maxSeqLen*768), Array(config.maxSeqLen))
-    val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput=false), sizeAverage = true), featureSize, labelSize)
+    // should set the sizeAverage=false in ClassNLLCriterion
+    val estimator = NNEstimator(bigdl, TimeDistributedCriterion(ClassNLLCriterion(logProbAsInput = false, sizeAverage = false), sizeAverage = true), featureSize, labelSize)
     val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/med/")
     val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/med/")
     estimator.setLabelCol("target").setFeaturesCol("features")
