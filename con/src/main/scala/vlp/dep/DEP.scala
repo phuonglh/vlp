@@ -106,34 +106,39 @@ object DEP {
   /**
    * Evaluate a model on training data frame (uf) and validation data frame (vf) which have been preprocessed
    * by the training pipeline.
-   * @param modelPath
+   * @param config
    * @param uf
    * @param vf
    * @param featureColName
    * @param labels
    */
-  private def eval(modelPath: String, uf: DataFrame, vf: DataFrame, featureColName: String, labels: Array[String]) = {
-    val bigdl = Models.loadModel(modelPath)
-    val sequential = bigdl.asInstanceOf[Sequential[Float]]
-    // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
-    sequential.add(ArgMaxLayer())
-    sequential.summary()
+  private def eval(config: ConfigDEP, uf: DataFrame, vf: DataFrame, featureColName: String, labels: Array[String]) = {
+    val bigdl = Models.loadModel(config.modelPath + "-" + config.modelType)
     // run prediction on the training set and validation set
     val predictions = Array(
       bigdl.predict(uf, featureCols = Array(featureColName), predictionCol = "z"),
       bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
     )
-    val spark = SparkSession.getActiveSession.get
-    import spark.implicits._
-    for (prediction <- predictions) {
-      val zf = prediction.select("offsets", "z").map { row =>
-        val o = row.getSeq[String](0)
-        val p = row.getSeq[Float](1).take(o.size)
-        (o, p.map(v => labels(v.toInt - 1))) // convert 1-based index to offset label
-      }.toDF("offsets", "prediction")
-      zf.show(15, false)
+    bigdl.summary()
+    if (config.modelType == "s") {
+      // sequential model, easily add a custom ArgMax layer at the end of the model
+      val sequential = bigdl.asInstanceOf[Sequential[Float]]
+      // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
+      sequential.add(ArgMaxLayer())
+      sequential.summary()
+      val spark = SparkSession.getActiveSession.get
+      import spark.implicits._
+      for (prediction <- predictions) {
+        val zf = prediction.select("offsets", "z").map { row =>
+          val o = row.getSeq[String](0)
+          val p = row.getSeq[Float](1).take(o.size)
+          (o, p.map(v => labels(v.toInt - 1))) // convert 1-based index to offset label
+        }.toDF("offsets", "prediction")
+        zf.show(15, truncate = false)
+      }
+    } else {
+      // TODO:
     }
-
   }
 
   def main(args: Array[String]): Unit = {
@@ -185,13 +190,13 @@ object DEP {
         // array of offset labels, index -> label: offsets[i] is the label at index i:
         val offsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
         val offsetsMap = offsets.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap // 1-based index for BigDL
-        val numOffsets = offsetsMap.size
+        val numOffsets = offsets.length
         val tokens = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
         val tokensMap = tokens.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-        val numVocab = tokens.size
+        val numVocab = tokens.length
         val partsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
         val partsOfSpeechMap = partsOfSpeech.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-        val numPartsOfSpeech = partsOfSpeech.size
+        val numPartsOfSpeech = partsOfSpeech.length
         println("#(labels) = " + numOffsets)
         println(" #(vocab) = " + numVocab)
         println("   #(PoS) = " + numPartsOfSpeech)
@@ -219,21 +224,21 @@ object DEP {
             val g = udf((x: org.apache.spark.ml.linalg.Vector) => {
               val v = x.toArray
               // token type, all are 0 (0 for sentence A, 1 for sentence B -- here we have only one sentence)
-              val types = Array.fill[Double](v.size)(0)
+              val types: Array[Double] = Array.fill[Double](v.length)(0)
               // positions, start from 0
               val positions = Array.fill[Double](v.size)(0)
-              for (j <- 0 until v.size)
+              for (j <- 0 until v.length)
                 positions(j) = j
               // attention mask with indices in [0, 1]
               // It's a mask to be used if the input sequence length is smaller than maxSeqLen
               val i = v.indexOf(0f) // 0f is the padded value (of tokens and partsOfSpeech)
-              val n = if (i >= 0) i else v.size // the actual length of the un-padded sequence
-              val masks = Array.fill[Double](v.size)(1)
+              val n = if (i >= 0) i else v.length // the actual length of the un-padded sequence
+              val masks = Array.fill[Double](v.length)(1)
               // padded positions have a mask value of 0
-              for (j <- n until v.size) {
+              for (j <- n until v.length) {
                 masks(j) = 0
               }
-              Vectors.dense(v.toArray.map(_.toDouble) ++ types ++ positions ++ masks)
+              Vectors.dense(v ++ types ++ positions ++ masks)
             })
             // then transform the token index column
             val hf = gf.withColumn("tb", g(col("t")))
@@ -294,11 +299,10 @@ object DEP {
             val xf = df.select("offsets").flatMap(row => row.getSeq[String](0))
             val yf = xf.groupBy("value").count()
             val labelFreq = yf.select("value", "count").collect().map(row => (offsetsMap(row.getString(0)), row.getLong(1)))
-            println(labelFreq)
             val total = labelFreq.map(_._2).sum.toFloat
             val ws = labelFreq.map(_._2 / total)
-            val tensor = Tensor[Float](ws.size)
-            for (j <- 0 until ws.size)
+            val tensor = Tensor(ws.length)
+            for (j <- ws.indices)
               tensor(j+1) = ws(j)
             // create an estimator
             // it is necessary to set sizeAverage of ClassNLLCriterion to false in non-batch mode
@@ -315,11 +319,11 @@ object DEP {
             // train
             estimator.fit(uf)
             // save the model
-            bigdl.saveModel(config.modelPath, overWrite = true)
+            bigdl.saveModel(config.modelPath + s"-${config.modelType}", overWrite = true)
             // evaluate the model
-            eval(config.modelPath, uf, vf, featureColName, offsets)
+            eval(config, uf, vf, featureColName, offsets)
           case "eval" =>
-            eval(config.modelPath, uf, vf, featureColName, offsets)
+            eval(config, uf, vf, featureColName, offsets)
         }
         spark.stop()
       case None =>
