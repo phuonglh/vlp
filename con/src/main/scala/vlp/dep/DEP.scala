@@ -14,7 +14,7 @@ import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSu
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import org.apache.spark.SparkConf
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, VectorAssembler}
 import org.apache.spark.ml.linalg.{SparseVector, Vectors}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -203,20 +203,21 @@ object DEP {
         val gfV = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(efV)))
         gfV.select("t", "o").show()
 
-        import org.apache.spark.sql.functions._
         val (uf, vf) = config.modelType match {
           case "s" => (gf, gfV)
           case "t" => (gf, gfV)
           case "g" =>
             // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
-            val hf = gf.withColumn("t+p", concat(col("t"), col("p")))
-            val hfV = gfV.withColumn("t+p", concat(col("t"), col("p")))
-            hfV.select("t").show(5, false)
+            val assembler = new VectorAssembler().setInputCols(Array("t", "p")).setOutputCol("t+p")
+            val hf = assembler.transform(gf)
+            val hfV = assembler.transform(gfV)
             hfV.select("t+p", "o").show(5)
             (hf, hfV)
           case "b" =>
             // first, create a UDF g to make BERT input of size 4 x maxSeqLen
-            val g = udf((v: Seq[Float]) => {
+            import org.apache.spark.sql.functions._
+            val g = udf((x: org.apache.spark.ml.linalg.Vector) => {
+              val v = x.toArray
               // token type, all are 0 (0 for sentence A, 1 for sentence B -- here we have only one sentence)
               val types = Array.fill[Double](v.size)(0)
               // positions, start from 0
