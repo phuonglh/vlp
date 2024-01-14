@@ -29,13 +29,13 @@ case class ConfigDEP(
     driverMemory: String = "16g", // D
     mode: String = "eval",
     maxVocabSize: Int = 32768,
-    tokenEmbeddingSize: Int = 16, // 100
+    tokenEmbeddingSize: Int = 32, // 100
     partsOfSpeechEmbeddingSize: Int = 8, // 25
-    layers: Int = 1, // number of LSTM layers or Transformer blocks
+    layers: Int = 2, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
-    maxSeqLen: Int = 20,
+    maxSeqLen: Int = 30,
     hiddenSize: Int = 32,
-    epochs: Int = 40,
+    epochs: Int = 100,
     learningRate: Double = 5E-3,
     modelPath: String = "bin/dep/eng",
     trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
@@ -201,7 +201,7 @@ object DEP {
         val offsetsSequencer = new Sequencer(offsetsMap, config.maxSeqLen, -1f).setInputCol("offsets").setOutputCol("o")
         val gf = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(ef)))
         val gfV = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(efV)))
-        gfV.select("t", "o").show(false)
+        gfV.select("t", "o").show()
 
         import org.apache.spark.sql.functions._
         val (uf, vf) = config.modelType match {
@@ -234,7 +234,7 @@ object DEP {
               }
               Vectors.dense(v.toArray.map(_.toDouble) ++ types ++ positions ++ masks)
             })
-            // then transform the token indext column
+            // then transform the token index column
             val hf = gf.withColumn("tb", g(col("t")))
             val hfV = gfV.withColumn("tb", g(col("t")))
             (hf, hfV)
