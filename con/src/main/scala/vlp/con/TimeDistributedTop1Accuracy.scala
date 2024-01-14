@@ -11,23 +11,27 @@ import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric
   * @param paddingValue
   * @param ev
  *
- * Note: 1-based label index
+ * Note: 1-based label index for token classification
   */
 class TimeDistributedTop1Accuracy(paddingValue: Int = -1)(implicit ev: TensorNumeric[Float]) extends ValidationMethod[Float] {
   override def apply(output: Activity, target: Activity): ValidationResult = {
     var correct = 0
     var count = 0
-    val _output = output.asInstanceOf[Tensor[Float]]
-    val _target = target.asInstanceOf[Tensor[Float]]
-    _output.split(1).zip(_target.split(1)).foreach { case (tensor, ys) => 
+    val _output = output.asInstanceOf[Tensor[Float]] // nDim = 3
+    val _target = target.asInstanceOf[Tensor[Float]] // nDim = 2
+    // split by batch size (dim = 1 of output and target)
+    _output.split(1).zip(_target.split(1))
+      .foreach { case (tensor, ys) =>
+      // split by time slice (dim = 1 of tensor)
       val zs = tensor.split(1).map { t =>
-        val values = t.toArray()
-        val k = (0 until values.size).zip(values).maxBy(p => p._2)._1
-        k + 1 // one-based label index
+//        val values = t.toArray()
+//        val k = (1 to values.size).zip(values).maxBy(p => p._2)._1
+        val (_, k) = t.max(1) // the label with max score
+        k(Array(1)).toInt // k is a tensor => extract its value
       }
-      // filter the padded value in the gold target before matching
-      // with the prediction
-      val c = ys.toArray().filter(e => e != paddingValue).zip(zs)
+//      println(zs.mkString(", ") + " :=: " + ys.toArray().mkString(", ")) // DEBUG
+      // filter the padded value (-1f) in the target before perform matching with the output
+      val c = ys.toArray().map(_.toInt).filter(e => e != paddingValue).zip(zs)
         .map(p => if (p._1 == p._2) 1 else 0)
       correct += c.sum
       count += c.size

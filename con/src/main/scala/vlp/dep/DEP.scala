@@ -7,7 +7,7 @@ import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
 import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedCriterion}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
-import com.intel.analytics.bigdl.dllib.optim.{Top1Accuracy, Trigger}
+import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
@@ -19,7 +19,7 @@ import org.apache.spark.ml.linalg.{SparseVector, Vectors}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scopt.OptionParser
-import vlp.con.{ArgMaxLayer, TimeDistributedTop1Accuracy}
+import vlp.con.{ArgMaxLayer, FeaturePadder, Sequencer, TimeDistributedTop1Accuracy}
 
 case class ConfigDEP(
     master: String = "local[*]",
@@ -184,34 +184,26 @@ object DEP {
 
         // array of offset labels, index -> label: offsets[i] is the label at index i:
         val offsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
-        // map of label -> index: offsetsMap(label) = i
-        val offsetsMap = offsets.zipWithIndex.toMap
-        println(offsetsMap)
+        val offsetsMap = offsets.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap // 1-based index for BigDL
         val numOffsets = offsetsMap.size
-        val numVocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.size
-        val numPartsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary.size
+        val tokens = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
+        val tokensMap = tokens.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+        val numVocab = tokens.size
+        val partsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
+        val partsOfSpeechMap = partsOfSpeech.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+        val numPartsOfSpeech = partsOfSpeech.size
         println("#(labels) = " + numOffsets)
         println(" #(vocab) = " + numVocab)
         println("   #(PoS) = " + numPartsOfSpeech)
         // extract token, pos and offset indices (plus 1 to use in BigDL)
+        val tokenSequencer = new Sequencer(tokensMap, config.maxSeqLen, 0f).setInputCol("tokens").setOutputCol("t")
+        val posSequencer = new Sequencer(partsOfSpeechMap, config.maxSeqLen, 0f).setInputCol("partsOfSpeech").setOutputCol("p")
+        val offsetsSequencer = new Sequencer(offsetsMap, config.maxSeqLen, -1f).setInputCol("offsets").setOutputCol("o")
+        val gf = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(ef)))
+        val gfV = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(efV)))
+        gfV.select("t", "o").show(false)
+
         import org.apache.spark.sql.functions._
-        // convert a sparse vector into an array of non-zero 1-based indices for BigDL
-        val f = udf((v: SparseVector) => v.indices.sorted.map(_ + 1f))
-        val ff = ef.withColumn("tokIdx+1", f(col("tok")))
-          .withColumn("posIdx+1", f(col("pos")))
-          .withColumn("offIdx+1", f(col("off"))) // the target sequence for BigDL to train
-        val ffV = efV.withColumn("tokIdx+1", f(col("tok")))
-          .withColumn("posIdx+1", f(col("pos")))
-          .withColumn("offIdx+1", f(col("off"))) // the target sequence for BigDL to validate
-
-        // pad the input vectors to the same maximum length
-        val padderT = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("tokIdx+1").setOutputCol("t")
-        val padderP = new FeaturePadder(config.maxSeqLen, 0f).setInputCol("posIdx+1").setOutputCol("p")
-        // pad the output vector, use the paddingValue -1f
-        val padderO = new FeaturePadder(config.maxSeqLen, -1f).setInputCol("offIdx+1").setOutputCol("o")
-        val gf = padderO.transform(padderP.transform(padderT.transform(ff)))
-        val gfV = padderO.transform(padderP.transform(padderT.transform(ffV)))
-
         val (uf, vf) = config.modelType match {
           case "s" => (gf, gfV)
           case "t" => (gf, gfV)
