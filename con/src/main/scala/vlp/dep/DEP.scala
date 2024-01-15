@@ -114,16 +114,16 @@ object DEP {
    */
   private def eval(config: ConfigDEP, uf: DataFrame, vf: DataFrame, featureColName: String, labels: Array[String]) = {
     val bigdl = Models.loadModel(config.modelPath + "-" + config.modelType)
-    // run prediction on the training set and validation set
-    val predictions = Array(
-      bigdl.predict(uf, featureCols = Array(featureColName), predictionCol = "z"),
-      bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
-    )
-    bigdl.summary()
-    // add a custom ArgMax layer at the end of the model
-    val sequential = bigdl.asInstanceOf[Sequential[Float]]
+    // create a sequential model and add a custom ArgMax layer at the end of the model
+    val sequential = Sequential()
+    sequential.add(bigdl)
     // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
     sequential.add(ArgMaxLayer())
+    // run prediction on the training set and validation set
+    val predictions = Array(
+      sequential.predict(uf, featureCols = Array(featureColName), predictionCol = "z"),
+      sequential.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
+    )
     sequential.summary()
     val spark = SparkSession.getActiveSession.get
     import spark.implicits._
@@ -256,7 +256,7 @@ object DEP {
             bigdl.summary()
             (bigdl, featureSize, labelSize, featureColName)
           case "g" =>
-            // 2. Graph model for multiple inputs (token + partsOfSpeech)
+            // 2. A model for (token ++ partsOfSpeech) tensor
             val input = Input[Float](inputShape = Shape(2*config.maxSeqLen), name = "input")
             val reshape = Reshape(targetShape = Array(2, config.maxSeqLen)).setName("reshape").inputs(input)
             val split = SplitTensor(1, 2).inputs(reshape)
@@ -264,6 +264,7 @@ object DEP {
             val inputT = Squeeze(1).inputs(token)
             val partsOfSpeech = SelectTable(1).setName("inputP").inputs(split)
             val inputP = Squeeze(1).inputs(partsOfSpeech)
+            // the above layers can be replaced by two following inputs, but then the
 //            val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
 //            val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
             val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
@@ -278,20 +279,32 @@ object DEP {
             val featureColName = "t+p"
             (bigdl, featureSize, labelSize, featureColName)
           case "b" =>
-            // 4. BERT model for a single input
-            val inputIds = Input(inputShape = Shape(config.maxSeqLen), "inputIds")
-            val segmentIds = Input(inputShape = Shape(config.maxSeqLen), "segmentIds")
-            val positionIds = Input(inputShape = Shape(config.maxSeqLen), "positionIds")
-            val masks = Input(inputShape = Shape(config.maxSeqLen), "masks")
-            val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("reshape").inputs(masks)
-            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = config.layers, nHead = 4, maxPositionLen = config.maxSeqLen,
+            // 4. BERT model using one input of 4*maxSeqLen elements
+            val input = Input(inputShape = Shape(4*config.maxSeqLen), name = "input")
+            val reshape = Reshape(targetShape = Array(4, config.maxSeqLen)).inputs(input)
+            val split = SplitTensor(1, 4).inputs(reshape)
+            val selectIds = SelectTable(0).setName("inputId").inputs(split)
+            val inputIds = Squeeze(1).inputs(selectIds)
+            val selectSegments = SelectTable(1).setName("segmentId").inputs(split)
+            val segmentIds = Squeeze(1).inputs(selectSegments)
+            val selectPositions = SelectTable(2).setName("positionId").inputs(split)
+            val positionIds = Squeeze(1).inputs(selectPositions)
+            val selectMasks = SelectTable(3).setName("masks").inputs(split)
+            val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("mask").inputs(selectMasks)
+//            val inputIds = Input(inputShape = Shape(config.maxSeqLen), "inputIds")
+//            val segmentIds = Input(inputShape = Shape(config.maxSeqLen), "segmentIds")
+//            val positionIds = Input(inputShape = Shape(config.maxSeqLen), "positionIds")
+//            val masks = Input(inputShape = Shape(config.maxSeqLen), "masks")
+//            val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("reshape").inputs(masks)
+            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = config.layers, nHead = 2, maxPositionLen = config.maxSeqLen,
               intermediateSize = config.hiddenSize, outputAllBlock = false).setName("bert")
             val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
             val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
             val dense = Dense(numOffsets).setName("dense").inputs(bertOutput)
             val output = SoftMax().setName("output").inputs(dense)
-            val bigdl = Model(Array(inputIds, segmentIds, positionIds, masks), output)
-            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val bigdl = Model(input, output)
+//            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val (featureSize, labelSize) = (Array(Array(4*config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "tb"
             (bigdl, featureSize, labelSize, featureColName)
         }
