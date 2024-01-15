@@ -19,7 +19,7 @@ import org.apache.spark.ml.linalg.{SparseVector, Vectors}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scopt.OptionParser
-import vlp.con.{ArgMaxLayer, FeaturePadder, Sequencer, TimeDistributedTop1Accuracy}
+import vlp.con.{ArgMaxLayer, Sequencer, TimeDistributedTop1Accuracy}
 
 case class ConfigDEP(
     master: String = "local[*]",
@@ -120,24 +120,20 @@ object DEP {
       bigdl.predict(vf, featureCols = Array(featureColName), predictionCol = "z")
     )
     bigdl.summary()
-    if (config.modelType == "s") {
-      // sequential model, easily add a custom ArgMax layer at the end of the model
-      val sequential = bigdl.asInstanceOf[Sequential[Float]]
-      // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
-      sequential.add(ArgMaxLayer())
-      sequential.summary()
-      val spark = SparkSession.getActiveSession.get
-      import spark.implicits._
-      for (prediction <- predictions) {
-        val zf = prediction.select("offsets", "z").map { row =>
-          val o = row.getSeq[String](0)
-          val p = row.getSeq[Float](1).take(o.size)
-          (o, p.map(v => labels(v.toInt - 1))) // convert 1-based index to offset label
-        }.toDF("offsets", "prediction")
-        zf.show(15, truncate = false)
-      }
-    } else {
-      // TODO:
+    // add a custom ArgMax layer at the end of the model
+    val sequential = bigdl.asInstanceOf[Sequential[Float]]
+    // bigdl produces 3-d output results (including batch dimension), we need to convert it to 2-d results.
+    sequential.add(ArgMaxLayer())
+    sequential.summary()
+    val spark = SparkSession.getActiveSession.get
+    import spark.implicits._
+    for (prediction <- predictions) {
+      val zf = prediction.select("offsets", "z").map { row =>
+        val o = row.getSeq[String](0)
+        val p = row.getSeq[Float](1).take(o.size)
+        (o, p.map(v => labels(v.toInt - 1))) // convert 1-based index to offset label
+      }.toDF("offsets", "prediction")
+      zf.show(15)
     }
   }
 
@@ -261,8 +257,15 @@ object DEP {
             (bigdl, featureSize, labelSize, featureColName)
           case "g" =>
             // 2. Graph model for multiple inputs (token + partsOfSpeech)
-            val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
-            val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
+            val input = Input[Float](inputShape = Shape(2*config.maxSeqLen), name = "input")
+            val reshape = Reshape(targetShape = Array(2, config.maxSeqLen)).setName("reshape").inputs(input)
+            val split = SplitTensor(1, 2).inputs(reshape)
+            val token = SelectTable(0).setName("inputT").inputs(split)
+            val inputT = Squeeze(1).inputs(token)
+            val partsOfSpeech = SelectTable(1).setName("inputP").inputs(split)
+            val inputP = Squeeze(1).inputs(partsOfSpeech)
+//            val inputT = Input[Float](inputShape = Shape(config.maxSeqLen), "inputT")
+//            val inputP = Input[Float](inputShape = Shape(config.maxSeqLen), "inputP")
             val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
             val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
             val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
@@ -270,8 +273,8 @@ object DEP {
             val rnn2 = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM-2")).inputs(rnn1)
             val dropout = Dropout(0.5).inputs(rnn2)
             val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(dropout)
-            val bigdl = Model[Float](Array(inputT, inputP), output)
-            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen)), Array(config.maxSeqLen))
+            val bigdl = Model[Float](input, output)
+            val (featureSize, labelSize) = (Array(Array(2*config.maxSeqLen)), Array(config.maxSeqLen))
             val featureColName = "t+p"
             (bigdl, featureSize, labelSize, featureColName)
           case "b" =>
