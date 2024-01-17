@@ -226,7 +226,7 @@ object DEP {
           numChars = characters.length
           println(" #(chars) = " + numChars)
           println(characters.mkString(", "))
-          val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 0f).setInputCol("chars").setOutputCol("c")
+          val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 1f).setInputCol("chars").setOutputCol("c")
           (charSequencer.transform(gf), charSequencer.transform(gfV))
         } else (gf, gfV)
 
@@ -290,20 +290,19 @@ object DEP {
           case "t+c" =>
             // NN-style layers (not Keras-style layer)
             val sequential = com.intel.analytics.bigdl.dllib.nn.Sequential()
-            val lookup = com.intel.analytics.bigdl.dllib.nn.LookupTable(numChars + 1, config.charEmbeddingSize, paddingValue = 0f, maskZero = true)
+            val lookup = com.intel.analytics.bigdl.dllib.nn.LookupTable(numChars + 1, config.charEmbeddingSize, paddingValue = 1f) // Note: paddingValue > 0
             sequential.add(lookup)
             val reshape = com.intel.analytics.bigdl.dllib.nn.Reshape(Array(config.maxSeqLen, config.maxCharLen, config.charEmbeddingSize))
             sequential.add(reshape)
-            val splitTensor = com.intel.analytics.bigdl.dllib.nn.SplitTable(1, 3)
+            val splitTensor = com.intel.analytics.bigdl.dllib.nn.SplitTable(1, -1)
             sequential.add(splitTensor)
             val lstm = com.intel.analytics.bigdl.dllib.nn.LSTM(config.charEmbeddingSize, config.charEmbeddingSize)
             val mapTable = com.intel.analytics.bigdl.dllib.nn.MapTable(lstm)
             sequential.add(mapTable)
-//            val joinTable = com.intel.analytics.bigdl.dllib.nn.JoinTable(2, 2)
-//            sequential.add(joinTable)
+            val joinTable = com.intel.analytics.bigdl.dllib.nn.JoinTable(2, 2)
+            sequential.add(joinTable)
 //            val dense = com.intel.analytics.bigdl.dllib.nn.Linear(config.tokenEmbeddingSize + config.charEmbeddingSize, numOffsets)
             val dense = com.intel.analytics.bigdl.dllib.nn.Linear(config.charEmbeddingSize, numOffsets)
-            DenseTensorMath
             sequential.add(dense)
             sequential.add(com.intel.analytics.bigdl.dllib.nn.SoftMax())
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
