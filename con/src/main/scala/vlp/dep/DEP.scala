@@ -222,16 +222,17 @@ object DEP {
               // token type, all are 0 (0 for sentence A, 1 for sentence B -- here we have only one sentence)
               val types: Array[Double] = Array.fill[Double](v.length)(0)
               // positions, start from 0
-              val positions = Array.fill[Double](v.size)(0)
+              val positions = Array.fill[Double](v.length)(0)
               for (j <- 0 until v.length)
                 positions(j) = j
               // attention mask with indices in [0, 1]
               // It's a mask to be used if the input sequence length is smaller than maxSeqLen
-              val i = v.indexOf(0f) // 0f is the padded value (of tokens and partsOfSpeech)
+              val i = v.indexOf(0) // 0 is the padded value (of tokens and partsOfSpeech)
               val n = if (i >= 0) i else v.length // the actual length of the un-padded sequence
               val masks = Array.fill[Double](v.length)(1)
               // padded positions have a mask value of 0
               for (j <- n until v.length) {
+
                 masks(j) = 0
               }
               Vectors.dense(v ++ types ++ positions ++ masks)
