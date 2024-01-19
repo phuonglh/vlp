@@ -215,24 +215,24 @@ object DEP {
 
         // number of characters (for use in the 'c' model type)
         var numChars = 0
+        val characters = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+        val characterMap = characters.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+        numChars = characters.length
+        println(" #(chars) = " + numChars)
+        println(characters.mkString(", "))
+        val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 1f).setInputCol("chars").setOutputCol("c")
+        val (pf, pfV) = (charSequencer.transform(gf), charSequencer.transform(gfV))
+        // assemble the two input vectors into one
+        val assembler = new VectorAssembler().setInputCols(Array("t", "c")).setOutputCol("t+c")
+        val hf = assembler.transform(pf)
+        val hfV = assembler.transform(pfV)
+        hf.select("c").show(3)
 
         // prepare train/valid data frame for each model type:
         val (uf, vf) = config.modelType match {
           case "t" => (gf, gfV)
-          case "t+c" =>
-            val characters = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
-            val characterMap = characters.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-            numChars = characters.length
-            println(" #(chars) = " + numChars)
-            println(characters.mkString(", "))
-            val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 1f).setInputCol("chars").setOutputCol("c")
-            val (pf, pfV) = (charSequencer.transform(gf), charSequencer.transform(gfV))
-            // assemble the two input vectors into one
-            val assembler = new VectorAssembler().setInputCols(Array("t", "c")).setOutputCol("t+c")
-            val hf = assembler.transform(pf)
-            val hfV = assembler.transform(pfV)
-            hf.select("c").show(3, truncate = false)
-            (hf, hfV)
+          case "c" => (hf, hfV)
+          case "t+c" => (hf, hfV)
           case "t+p" =>
             // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
             val assembler = new VectorAssembler().setInputCols(Array("t", "p")).setOutputCol("t+p")
@@ -281,12 +281,30 @@ object DEP {
             bigdl.summary()
             (bigdl, featureSize, labelSize, "t")
           case "t+c" =>
+            val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
+            val embedding = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
+            val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embedding)
+            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape)
+            val modules = (0 until config.maxSeqLen).map { j =>
+              val select = SelectTable(j).inputs(split)
+              val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
+              GRU(config.charHiddenSize).inputs(reshape) // use independent GRU for each token position
+            }
+            val merge = Merge.merge(modules.toList, "concat")
+            val reshapeT = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(merge)
+            val lstm = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(reshapeT)
+            val output = Dense(numOffsets, activation = "softmax").inputs(lstm)
+            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
+            val bigdl = Model(inputC, output)
+            (bigdl, featureSize, labelSize, "c")
+          case "c" =>
+            // use characters (30 * 13 positions)
             val bigdl = Sequential()
             val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize, inputLength = config.maxSeqLen * config.maxCharLen)
             bigdl.add(embeddingC)
-            val gruC = GRU(config.charHiddenSize, returnSequences = true)
-            bigdl.add(gruC)
-            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, config.maxCharLen, config.charHiddenSize))
+            val lstmC = Bidirectional(LSTM(config.charHiddenSize, returnSequences = true))
+            bigdl.add(lstmC)
+            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, config.maxCharLen, 2*config.charHiddenSize))
             bigdl.add(reshapeC)
             val selectC = Select(2, -1) // select the state at the last character of each token
             bigdl.add(selectC)
