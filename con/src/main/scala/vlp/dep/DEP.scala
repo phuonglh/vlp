@@ -5,10 +5,10 @@ import com.intel.analytics.bigdl.dllib.keras.Sequential
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, Echo, GRU, JoinTable, Linear, LookupTable, MapTable, Recurrent, SoftMax, SplitTable, TimeDistributed, TimeDistributedCriterion, TimeDistributedMaskCriterion, Reshape => ReshapeNN, Select => SelectNN}
+import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedMaskCriterion}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
-import com.intel.analytics.bigdl.dllib.tensor.{DenseTensorMath, Tensor}
+import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.numeric.NumericFloat
@@ -30,23 +30,23 @@ case class ConfigDEP(
     mode: String = "eval",
     maxVocabSize: Int = 32768,
     tokenEmbeddingSize: Int = 32, // 100
+    tokenHiddenSize: Int = 32,
     partsOfSpeechEmbeddingSize: Int = 8, // 25
+    maxCharLen: Int = 13,
+    charEmbeddingSize: Int = 32,
+    charHiddenSize: Int = 32,
     layers: Int = 2, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
-    maxSeqLen: Int = 10,
-    hiddenSize: Int = 32,
+    maxSeqLen: Int = 30,
     epochs: Int = 100,
     learningRate: Double = 5E-3,
     modelPath: String = "bin/dep/eng",
-    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
+    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
     validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
     testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
-    modelType: String = "t+c", // [t, t+c, t+p, b]
-    useCharacter: Boolean = true,
-    maxCharLen: Int = 13,
-    charEmbeddingSize: Int = 16,
+    modelType: String = "t+c", // [t, c, t+p, b]
 )
 
 object DEP {
@@ -102,13 +102,9 @@ object DEP {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
     val vectorizerTokens = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
     val vectorizerPartsOfSpeech = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos") // may use uPoS instead of partsOfSpeech
-    val stages = if (!config.useCharacter) {
-      Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech)
-    } else {
-      val sequencerChars = new CharacterSequencer(config.maxCharLen).setInputCol("tokens").setOutputCol("chars")
-      val vectorizerChars = new CountVectorizer().setInputCol("chars").setOutputCol("char")
-      Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech, sequencerChars, vectorizerChars)
-    }
+    val sequencerChars = new CharacterSequencer(config.maxCharLen).setInputCol("tokens").setOutputCol("chars")
+    val vectorizerChars = new CountVectorizer().setInputCol("chars").setOutputCol("char")
+    val stages = Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech, sequencerChars, vectorizerChars)
     val pipeline = new Pipeline().setStages(stages)
     val model = pipeline.fit(df)
     model.write.overwrite().save(config.modelPath + "-pre")
@@ -163,7 +159,7 @@ object DEP {
       opt[Int]('n', "maxSeqLength").action((x, conf) => conf.copy(maxSeqLen = x)).text("max sequence length")
       opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of RNN layers or Transformer blocks")
       opt[Int]('w', "tokenEmbeddingSize").action((x, conf) => conf.copy(tokenEmbeddingSize = x)).text("token embedding size")
-      opt[Int]('h', "hiddenSize").action((x, conf) => conf.copy(hiddenSize = x)).text("encoder hidden size")
+      opt[Int]('h', "tokenHiddenSize").action((x, conf) => conf.copy(tokenHiddenSize = x)).text("encoder hidden size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-3")
       opt[String]('d', "trainPath").action((x, conf) => conf.copy(trainPath = x)).text("training data directory")
@@ -217,21 +213,20 @@ object DEP {
         val gfV = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(efV)))
         gfV.select("t", "o").show()
 
+        // number of characters (for use in the 'c' model type)
         var numChars = 0
-        val (pf, pfV) = if (config.useCharacter) {
-          val characters = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
-          val characterMap = characters.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-          numChars = characters.length
-          println(" #(chars) = " + numChars)
-          println(characters.mkString(", "))
-          val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 1f).setInputCol("chars").setOutputCol("c")
-          (charSequencer.transform(gf), charSequencer.transform(gfV))
-        } else (gf, gfV)
 
         // prepare train/valid data frame for each model type:
         val (uf, vf) = config.modelType match {
           case "t" => (gf, gfV)
           case "t+c" =>
+            val characters = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
+            val characterMap = characters.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+            numChars = characters.length
+            println(" #(chars) = " + numChars)
+            println(characters.mkString(", "))
+            val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 1f).setInputCol("chars").setOutputCol("c")
+            val (pf, pfV) = (charSequencer.transform(gf), charSequencer.transform(gfV))
             // assemble the two input vectors into one
             val assembler = new VectorAssembler().setInputCols(Array("t", "c")).setOutputCol("t+c")
             val hf = assembler.transform(pf)
@@ -279,49 +274,30 @@ object DEP {
             val bigdl = Sequential()
             bigdl.add(Embedding(numVocab + 1, config.tokenEmbeddingSize, inputLength = config.maxSeqLen))
             for (_ <- 1 to config.layers)
-              bigdl.add(Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true)))
+              bigdl.add(Bidirectional(LSTM(outputDim = config.tokenHiddenSize, returnSequences = true)))
             bigdl.add(Dropout(0.5))
             bigdl.add(Dense(numOffsets, activation = "softmax"))
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
             bigdl.summary()
             (bigdl, featureSize, labelSize, "t")
           case "t+c" =>
-            // NN-style layers (not Keras-style layer)
-            val sequential = com.intel.analytics.bigdl.dllib.nn.Sequential()
-            val lookup = LookupTable(numChars + 1, config.charEmbeddingSize, paddingValue = 1f) // Note: paddingValue > 0
-            sequential.add(lookup)
-            val reshape = ReshapeNN(Array(config.maxSeqLen, config.maxCharLen, config.charEmbeddingSize))
-            sequential.add(reshape)
-            // split into maxSeqLen tokens, each token is a tensor of shape maxCharLen x charEmbeddingSize, which
-            // is an element of a table
-            val split = SplitTable(1, -1)
-            sequential.add(split)
-            val module = com.intel.analytics.bigdl.dllib.nn.Sequential()
-            // feed each element into a recurrent layer
-            val gru = GRU(config.charEmbeddingSize, config.charEmbeddingSize)
-            val recurrent = Recurrent().add(gru)
-            module.add(recurrent)
-            // the recurrent layer produces a state for each time step, we select the last state as the representation for the token
-            val select = SelectNN(1, -1)
-            module.add(select)
-            val reshape1 = ReshapeNN(Array(1, config.charEmbeddingSize))
-            module.add(reshape1)
-            // at the output of the module, we have a tensor of shape 1 x charEmbeddingSize
-            val mapTable = MapTable(module)
-            sequential.add(mapTable)
-            // after passing the map table we join the states to have a tensor of length maxSeqLen x charEmbeddingSize
-            val joinTable = JoinTable(dimension = 2, nInputDims = 2)
-            sequential.add(joinTable)
-            // add a linear and softmax layer at the end
-            val dense = TimeDistributed(Linear(config.charEmbeddingSize, numOffsets))
-            sequential.add(dense)
-            sequential.add(TimeDistributed(SoftMax()))
+            val bigdl = Sequential()
+            val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize, inputLength = config.maxSeqLen * config.maxCharLen)
+            bigdl.add(embeddingC)
+            val gruC = GRU(config.charHiddenSize, returnSequences = true)
+            bigdl.add(gruC)
+            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, config.maxCharLen, config.charHiddenSize))
+            bigdl.add(reshapeC)
+            val selectC = Select(2, -1) // select the state at the last character of each token
+            bigdl.add(selectC)
+            bigdl.add(Dropout(0.5))
+            bigdl.add(Dense(numOffsets, activation = "softmax"))
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
-            println(sequential)
-            (sequential, featureSize, labelSize, "c")
+            bigdl.summary()
+            (bigdl, featureSize, labelSize, "c")
           case "t+p" =>
             // 2. A model for (token ++ partsOfSpeech) tensor
-            val input = Input[Float](inputShape = Shape(2*config.maxSeqLen), name = "input")
+            val input = Input(inputShape = Shape(2*config.maxSeqLen), name = "input")
             val reshape = Reshape(targetShape = Array(2, config.maxSeqLen)).setName("reshape").inputs(input)
             val split = SplitTensor(1, 2).inputs(reshape)
             val token = SelectTable(0).setName("inputT").inputs(split)
@@ -334,11 +310,11 @@ object DEP {
             val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).setName("tokEmbedding").inputs(inputT)
             val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
             val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
-            val rnn1 = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM-1")).inputs(merge)
-            val rnn2 = Bidirectional(LSTM(outputDim = config.hiddenSize, returnSequences = true).setName("LSTM-2")).inputs(rnn1)
+            val rnn1 = Bidirectional(LSTM(outputDim = config.tokenHiddenSize, returnSequences = true).setName("LSTM-1")).inputs(merge)
+            val rnn2 = Bidirectional(LSTM(outputDim = config.tokenHiddenSize, returnSequences = true).setName("LSTM-2")).inputs(rnn1)
             val dropout = Dropout(0.5).inputs(rnn2)
             val output = Dense(numOffsets, activation = "softmax").setName("dense").inputs(dropout)
-            val bigdl = Model[Float](input, output)
+            val bigdl = Model(input, output)
             val (featureSize, labelSize) = (Array(Array(2*config.maxSeqLen)), Array(config.maxSeqLen))
             (bigdl, featureSize, labelSize, "t+p")
           case "b" =>
@@ -360,7 +336,7 @@ object DEP {
 //            val masks = Input(inputShape = Shape(config.maxSeqLen), "masks")
 //            val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("reshape").inputs(masks)
             val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = config.layers, nHead = 2, maxPositionLen = config.maxSeqLen,
-              intermediateSize = config.hiddenSize, outputAllBlock = false).setName("bert")
+              intermediateSize = config.tokenHiddenSize, outputAllBlock = false).setName("bert")
             val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
             val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
             val dense = Dense(numOffsets).setName("dense").inputs(bertOutput)
@@ -383,7 +359,6 @@ object DEP {
             for (j <- ws.indices)
               tensor(j+1) = ws(j)
             // create an estimator
-            TimeDistributedMaskCriterion
             // it is necessary to set sizeAverage of ClassNLLCriterion to false in non-batch mode
             val estimator = NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(weights = tensor, sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
