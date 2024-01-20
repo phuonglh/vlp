@@ -31,10 +31,10 @@ case class ConfigDEP(
     maxVocabSize: Int = 32768,
     tokenEmbeddingSize: Int = 32, // 100
     tokenHiddenSize: Int = 32,
-    partsOfSpeechEmbeddingSize: Int = 8, // 25
+    partsOfSpeechEmbeddingSize: Int = 25,
     maxCharLen: Int = 13,
     charEmbeddingSize: Int = 32,
-    charHiddenSize: Int = 32,
+    charHiddenSize: Int = 16,
     layers: Int = 2, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
     maxSeqLen: Int = 30,
@@ -46,7 +46,7 @@ case class ConfigDEP(
     testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
-    modelType: String = "t+c", // [t, c, t+p, b]
+    modelType: String = "t+c", // [t, c, t+c, t+p, b]
 )
 
 object DEP {
@@ -232,6 +232,7 @@ object DEP {
         val (uf, vf) = config.modelType match {
           case "t" => (gf, gfV)
           case "c" => (hf, hfV)
+          case "c@" => (hf, hfV)
           case "t+c" => (hf, hfV)
           case "t+p" =>
             // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
@@ -281,24 +282,50 @@ object DEP {
             bigdl.summary()
             (bigdl, featureSize, labelSize, "t")
           case "t+c" =>
+            // token module (same as the "t" model type)
+            val inputT = Input(inputShape = Shape(config.maxSeqLen))
+            val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).inputs(inputT)
+            // char module: use a GRU for each token position (same as the "c@" type)
             val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
-            val embedding = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
-            val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embedding)
+            val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
+            val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embeddingC)
             val split = SplitTensor(1, config.maxSeqLen).inputs(reshape)
             val modules = (0 until config.maxSeqLen).map { j =>
               val select = SelectTable(j).inputs(split)
               val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
               GRU(config.charHiddenSize).inputs(reshape) // use independent GRU for each token position
             }
-            val merge = Merge.merge(modules.toList, "concat")
-            val reshapeT = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(merge)
-            val lstm = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(reshapeT)
-            val output = Dense(numOffsets, activation = "softmax").inputs(lstm)
+            val mergeC = Merge.merge(modules.toList, "concat")
+            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(mergeC)
+            // concat the token embeddings
+            val mergeT = Merge.merge(List(embeddingT, reshapeC), mode = "concat")
+            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(mergeT)
+            val lstm2 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(lstm1)
+            val output = Dense(numOffsets, activation = "softmax").inputs(lstm2)
+            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
+            val bigdl = Model(Array(inputT, inputC), output)
+            (bigdl, featureSize, labelSize, "t+c")
+          case "c@" =>
+            // char module: use a GRU for each token position
+            val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
+            val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
+            val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embeddingC)
+            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape)
+            val modules = (0 until config.maxSeqLen).map { j =>
+              val select = SelectTable(j).inputs(split)
+              val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
+              GRU(config.charHiddenSize).inputs(reshape) // use independent GRU for each token position
+            }
+            val mergeC = Merge.merge(modules.toList, "concat")
+            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(mergeC)
+            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(reshapeC)
+            val lstm2 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(lstm1)
+            val output = Dense(numOffsets, activation = "softmax").inputs(lstm2)
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
             val bigdl = Model(inputC, output)
             (bigdl, featureSize, labelSize, "c")
           case "c" =>
-            // use characters (30 * 13 positions)
+            // use characters (30 * 13 positions, very long sequence!)
             val bigdl = Sequential()
             val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize, inputLength = config.maxSeqLen * config.maxCharLen)
             bigdl.add(embeddingC)
@@ -397,7 +424,7 @@ object DEP {
           case "eval" =>
             eval(config, uf, vf, featureColName, offsets)
           case "pre" =>
-            ef.select("chars").show(5,truncate = false)
+            ef.select("chars").show(5, truncate = false)
         }
         spark.stop()
       case None =>
