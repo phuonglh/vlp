@@ -3,13 +3,15 @@ package vlp.dep
 import com.intel.analytics.bigdl.dllib.NNContext
 import com.intel.analytics.bigdl.dllib.keras.Sequential
 import com.intel.analytics.bigdl.dllib.keras.layers._
+import com.intel.analytics.bigdl.dllib.keras.layers.utils.KerasUtils
 import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedMaskCriterion}
+import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
+import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, Echo, JoinTable, MapTable, TimeDistributedMaskCriterion}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
-import com.intel.analytics.bigdl.dllib.utils.Shape
+import com.intel.analytics.bigdl.dllib.utils.{MultiShape, Shape}
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import org.apache.spark.SparkConf
@@ -37,11 +39,11 @@ case class ConfigDEP(
     charHiddenSize: Int = 16,
     layers: Int = 2, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
-    maxSeqLen: Int = 30,
+    maxSeqLen: Int = 10,
     epochs: Int = 100,
     learningRate: Double = 5E-3,
     modelPath: String = "bin/dep/eng",
-    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-train.conllu",
+    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
     validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
     testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
     outputPath: String = "out/dep/",
@@ -107,7 +109,7 @@ object DEP {
     val stages = Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech, sequencerChars, vectorizerChars)
     val pipeline = new Pipeline().setStages(stages)
     val model = pipeline.fit(df)
-    model.write.overwrite().save(config.modelPath + "-pre")
+//    model.write.overwrite().save(config.modelPath + "-pre")
 //    val ef = model.transform(df)
 //    ef.repartition(1).write.mode("overwrite").parquet(config.modelPath + "-dfs")
     model
@@ -309,16 +311,38 @@ object DEP {
             // char module: use a GRU for each token position
             val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
             val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
-            val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embeddingC)
-            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape)
-            val modules = (0 until config.maxSeqLen).map { j =>
-              val select = SelectTable(j).inputs(split)
-              val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
-              GRU(config.charHiddenSize).inputs(reshape) // use independent GRU for each token position
-            }
-            val mergeC = Merge.merge(modules.toList, "concat")
-            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(mergeC)
-            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(reshapeC)
+            val reshape = Reshape(targetShape = Array(config.maxSeqLen, config.maxCharLen, config.charEmbeddingSize)).inputs(embeddingC)
+            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape) // tensors of shape (1 x maxCharLen x charEmbeddingSize)
+
+//            // table => MapTable(squeeze) to remove the singleton dimension
+//            val squeeze = new Squeeze() // to get tensors of shape (maxCharLen x charEmbeddingSize)
+//            val mapTableSqueeze = MapTable(squeeze)
+//            val mapTableSqueezeKeras = new KerasLayerWrapper[Float](mapTableSqueeze.asInstanceOf[AbstractModule[Activity, Activity, Float]])
+//            mapTableSqueezeKeras.build(KerasUtils.addBatch(Shape(1, config.maxCharLen, config.charEmbeddingSize)))
+//            val mtsNode = mapTableSqueezeKeras.inputs(split)
+            // table => MapTable(gru) to compute token representation by GRU
+            val gru = GRU(config.charHiddenSize) // to output tensors of shape (1 x charHiddenSize)
+            gru.build(KerasUtils.addBatch(Shape(config.maxCharLen, config.charEmbeddingSize)))
+            val mapTableGRU = MapTable(gru)
+            val mapTableGRUKeras = new KerasLayerWrapper[Float](mapTableGRU.asInstanceOf[AbstractModule[Activity, Activity, Float]])
+//            mapTableGRUKeras.build(KerasUtils.addBatch(Shape(1, config.maxCharLen, config.charEmbeddingSize)))
+            val mtgNode = mapTableGRUKeras.inputs(split)
+
+            // table => JoinTable() to get output maxSeqLen x charHiddenSize
+            val joinTable = JoinTable(1, 2)
+            val joinTableKeras = new KerasLayerWrapper[Float](joinTable.asInstanceOf[AbstractModule[Activity, Activity, Float]]).inputs(mtgNode)
+
+            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(joinTableKeras)
+
+//            val modules = (0 until config.maxSeqLen).map { j =>
+//              val select = SelectTable(j).inputs(split)
+//              val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
+//              GRU(config.charHiddenSize).inputs(reshape) // use independent GRU for each token position
+//            }
+//            val mergeC = Merge.merge(modules.toList, "concat")
+//            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(mergeC)
+//            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(reshapeC)
+
             val lstm2 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(lstm1)
             val output = Dense(numOffsets, activation = "softmax").inputs(lstm2)
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
