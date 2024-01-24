@@ -39,13 +39,13 @@ case class ConfigDEP(
     charHiddenSize: Int = 16,
     layers: Int = 2, // number of LSTM layers or Transformer blocks
     batchSize: Int = 128,
-    maxSeqLen: Int = 10,
+    maxSeqLen: Int = 30,
     epochs: Int = 100,
     learningRate: Double = 5E-3,
-    modelPath: String = "bin/dep/eng",
-    trainPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
-    validPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-dev.conllu",
-    testPath: String = "dat/dep/UD_English-EWT/en_ewt-ud-test.conllu",
+    modelPath: String = "bin/dep/mul",
+    trainPaths: Seq[String] = Seq("dat/dep/vie/5K/vi-ud-5K-train.conllu", "dat/dep/ind/id_gsd-ud-train.conllu"),
+    validPaths: Seq[String] = Seq("dat/dep/vie/5K/vi-ud-5K-dev.conllu", "dat/dep/ind/id_gsd-ud-dev.conllu"),
+    testPaths: Seq[String] = Seq("dat/dep/vie/vi_vtb-ud-test.conllu", "dat/dep/ind/id_gsd-ud-test.conllu"),
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
     modelType: String = "t+c", // [t, c, t+c, t+p, b]
@@ -65,10 +65,16 @@ object DEP {
     val uPoS = tokens.map(_.universalPartOfSpeech)
     val labels = tokens.map(_.dependencyLabel)
     // compute the offset value to the head for each token
-    val offsets = tokens.map { token =>
-      val o = if (token.head.toInt == 0) 0 else (token.head.toInt - token.id.toInt)
-      o.toString
-    }
+    val offsets = try {
+      tokens.map { token =>
+        val o = if (token.head.toInt == 0) 0 else (token.head.toInt - token.id.toInt)
+        o.toString
+      }
+    } catch {
+      case _: NumberFormatException =>
+        print(graph)
+        Seq.empty[String]
+    } finally Seq.empty[String]
     Seq(words, partsOfSpeech, uPoS, labels, offsets)
   }
 
@@ -103,7 +109,7 @@ object DEP {
   private def createPipeline(df: DataFrame, config: ConfigDEP) = {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
     val vectorizerTokens = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
-    val vectorizerPartsOfSpeech = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos") // may use uPoS instead of partsOfSpeech
+    val vectorizerPartsOfSpeech = new CountVectorizer().setInputCol("uPoS").setOutputCol("pos") // may use "uPoS" instead of "partsOfSpeech"
     val sequencerChars = new CharacterSequencer(config.maxCharLen).setInputCol("tokens").setOutputCol("chars")
     val vectorizerChars = new CountVectorizer().setInputCol("chars").setOutputCol("char")
     val stages = Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech, sequencerChars, vectorizerChars)
@@ -164,7 +170,6 @@ object DEP {
       opt[Int]('h', "tokenHiddenSize").action((x, conf) => conf.copy(tokenHiddenSize = x)).text("encoder hidden size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
       opt[Double]('a', "alpha").action((x, conf) => conf.copy(learningRate = x)).text("learning rate, default value is 5E-3")
-      opt[String]('d', "trainPath").action((x, conf) => conf.copy(trainPath = x)).text("training data directory")
       opt[String]('p', "modelPath").action((x, conf) => conf.copy(modelPath = x)).text("model folder, default is 'bin/'")
       opt[String]('t', "modelType").action((x, conf) => conf.copy(modelType = x)).text("model type")
       opt[String]('o', "outputPath").action((x, conf) => conf.copy(outputPath = x)).text("output path")
@@ -183,12 +188,20 @@ object DEP {
         sc.setLogLevel("ERROR")
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
 
-        // read training data, train a preprocessor and use it to transform training/dev data sets
-        val df = readGraphs(spark, config.trainPath, config.maxSeqLen)
+        // read and combine training data sets
+        val df = config.trainPaths.map { path =>
+          readGraphs(spark, path, config.maxSeqLen)
+        }.reduce((df1, df2) => df1.union(df2))
+
+        // train a preprocessor and use it to transform training/dev data sets
         val preprocessor = createPipeline(df, config)
         val ef = preprocessor.transform(df)
-        // read validation data set
-        val dfV = readGraphs(spark, config.validPath, config.maxSeqLen)
+
+        // read and combine validation data sets
+        val dfV = config.validPaths.map { path =>
+          readGraphs(spark, path, config.maxSeqLen)
+        }.reduce((df1, df2) => df1.union(df2))
+
         val efV = preprocessor.transform(dfV)
         efV.show(5)
         println("#(trainGraphs) = " + df.count())
