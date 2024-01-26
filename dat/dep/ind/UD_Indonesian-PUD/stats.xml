@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<treebank>
+  <!-- tokens means "surface tokens", e.g. Spanish "vámonos" counts as one token
+       words means "syntactic words", e.g. Spanish "vámonos" is split to two words, "vamos" and "nos"
+       fused is the number of tokens that are split to two or more syntactic words
+       The words and fused elements can be omitted if no token is split to smaller syntactic words. -->
+  <size>
+    <total><sentences>1000</sentences><tokens>19034</tokens><words>19446</words><fused>412</fused></total>
+    <train><sentences>0</sentences><tokens>0</tokens><words>0</words><fused>0</fused></train>
+    <dev><sentences>0</sentences><tokens>0</tokens><words>0</words><fused>0</fused></dev>
+    <test><sentences>1000</sentences><tokens>19034</tokens><words>19446</words><fused>412</fused></test>
+  </size>
+  <lemmas unique="3632" /><!-- ,, ., yang, dan, di, nya, untuk, pada, ini, dengan, itu, dari, dalam, tahun, tidak -->
+  <forms unique="4706" /><!-- ,, ., yang, dan, di, nya, untuk, pada, ini, dengan, itu, dari, dalam, tahun, tidak -->
+  <fusions unique="293" /><!-- apakah, lainnya, dirinya, kalinya, istrinya, katanya, meskipun, semuanya, hidupnya, itulah, kepadanya, menyebutnya, terakhirnya, terjadinya, ujarnya -->
+  <!-- Statistics of universal POS tags. The comments show the most frequent lemmas. -->
+  <tags unique="17">
+    <tag name="ADJ">1026</tag><!-- besar, baru, lain, baik, pertama, akhir, sama, banyak, salah, tinggi -->
+    <tag name="ADP">1898</tag><!-- di, pada, dari, dengan, dalam, ke, oleh, bagai, untuk, lama -->
+    <tag name="ADV">678</tag><!-- lebih, juga, sangat, namun, hanya, apa, kitar, saat, saja, tetap -->
+    <tag name="AUX">405</tag><!-- adalah, telah, akan, bisa, sudah, dapat, harus, mungkin, sedang, boleh -->
+    <tag name="CCONJ">564</tag><!-- dan, atau, tetapi, namun, tapi, serta, baik, maupun, lain, & -->
+    <tag name="DET">741</tag><!-- ini, itu, nya, buah, para, banyak, sebut, orang, berapa, semua -->
+    <tag name="INTJ">4</tag><!-- hei, omong, toh, ya -->
+    <tag name="NOUN">4687</tag><!-- tahun, orang, bagi, bulan, hari, negara, kota, laut, perintah, hal -->
+    <tag name="NUM">501</tag><!-- satu, dua, tiga, juta, puluh, empat, 1, 10, miliar, 3 -->
+    <tag name="PART">225</tag><!-- tidak, pun, tak, belum, kah, lah, bukan -->
+    <tag name="PRON">1329</tag><!-- yang, nya, ia, mereka, saya, itu, ini, kami, dia, mana -->
+    <tag name="PROPN">2113</tag><!-- Amerika, Inggris, Eropa, of, Tiongkok, the, Prancis, Spanyol, Yunani, Oktober -->
+    <tag name="PUNCT">2384</tag><!-- ,, ., ", “, ”, (, ), :, ', - -->
+    <tag name="SCONJ">414</tag><!-- untuk, bahwa, telah, dengan, karena, jika, meski, belum, iring, agar -->
+    <tag name="SYM">38</tag><!-- %, £, $, € -->
+    <tag name="VERB">2395</tag><!-- ada, jadi, milik, buat, kata, mulai, guna, beri, kerja, tinggal -->
+    <tag name="X">44</tag><!-- _, estate, landmark, real, borough, bullying, chairman, chief, council, coup -->
+  </tags>
+  <!-- Statistics of features and values. The comments show the most frequent word forms. -->
+  <feats unique="30">
+    <feat name="Abbr" value="Yes" upos="NOUN,PROPN">104</feat><!-- SM, AS, A.S., BBC, CNN, Nn., Tn., B.C., DNA, GCA -->
+    <feat name="Clusivity" value="Ex" upos="PRON">26</feat><!-- kami -->
+    <feat name="Clusivity" value="In" upos="PRON">19</feat><!-- kita -->
+    <feat name="Definite" value="Def" upos="DET">107</feat><!-- nya, yang -->
+    <feat name="Definite" value="Ind" upos="DET">90</feat><!-- sebuah, seorang, suatu -->
+    <feat name="Degree" value="Sup" upos="ADJ">58</feat><!-- terakhir, terbaik, terbesar, tertinggi, terutama, teratas, terburuk, terawal, terbanyak, terbaru -->
+    <feat name="Foreign" value="Yes" upos="X">32</feat><!-- estate, landmark, real, Energies, International, Investors, MultiStrategy, Organization, Renewable, Return -->
+    <feat name="Mood" value="Ind" upos="VERB">2395</feat><!-- menjadi, ada, memiliki, membuat, mulai, mengatakan, merupakan, ujar, digunakan, mendapatkan -->
+    <feat name="Number" value="Plur" upos="DET,NOUN,PRON">391</feat><!-- mereka, para, banyak, beberapa, kami, kita, berbagai, orang-orang, negara-negara, anak-anak -->
+    <feat name="Number" value="Sing" upos="NOUN,PRON">4993</feat><!-- nya, tahun, ia, orang, saya, bulan, bagian, hari, negara, kota -->
+    <feat name="NumType" value="Card" upos="NUM">501</feat><!-- satu, dua, kedua, tiga, juta, empat, 1, 10, 3, puluh -->
+    <feat name="NumType" value="Ord" upos="ADJ">58</feat><!-- pertama, kedua, ketiga, ke-16, ke-3, ke-5, ke-13, ke-14, ke-15, ke-20 -->
+    <feat name="Person" value="1" upos="PRON">103</feat><!-- saya, kami, kita, Aku, ku -->
+    <feat name="Person" value="2" upos="PRON">16</feat><!-- Anda, kalian, kamu -->
+    <feat name="Person" value="3" upos="PRON">501</feat><!-- nya, ia, mereka, dia -->
+    <feat name="Polarity" value="Neg" upos="PART">177</feat><!-- tidak, tak, belum, bukan -->
+    <feat name="Polite" value="Form" upos="PRON">66</feat><!-- saya, Anda -->
+    <feat name="Polite" value="Infm" upos="PRON">5</feat><!-- Aku, kalian, kamu -->
+    <feat name="PronType" value="Art" upos="DET">197</feat><!-- nya, sebuah, seorang, yang, suatu -->
+    <feat name="PronType" value="Dem" upos="DET,PRON">485</feat><!-- ini, itu, tersebut, mana, sana, begitu, demikian, sang, sini, si -->
+    <feat name="PronType" value="Emp" upos="DET">17</feat><!-- sendiri -->
+    <feat name="PronType" value="Ind" upos="ADV,DET,PRON">130</feat><!-- para, banyak, beberapa, berbagai, seseorang, kadang, sebagian, serangkaian, sesuatu, kadang-kadang -->
+    <feat name="PronType" value="Int" upos="ADV,PRON">12</feat><!-- apa, siapa, bagaimana, mana -->
+    <feat name="PronType" value="Prs" upos="PRON">635</feat><!-- nya, ia, mereka, saya, kami, dia, kita, diri, Anda, Aku -->
+    <feat name="PronType" value="Rel" upos="ADV,PRON">597</feat><!-- yang, saat, apa, ketika, mengapa, bagaimana, siapa, berapa, kapan, seberapa -->
+    <feat name="PronType" value="Tot" upos="ADV,DET,PRON">61</feat><!-- semua, seluruh, setiap, selalu, masing-masing, segala -->
+    <feat name="Reflex" value="Yes" upos="PRON">15</feat><!-- diri -->
+    <feat name="Typo" value="Yes" upos="ADP,NOUN">5</feat><!-- mercu, Kontituensi, dari, konsulate -->
+    <feat name="Voice" value="Act" upos="VERB">1891</feat><!-- menjadi, ada, memiliki, membuat, mulai, mengatakan, merupakan, ujar, mendapatkan, bekerja -->
+    <feat name="Voice" value="Pass" upos="VERB">504</feat><!-- digunakan, terjadi, termasuk, terletak, diberi, didirikan, diikuti, dikenal, diperlukan, terbuka -->
+  </feats>
+  <!-- Statistics of universal dependency relations. -->
+  <deps unique="47">
+    <dep name="acl">245</dep>
+    <dep name="acl:relcl">511</dep>
+    <dep name="advcl">370</dep>
+    <dep name="advmod">971</dep>
+    <dep name="advmod:emph">48</dep>
+    <dep name="amod">584</dep>
+    <dep name="appos">116</dep>
+    <dep name="aux">309</dep>
+    <dep name="case">1823</dep>
+    <dep name="case:adv">50</dep>
+    <dep name="cc">559</dep>
+    <dep name="cc:preconj">5</dep>
+    <dep name="ccomp">97</dep>
+    <dep name="clf">2</dep>
+    <dep name="compound">25</dep>
+    <dep name="compound:a">10</dep>
+    <dep name="conj">664</dep>
+    <dep name="cop">94</dep>
+    <dep name="csubj">25</dep>
+    <dep name="csubj:pass">2</dep>
+    <dep name="det">718</dep>
+    <dep name="discourse">3</dep>
+    <dep name="dislocated">5</dep>
+    <dep name="fixed">46</dep>
+    <dep name="flat">116</dep>
+    <dep name="flat:foreign">14</dep>
+    <dep name="flat:name">607</dep>
+    <dep name="goeswith">3</dep>
+    <dep name="iobj">4</dep>
+    <dep name="mark">426</dep>
+    <dep name="nmod">2142</dep>
+    <dep name="nmod:lmod">107</dep>
+    <dep name="nmod:poss">327</dep>
+    <dep name="nmod:tmod">143</dep>
+    <dep name="nsubj">1528</dep>
+    <dep name="nsubj:pass">408</dep>
+    <dep name="nummod">359</dep>
+    <dep name="obj">857</dep>
+    <dep name="obl">1048</dep>
+    <dep name="obl:agent">82</dep>
+    <dep name="obl:tmod">268</dep>
+    <dep name="orphan">1</dep>
+    <dep name="parataxis">114</dep>
+    <dep name="punct">2384</dep>
+    <dep name="root">1000</dep>
+    <dep name="vocative">1</dep>
+    <dep name="xcomp">225</dep>
+  </deps>
+</treebank>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<treebank>
+  <!-- tokens means "surface tokens", e.g. Spanish "vámonos" counts as one token
+       words means "syntactic words", e.g. Spanish "vámonos" is split to two words, "vamos" and "nos"
+       fused is the number of tokens that are split to two or more syntactic words
+       The words and fused elements can be omitted if no token is split to smaller syntactic words. -->
+  <size>
+    <total><sentences>3323</sentences><tokens>58069</tokens><words>58069</words><fused>0</fused></total>
+    <train><sentences>1400</sentences><tokens>20215</tokens><words>20215</words><fused>0</fused></train>
+    <dev><sentences>1123</sentences><tokens>26162</tokens><words>26162</words><fused>0</fused></dev>
+    <test><sentences>800</sentences><tokens>11692</tokens><words>11692</words><fused>0</fused></test>
+  </size>
+  <lemmas unique="6589" /><!-- ., ,, ", và, là, không, có, của, người, một, được, đã, cho, ông, những -->
+  <forms unique="6605" /><!-- ., ,, ", và, là, không, có, của, người, một, được, đã, cho, ông, những -->
+  <fusions unique="0" /><!--  -->
+  <!-- Statistics of universal POS tags. The comments show the most frequent lemmas. -->
+  <tags unique="17">
+    <tag name="ADJ">3380</tag><!-- nhiều, hơn, gần, khác, lớn, cùng, nhỏ, cao, đúng, đầu tiên -->
+    <tag name="ADP">3392</tag><!-- của, trong, với, cho, ở, để, từ, đến, vào, trên -->
+    <tag name="ADV">4144</tag><!-- không, đã, cũng, được, lại, chỉ, sẽ, đang, rất, vẫn -->
+    <tag name="AUX">1282</tag><!-- là, được, phải, bị, muốn, có thể, cần, nên, không thể, chưa thể -->
+    <tag name="CCONJ">730</tag><!-- và, hay, hoặc, là, cùng, & -->
+    <tag name="DET">969</tag><!-- những, các, mọi, mấy, mỗi, một số, vài, tất cả, cả, một -->
+    <tag name="INTJ">22</tag><!-- à, ơi, nhỉ, thôi, ạ, i, thay, vâng, ô, ơ -->
+    <tag name="NOUN">16489</tag><!-- người, ông, anh, nhà, khi, bà, con, ngày, năm, cô -->
+    <tag name="NUM">1828</tag><!-- một, hai, ba, 10, bốn, 2, mỗi, 20, 1, 30 -->
+    <tag name="PART">315</tag><!-- ngay, chính, thế, thật, cả, thôi, riêng, đến, sao, vậy -->
+    <tag name="PRON">2257</tag><!-- đó, tôi, này, chúng tôi, đây, mình, họ, gì, nào, cả -->
+    <tag name="PROPN">2515</tag><!-- hùng, Chương, tuấn, thư, lan, nam, thọ, vn, kim, hải -->
+    <tag name="PUNCT">8151</tag><!-- ., ,, ", :, ..., -, ?, !, rbkt, lbkt -->
+    <tag name="SCONJ">1511</tag><!-- thì, nhưng, như, mà, là, rồi, nếu, nên, và, tuy nhiên -->
+    <tag name="SYM">100</tag><!-- -, –, phó, /, tái, &, @, nguyên, trưởng, bất -->
+    <tag name="VERB">10868</tag><!-- có, đi, biết, làm, nói, ra, về, cho, đến, thấy -->
+    <tag name="X">116</tag><!-- vì sao, ra sao, chìm xuồng, như vậy, tại sao, có lẽ, như thế nào, nhất là, y, có vẻ -->
+  </tags>
+  <!-- Statistics of features and values. The comments show the most frequent word forms. -->
+  <feats unique="0">
+  </feats>
+  <!-- Statistics of universal dependency relations. -->
+  <deps unique="84">
+    <dep name="acl">246</dep>
+    <dep name="acl:relcl">23</dep>
+    <dep name="acl:subj">1339</dep>
+    <dep name="acl:tmod">236</dep>
+    <dep name="acl:tonp">97</dep>
+    <dep name="advcl">866</dep>
+    <dep name="advcl:objective">306</dep>
+    <dep name="advmod">3188</dep>
+    <dep name="advmod:adj">586</dep>
+    <dep name="advmod:dir">18</dep>
+    <dep name="advmod:neg">691</dep>
+    <dep name="amod">1126</dep>
+    <dep name="appos">190</dep>
+    <dep name="appos:nmod">173</dep>
+    <dep name="aux">413</dep>
+    <dep name="aux:pass">366</dep>
+    <dep name="case">3146</dep>
+    <dep name="cc">1038</dep>
+    <dep name="ccomp">558</dep>
+    <dep name="clf">250</dep>
+    <dep name="clf:det">887</dep>
+    <dep name="compound">1962</dep>
+    <dep name="compound:adj">23</dep>
+    <dep name="compound:amod">98</dep>
+    <dep name="compound:apr">2</dep>
+    <dep name="compound:atov">28</dep>
+    <dep name="compound:dir">277</dep>
+    <dep name="compound:pron">46</dep>
+    <dep name="compound:prt">89</dep>
+    <dep name="compound:redup">4</dep>
+    <dep name="compound:svc">511</dep>
+    <dep name="compound:verbnoun">64</dep>
+    <dep name="compound:vmod">721</dep>
+    <dep name="compound:z">17</dep>
+    <dep name="conj">2472</dep>
+    <dep name="cop">481</dep>
+    <dep name="csubj">110</dep>
+    <dep name="csubj:asubj">20</dep>
+    <dep name="csubj:pass">10</dep>
+    <dep name="csubj:vsubj">56</dep>
+    <dep name="dep">7</dep>
+    <dep name="det">1052</dep>
+    <dep name="det:pmod">759</dep>
+    <dep name="discourse">429</dep>
+    <dep name="dislocated">37</dep>
+    <dep name="expl">4</dep>
+    <dep name="fixed">32</dep>
+    <dep name="flat">16</dep>
+    <dep name="flat:date">122</dep>
+    <dep name="flat:foreign">7</dep>
+    <dep name="flat:name">8</dep>
+    <dep name="flat:number">132</dep>
+    <dep name="flat:redup">3</dep>
+    <dep name="flat:time">21</dep>
+    <dep name="iobj">34</dep>
+    <dep name="list">45</dep>
+    <dep name="mark">1105</dep>
+    <dep name="mark:pcomp">221</dep>
+    <dep name="nmod">2505</dep>
+    <dep name="nmod:poss">587</dep>
+    <dep name="nsubj">4054</dep>
+    <dep name="nsubj:nn">122</dep>
+    <dep name="nsubj:pass">228</dep>
+    <dep name="nsubj:xsubj">10</dep>
+    <dep name="nummod">1407</dep>
+    <dep name="nummod:det">71</dep>
+    <dep name="obj">4362</dep>
+    <dep name="obl">1220</dep>
+    <dep name="obl:about">75</dep>
+    <dep name="obl:adj">136</dep>
+    <dep name="obl:adv">4</dep>
+    <dep name="obl:agent">76</dep>
+    <dep name="obl:comp">864</dep>
+    <dep name="obl:iobj">127</dep>
+    <dep name="obl:tmod">1138</dep>
+    <dep name="obl:with">190</dep>
+    <dep name="parataxis">530</dep>
+    <dep name="punct">8151</dep>
+    <dep name="root">3323</dep>
+    <dep name="vocative">14</dep>
+    <dep name="xcomp">1956</dep>
+    <dep name="xcomp:adj">131</dep>
+    <dep name="xcomp:dir">17</dep>
+    <dep name="xcomp:vcomp">3</dep>
+  </deps>
+</treebank>
