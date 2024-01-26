@@ -43,9 +43,9 @@ case class ConfigDEP(
     epochs: Int = 100,
     learningRate: Double = 5E-3,
     modelPath: String = "bin/dep/mul",
-    trainPaths: Seq[String] = Seq("dat/dep/vie/5K/vi-ud-5K-train.conllu", "dat/dep/ind/id_gsd-ud-train.conllu"),
-    validPaths: Seq[String] = Seq("dat/dep/vie/5K/vi-ud-5K-dev.conllu", "dat/dep/ind/id_gsd-ud-dev.conllu"),
-    testPaths: Seq[String] = Seq("dat/dep/vie/vi_vtb-ud-test.conllu", "dat/dep/ind/id_gsd-ud-test.conllu"),
+    trainPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-train.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-train.conllu"),
+    validPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-dev.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-dev.conllu"),
+    testPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-test.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-test.conllu"),
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
     modelType: String = "t+c", // [t, c, t+c, t+p, b]
