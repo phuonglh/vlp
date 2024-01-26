@@ -42,13 +42,18 @@ case class ConfigDEP(
     maxSeqLen: Int = 30,
     epochs: Int = 100,
     learningRate: Double = 5E-3,
-    modelPath: String = "bin/dep/mul",
-    trainPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-train.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-train.conllu"),
-    validPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-dev.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-dev.conllu"),
+    language: String = "ind", // [mul, vie, ind, eng]
+    modelPath: String = "bin/dep/vie",
+//    trainPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-train.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-train.conllu"),
+//    validPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-dev.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-dev.conllu"),
+    trainPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-train.conllu"),
+    validPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-dev.conllu"),
+//        trainPaths: Seq[String] = Seq("dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-train.conllu"),
+//        validPaths: Seq[String] = Seq("dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-dev.conllu"),
     testPaths: Seq[String] = Seq("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-test.conllu", "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-test.conllu"),
     outputPath: String = "out/dep/",
     scorePath: String = "dat/dep/scores.json",
-    modelType: String = "t+c", // [t, c, t+c, t+p, b]
+    modelType: String = "t+c", // [t, c, @c, t+c, t+p, b]
 )
 
 object DEP {
@@ -304,7 +309,7 @@ object DEP {
             val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
             val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
             val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embeddingC)
-            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape)
+            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape) // 1 or 0?
             val modules = (0 until config.maxSeqLen).map { j =>
               val select = SelectTable(j).inputs(split)
               val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
@@ -325,7 +330,7 @@ object DEP {
             val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
             val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
             val reshape = Reshape(targetShape = Array(config.maxSeqLen, config.maxCharLen, config.charEmbeddingSize)).inputs(embeddingC)
-            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape) // tensors of shape (1 x maxCharLen x charEmbeddingSize)
+            val split = SplitTensor(0, config.maxSeqLen).inputs(reshape) // tensors of shape (1 x maxCharLen x charEmbeddingSize)
 
 //            // table => MapTable(squeeze) to remove the singleton dimension
 //            val squeeze = new Squeeze() // to get tensors of shape (maxCharLen x charEmbeddingSize)
@@ -333,19 +338,23 @@ object DEP {
 //            val mapTableSqueezeKeras = new KerasLayerWrapper[Float](mapTableSqueeze.asInstanceOf[AbstractModule[Activity, Activity, Float]])
 //            mapTableSqueezeKeras.build(KerasUtils.addBatch(Shape(1, config.maxCharLen, config.charEmbeddingSize)))
 //            val mtsNode = mapTableSqueezeKeras.inputs(split)
+
             // table => MapTable(gru) to compute token representation by GRU
-            val gru = GRU(config.charHiddenSize) // to output tensors of shape (1 x charHiddenSize)
-            gru.build(KerasUtils.addBatch(Shape(config.maxCharLen, config.charEmbeddingSize)))
+            val gru = com.intel.analytics.bigdl.dllib.nn.GRU(config.charEmbeddingSize, config.charHiddenSize) // to output tensors of shape (1 x charHiddenSize)
             val mapTableGRU = MapTable(gru)
-            val mapTableGRUKeras = new KerasLayerWrapper[Float](mapTableGRU.asInstanceOf[AbstractModule[Activity, Activity, Float]])
-//            mapTableGRUKeras.build(KerasUtils.addBatch(Shape(1, config.maxCharLen, config.charEmbeddingSize)))
+//            val shape = MultiShape((1 to config.maxSeqLen).toList.map(_ => Shape(1, config.maxCharLen, config.charEmbeddingSize)))
+            val shape = Shape(1, config.maxCharLen, config.charEmbeddingSize)
+            val mapTableGRUKeras = new KerasLayerWrapper[Float](mapTableGRU.asInstanceOf[AbstractModule[Activity, Activity, Float]], inputShape = shape)
+            mapTableGRUKeras.build(KerasUtils.addBatch(shape))
             val mtgNode = mapTableGRUKeras.inputs(split)
 
             // table => JoinTable() to get output maxSeqLen x charHiddenSize
             val joinTable = JoinTable(1, 2)
-            val joinTableKeras = new KerasLayerWrapper[Float](joinTable.asInstanceOf[AbstractModule[Activity, Activity, Float]]).inputs(mtgNode)
+            val joinTableKeras = new KerasLayerWrapper[Float](joinTable.asInstanceOf[AbstractModule[Activity, Activity, Float]])
+            joinTableKeras.build(KerasUtils.addBatch(Shape(1, config.charHiddenSize)))
+            val jtNode = joinTableKeras.inputs(mtgNode)
 
-            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(joinTableKeras)
+            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(jtNode)
 
 //            val modules = (0 until config.maxSeqLen).map { j =>
 //              val select = SelectTable(j).inputs(split)
@@ -443,8 +452,8 @@ object DEP {
             // create an estimator
             // it is necessary to set sizeAverage of ClassNLLCriterion to false in non-batch mode
             val estimator = NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(weights = tensor, sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
-            val trainingSummary = TrainSummary(appName = config.modelType, logDir = "sum/dep/")
-            val validationSummary = ValidationSummary(appName = config.modelType, logDir = "sum/dep/")
+            val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/dep/${config.language}")
+            val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/dep/${}config.language}")
             estimator.setLabelCol("o").setFeaturesCol(featureColName)
               .setBatchSize(config.batchSize)
               .setOptimMethod(new Adam(config.learningRate))
