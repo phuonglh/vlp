@@ -1,6 +1,7 @@
 package vlp.dep
 
 import org.apache.spark.ml.UnaryTransformer
+import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
 
@@ -13,29 +14,26 @@ import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
   <p/>
   * phuonglh@gmail.com
   */
-class CharacterSequencer(val uid: String, val maxSeqLen: Int = 13)
-  extends UnaryTransformer[Seq[String], Seq[String], CharacterSequencer] with DefaultParamsWritable {
+class CharSequencer(val uid: String)
+  extends UnaryTransformer[Seq[String], Seq[String], CharSequencer] with DefaultParamsWritable {
 
   def this() = {
     this(Identifiable.randomUID(" charSeq"))
   }
 
-  def this(maxSeqLen: Int) = {
-    this(Identifiable.randomUID(" charSeq"), maxSeqLen)
-  }
-
   override protected def createTransformFunc: Seq[String] => Seq[String] = {
     def f(xs: Seq[String]): Seq[String] = {
-      xs.flatMap(CharacterSequencer.s(_, maxSeqLen))
+      xs.flatMap(CharSequencer.s(_, 13)) // FIX at 13
     }
-
-    f(_)
+    f
   }
 
-  override protected def outputDataType: DataType = ArrayType(StringType, false)
+  override protected def outputDataType: DataType = ArrayType(StringType, containsNull = false)
+
+  override def copy(extra: ParamMap): CharSequencer = defaultCopy(extra)
 }
 
-object CharacterSequencer extends DefaultParamsReadable[CharacterSequencer] {
+object CharSequencer extends DefaultParamsReadable[CharSequencer] {
   def s(x: String, maxSeqLen: Int): Seq[String] = {
     x.length match {
       case 0 => Seq.empty[String]
@@ -46,5 +44,5 @@ object CharacterSequencer extends DefaultParamsReadable[CharacterSequencer] {
     }
   }
 
-  override def load(path: String): CharacterSequencer = super.load(path)
+  override def load(path: String): CharSequencer = super.load(path)
 }
