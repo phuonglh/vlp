@@ -24,8 +24,6 @@ class TimeDistributedTop1Accuracy(paddingValue: Int = -1)(implicit ev: TensorNum
       .foreach { case (tensor, ys) =>
       // split by time slice (dim = 1 of tensor)
       val zs = tensor.split(1).map { t =>
-//        val values = t.toArray()
-//        val k = (1 to values.size).zip(values).maxBy(p => p._2)._1
         val (_, k) = t.max(1) // the label with max score
         k(Array(1)).toInt // k is a tensor => extract its value
       }

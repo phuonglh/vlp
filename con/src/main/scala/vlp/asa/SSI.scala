@@ -59,7 +59,7 @@ object SSI {
 
   /**
     * Reads in the data set and performs preprocessing as follows: (1) Each post or comment is assigned 
-    * the sentiment which is the most frequent (say, if a comment which has 3 postive labels and 2 negative labels then it 
+    * the sentiment which is the most frequent (say, if a comment which has 3 positive labels and 2 negative labels then it
     * is consider positive); if there is not any sentiments, the NA label is returned. (2) Each post is flat-mapped with its comments.
     *
     * @param spark
@@ -122,7 +122,7 @@ object SSI {
     val model = pipeline.fit(trainingDF)
     val validPrediction = model.transform(developmentDF)
     validPrediction.select("commentSentiment", "category.result").show(false)
-    return model    
+    model
   }
 
   /**

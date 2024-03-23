@@ -5,15 +5,15 @@ import com.intel.analytics.bigdl.dllib.keras.Sequential
 import com.intel.analytics.bigdl.dllib.keras.layers._
 import com.intel.analytics.bigdl.dllib.keras.models.{Model, Models}
 import com.intel.analytics.bigdl.dllib.keras.optimizers.Adam
-import com.intel.analytics.bigdl.dllib.nn.abstractnn.AbstractModule
-import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, JoinTable, Linear, LogSoftMax, LookupTable, MapTable, SplitTable, TimeDistributed, TimeDistributedMaskCriterion}
+import com.intel.analytics.bigdl.dllib.nn.{ClassNLLCriterion, TimeDistributedMaskCriterion}
 import com.intel.analytics.bigdl.dllib.nnframes.NNEstimator
 import com.intel.analytics.bigdl.dllib.optim.Trigger
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
-import com.intel.analytics.bigdl.dllib.utils.{Shape, Table}
+import com.intel.analytics.bigdl.dllib.utils.Shape
 import com.intel.analytics.bigdl.dllib.visualization.{TrainSummary, ValidationSummary}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import org.apache.spark.SparkConf
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, VectorAssembler}
 import org.apache.spark.ml.linalg.Vectors
@@ -22,14 +22,17 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scopt.OptionParser
 import vlp.con.{ArgMaxLayer, Sequencer, TimeDistributedTop1Accuracy}
 
+import java.nio.file.{Files, Paths, StandardOpenOption}
+
 object DEP {
 
   /**
    * Linearize a graph into 4 sequences: Seq[word], Seq[PoS], Seq[labels], Seq[offsets].
    * @param graph a dependency graph
+   * @param las labeled attachment score
    * @return a sequence of sequences.
    */
-  private def linearize(graph: Graph): Seq[Seq[String]] = {
+  private def linearize(graph: Graph, las: Boolean = false): Seq[Seq[String]] = {
     val tokens = graph.sentence.tokens.tail // remove the ROOT token at the beginning
     val words = tokens.map(_.word.toLowerCase()) // make all token lowercase
     val partsOfSpeech = tokens.map(_.partOfSpeech)
@@ -48,7 +51,10 @@ object DEP {
     } finally {
       Seq.empty[String]
     }
-    Seq(words, partsOfSpeech, uPoS, labels, offsets)
+    val offsetLabels = if (las) {
+      offsets.zip(labels).map(pair => pair._1 + ":" + pair._2)
+    } else offsets
+    Seq(words, partsOfSpeech, uPoS, labels, offsetLabels)
   }
 
   /**
@@ -56,13 +62,14 @@ object DEP {
    * @param spark Spark session
    * @param path path to a UD treebank
    * @param maxSeqLen maximum sequence length
+   * @param las LAS or UAS
    * @return a data frame
    */
-  private def readGraphs(spark: SparkSession, path: String, maxSeqLen: Int): DataFrame = {
+  private def readGraphs(spark: SparkSession, path: String, maxSeqLen: Int, las: Boolean = false): DataFrame = {
     // read graphs and remove too-long sentences
     val graphs = GraphReader.read(path).filter(_.sentence.tokens.size <= maxSeqLen).filter(_.sentence.tokens.size >= 5)
     // linearize the graph
-    val xs = graphs.map { graph => Row(linearize(graph): _*) } // need to scroll out the parts with :_*
+    val xs = graphs.map { graph => Row(linearize(graph, las): _*) } // need to scroll out the parts with :_*
     val schema = StructType(Array(
       StructField("tokens", ArrayType(StringType, containsNull = true)),
       StructField("partsOfSpeech", ArrayType(StringType, containsNull = true)),
@@ -83,10 +90,8 @@ object DEP {
   private def createPipeline(df: DataFrame, config: ConfigDEP): PipelineModel = {
     val vectorizerOffsets = new CountVectorizer().setInputCol("offsets").setOutputCol("off")
     val vectorizerTokens = new CountVectorizer().setInputCol("tokens").setOutputCol("tok").setVocabSize(config.maxVocabSize)
-    val vectorizerPartsOfSpeech = new CountVectorizer().setInputCol("uPoS").setOutputCol("pos") // may use "uPoS" instead of "partsOfSpeech"
-    val sequencerChars = new CharSequencer().setInputCol("tokens").setOutputCol("chars")
-    val vectorizerChars = new CountVectorizer().setInputCol("chars").setOutputCol("char")
-    val stages = Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech, sequencerChars, vectorizerChars)
+    val vectorizerPartsOfSpeech = new CountVectorizer().setInputCol("partsOfSpeech").setOutputCol("pos") // may use "uPoS" instead of "partsOfSpeech"
+    val stages = Array(vectorizerOffsets, vectorizerTokens, vectorizerPartsOfSpeech)
     val pipeline = new Pipeline().setStages(stages)
     val model = pipeline.fit(df)
     model.write.overwrite().save(s"${config.modelPath}/${config.language}-pre")
@@ -102,10 +107,13 @@ object DEP {
    * @param uf training df
    * @param vf validation df
    * @param featureColName feature column name
-   * @param labels an array of labels
+   * @param offsetIndex map of index -> label
+   * @param offsetMap map of label -> index (inverse of offsetIndex)
    */
-  private def eval(config: ConfigDEP, uf: DataFrame, vf: DataFrame, featureColName: String, labels: Array[String]): Unit = {
-    val bigdl = Models.loadModel(s"${config.modelPath}/${config.language}-${config.modelType}")
+  private def eval(config: ConfigDEP, uf: DataFrame, vf: DataFrame, featureColName: String, offsetIndex: Map[Int, String], offsetMap: Map[String, Int]): Seq[Double] = {
+    val modelPath = s"${config.modelPath}/${config.language}-${config.modelType}"
+    println(s"Loading model in the path: $modelPath...")
+    val bigdl = Models.loadModel(modelPath)
     // create a sequential model and add a custom ArgMax layer at the end of the model
     val sequential = Sequential()
     sequential.add(bigdl)
@@ -118,29 +126,49 @@ object DEP {
     )
     sequential.summary()
     val spark = SparkSession.getActiveSession.get
+    val evaluator = new MulticlassClassificationEvaluator().setLabelCol("y").setPredictionCol("z").setMetricName("accuracy")
     import spark.implicits._
-    for (prediction <- predictions) {
+    val scores = for (prediction <- predictions) yield {
       val zf = prediction.select("offsets", "z").map { row =>
-        val o = row.getSeq[String](0)
-        val p = row.getSeq[Float](1).take(o.size)
-        (o, p.map(v => labels(v.toInt - 1))) // convert 1-based index to offset label
-      }.toDF("offsets", "prediction")
-      zf.show(15)
+        val os = row.getSeq[String](0).map(v => offsetMap.getOrElse(v, 1)) // gold offsets, indices of ["-4:nsubj",...]
+        val p = row.getSeq[Float](1).take(os.size).map(v => offsetIndex(v.toInt)) // predicted offsets, indices of ["-5:nsubj", ...]
+        // heuristic: make all out-of-bound indices to left most
+        val p2 = p.map { v =>
+          if (config.las) { // with dependency label, v is of value such as "-4:nsubj"
+            val j = v.indexOf(":")
+            val offset = v.substring(0, j)
+            if (Math.abs(offset.toInt) >= os.length) {
+              // wrong prediction, try to correct using a heuristic (assign to left most)
+              val correct = "0:root"
+              offsetMap.getOrElse(correct, 1)
+            } else offsetMap.getOrElse(v, 1)
+          } else { // without dependency label, v is of value such as "-4"
+            if (Math.abs(v.toInt) >= os.length) 0 else v.toInt // previous experiments: use 0 instead of -1.
+          }
+        }
+        (os, p2)
+      }
+      // show the prediction, each row is a graph
+      zf.toDF("offsets", "prediction").show(5)
+      // flatten the prediction, convert to double for evaluation using Spark lib
+      val yz = zf.flatMap(p => p._2.map(_.toDouble).zip(p._1.map(_.toDouble))).toDF("z", "y")
+      yz.show(15)
+      evaluator.evaluate(yz)
     }
+    scores
   }
 
   def main(args: Array[String]): Unit = {
     val opts = new OptionParser[ConfigDEP](getClass.getName) {
       head(getClass.getName, "1.0")
       opt[String]('M', "master").action((x, conf) => conf.copy(master = x)).text("Spark master, default is local[*]")
-      opt[Int]('X', "executorCores").action((x, conf) => conf.copy(executorCores = x)).text("executor cores, default is 8")
-      opt[Int]('Y', "totalCores").action((x, conf) => conf.copy(totalCores = x)).text("total number of cores, default is 8")
-      opt[String]('Z', "executorMemory").action((x, conf) => conf.copy(executorMemory = x)).text("executor memory, default is 8g")
-      opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 16g")
-      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either {eval, train, predict}")
+      opt[String]('D', "driverMemory").action((x, conf) => conf.copy(driverMemory = x)).text("driver memory, default is 8g")
+      opt[String]('m', "mode").action((x, conf) => conf.copy(mode = x)).text("running mode, either eval/train/predict")
+      opt[String]('l', "language").action((x, conf) => conf.copy(language = x)).text("language (eng/ind/vie)")
       opt[Int]('b', "batchSize").action((x, conf) => conf.copy(batchSize = x)).text("batch size")
       opt[Int]('n', "maxSeqLength").action((x, conf) => conf.copy(maxSeqLen = x)).text("max sequence length")
       opt[Int]('j', "layers").action((x, conf) => conf.copy(layers = x)).text("number of RNN layers or Transformer blocks")
+      opt[Int]('u', "heads").action((x, conf) => conf.copy(heads = x)).text("number of Transformer heads")
       opt[Int]('w', "tokenEmbeddingSize").action((x, conf) => conf.copy(tokenEmbeddingSize = x)).text("token embedding size")
       opt[Int]('h', "tokenHiddenSize").action((x, conf) => conf.copy(tokenHiddenSize = x)).text("encoder hidden size")
       opt[Int]('k', "epochs").action((x, conf) => conf.copy(epochs = x)).text("number of epochs")
@@ -153,44 +181,63 @@ object DEP {
     opts.parse(args, ConfigDEP()) match {
       case Some(config) =>
         val conf = new SparkConf().setAppName(getClass.getName).setMaster(config.master)
-          .set("spark.executor.cores", config.executorCores.toString)
-          .set("spark.cores.max", config.totalCores.toString)
-          .set("spark.executor.memory", config.executorMemory)
           .set("spark.driver.memory", config.driverMemory)
         // Creates or gets SparkContext with optimized configuration for BigDL performance.
         // The method will also initialize the BigDL engine.
         val sc = NNContext.initNNContext(conf)
         sc.setLogLevel("ERROR")
         val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
-
-        // read and combine training data sets
-        val df = config.trainPaths.map { path =>
-          readGraphs(spark, path, config.maxSeqLen)
-        }.reduce((df1, df2) => df1.union(df2))
-
+        // determine the training and validation paths
+        val (trainPath, validPath, testPath, gloveFile, numberbatchFile) = config.language match {
+          case "eng" => ("dat/dep/eng/UD_English-EWT/en_ewt-ud-train.conllu",
+            "dat/dep/eng/UD_English-EWT/en_ewt-ud-dev.conllu",
+            "dat/dep/eng/UD_English-EWT/en_ewt-ud-test.conllu",
+            "dat/emb/glove.6B.100d.vocab.txt",
+            "dat/emb/numberbatch-en-19.08.vocab.txt"
+        )
+          case "ind" => ("dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-train.conllu",
+            "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-dev.conllu",
+            "dat/dep/ind/UD_Indonesian-GSD/id_gsd-ud-test.conllu",
+            "dat/emb/cc.id.300.vocab.vec",
+            "dat/emb/numberbatch-id-19.08.vocab.txt"
+        )
+          case "vie" => ("dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-train.conllu",
+            "dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-dev.conllu",
+            "dat/dep/vie/UD_Vietnamese-VTB/vi_vtb-ud-test.conllu",
+            "dat/emb/cc.vi.300.vocab.vec",
+            "dat/emb/numberbatch-vi-19.08.vocab.txt"
+          )
+          case _ =>
+            println("Invalid language code!")
+            ("", "", "", "", "")
+        }
+        // read the training the data set
+        val df = readGraphs(spark, trainPath, config.maxSeqLen, config.las)
         // train a preprocessor and use it to transform training/dev data sets
         val preprocessor = createPipeline(df, config)
         val ef = preprocessor.transform(df)
-
-        // read and combine validation data sets
-        val dfV = config.validPaths.map { path =>
-          readGraphs(spark, path, config.maxSeqLen)
-        }.reduce((df1, df2) => df1.union(df2))
-
+        // read the validation data set
+        val dfV = readGraphs(spark, validPath, config.maxSeqLen, config.las)
         val efV = preprocessor.transform(dfV)
+        // read the test data set
+        val dfW = readGraphs(spark, testPath, config.maxSeqLen, config.las)
+        val efW = preprocessor.transform(dfW)
         efV.show(5)
         println("#(trainGraphs) = " + df.count())
         println("#(validGraphs) = " + dfV.count())
+        println("#(testGraphs) = " + dfW.count())
 
         // array of offset labels, index -> label: offsets[i] is the label at index i:
         val offsets = preprocessor.stages(0).asInstanceOf[CountVectorizerModel].vocabulary
-        val offsetsMap = offsets.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap // 1-based index for BigDL
+        println(offsets.mkString(", "))
+        val offsetMap = offsets.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap // 1-based index for BigDL
+        val offsetIndex = offsets.zipWithIndex.map(p => (p._2 + 1, p._1)).toMap
         val numOffsets = offsets.length
         val tokens = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary
-        val tokensMap = tokens.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+        val tokensMap = tokens.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap   // 1-based index for BigDL
         val numVocab = tokens.length
         val partsOfSpeech = preprocessor.stages(2).asInstanceOf[CountVectorizerModel].vocabulary
-        val partsOfSpeechMap = partsOfSpeech.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
+        val partsOfSpeechMap = partsOfSpeech.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap // 1-based index for BigDL
         val numPartsOfSpeech = partsOfSpeech.length
         println("#(labels) = " + numOffsets)
         println(" #(vocab) = " + numVocab)
@@ -198,41 +245,25 @@ object DEP {
         // extract token, pos and offset indices (start from 1 to use in BigDL)
         val tokenSequencer = new Sequencer(tokensMap, config.maxSeqLen, 0f).setInputCol("tokens").setOutputCol("t")
         val posSequencer = new Sequencer(partsOfSpeechMap, config.maxSeqLen, 0f).setInputCol("partsOfSpeech").setOutputCol("p")
-        val offsetsSequencer = new Sequencer(offsetsMap, config.maxSeqLen, -1f).setInputCol("offsets").setOutputCol("o")
+        val offsetsSequencer = new Sequencer(offsetMap, config.maxSeqLen, -1f).setInputCol("offsets").setOutputCol("o")
         val gf = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(ef)))
         val gfV = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(efV)))
+        val gfW = offsetsSequencer.transform(posSequencer.transform(tokenSequencer.transform(efW)))
         gfV.select("t", "o").show()
 
-        // number of characters (for use in the 'c' model type)
-        var numChars = 0
-        val characters = preprocessor.stages(4).asInstanceOf[CountVectorizerModel].vocabulary
-        val characterMap = characters.zipWithIndex.map(p => (p._1, p._2 + 1)).toMap
-        numChars = characters.length
-        println(" #(chars) = " + numChars)
-        println(characters.mkString(", "))
-        val charSequencer = new Sequencer(characterMap, config.maxSeqLen * config.maxCharLen, 1f).setInputCol("chars").setOutputCol("c")
-        val (pf, pfV) = (charSequencer.transform(gf), charSequencer.transform(gfV))
-        // assemble the two input vectors into one
-        val assembler = new VectorAssembler().setInputCols(Array("t", "c")).setOutputCol("t+c")
-        val hf = assembler.transform(pf)
-        val hfV = assembler.transform(pfV)
-        hf.select("c").show(3)
-
-        // prepare train/valid data frame for each model type:
-        val (uf, vf) = config.modelType match {
-          case "t" => (gf, gfV)
-          case "tg" => (gf, gfV)
-          case "tn" => (gf, gfV)
-          case "c" => (hf, hfV)
-          case "c@" => (hf, hfV)
-          case "t+c" => (hf, hfV)
+        // prepare train/valid/test data frame for each model type:
+        val (uf, vf, wf) = config.modelType match {
+          case "t" => (gf, gfV, gfW)
+          case "tg" => (gf, gfV, gfW)
+          case "tn" => (gf, gfV, gfW)
           case "t+p" | "tg+p" |  "tn+p" =>
             // assemble the two input vectors into one of double maxSeqLen (for use in a combined model)
             val assembler = new VectorAssembler().setInputCols(Array("t", "p")).setOutputCol("t+p")
             val hf = assembler.transform(gf)
             val hfV = assembler.transform(gfV)
+            val hfW = assembler.transform(gfW)
             hfV.select("t+p", "o").show(5)
-            (hf, hfV)
+            (hf, hfV, hfW)
           case "b" =>
             // first, create a UDF g to make BERT input of size 4 x maxSeqLen
             import org.apache.spark.sql.functions._
@@ -259,7 +290,8 @@ object DEP {
             // then transform the token index column
             val hf = gf.withColumn("tb", g(col("t")))
             val hfV = gfV.withColumn("tb", g(col("t")))
-            (hf, hfV)
+            val hfW = gfW.withColumn("tb", g(col("t")))
+            (hf, hfV, hfW)
         }
         // create a BigDL model corresponding to a model type:
         val (bigdl, featureSize, labelSize, featureColName) = config.modelType  match {
@@ -277,7 +309,7 @@ object DEP {
           case "tg" =>
             // 1.1 Sequential model with pretrained token embeddings (GloVe)
             val bigdl = Sequential()
-            bigdl.add(WordEmbedding(config.gloveFile, inputLength = config.maxSeqLen))
+            bigdl.add(WordEmbeddingP(gloveFile, tokensMap, inputLength = config.maxSeqLen))
             for (_ <- 1 to config.layers)
               bigdl.add(Bidirectional(LSTM(outputDim = config.tokenHiddenSize, returnSequences = true)))
             bigdl.add(Dropout(0.5))
@@ -288,7 +320,7 @@ object DEP {
           case "tn" =>
             // 1.2 Sequential model with pretrained token embeddings (Numberbatch of ConceptNet)
             val bigdl = Sequential()
-            bigdl.add(WordEmbeddingP(config.numberbatchFile, inputLength = config.maxSeqLen))
+            bigdl.add(WordEmbeddingP(numberbatchFile, tokensMap, inputLength = config.maxSeqLen))
             for (_ <- 1 to config.layers)
               bigdl.add(Bidirectional(LSTM(outputDim = config.tokenHiddenSize, returnSequences = true)))
             bigdl.add(Dropout(0.5))
@@ -296,67 +328,6 @@ object DEP {
             val (featureSize, labelSize) = (Array(Array(config.maxSeqLen)), Array(config.maxSeqLen))
             bigdl.summary()
             (bigdl, featureSize, labelSize, "t")
-          case "t+c" =>
-            // token module (same as the "t" model type)
-            val inputT = Input(inputShape = Shape(config.maxSeqLen))
-            val embeddingT = Embedding(numVocab + 1, config.tokenEmbeddingSize).inputs(inputT)
-            // char module: use a GRU for each token position (same as the "c@" type)
-            val inputC = Input(inputShape = Shape(config.maxSeqLen * config.maxCharLen))
-            val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize).inputs(inputC)
-            val reshape = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(embeddingC)
-            val split = SplitTensor(1, config.maxSeqLen).inputs(reshape) // 1 or 0?
-            val modules = (0 until config.maxSeqLen).map { j =>
-              val select = SelectTable(j).inputs(split)
-              val reshape = Reshape(targetShape = Array(config.maxCharLen, config.charEmbeddingSize)).inputs(select)
-              GRU(config.charHiddenSize).inputs(reshape) // NOTE: use a separate GRU for each token position. This is not a good way!
-            }
-            val mergeC = Merge.merge(modules.toList, "concat")
-            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, -1)).inputs(mergeC)
-            // concat the token embeddings
-            val mergeT = Merge.merge(List(embeddingT, reshapeC), mode = "concat")
-            val lstm1 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(mergeT)
-            val lstm2 = Bidirectional(LSTM(config.tokenHiddenSize, returnSequences = true)).inputs(lstm1)
-            val output = Dense(numOffsets, activation = "softmax").inputs(lstm2)
-            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen), Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
-            val bigdl = Model(Array(inputT, inputC), output)
-            (bigdl, featureSize, labelSize, "t+c")
-          case "c@" =>
-            // since MapTable does not work with Keras-style layers, we need to use the elementary nn layers here...
-            // char module: use a GRU for each token position, inputShape = Shape(config.maxSeqLen * config.maxCharLen
-            val inputC = com.intel.analytics.bigdl.dllib.nn.Input()
-            val embeddingC = LookupTable(numChars + 1, config.charEmbeddingSize).inputs(inputC)
-            val reshape = com.intel.analytics.bigdl.dllib.nn.Reshape(Array(config.maxSeqLen, config.maxCharLen, config.charEmbeddingSize)).inputs(embeddingC)
-            val split = SplitTable(1, config.maxSeqLen).inputs(reshape) // tensors of shape (1 x maxCharLen x charEmbeddingSize)
-            // table => MapTable(gru) to compute token representation by GRU
-            val gru = com.intel.analytics.bigdl.dllib.nn.GRU(config.charEmbeddingSize, config.charHiddenSize) // to output tensors of shape (1 x charHiddenSize)
-            val mapTable = MapTable(gru).inputs(split) // NOTE: it seems that MapTable does not work with GRU...
-            // table => JoinTable() to get output maxSeqLen x charHiddenSize
-            val joinTable = JoinTable(1, 2).inputs(mapTable)
-            val merge = JoinTable(2, 2).asInstanceOf[AbstractModule[Table, Tensor[Float], Float]]
-            val recurrent = com.intel.analytics.bigdl.dllib.nn.BiRecurrent[Float](merge)
-            recurrent.add(com.intel.analytics.bigdl.dllib.nn.LSTM(config.charHiddenSize, config.tokenHiddenSize))
-            val recurrentNode = recurrent.inputs(joinTable)
-            val linearNode = TimeDistributed(Linear(2*config.tokenHiddenSize, numOffsets)).inputs(recurrentNode)
-            val output = TimeDistributed(LogSoftMax()).inputs(linearNode)
-            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
-            val bigdl = com.intel.analytics.bigdl.dllib.nn.Graph(inputC, output)
-            (bigdl, featureSize, labelSize, "c")
-          case "c" =>
-            // use characters (30 * 13 positions, very long sequence!)
-            val bigdl = Sequential()
-            val embeddingC = Embedding(numChars + 1, config.charEmbeddingSize, inputLength = config.maxSeqLen * config.maxCharLen)
-            bigdl.add(embeddingC)
-            val lstmC = Bidirectional(LSTM(config.charHiddenSize, returnSequences = true))
-            bigdl.add(lstmC)
-            val reshapeC = Reshape(targetShape = Array(config.maxSeqLen, config.maxCharLen, 2*config.charHiddenSize))
-            bigdl.add(reshapeC)
-            val selectC = Select(2, -1) // select the state at the last character of each token
-            bigdl.add(selectC)
-            bigdl.add(Dropout(0.5))
-            bigdl.add(Dense(numOffsets, activation = "softmax"))
-            val (featureSize, labelSize) = (Array(Array(config.maxSeqLen * config.maxCharLen)), Array(config.maxSeqLen))
-            bigdl.summary()
-            (bigdl, featureSize, labelSize, "c")
           case "t+p"  | "tg+p" |  "tn+p" =>
             // A model for (token ++ partsOfSpeech) tensor
             val input = Input(inputShape = Shape(2*config.maxSeqLen), name = "input")
@@ -367,9 +338,9 @@ object DEP {
             val partsOfSpeech = SelectTable(1).setName("inputP").inputs(split)
             val inputP = Squeeze(1).inputs(partsOfSpeech)
             val embeddingT = config.modelType match {
-              case "t+p" => Embedding (numVocab + 1, config.tokenEmbeddingSize).setName ("tokEmbedding").inputs(inputT)
-              case "tg+p" => WordEmbeddingP(config.gloveFile, inputLength = config.maxSeqLen).setName("tokenEmbedding").inputs(inputT)
-              case "tn+p" => WordEmbeddingP(config.numberbatchFile, inputLength = config.maxSeqLen).setName("tokenEmbedding").inputs(inputT)
+              case "t+p" => Embedding(numVocab + 1, config.tokenEmbeddingSize).setName ("tokEmbedding").inputs(inputT)
+              case "tg+p" => WordEmbeddingP(gloveFile, tokensMap, inputLength = config.maxSeqLen).setName("tokenEmbedding").inputs(inputT)
+              case "tn+p" => WordEmbeddingP(numberbatchFile, tokensMap, inputLength = config.maxSeqLen).setName("tokenEmbedding").inputs(inputT)
             }
             val embeddingP = Embedding(numPartsOfSpeech + 1, config.partsOfSpeechEmbeddingSize).setName("posEmbedding").inputs(inputP)
             val merge = Merge.merge(inputs = List(embeddingT, embeddingP), mode = "concat")
@@ -393,7 +364,7 @@ object DEP {
             val positionIds = Squeeze(1).inputs(selectPositions)
             val selectMasks = SelectTable(3).setName("masks").inputs(split)
             val masksReshaped = Reshape(targetShape = Array(1, 1, config.maxSeqLen)).setName("mask").inputs(selectMasks)
-            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = config.layers, nHead = 2, maxPositionLen = config.maxSeqLen,
+            val bert = BERT(vocab = numVocab + 1, hiddenSize = config.tokenEmbeddingSize, nBlock = config.layers, nHead = config.heads, maxPositionLen = config.maxSeqLen,
               intermediateSize = config.tokenHiddenSize, outputAllBlock = false).setName("bert")
             val bertNode = bert.inputs(Array(inputIds, segmentIds, positionIds, masksReshaped))
             val bertOutput = SelectTable(0).setName("firstBlock").inputs(bertNode)
@@ -404,21 +375,27 @@ object DEP {
             val (featureSize, labelSize) = (Array(Array(4*config.maxSeqLen)), Array(config.maxSeqLen))
             (bigdl, featureSize, labelSize, "tb")
         }
+
+        def weights(): Tensor[Float] = {
+          // compute label weights for the loss function
+          import spark.implicits._
+          val xf = df.select("offsets").flatMap(row => row.getSeq[String](0))
+          val yf = xf.groupBy("value").count()
+          val labelFreq = yf.select("value", "count").collect().map(row => (offsetMap(row.getString(0)), row.getLong(1)))
+          val total = labelFreq.map(_._2).sum.toFloat
+          val ws = labelFreq.map(p => (p._1, p._2 / total)).toMap
+          val tensor = Tensor(ws.size)
+          for (j <- ws.keys)
+            tensor(j) = 1f/ws(j) // give higher weight to minority labels
+          tensor
+        }
+
         config.mode match {
           case "train" =>
-            // compute label weights for the loss function
-            import spark.implicits._
-            val xf = df.select("offsets").flatMap(row => row.getSeq[String](0))
-            val yf = xf.groupBy("value").count()
-            val labelFreq = yf.select("value", "count").collect().map(row => (offsetsMap(row.getString(0)), row.getLong(1)))
-            val total = labelFreq.map(_._2).sum.toFloat
-            val ws = labelFreq.map(_._2 / total)
-            val tensor = Tensor(ws.length)
-            for (j <- ws.indices)
-              tensor(j+1) = ws(j)
-            // create an estimator
-            // it is necessary to set sizeAverage of ClassNLLCriterion to false in non-batch mode
-            val estimator = NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(weights = tensor, sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
+            // create an estimator, it is necessary to set sizeAverage of ClassNLLCriterion to false in non-batch mode
+            val estimator = if (config.weightedLoss)
+              NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(weights = weights(), sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
+            else NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
             val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/dep/${config.language}")
             val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/dep/${config.language}")
             estimator.setLabelCol("o").setFeaturesCol(featureColName)
@@ -433,15 +410,55 @@ object DEP {
             // save the model
             bigdl.saveModel(s"${config.modelPath}/${config.language}-${config.modelType}", overWrite = true)
             // evaluate the model
-            eval(config, uf, vf, featureColName, offsets)
+            val scores = eval(config, uf, vf, featureColName, offsetIndex, offsetMap)
+            val heads = if (config.modelType != "b") 0 else config.heads
+            val result = f"\n${config.language};${config.modelType};${config.tokenEmbeddingSize};${config.tokenHiddenSize};${config.layers};$heads;${scores(0)}%.4g;${scores(1)}%.4g"
+            println(result)
+            Files.write(Paths.get(config.scorePath), result.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
           case "eval" =>
-            eval(config, uf, vf, featureColName, offsets)
-          case "pre" =>
-            ef.select("chars").show(5, truncate = false)
+            // write score on training/test set
+            val scores = eval(config, uf, wf, featureColName, offsetIndex, offsetMap)
+            val heads = if (config.modelType != "b") 0 else config.heads
+            val result = f"\n${config.language};${config.modelType};${config.tokenEmbeddingSize};${config.tokenHiddenSize};${config.layers};$heads;${scores(0)}%.4g;${scores(1)}%.4g"
+            println(result)
+            Files.write(Paths.get(config.scorePath), result.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+          case "predict" =>
+            // train the model on the training set (uf) using the best hyper-parameters which was tuned on the validation set (vf)
+            // and run prediction it on the test set (wf) to collect scores
+            val estimator = if (config.weightedLoss)
+              NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(weights = weights(), sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
+            else
+              NNEstimator(bigdl, TimeDistributedMaskCriterion(ClassNLLCriterion(sizeAverage = false, logProbAsInput = false, paddingValue = -1), paddingValue = -1), featureSize, labelSize)
+            val trainingSummary = TrainSummary(appName = config.modelType, logDir = s"sum/dep/${config.language}")
+            val validationSummary = ValidationSummary(appName = config.modelType, logDir = s"sum/dep/${config.language}")
+            estimator.setLabelCol("o").setFeaturesCol(featureColName)
+              .setBatchSize(config.batchSize)
+              .setOptimMethod(new Adam(config.learningRate))
+              .setMaxEpoch(config.epochs)
+              .setTrainSummary(trainingSummary)
+              .setValidationSummary(validationSummary)
+              .setValidation(Trigger.everyEpoch, vf, Array(new TimeDistributedTop1Accuracy(-1)), config.batchSize)
+            // train
+            estimator.fit(uf)
+            // save the model
+            val modelPath = s"${config.modelPath}/${config.language}-${config.modelType}"
+            println(s"Save the model to $modelPath.")
+            bigdl.saveModel(modelPath, overWrite = true)
+            // evaluate the model on the training and test set
+            val scores = eval(config, uf, wf, featureColName, offsetIndex, offsetMap)
+            val heads = if (config.modelType != "b") 0 else config.heads
+            val result = f"\n${config.language};${config.modelType};${config.tokenEmbeddingSize};${config.tokenHiddenSize};${config.layers};$heads;${scores(0)}%.4g;${scores(1)}%.4g"
+            println(result)
+            Files.write(Paths.get(config.scorePath), result.getBytes, StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+          case "preprocess" =>
+            val af = df.union(dfV).union(dfW)
+            val preprocessor = createPipeline(af, config)
+            val vocab = preprocessor.stages(1).asInstanceOf[CountVectorizerModel].vocabulary.toSet
+            println("#(vocab) = " + vocab.size)
+            println(vocab)
         }
         spark.stop()
-      case None =>
-
+      case None => println("Invalid config!")
     }
   }
 }

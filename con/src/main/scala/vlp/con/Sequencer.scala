@@ -12,7 +12,8 @@ import org.apache.spark.sql.types.DataType
 /**
   * A sequence vectorizer transforms a sequence of tokens into a sequence of indices
   * using a dictionary. This transformer pads or truncate long sentence to a given `maxSequenceLength`.
-  * If the dictionary does not contain a token, it returns zero (0).
+  * If the dictionary does not contain a token, it returns one (1, since BigDL uses 1-based index; this prevent errors
+  * -- the target sequence never contains 0.).
   *
   * phuonglh@gmail.com
   */
@@ -33,7 +34,7 @@ class Sequencer(val uid: String, val dictionary: Map[String, Int], val maxSequen
 
   override protected def createTransformFunc: Seq[String] => Vector = {
     def f(xs: Seq[String]): Vector = {
-      val a = xs.map(x => dictionaryBr.get.value.getOrElse(x, 0).toDouble).toArray
+      val a = xs.map(x => dictionaryBr.get.value.getOrElse(x, 1).toDouble).toArray
       // truncate or pad
       if (xs.size >= maxSeqLen) {
         Vectors.dense(a.take(maxSeqLen))

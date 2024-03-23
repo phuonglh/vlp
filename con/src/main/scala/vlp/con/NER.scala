@@ -41,7 +41,7 @@ import com.intel.analytics.bigdl.dllib.optim.Trigger
 case class ConfigNER(
   master: String = "local[*]",
   totalCores: Int = 8,    // X
-  executorCores: Int = 8, // Y ==> there are X/Y executors
+  executorCores: Int = 8, // Y
   executorMemory: String = "8g", // Z
   driverMemory: String = "16g", // D
   mode: String = "eval",
